@@ -1,0 +1,23 @@
+{
+  "java.search.scope": "all",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "maven.excludedFolders": [
+    "**/.*",
+    "**/node_modules",
+    "**/target",
+    "**/bin",
+    "**/archetype-resources",
+    "**/_datasets"
+  ],
+  "java.project.resourceFilters": ["node_modules", "\\.git", "_datasets"],
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype-resources/**",
+    "**/META-INF/maven/**",
+    "**/_datasets/**"
+  ],
+  "java.import.projectSelection": "manual",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "maven.view": "flat",
+}
