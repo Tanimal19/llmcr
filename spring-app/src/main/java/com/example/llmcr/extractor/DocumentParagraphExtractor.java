@@ -5,6 +5,7 @@ import com.example.llmcr.entity.DocumentParagraph;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
@@ -25,9 +26,9 @@ public class DocumentParagraphExtractor implements VoidRawDataExtractor<List<Doc
         source.getCu().getAllComments().forEach(comment -> {
             String id = UUID.randomUUID().toString();
             String content = comment.getContent();
-            String sourceName = "Compilation Unit";
+            String sourceName = "Compilation Unit"; // TODO: improve source naming
 
-            if (content.trim().length() > 10) { // Only meaningful comments
+            if (content.trim().length() > 10) {
                 DocumentParagraph paragraph = new DocumentParagraph(id, sourceName, content);
                 paragraphs.add(paragraph);
             }
@@ -41,11 +42,12 @@ public class DocumentParagraphExtractor implements VoidRawDataExtractor<List<Doc
         // For PDF files, we would need a PDF parsing library
         // This is a placeholder implementation
         List<DocumentParagraph> paragraphs = new ArrayList<>();
+        Path filePath = source.getPath();
 
         try {
             String id = UUID.randomUUID().toString();
-            String content = "PDF content from: " + source.getPath();
-            DocumentParagraph paragraph = new DocumentParagraph(id, source.getPath(), content);
+            String content = "PDF content from: " + filePath.toString(); // TODO: implement actual PDF text extraction
+            DocumentParagraph paragraph = new DocumentParagraph(id, filePath.toString(), content);
             paragraphs.add(paragraph);
         } catch (Exception e) {
             System.err.println("Error processing PDF: " + source.getPath() + ", " + e.getMessage());
@@ -64,11 +66,11 @@ public class DocumentParagraphExtractor implements VoidRawDataExtractor<List<Doc
         return extractParagraphsFromTextFile(source.getPath());
     }
 
-    private List<DocumentParagraph> extractParagraphsFromTextFile(String filePath) {
+    private List<DocumentParagraph> extractParagraphsFromTextFile(Path filePath) {
         List<DocumentParagraph> paragraphs = new ArrayList<>();
 
         try {
-            String content = Files.readString(Paths.get(filePath));
+            String content = Files.readString(filePath);
 
             // Split content into paragraphs (simple implementation)
             String[] parts = content.split("\n\n+"); // Split on double newlines
@@ -77,7 +79,7 @@ public class DocumentParagraphExtractor implements VoidRawDataExtractor<List<Doc
                 part = part.trim();
                 if (part.length() > 20) { // Only meaningful paragraphs
                     String id = UUID.randomUUID().toString();
-                    DocumentParagraph paragraph = new DocumentParagraph(id, filePath, part);
+                    DocumentParagraph paragraph = new DocumentParagraph(id, filePath.toString(), part);
                     paragraphs.add(paragraph);
                 }
             }

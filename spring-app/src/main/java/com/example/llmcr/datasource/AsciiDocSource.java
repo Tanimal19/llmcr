@@ -1,18 +1,20 @@
 package com.example.llmcr.datasource;
 
+import java.nio.file.Path;
+
 import com.example.llmcr.extractor.VoidRawDataExtractor;
 
 /**
  * Source for AsciiDoc files.
  */
 public class AsciiDocSource implements RawDataSource {
-    private final String path;
+    private final Path path;
 
-    public AsciiDocSource(String path) {
+    public AsciiDocSource(Path path) {
         this.path = path;
     }
 
-    public String getPath() {
+    public Path getPath() {
         return path;
     }
 

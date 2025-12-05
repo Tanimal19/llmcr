@@ -1,18 +1,20 @@
 package com.example.llmcr.datasource;
 
+import java.nio.file.Path;
+
 import com.example.llmcr.extractor.VoidRawDataExtractor;
 
 /**
  * Source for PDF files.
  */
 public class PdfSource implements RawDataSource {
-    private final String path;
+    private final Path path;
 
-    public PdfSource(String path) {
+    public PdfSource(Path path) {
         this.path = path;
     }
 
-    public String getPath() {
+    public Path getPath() {
         return path;
     }
 

@@ -1,18 +1,20 @@
 package com.example.llmcr.datasource;
 
+import java.nio.file.Path;
+
 import com.example.llmcr.extractor.VoidRawDataExtractor;
 
 /**
  * Source for Markdown files.
  */
 public class MarkdownSource implements RawDataSource {
-    private final String path;
+    private final Path path;
 
-    public MarkdownSource(String path) {
+    public MarkdownSource(Path path) {
         this.path = path;
     }
 
-    public String getPath() {
+    public Path getPath() {
         return path;
     }
 
