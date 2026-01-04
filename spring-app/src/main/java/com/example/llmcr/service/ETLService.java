@@ -1,6 +1,6 @@
 package com.example.llmcr.service;
 
-import com.example.llmcr.datasource.RawDataSource;
+import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
 import com.example.llmcr.extractor.ClassNodeExtractor;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 public class ETLService {
 
-    private final List<RawDataSource> rawDataSources;
+    private final List<DataSource> rawDataSources;
     private final DataStore dataStore;
     private final VectorStore vectorStore;
     private final ClassNodeSummaryService classNodeSummaryService;
@@ -43,7 +43,7 @@ public class ETLService {
     }
 
     public ETLService(
-            List<RawDataSource> rawDataSources,
+            List<DataSource> rawDataSources,
             DataStore dataStore,
             VectorStore vectorStore,
             ChatModel chatModel) {
@@ -57,7 +57,7 @@ public class ETLService {
      * Extract ClassNodes and DocumentParagraphs from all datasources.
      */
     public ETLService extract() {
-        System.out.println("Starting data extraction...");
+        System.out.println("+ Starting data extraction...");
 
         ClassNodeExtractor classNodeExtractor = new ClassNodeExtractor();
         DocumentParagraphExtractor documentParagraphExtractor = new DocumentParagraphExtractor();
@@ -66,7 +66,7 @@ public class ETLService {
         List<DocumentParagraph> allDocumentParagraphs = new ArrayList<>();
 
         // Iterate over all raw data sources and extract data
-        for (RawDataSource source : rawDataSources) {
+        for (DataSource source : rawDataSources) {
             List<ClassNode> classNodes = source.accept(classNodeExtractor);
             allClassNodes.addAll(classNodes);
 
@@ -85,6 +85,7 @@ public class ETLService {
      * Transform ClassNodes by generating summaries using LLM.
      */
     public ETLService transform() {
+        System.out.println("+ Starting data transformation...");
         List<ClassNode> unprocessedNodes = dataStore.findUnprocessedClassNodes();
 
         for (ClassNode classNode : unprocessedNodes) {

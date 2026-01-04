@@ -1,12 +1,12 @@
 package com.example.llmcr.datasource;
 
-import com.example.llmcr.extractor.VoidRawDataExtractor;
+import com.example.llmcr.extractor.VoidDataSourceExtractor;
 import com.github.javaparser.ast.CompilationUnit;
 
 /**
  * Source for compilation units (e.g., code repository).
  */
-public class CompilationUnitSource implements RawDataSource {
+public class CompilationUnitSource implements DataSource {
     private final CompilationUnit cu;
 
     public CompilationUnitSource(CompilationUnit cu) {
@@ -18,7 +18,7 @@ public class CompilationUnitSource implements RawDataSource {
     }
 
     @Override
-    public <T> T accept(VoidRawDataExtractor<T> extractor) {
+    public <T> T accept(VoidDataSourceExtractor<T> extractor) {
         return extractor.visit(this);
     }
 }

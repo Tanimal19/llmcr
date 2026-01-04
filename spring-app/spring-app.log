@@ -36,19 +36,19 @@ Standard Commons Logging discovery in action with spring-jcl: please remove comm
 
  :: Spring Boot ::                (v3.5.7)
 
-2025-12-05T01:03:03.505-08:00  INFO 7945 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 7945 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
-2025-12-05T01:03:03.506-08:00  INFO 7945 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
-2025-12-05T01:03:03.693-08:00  INFO 7945 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2025-12-05T01:03:03.740-08:00  INFO 7945 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 41 ms. Found 2 JPA repository interfaces.
-2025-12-05T01:03:03.843-08:00  INFO 7945 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2025-12-05T01:03:03.863-08:00  INFO 7945 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
-2025-12-05T01:03:03.875-08:00  INFO 7945 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2025-12-05T01:03:03.968-08:00  INFO 7945 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2025-12-05T01:03:03.978-08:00  INFO 7945 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2025-12-05T01:03:04.023-08:00  INFO 7945 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@a2b54e3
-2025-12-05T01:03:04.024-08:00  INFO 7945 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2025-12-05T01:03:04.036-08:00  WARN 7945 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2025-12-05T01:03:04.043-08:00  INFO 7945 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+2025-12-19T18:53:47.534-08:00  INFO 9135 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 9135 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+2025-12-19T18:53:47.535-08:00  INFO 9135 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
+2025-12-19T18:53:47.720-08:00  INFO 9135 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-12-19T18:53:47.763-08:00  INFO 9135 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 40 ms. Found 2 JPA repository interfaces.
+2025-12-19T18:53:47.860-08:00  INFO 9135 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-12-19T18:53:47.880-08:00  INFO 9135 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
+2025-12-19T18:53:47.892-08:00  INFO 9135 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-12-19T18:53:47.982-08:00  INFO 9135 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-12-19T18:53:47.992-08:00  INFO 9135 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-19T18:53:48.030-08:00  INFO 9135 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@797fcf9
+2025-12-19T18:53:48.030-08:00  INFO 9135 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-19T18:53:48.041-08:00  WARN 9135 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-12-19T18:53:48.046-08:00  INFO 9135 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
 	Database driver: undefined/unknown
 	Database version: 11.8.5
@@ -56,23 +56,23 @@ Standard Commons Logging discovery in action with spring-jcl: please remove comm
 	Isolation level: undefined/unknown
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2025-12-05T01:03:04.327-08:00  INFO 7945 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2025-12-05T01:03:04.353-08:00  INFO 7945 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2025-12-05T01:03:04.689-08:00  INFO 7945 --- [llmcr] [           main] o.s.a.v.mariadb.MariaDBVectorStore       : Using the vector table name: vector_store. Is empty: false
-2025-12-05T01:03:04.691-08:00  INFO 7945 --- [llmcr] [           main] o.s.a.v.mariadb.MariaDBVectorStore       : Initializing MariaDBVectorStore schema for table: vector_store in schema: null
-2025-12-05T01:03:04.691-08:00  INFO 7945 --- [llmcr] [           main] o.s.a.v.mariadb.MariaDBVectorStore       : vectorTableValidationsEnabled false
-2025-12-05T01:03:04.816-08:00  INFO 7945 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.437 seconds (process running for 1.586)
-✓ Google Gemini API key loaded (length: 39 characters)
-Parsing Java project from: ../_datasets/spring-ai-main
-Parsed 20 compilation units
-Processing documents from: ../_datasets/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages
-Added 126 document sources
-2025-12-05T01:05:40.021-08:00  INFO 7945 --- [llmcr] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
-2025-12-05T01:05:40.028-08:00  INFO 7945 --- [llmcr] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
-2025-12-05T01:05:40.038-08:00  INFO 7945 --- [llmcr] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-12-19T18:53:48.365-08:00  INFO 9135 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-12-19T18:53:48.398-08:00  INFO 9135 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-12-19T18:53:48.740-08:00  INFO 9135 --- [llmcr] [           main] o.s.a.v.mariadb.MariaDBVectorStore       : Using the vector table name: vector_store. Is empty: false
+2025-12-19T18:53:48.741-08:00  INFO 9135 --- [llmcr] [           main] o.s.a.v.mariadb.MariaDBVectorStore       : Initializing MariaDBVectorStore schema for table: vector_store in schema: null
+2025-12-19T18:53:48.741-08:00  INFO 9135 --- [llmcr] [           main] o.s.a.v.mariadb.MariaDBVectorStore       : vectorTableValidationsEnabled false
+2025-12-19T18:53:48.887-08:00  INFO 9135 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.477 seconds (process running for 1.6)
+Create datasource from Java project: ../_datasets/spring-ai-simple
+Parsed 0 compilation units
+Parsed 126 document sources from directory: ../_datasets/spring-ai-simple/spring-ai-docs/src/main/antora/modules/ROOT/pages
++ Starting data extraction...
++ Starting data transformation...
+2025-12-19T18:53:52.872-08:00  INFO 9135 --- [llmcr] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-12-19T18:53:52.873-08:00  INFO 9135 --- [llmcr] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-12-19T18:53:52.874-08:00  INFO 9135 --- [llmcr] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  02:37 min
-[INFO] Finished at: 2025-12-05T01:05:40-08:00
+[INFO] Total time:  6.145 s
+[INFO] Finished at: 2025-12-19T18:53:52-08:00
 [INFO] ------------------------------------------------------------------------

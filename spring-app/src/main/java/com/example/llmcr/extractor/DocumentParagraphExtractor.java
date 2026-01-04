@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.UUID;
  * Extracts DocumentParagraph objects from various data sources.
  */
 @Component
-public class DocumentParagraphExtractor implements VoidRawDataExtractor<List<DocumentParagraph>> {
+public class DocumentParagraphExtractor implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {

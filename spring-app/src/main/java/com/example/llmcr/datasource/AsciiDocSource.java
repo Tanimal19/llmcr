@@ -2,12 +2,12 @@ package com.example.llmcr.datasource;
 
 import java.nio.file.Path;
 
-import com.example.llmcr.extractor.VoidRawDataExtractor;
+import com.example.llmcr.extractor.VoidDataSourceExtractor;
 
 /**
  * Source for AsciiDoc files.
  */
-public class AsciiDocSource implements RawDataSource {
+public class AsciiDocSource implements DataSource {
     private final Path path;
 
     public AsciiDocSource(Path path) {
@@ -19,7 +19,7 @@ public class AsciiDocSource implements RawDataSource {
     }
 
     @Override
-    public <T> T accept(VoidRawDataExtractor<T> extractor) {
+    public <T> T accept(VoidDataSourceExtractor<T> extractor) {
         return extractor.visit(this);
     }
 }

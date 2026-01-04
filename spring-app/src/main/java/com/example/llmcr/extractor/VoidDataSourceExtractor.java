@@ -9,7 +9,7 @@ import com.example.llmcr.datasource.MarkdownSource;
  * Interface for extracting data from raw sources.
  * Follows the Visitor design pattern.
  */
-public interface VoidRawDataExtractor<T> {
+public interface VoidDataSourceExtractor<T> {
     T visit(CompilationUnitSource source);
 
     T visit(PdfSource source);

@@ -15,7 +15,7 @@ import java.util.UUID;
  * Extracts ClassNode objects from various data sources.
  */
 @Component
-public class ClassNodeExtractor implements VoidRawDataExtractor<List<ClassNode>> {
+public class ClassNodeExtractor implements VoidDataSourceExtractor<List<ClassNode>> {
 
     @Override
     public List<ClassNode> visit(CompilationUnitSource source) {
