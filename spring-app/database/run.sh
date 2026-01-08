@@ -4,8 +4,15 @@ set -e
 COMPOSE_FILE="./database/docker-compose.yml"
 
 build() {
+    echo "cleaning up containers and volumes..."
+    docker-compose -f $COMPOSE_FILE down -v
     echo "building container..."
     docker-compose -f $COMPOSE_FILE up -d
+}
+
+clean() {
+    echo "cleaning up containers and volumes..."
+    docker-compose -f $COMPOSE_FILE down -v
 }
 
 stop() {
@@ -16,11 +23,6 @@ restart() {
     docker-compose -f $COMPOSE_FILE restart
 }
 
-clean() {
-    echo "cleaning up containers and volumes..."
-    docker-compose -f $COMPOSE_FILE down -v
-}
-
 status() {
     docker-compose -f $COMPOSE_FILE ps
 }
@@ -28,9 +30,9 @@ status() {
 
 case "$1" in
     build) build ;;
+    clean) clean ;;
     stop) stop ;;
     restart) restart ;;
-    clean) clean ;;
     status) status ;;
-    *) echo "usage: $0 {build|stop|restart|clean|status}"; exit 1 ;;
+    *) echo "usage: $0 {build|clean|stop|restart|status}"; exit 1 ;;
 esac

@@ -1,6 +1,8 @@
 package com.example.llmcr.entity;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents an extracted textual paragraph (chunk) from a document.
@@ -20,6 +22,9 @@ public class DocumentParagraph {
 
     @Column(name = "processed")
     private boolean processed;
+
+    @ManyToMany(mappedBy = "documentParagraphs", fetch = FetchType.LAZY)
+    private List<ClassNode> classNodes = new ArrayList<>();
 
     // Default constructor for JPA
     public DocumentParagraph() {
@@ -63,5 +68,17 @@ public class DocumentParagraph {
 
     public void setProcessed(boolean processed) {
         this.processed = processed;
+    }
+
+    public List<ClassNode> getClassNodes() {
+        return classNodes;
+    }
+
+    public void setClassNodes(List<ClassNode> classNodes) {
+        this.classNodes = classNodes;
+    }
+
+    public void addClassNode(ClassNode classNode) {
+        this.classNodes.add(classNode);
     }
 }

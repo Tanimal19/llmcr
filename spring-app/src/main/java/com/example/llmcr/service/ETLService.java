@@ -17,6 +17,15 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.genai.errors.ClientException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.util.concurrent.RateLimiter;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +59,7 @@ public class ETLService {
         this.rawDataSources = rawDataSources;
         this.dataStore = dataStore;
         this.vectorStore = vectorStore;
-        this.classNodeSummaryService = new ClassNodeSummaryService(chatModel);
+        this.classNodeSummaryService = new ClassNodeSummaryService(chatModel, 4);
     }
 
     /**
@@ -99,13 +108,28 @@ public class ETLService {
     }
 
     private ClassNode bindNodeWithParagraphs(ClassNode classNode) {
+        List<String> keywords = extractKeywords(classNode.getSignature());
         List<DocumentParagraph> relevantParagraphs = dataStore
-                .findAllDocumentParagraphsByKeyword(classNode.getSignature());
+                .findAllDocumentParagraphsByKeywords(keywords);
         classNode.setDocumentParagraphs(relevantParagraphs);
+        System.out.println(
+                "Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: " + classNode.getSignature()
+                        + " using keywords: " + keywords);
         return classNode;
     }
 
+    private List<String> extractKeywords(String signature) {
+        List<String> keywords = new ArrayList<>();
+        String[] parts = signature.split("\\.");
+
+        keywords.add(parts[parts.length - 1]); // class name
+        keywords.add(parts[parts.length - 2]); // package name
+
+        return keywords;
+    }
+
     private ClassNode enrichNodeWithSummary(ClassNode classNode) {
+        System.out.println("Generating summary for ClassNode: " + classNode.getSignature());
         ClassNodeSummary summary = classNodeSummaryService.summarize(
                 classNode.getCodeText(),
                 classNode.getDocumentParagraphs().stream()
@@ -167,6 +191,7 @@ public class ETLService {
 
     private class ClassNodeSummaryService {
         private final ChatModel chatModel;
+        private final RateLimiter rateLimiter;
         private final PromptTemplate promptTemplate = PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
                 .template(
@@ -188,8 +213,11 @@ public class ETLService {
         private final BeanOutputConverter<ClassNodeSummary> outputConverter = new BeanOutputConverter<>(
                 ClassNodeSummary.class);
 
-        ClassNodeSummaryService(ChatModel chatModel) {
+        ClassNodeSummaryService(ChatModel chatModel, int requestsPerMinute) {
             this.chatModel = chatModel;
+            // Convert requests per minute to permits per second
+            this.rateLimiter = RateLimiter.create(requestsPerMinute / 60.0);
+            System.out.println("Rate limiter initialized: " + requestsPerMinute + " requests per minute");
         }
 
         public ClassNodeSummary summarize(String rawCode, String documentation) {
@@ -201,11 +229,48 @@ public class ETLService {
                     "format", formatInstruction);
             Prompt prompt = promptTemplate.create(variables);
 
-            // call chat model
-            ChatResponse response = chatModel.call(prompt);
-            String rawOutput = response.getResult().getOutput().getText();
+            // apply rate limiting
+            rateLimiter.acquire();
+            System.out.println("Rate limiter: request acquired");
 
-            return outputConverter.convert(rawOutput);
+            // call chat model
+            try {
+                ChatResponse response = chatModel.call(prompt);
+                String rawOutput = response.getResult().getOutput().getText();
+                ClassNodeSummary result = outputConverter.convert(rawOutput);
+
+                appendToJsonFile(prompt.getContents(), result);
+                return result;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to summarize class node: " + e.getMessage(), e);
+            }
+        }
+
+        private void appendToJsonFile(String prompt, ClassNodeSummary result) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.enable(SerializationFeature.INDENT_OUTPUT);
+                File file = new File("summaries.json");
+
+                ArrayNode array;
+                if (file.exists()) {
+                    array = (ArrayNode) mapper.readTree(file);
+                } else {
+                    array = mapper.createArrayNode();
+                }
+
+                ObjectNode entry = mapper.createObjectNode();
+                entry.put("timestamp", java.time.Instant.now().toString());
+                entry.put("prompt", prompt);
+                entry.put("summary", result.summary());
+                entry.put("exampleUsage", result.exampleUsage());
+                entry.put("relationship", result.relationship());
+
+                array.add(entry);
+                mapper.writeValue(file, array);
+            } catch (IOException e) {
+                System.err.println("Failed to append to summaries.json: " + e.getMessage());
+            }
         }
     }
 }

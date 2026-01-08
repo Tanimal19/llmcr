@@ -55,6 +55,6 @@ public class LlmcrApplication implements CommandLineRunner {
 			dataSources.addAll(dataSourceFactory.createFromPath(documentPathString));
 		}
 
-		new ETLService(dataSources, dataStore, vectorStore, chatModel).extract();
+		new ETLService(dataSources, dataStore, vectorStore, chatModel).extract().transform();
 	}
 }

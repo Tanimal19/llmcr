@@ -21,24 +21,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DocumentParagraphExtractor
         implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
+    private static final int MAX_PDF_CHUNK_LENGTH = 4000;
+    private static final int MAX_ASCIIDOC_CHUNK_LENGTH = 4000;
+
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {
-        List<DocumentParagraph> result = new ArrayList<>();
-        CompilationUnit cu = source.getCu();
-        String ctx = "java::" + cu.getStorage().get().getFileName();
-        AtomicInteger count = new AtomicInteger(0);
+        // List<DocumentParagraph> result = new ArrayList<>();
+        // CompilationUnit cu = source.getCu();
+        // String ctx = "java::" + cu.getStorage().get().getFileName();
+        // AtomicInteger count = new AtomicInteger(0);
 
-        cu.getAllComments().forEach(c -> {
-            result.add(new DocumentParagraph(
-                    UUID.randomUUID().toString(),
-                    ctx + "::" + count.getAndIncrement(),
-                    c.getContent().trim()));
-        });
+        // cu.getAllComments().forEach(c -> {
+        // result.add(new DocumentParagraph(
+        // UUID.randomUUID().toString(),
+        // ctx + "::" + count.getAndIncrement(),
+        // c.getContent().trim()));
+        // });
 
-        System.out.println("Extracted " + result.size() + " comment paragraphs from Java file: "
-                + cu.getStorage().get().getPath());
+        // System.out.println("Extracted " + result.size() + " comment paragraphs from
+        // Java file: "
+        // + cu.getStorage().get().getPath());
 
-        return result;
+        return new ArrayList<>();
     }
 
     @Override
@@ -53,7 +57,7 @@ public class DocumentParagraphExtractor
             AtomicInteger count = new AtomicInteger(0);
 
             for (String line : text.split("\n")) {
-                if (chunk.length() + line.length() > 500 && chunk.length() > 0) {
+                if (chunk.length() + line.length() > MAX_PDF_CHUNK_LENGTH && chunk.length() > 0) {
                     result.add(new DocumentParagraph(
                             UUID.randomUUID().toString(),
                             ctx + "::" + count.getAndIncrement(),
@@ -111,12 +115,10 @@ public class DocumentParagraphExtractor
         if (node instanceof Section) {
             ctx += "::" + ((Section) node).getTitle();
         }
-        System.out.println("Processing AsciiDoc block: " + ctx);
 
         List<StructuralNode> subSections = node.getBlocks().stream()
                 .filter(b -> b instanceof Section)
                 .toList();
-        System.out.println("Found " + subSections.size() + " subsections in block: " + ctx);
         for (StructuralNode subSection : subSections) {
             processAsciiDocBlock(subSection, ctx, result);
         }
@@ -126,13 +128,11 @@ public class DocumentParagraphExtractor
                         || b.getNodeName().equals("literal")
                         || b.getNodeName().equals("listing"))
                 .toList();
-        System.out.println("Found " + contentBlocks.size() + " content blocks in block: " + ctx);
         AtomicInteger count = new AtomicInteger(0);
         StringBuilder chunk = new StringBuilder();
         for (StructuralNode contentBlock : contentBlocks) {
             String text = contentBlock.getContent().toString().trim();
-            System.out.println("Processing content block text of length " + text.length() + " in block: " + ctx);
-            if (chunk.length() + text.length() > 1000 && chunk.length() > 0) {
+            if (chunk.length() + text.length() > MAX_ASCIIDOC_CHUNK_LENGTH && chunk.length() > 0) {
                 result.add(new DocumentParagraph(
                         UUID.randomUUID().toString(),
                         ctx + "::" + count.getAndIncrement(),

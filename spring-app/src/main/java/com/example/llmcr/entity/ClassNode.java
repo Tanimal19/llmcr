@@ -20,8 +20,8 @@ public class ClassNode {
     @Column(name = "code_text", columnDefinition = "TEXT")
     private String codeText;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "class_node_id")
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinTable(name = "class_node_document_paragraph", joinColumns = @JoinColumn(name = "class_node_id"), inverseJoinColumns = @JoinColumn(name = "document_paragraph_id"))
     private List<DocumentParagraph> documentParagraphs = new ArrayList<>();
 
     @Column(name = "summary_text", columnDefinition = "TEXT")

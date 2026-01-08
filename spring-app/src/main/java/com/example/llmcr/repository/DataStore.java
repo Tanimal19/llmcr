@@ -52,8 +52,13 @@ public class DataStore {
         documentRepo.saveAll(paragraphs);
     }
 
-    public List<DocumentParagraph> findAllDocumentParagraphsByKeyword(String keyword) {
-        return documentRepo.findByContentContainingIgnoreCase(keyword);
+    public List<DocumentParagraph> findAllDocumentParagraphsByKeywords(List<String> keywords) {
+        return documentRepo.findAll().stream()
+                .filter(paragraph -> keywords.stream()
+                        .allMatch(keyword -> paragraph.getContent()
+                                .toLowerCase()
+                                .contains(keyword.toLowerCase())))
+                .toList();
     }
 
     public List<DocumentParagraph> findAllDocumentParagraphs() {
