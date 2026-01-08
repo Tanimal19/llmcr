@@ -108,6 +108,21 @@
             <artifactId>javaparser-symbol-solver-core</artifactId>
             <version>3.26.2</version>
         </dependency>
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.commonmark</groupId>
+			<artifactId>commonmark</artifactId>
+			<version>0.27.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.asciidoctor</groupId>
+			<artifactId>asciidoctorj</artifactId>
+			<version>2.5.7</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jruby.RubyProcess.Sys;
 import org.springframework.stereotype.Service;
 
 import com.example.llmcr.datasource.AsciiDocSource;
@@ -16,9 +17,9 @@ import com.example.llmcr.datasource.CompilationUnitSource;
 import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.datasource.MarkdownSource;
 import com.example.llmcr.datasource.PdfSource;
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.utils.SourceRoot;
 
 /**
  * Factory to create DataSource instances from various file types and
@@ -31,23 +32,29 @@ public class DataSourceFactoryService {
 
         Path javaProjectRoot = Paths.get(javaProjectRootPathString);
         if (Files.exists(javaProjectRoot) && Files.isDirectory(javaProjectRoot)) {
-            try {
-                SourceRoot sourceRoot = new SourceRoot(javaProjectRoot);
-                List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
-
-                for (ParseResult<CompilationUnit> result : parseResults) {
-                    if (result.isSuccessful() && result.getResult().isPresent()) {
-                        dataSources.add(new CompilationUnitSource(result.getResult().get()));
-                    }
-                }
-                System.out.println(
-                        "Parsed " + dataSources.size() + " compilation units from Java project: " + javaProjectRoot);
+            JavaParser parser = new JavaParser();
+            try (Stream<Path> paths = Files.walk(javaProjectRoot)) {
+                paths
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".java")
+                                && !p.getFileName().toString().equals("package-info.java"))
+                        .forEach(p -> {
+                            try {
+                                ParseResult<CompilationUnit> result = parser.parse(p);
+                                result.getResult().ifPresent(cu -> dataSources.add(new CompilationUnitSource(cu)));
+                            } catch (IOException e) {
+                                System.err.println("Parse failed for " + p + ": " + e.getMessage());
+                            }
+                        });
             } catch (IOException e) {
-                System.err.println("Error parsing Java project: " + e.getMessage());
+                System.err.println("Error walking Java project path: " + e.getMessage());
             }
         } else {
             System.out.println("Java project path does not exist or is not a directory: " + javaProjectRoot);
         }
+
+        System.out.println(
+                "Parsed " + dataSources.size() + " Java sources from project path: " + javaProjectRootPathString);
 
         return dataSources;
     }

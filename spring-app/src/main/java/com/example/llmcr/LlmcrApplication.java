@@ -43,17 +43,18 @@ public class LlmcrApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		String javaProjectRootPathString = "../_datasets/spring-ai-simple";
+		String javaProjectRootPathString = "../_datasets/spring-ai-main simple";
 		List<String> documentPathStringList = List.of(
-				javaProjectRootPathString + "/spring-ai-docs/src/main/antora/modules/ROOT/pages/");
+				javaProjectRootPathString + "/spring-ai-docs/src/main/antora/modules/ROOT/pages/", // javadocs
+				"../_datasets/Effective Java (2017, Addison-Wesley).pdf"); // best practices PDF
 
+		System.out.println("Creating data sources from paths...");
 		List<DataSource> dataSources = new ArrayList<>();
 		dataSources.addAll(dataSourceFactory.createFromJavaProjectPath(javaProjectRootPathString));
 		for (String documentPathString : documentPathStringList) {
 			dataSources.addAll(dataSourceFactory.createFromPath(documentPathString));
 		}
 
-		// run ETL pipeline
-		new ETLService(dataSources, dataStore, vectorStore, chatModel).extract().transform().load();
+		new ETLService(dataSources, dataStore, vectorStore, chatModel).extract();
 	}
 }
