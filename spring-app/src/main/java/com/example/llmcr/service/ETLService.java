@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
  */
 public class ETLService {
 
-    private final List<DataSource> rawDataSources;
     private final DataStore dataStore;
     private final VectorStore vectorStore;
     private final ClassNodeSummaryService classNodeSummaryService;
@@ -49,11 +48,9 @@ public class ETLService {
     }
 
     public ETLService(
-            List<DataSource> rawDataSources,
             DataStore dataStore,
             VectorStore vectorStore,
             ChatModel chatModel) {
-        this.rawDataSources = rawDataSources;
         this.dataStore = dataStore;
         this.vectorStore = vectorStore;
         this.classNodeSummaryService = new ClassNodeSummaryService(chatModel);
@@ -62,7 +59,7 @@ public class ETLService {
     /**
      * Extract ClassNodes and DocumentParagraphs from all datasources.
      */
-    public ETLService extract() {
+    public ETLService extract(List<DataSource> rawDataSources) {
         System.out.println("+ Starting data extraction...");
 
         ClassNodeExtractor classNodeExtractor = new ClassNodeExtractor();
@@ -99,6 +96,13 @@ public class ETLService {
             classNode = enrichNodeWithSummary(classNode);
             classNode.setProcessed(true);
             dataStore.save(classNode);
+
+            try {
+                System.out.println("Sleeping for 20 seconds to avoid rate limits...");
+                Thread.sleep(20000); // To avoid rate limits
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
 
         return this;
@@ -131,53 +135,6 @@ public class ETLService {
         classNode.setUsageText(summary.exampleUsage());
         classNode.setRelationshipText(summary.relationship());
         return classNode;
-    }
-
-    /**
-     * Load ClassNodes into the vector database for RAG retrieval.
-     */
-    public void load() {
-        List<ClassNode> processedNodes = dataStore.findAllClassNodes().stream()
-                .filter(ClassNode::isProcessed)
-                .collect(Collectors.toList());
-
-        List<Document> documents = new ArrayList<>();
-
-        for (ClassNode classNode : processedNodes) {
-            // Create documents
-            String content_with_summary = String.format(
-                    "Class: %s\nCode: %s\nSummary: %s",
-                    classNode.getSignature(),
-                    classNode.getCodeText(),
-                    classNode.getSummaryText());
-            String content_with_usage = String.format(
-                    "Class: %s\nCode: %s\nExample Usage: %s",
-                    classNode.getSignature(),
-                    classNode.getCodeText(),
-                    classNode.getUsageText());
-            String content_with_relationship = String.format(
-                    "Class: %s\nCode: %s\nRelationship: %s",
-                    classNode.getSignature(),
-                    classNode.getCodeText(),
-                    classNode.getRelationshipText());
-
-            List<ContentPiece> contentPieces = List.of(
-                    new ContentPiece(content_with_summary, "summary"),
-                    new ContentPiece(content_with_usage, "exampleUsage"),
-                    new ContentPiece(content_with_relationship, "relationship"));
-
-            for (ContentPiece contentPiece : contentPieces) {
-                Document doc = new Document(contentPiece.content);
-                doc.getMetadata().put("classNodeId", classNode.getId());
-                doc.getMetadata().put("type", contentPiece.type);
-                documents.add(doc);
-            }
-        }
-
-        // Store in vector database
-        if (!documents.isEmpty()) {
-            vectorStore.add(documents);
-        }
     }
 
     private class ClassNodeSummaryService {
@@ -217,16 +174,22 @@ public class ETLService {
             Prompt prompt = promptTemplate.create(variables);
 
             // call chat model
-            try {
-                ChatResponse response = chatModel.call(prompt);
-                String rawOutput = response.getResult().getOutput().getText();
-                ClassNodeSummary result = outputConverter.convert(rawOutput);
+            ChatResponse response = chatModel.call(prompt);
+            String rawOutput = response.getResult().getOutput().getText();
 
-                appendToJsonFile(prompt.getContents(), result);
-                return result;
+            ClassNodeSummary result;
+            try {
+                result = outputConverter.convert(rawOutput);
             } catch (Exception e) {
-                throw new RuntimeException("Failed to summarize class node: " + e.getMessage(), e);
+                System.err.println("Output conversion failed. Store raw output to summary. Error: " + e.getMessage());
+                result = new ClassNodeSummary(
+                        rawOutput,
+                        "",
+                        "");
             }
+
+            appendToJsonFile(prompt.toString(), result);
+            return result;
         }
 
         private void appendToJsonFile(String prompt, ClassNodeSummary result) {
@@ -256,4 +219,55 @@ public class ETLService {
             }
         }
     }
+
+    /**
+     * Load ClassNodes into the vector database for RAG retrieval.
+     */
+    public void load() {
+        List<ClassNode> processedNodes = dataStore.findAllClassNodes().stream()
+                .filter(ClassNode::isProcessed)
+                .collect(Collectors.toList());
+
+        List<Document> documents = new ArrayList<>();
+
+        for (ClassNode classNode : processedNodes) {
+            // Create documents
+            String pure_code = String.format(
+                    "Class: %s\nCode: %s",
+                    classNode.getSignature(),
+                    classNode.getCodeText());
+
+            String with_summary = String.format(
+                    "Class: %s\nSummary: %s",
+                    classNode.getSignature(),
+                    classNode.getSummaryText());
+            String with_usage = String.format(
+                    "Class: %s\nExample Usage: %s",
+                    classNode.getSignature(),
+                    classNode.getUsageText());
+            String with_relationship = String.format(
+                    "Class: %s\nRelationship: %s",
+                    classNode.getSignature(),
+                    classNode.getRelationshipText());
+
+            List<ContentPiece> contentPieces = List.of(
+                    new ContentPiece(pure_code, "code"),
+                    new ContentPiece(with_summary, "summary"),
+                    new ContentPiece(with_usage, "exampleUsage"),
+                    new ContentPiece(with_relationship, "relationship"));
+
+            for (ContentPiece contentPiece : contentPieces) {
+                Document doc = new Document(contentPiece.content);
+                doc.getMetadata().put("classNodeId", classNode.getId());
+                doc.getMetadata().put("type", contentPiece.type);
+                documents.add(doc);
+            }
+        }
+
+        // Store in vector database
+        if (!documents.isEmpty()) {
+            vectorStore.add(documents);
+        }
+    }
+
 }

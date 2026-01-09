@@ -28,7 +28,7 @@ public class LlmcrApplication implements CommandLineRunner {
 	private VectorStore vectorStore;
 
 	@Autowired
-	@Qualifier("ollamaChatModel")
+	@Qualifier("googleGenAiChatModel")
 	private ChatModel chatModel;
 
 	@Autowired
@@ -42,18 +42,19 @@ public class LlmcrApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		String javaProjectRootPathString = "../_datasets/spring-ai-main simple";
-		List<String> documentPathStringList = List.of(
-				javaProjectRootPathString + "/spring-ai-docs/src/main/antora/modules/ROOT/pages/", // javadocs
-				"../_datasets/Effective Java (2017, Addison-Wesley).pdf"); // best practices PDF
+		// String javaProjectRootPathString = "../_datasets/spring-ai-main simple";
+		// List<String> documentPathStringList = List.of(
+		// javaProjectRootPathString +
+		// "/spring-ai-docs/src/main/antora/modules/ROOT/pages/", // javadocs
+		// "../_datasets/Effective Java (2017, Addison-Wesley).pdf");
 
-		System.out.println("Creating data sources from paths...");
-		List<DataSource> dataSources = new ArrayList<>();
-		dataSources.addAll(dataSourceFactory.createFromJavaProjectPath(javaProjectRootPathString));
-		for (String documentPathString : documentPathStringList) {
-			dataSources.addAll(dataSourceFactory.createFromPath(documentPathString));
-		}
+		// System.out.println("Creating data sources from paths...");
+		// List<DataSource> dataSources = new ArrayList<>();
+		// dataSources.addAll(dataSourceFactory.createFromJavaProjectPath(javaProjectRootPathString));
+		// for (String documentPathString : documentPathStringList) {
+		// dataSources.addAll(dataSourceFactory.createFromPath(documentPathString));
+		// }
 
-		new ETLService(dataSources, dataStore, vectorStore, chatModel).extract().transform();
+		new ETLService(dataStore, vectorStore, chatModel).transform();
 	}
 }
