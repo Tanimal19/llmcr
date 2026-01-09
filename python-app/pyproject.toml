@@ -1,7 +1,14 @@
 [project]
 name = "python-app"
 version = "0.1.0"
-description = "Add your description here"
+description = "RAG application using Gemini API, MariaDB vector database, and FAISS"
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai",
+    "mariadb",
+    "faiss-cpu",
+    "sentence-transformers",
+    "numpy",
+    "python-dotenv",
+]

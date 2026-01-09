@@ -11,10 +11,10 @@ cd spring-app
 
 
 ## TODO
-- [] Implement datasoure extractor logic for pdf, markdown, asciidoc
-- [] Handle if the file already exists in the datastore
-- [] Implement load steps and vector database
-- [] Add logging
+- [x] Implement datasoure extractor logic for pdf, markdown, asciidoc
+- [x] Handle if the file already exists in the datastore
+- [x] Implement load steps and vector database
+- [x] Add logging
 - [] Implement RAG backbone
 - [] Verify the RAG functionality
 - [] Evaluate current performance and optimize as needed
