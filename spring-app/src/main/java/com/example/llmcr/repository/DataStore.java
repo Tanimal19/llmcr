@@ -5,6 +5,7 @@ import com.example.llmcr.entity.DocumentParagraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,13 +53,51 @@ public class DataStore {
         documentRepo.saveAll(paragraphs);
     }
 
-    public List<DocumentParagraph> findAllDocumentParagraphsByKeywords(List<String> keywords) {
-        return documentRepo.findAll().stream()
-                .filter(paragraph -> keywords.stream()
-                        .allMatch(keyword -> paragraph.getContent()
-                                .toLowerCase()
-                                .contains(keyword.toLowerCase())))
+    public List<DocumentParagraph> findAllDocumentParagraphsByKeywords(List<String> keywords, int limit) {
+        List<DocumentParagraph> unionList = new ArrayList<>();
+        List<DocumentParagraph> intersectionList = new ArrayList<>();
+
+        // Pre-lowercase keywords once for performance
+        List<String> lowerKeywords = keywords.stream()
+                .map(String::toLowerCase)
                 .toList();
+
+        for (DocumentParagraph paragraph : documentRepo.findAll()) {
+            String contentLower = paragraph.getContent().toLowerCase();
+
+            // Check matchesAll first since it's a subset condition
+            boolean matchesAll = lowerKeywords.stream()
+                    .allMatch(contentLower::contains);
+
+            if (matchesAll) {
+                // If matches all, it also matches any
+                intersectionList.add(paragraph);
+                unionList.add(paragraph);
+            } else {
+                // Only check matchesAny if matchesAll is false
+                boolean matchesAny = lowerKeywords.stream()
+                        .anyMatch(contentLower::contains);
+                if (matchesAny) {
+                    unionList.add(paragraph);
+                }
+            }
+
+            // Early exit: if we have enough intersection results and union is already too
+            // large
+            if (intersectionList.size() > limit && unionList.size() > limit) {
+                break;
+            }
+        }
+
+        if (unionList.size() <= limit) {
+            return unionList;
+        }
+
+        if (intersectionList.size() <= limit) {
+            return intersectionList;
+        }
+
+        return intersectionList.subList(0, limit);
     }
 
     public List<DocumentParagraph> findAllDocumentParagraphs() {

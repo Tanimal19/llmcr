@@ -10,7 +10,7 @@ import com.example.llmcr.repository.DataStore;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -20,9 +20,7 @@ import org.springframework.ai.template.st.StTemplateRenderer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.genai.errors.ClientException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.util.concurrent.RateLimiter;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +32,6 @@ import java.util.stream.Collectors;
 /**
  * Orchestrates the Extract, Transform, and Load process.
  */
-@Service
 public class ETLService {
 
     private final List<DataSource> rawDataSources;
@@ -59,7 +56,7 @@ public class ETLService {
         this.rawDataSources = rawDataSources;
         this.dataStore = dataStore;
         this.vectorStore = vectorStore;
-        this.classNodeSummaryService = new ClassNodeSummaryService(chatModel, 4);
+        this.classNodeSummaryService = new ClassNodeSummaryService(chatModel);
     }
 
     /**
@@ -108,24 +105,18 @@ public class ETLService {
     }
 
     private ClassNode bindNodeWithParagraphs(ClassNode classNode) {
-        List<String> keywords = extractKeywords(classNode.getSignature());
+        List<String> keywords = new ArrayList<>();
+        String[] parts = classNode.getSignature().split("\\.");
+        keywords.add(parts[parts.length - 1]); // class name
+        keywords.add(parts[parts.length - 2]); // package name
+
         List<DocumentParagraph> relevantParagraphs = dataStore
-                .findAllDocumentParagraphsByKeywords(keywords);
+                .findAllDocumentParagraphsByKeywords(keywords, 10);
         classNode.setDocumentParagraphs(relevantParagraphs);
         System.out.println(
                 "Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: " + classNode.getSignature()
                         + " using keywords: " + keywords);
         return classNode;
-    }
-
-    private List<String> extractKeywords(String signature) {
-        List<String> keywords = new ArrayList<>();
-        String[] parts = signature.split("\\.");
-
-        keywords.add(parts[parts.length - 1]); // class name
-        keywords.add(parts[parts.length - 2]); // package name
-
-        return keywords;
     }
 
     private ClassNode enrichNodeWithSummary(ClassNode classNode) {
@@ -191,7 +182,6 @@ public class ETLService {
 
     private class ClassNodeSummaryService {
         private final ChatModel chatModel;
-        private final RateLimiter rateLimiter;
         private final PromptTemplate promptTemplate = PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
                 .template(
@@ -213,11 +203,8 @@ public class ETLService {
         private final BeanOutputConverter<ClassNodeSummary> outputConverter = new BeanOutputConverter<>(
                 ClassNodeSummary.class);
 
-        ClassNodeSummaryService(ChatModel chatModel, int requestsPerMinute) {
+        ClassNodeSummaryService(@Qualifier("ollamaChatModel") ChatModel chatModel) {
             this.chatModel = chatModel;
-            // Convert requests per minute to permits per second
-            this.rateLimiter = RateLimiter.create(requestsPerMinute / 60.0);
-            System.out.println("Rate limiter initialized: " + requestsPerMinute + " requests per minute");
         }
 
         public ClassNodeSummary summarize(String rawCode, String documentation) {
@@ -228,10 +215,6 @@ public class ETLService {
                     "doc", documentation,
                     "format", formatInstruction);
             Prompt prompt = promptTemplate.create(variables);
-
-            // apply rate limiting
-            rateLimiter.acquire();
-            System.out.println("Rate limiter: request acquired");
 
             // call chat model
             try {

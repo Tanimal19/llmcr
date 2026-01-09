@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jruby.RubyProcess.Sys;
 import org.springframework.stereotype.Service;
 
 import com.example.llmcr.datasource.AsciiDocSource;

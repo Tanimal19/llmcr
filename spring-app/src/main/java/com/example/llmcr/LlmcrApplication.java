@@ -5,8 +5,9 @@ import java.util.List;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
@@ -17,7 +18,7 @@ import com.example.llmcr.repository.DataStore;
 import com.example.llmcr.service.DataSourceFactoryService;
 import com.example.llmcr.service.ETLService;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = MariaDbStoreAutoConfiguration.class)
 public class LlmcrApplication implements CommandLineRunner {
 
 	@Autowired
@@ -27,13 +28,11 @@ public class LlmcrApplication implements CommandLineRunner {
 	private VectorStore vectorStore;
 
 	@Autowired
+	@Qualifier("ollamaChatModel")
 	private ChatModel chatModel;
 
 	@Autowired
 	private DataSourceFactoryService dataSourceFactory;
-
-	@Value("${spring.ai.google.genai.api-key}")
-	private String apiKey;
 
 	public static void main(String[] args) {
 		SpringApplication app = new SpringApplication(LlmcrApplication.class);
