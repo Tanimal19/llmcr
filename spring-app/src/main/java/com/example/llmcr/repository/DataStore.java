@@ -92,12 +92,15 @@ public class DataStore {
         if (unionList.size() <= limit) {
             return unionList;
         }
-
-        if (intersectionList.size() <= limit) {
-            return intersectionList;
+        if (intersectionList.size() >= limit) {
+            return intersectionList.subList(0, limit);
         }
 
-        return intersectionList.subList(0, limit);
+        // if intersection results <= limit, return all intersection +
+        // enough union to fill the limit
+        List<DocumentParagraph> result = new ArrayList<>(intersectionList);
+        result.addAll(unionList.subList(0, limit - intersectionList.size()));
+        return result;
     }
 
     public List<DocumentParagraph> findAllDocumentParagraphs() {

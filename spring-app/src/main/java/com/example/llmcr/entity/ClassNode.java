@@ -24,8 +24,8 @@ public class ClassNode {
     @JoinTable(name = "class_node_document_paragraph", joinColumns = @JoinColumn(name = "class_node_id"), inverseJoinColumns = @JoinColumn(name = "document_paragraph_id"))
     private List<DocumentParagraph> documentParagraphs = new ArrayList<>();
 
-    @Column(name = "summary_text", columnDefinition = "TEXT")
-    private String summaryText;
+    @Column(name = "description_text", columnDefinition = "TEXT")
+    private String descriptionText;
 
     @Column(name = "usage_text", columnDefinition = "TEXT")
     private String usageText;
@@ -80,12 +80,12 @@ public class ClassNode {
         this.documentParagraphs = documentParagraphs;
     }
 
-    public String getSummaryText() {
-        return summaryText;
+    public String getDescriptionText() {
+        return descriptionText;
     }
 
-    public void setSummaryText(String summaryText) {
-        this.summaryText = summaryText;
+    public void setDescriptionText(String descriptionText) {
+        this.descriptionText = descriptionText;
     }
 
     public String getUsageText() {

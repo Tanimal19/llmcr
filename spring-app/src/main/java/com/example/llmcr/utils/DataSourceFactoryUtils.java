@@ -1,4 +1,4 @@
-package com.example.llmcr.service;
+package com.example.llmcr.utils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.springframework.stereotype.Service;
 
 import com.example.llmcr.datasource.AsciiDocSource;
 import com.example.llmcr.datasource.CompilationUnitSource;
@@ -24,9 +22,12 @@ import com.github.javaparser.ast.CompilationUnit;
  * Factory to create DataSource instances from various file types and
  * directories.
  */
-@Service
-public class DataSourceFactoryService {
-    public List<DataSource> createFromJavaProjectPath(String javaProjectRootPathString) {
+public class DataSourceFactoryUtils {
+
+    private DataSourceFactoryUtils() {
+    }
+
+    public static List<DataSource> createFromJavaProject(String javaProjectRootPathString) {
         List<DataSource> dataSources = new ArrayList<>();
 
         Path javaProjectRoot = Paths.get(javaProjectRootPathString);
@@ -58,7 +59,7 @@ public class DataSourceFactoryService {
         return dataSources;
     }
 
-    public List<DataSource> createFromPath(String sourcePathString) {
+    public static List<DataSource> createFromPath(String sourcePathString) {
         Path sourcePath = Paths.get(sourcePathString);
         if (!Files.exists(sourcePath)) {
             System.out.println("Source path does not exist: " + sourcePath);
@@ -72,7 +73,7 @@ public class DataSourceFactoryService {
         }
     }
 
-    public List<DataSource> createFromDirectory(Path directoryPath) {
+    private static List<DataSource> createFromDirectory(Path directoryPath) {
         List<DataSource> dataSources = new ArrayList<>();
 
         try (Stream<Path> paths = Files.walk(directoryPath)) {
@@ -91,7 +92,7 @@ public class DataSourceFactoryService {
         return dataSources;
     }
 
-    public DataSource createFromFile(Path filePath) {
+    private static DataSource createFromFile(Path filePath) {
         String fileName = filePath.getFileName().toString().toLowerCase();
         if (fileName.endsWith(".md")) {
             return new MarkdownSource(filePath);

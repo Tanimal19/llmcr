@@ -15,8 +15,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.repository.DataStore;
-import com.example.llmcr.service.DataSourceFactoryService;
-import com.example.llmcr.service.ETLService;
+import com.example.llmcr.utils.DataSourceFactoryUtils;
 
 @SpringBootApplication(exclude = MariaDbStoreAutoConfiguration.class)
 public class LlmcrApplication implements CommandLineRunner {
@@ -31,9 +30,6 @@ public class LlmcrApplication implements CommandLineRunner {
 	@Qualifier("googleGenAiChatModel")
 	private ChatModel chatModel;
 
-	@Autowired
-	private DataSourceFactoryService dataSourceFactory;
-
 	public static void main(String[] args) {
 		SpringApplication app = new SpringApplication(LlmcrApplication.class);
 		app.setWebApplicationType(WebApplicationType.NONE);
@@ -42,19 +38,20 @@ public class LlmcrApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		// String javaProjectRootPathString = "../_datasets/spring-ai-main simple";
-		// List<String> documentPathStringList = List.of(
-		// javaProjectRootPathString +
-		// "/spring-ai-docs/src/main/antora/modules/ROOT/pages/", // javadocs
-		// "../_datasets/Effective Java (2017, Addison-Wesley).pdf");
+		String javaProjectRootPathString = "../_datasets/spring-ai-main simple";
+		String javaDocPathString = javaProjectRootPathString +
+				"/spring-ai-docs/src/main/antora/modules/ROOT/pages/";
 
-		// System.out.println("Creating data sources from paths...");
-		// List<DataSource> dataSources = new ArrayList<>();
-		// dataSources.addAll(dataSourceFactory.createFromJavaProjectPath(javaProjectRootPathString));
-		// for (String documentPathString : documentPathStringList) {
-		// dataSources.addAll(dataSourceFactory.createFromPath(documentPathString));
-		// }
+		long startTime = System.currentTimeMillis();
+		System.out.println("+ Creating data sources from paths...");
 
-		new ETLService(dataStore, vectorStore, chatModel).transform();
+		List<DataSource> dataSources = new ArrayList<>();
+		dataSources.addAll(DataSourceFactoryUtils.createFromJavaProject(javaProjectRootPathString));
+		dataSources.addAll(DataSourceFactoryUtils.createFromPath(javaDocPathString));
+
+		long endTime = System.currentTimeMillis();
+		System.out.println("+ Data source parsing completed in " + (endTime - startTime) + "ms");
+
+		new ETLPipeline(dataStore, vectorStore, chatModel).extract(dataSources).transform().load();
 	}
 }
