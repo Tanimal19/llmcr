@@ -1,6 +1,7 @@
 **/_datasets
 
-
 *.DS_Store
 
 .env
+
+*.gguf

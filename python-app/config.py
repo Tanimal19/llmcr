@@ -10,7 +10,7 @@ class Config:
 
     # Embedding
     EMBEDDING_MODEL = "embeddinggemma-300m"
-    EMBEDDING_MODEL_PATH = "./models/embeddinggemma-300m.gguf"
+    EMBEDDING_MODEL_PATH = "./embeddinggemma-300m-Q8_0.gguf"
     EMBEDDING_DIM = 768
 
     # MariaDB
