@@ -43,16 +43,6 @@ class FAISSSearchService:
     def search(
         self, query_embedding: np.ndarray, k: int = 5
     ) -> Tuple[List[int], List[float]]:
-        """
-        Search for k nearest neighbors.
-
-        Args:
-            query_embedding: Query vector of shape (embedding_dim,).
-            k: Number of nearest neighbors to return.
-
-        Returns:
-            Tuple of (doc_ids, distances) for the k nearest neighbors.
-        """
         if self.index is None or self.index.ntotal == 0:
             return [], []
 

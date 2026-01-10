@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
@@ -17,14 +15,11 @@ import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.repository.DataStore;
 import com.example.llmcr.utils.DataSourceFactoryUtils;
 
-@SpringBootApplication(exclude = MariaDbStoreAutoConfiguration.class)
+@SpringBootApplication()
 public class LlmcrApplication implements CommandLineRunner {
 
 	@Autowired
 	private DataStore dataStore;
-
-	@Autowired
-	private VectorStore vectorStore;
 
 	@Autowired
 	@Qualifier("googleGenAiChatModel")
@@ -42,6 +37,7 @@ public class LlmcrApplication implements CommandLineRunner {
 		String javaDocPathString = javaProjectRootPathString +
 				"/spring-ai-docs/src/main/antora/modules/ROOT/pages/";
 
+		// create data sources
 		long startTime = System.currentTimeMillis();
 		System.out.println("+ Creating data sources from paths...");
 
@@ -52,6 +48,9 @@ public class LlmcrApplication implements CommandLineRunner {
 		long endTime = System.currentTimeMillis();
 		System.out.println("+ Data source parsing completed in " + (endTime - startTime) + "ms");
 
-		new ETLPipeline(dataStore, vectorStore, chatModel).extract(dataSources).transform().load();
+		// ETL pipeline
+		new ETLPipeline(dataStore, chatModel)
+				.extract(dataSources)
+				.transform();
 	}
 }

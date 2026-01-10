@@ -6,11 +6,8 @@ import com.example.llmcr.entity.DocumentParagraph;
 import com.example.llmcr.extractor.ClassNodeExtractor;
 import com.example.llmcr.extractor.DocumentParagraphExtractor;
 import com.example.llmcr.repository.DataStore;
-import com.example.llmcr.utils.BatchUtils;
 
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -36,14 +33,16 @@ import java.util.stream.Collectors;
 public class ETLPipeline {
 
     private final DataStore dataStore;
-    private final VectorStore vectorStore;
     private final ChatModel chatModel;
+
+    private final int MAX_PARAGRAPHS_PER_NODE = 10;
+
     private final PromptTemplate promptTemplate = PromptTemplate.builder()
             .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
             .template(
                     """
                             You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and related documentation contents.
-                            You should generate a summary that contains below information:
+                            You should generate below information:
                             - **description**: what does this class do?
                             - **exampleUsage**: best practices of this class, only include the most important examples.
                             - **relationship**: how does this class relate to other classes or components in the project?
@@ -60,9 +59,7 @@ public class ETLPipeline {
             ClassNodeSummary.class);
     private final String summaryBackupFile = "summaries.json";
 
-    private final RateLimiter transformRateLimiter = RateLimiter.create(3.0 / 60.0);
-    private final RateLimiter loadRateLimiter = RateLimiter.create(10.0 / 60.0);
-    private static final int LOAD_BATCH_SIZE = 8;
+    private final RateLimiter rateLimiter = RateLimiter.create(3.0 / 60.0);
 
     private record ClassNodeSummary(
             String description,
@@ -72,10 +69,8 @@ public class ETLPipeline {
 
     public ETLPipeline(
             DataStore dataStore,
-            VectorStore vectorStore,
             ChatModel chatModel) {
         this.dataStore = dataStore;
-        this.vectorStore = vectorStore;
         this.chatModel = chatModel;
     }
 
@@ -124,7 +119,7 @@ public class ETLPipeline {
             classNode = enrichNodeWithSummary(classNode);
             classNode.setProcessed(true);
             dataStore.save(classNode);
-            transformRateLimiter.acquire();
+            rateLimiter.acquire();
         }
 
         long endTime = System.currentTimeMillis();
@@ -140,7 +135,7 @@ public class ETLPipeline {
         keywords.add(parts[parts.length - 2]); // package name
 
         List<DocumentParagraph> relevantParagraphs = dataStore
-                .findAllDocumentParagraphsByKeywords(keywords, 10);
+                .findAllDocumentParagraphsByKeywords(keywords, MAX_PARAGRAPHS_PER_NODE);
         classNode.setDocumentParagraphs(relevantParagraphs);
         System.out.println(
                 "Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: " + classNode.getSignature()
@@ -208,72 +203,5 @@ public class ETLPipeline {
         }
 
         return classNode;
-    }
-
-    /**
-     * Load ClassNodes into the vector database for RAG retrieval.
-     */
-    public void load() {
-        long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data loading into VectorStore...");
-
-        // class node embeddings
-        List<ClassNode> processedNodes = dataStore.findAllClassNodes().stream()
-                .filter(ClassNode::isProcessed)
-                .collect(Collectors.toList());
-        List<Document> classDocuments = new ArrayList<>();
-
-        for (ClassNode classNode : processedNodes) {
-            String class_code = String.format(
-                    "Class: %s\nCode: %s",
-                    classNode.getSignature(),
-                    classNode.getCodeText());
-
-            String class_summary = String.format(
-                    "Class: %s\nDescription: %s\nExample Usage: %s\nRelationship: %s",
-                    classNode.getSignature(),
-                    classNode.getDescriptionText(),
-                    classNode.getUsageText(),
-                    classNode.getRelationshipText());
-
-            classDocuments.add(createDoc(class_code, classNode.getSignature(),
-                    "class_code"));
-            classDocuments.add(createDoc(class_summary, classNode.getSignature(),
-                    "class_summary"));
-        }
-        loadBatch(classDocuments);
-
-        // document paragraph embeddings
-        // List<Document> paragraphDocuments =
-        // dataStore.findAllDocumentParagraphs().stream()
-        // .limit(100)
-        // .map(paragraph -> {
-        // return createDoc(
-        // paragraph.getContent(),
-        // paragraph.getSource(),
-        // "document_paragraph");
-        // })
-        // .collect(Collectors.toList());
-        // loadBatch(paragraphDocuments);
-
-        long endTime = System.currentTimeMillis();
-        System.out.println("+ Loading completed in " + (endTime - startTime) + "ms");
-    }
-
-    private Document createDoc(String content, String source, String type) {
-        Document doc = new Document(content);
-        doc.getMetadata().put("source", source);
-        doc.getMetadata().put("type", type);
-        return doc;
-    }
-
-    private void loadBatch(List<Document> documents) {
-        List<List<Document>> batches = BatchUtils.batch(documents, LOAD_BATCH_SIZE);
-
-        for (List<Document> batch : batches) {
-            System.out.println("+ Loading " + batch.size() + " documents into VectorStore...");
-            loadRateLimiter.acquire();
-            vectorStore.add(batch);
-        }
     }
 }

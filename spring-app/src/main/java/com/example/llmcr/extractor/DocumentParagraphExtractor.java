@@ -2,7 +2,6 @@ package com.example.llmcr.extractor;
 
 import com.example.llmcr.datasource.*;
 import com.example.llmcr.entity.DocumentParagraph;
-import com.github.javaparser.ast.CompilationUnit;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -21,8 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DocumentParagraphExtractor
         implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
-    private static final int MAX_PDF_CHUNK_LENGTH = 4000;
-    private static final int MAX_ASCIIDOC_CHUNK_LENGTH = 4000;
+    private final int MAX_PDF_PARAGRAPH_LENGTH = 4096;
+    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH = 4096;
 
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {
@@ -57,7 +56,7 @@ public class DocumentParagraphExtractor
             AtomicInteger count = new AtomicInteger(0);
 
             for (String line : text.split("\n")) {
-                if (chunk.length() + line.length() > MAX_PDF_CHUNK_LENGTH && chunk.length() > 0) {
+                if (chunk.length() + line.length() > MAX_PDF_PARAGRAPH_LENGTH && chunk.length() > 0) {
                     result.add(new DocumentParagraph(
                             UUID.randomUUID().toString(),
                             ctx + "::" + count.getAndIncrement(),
@@ -132,7 +131,7 @@ public class DocumentParagraphExtractor
         StringBuilder chunk = new StringBuilder();
         for (StructuralNode contentBlock : contentBlocks) {
             String text = contentBlock.getContent().toString().trim();
-            if (chunk.length() + text.length() > MAX_ASCIIDOC_CHUNK_LENGTH && chunk.length() > 0) {
+            if (chunk.length() + text.length() > MAX_ASCIIDOC_PARAGRAPH_LENGTH && chunk.length() > 0) {
                 result.add(new DocumentParagraph(
                         UUID.randomUUID().toString(),
                         ctx + "::" + count.getAndIncrement(),

@@ -1,2 +1,2 @@
-source .env
+source ../.env
 ./mvnw spring-boot:run > spring-app.log

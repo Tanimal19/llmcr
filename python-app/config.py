@@ -9,8 +9,9 @@ class Config:
     CHAT_MODEL = "gemma-3-27b-it"
 
     # Embedding
-    EMBEDDING_MODEL = "gemini-embedding-001"
-    EMBEDDING_DIM = 3072
+    EMBEDDING_MODEL = "embeddinggemma-300m"
+    EMBEDDING_MODEL_PATH = "./models/embeddinggemma-300m.gguf"
+    EMBEDDING_DIM = 768
 
     # MariaDB
     MARIADB_HOST = "localhost"
