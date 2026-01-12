@@ -113,7 +113,7 @@ class DatabaseService:
         cursor = self.connection.cursor()
 
         try:
-            cursor.execute("SELECT id, content FROM document_paragraphs LIMIT 10")
+            cursor.execute("SELECT id, content FROM document_paragraphs LIMIT 10000")
             for doc_id, content in cursor:
                 if content:
                     documents.append(
@@ -160,6 +160,23 @@ class DatabaseService:
             cursor.close()
 
         return chunks
+
+    def get_chunk_content_by_id(self, chunk_id: int) -> str | None:
+        cursor = self.connection.cursor()
+        content = None
+
+        try:
+            cursor.execute("SELECT content FROM chunks WHERE id = ?", (chunk_id,))
+            result = cursor.fetchone()
+            content = str(result[0]) if result else None
+
+        except mariadb.Error as e:
+            print(f"Error retrieving chunk by ID: {e}")
+            sys.exit(1)
+        finally:
+            cursor.close()
+
+        return content
 
     def close(self):
         if self.connection:

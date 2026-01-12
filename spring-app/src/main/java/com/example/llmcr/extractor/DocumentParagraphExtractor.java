@@ -22,8 +22,8 @@ import java.util.stream.Stream;
 public class DocumentParagraphExtractor
         implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
-    private final int MAX_PDF_PARAGRAPH_LENGTH = 2048;
-    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH = 2048;
+    private final int MAX_PDF_PARAGRAPH_LENGTH = 4096;
+    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH = 4096;
 
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {

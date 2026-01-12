@@ -50,6 +50,6 @@ public class LlmcrApplication implements CommandLineRunner {
 
 		// ETL pipeline
 		new ETLPipeline(dataStore, chatModel)
-				.extract(dataSources);
+				.transform();
 	}
 }

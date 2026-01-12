@@ -1,53 +1,67 @@
 from config import Config
-from typing import List
 import time
 from service.embedding import EmbeddingService
-from service.database import Chunk, Document, DatabaseService
-from service.faiss import FaissUtils
+from service.database import DatabaseService
+from service.faiss import FaissService
+from contextlib import contextmanager
+from service.rag import RAGService
+from service.chatbot import ChatbotService
 
 
-class LoadService:
-    def __init__(self, chunk_size: int = 500, overlap_size: int = 50):
-        self.chunk_size = chunk_size
-        self.overlap_size = overlap_size
-        self.embedding_service = EmbeddingService()
-        self.database_service = DatabaseService()
+@contextmanager
+def timed_step(step_name):
+    start = time.time()
+    yield
+    print(f"{step_name}: {time.time() - start:.2f}s")
 
-    def run(self):
-        start_time = time.time()
-        print("\n=== Starting document processing pipeline ===")
 
-        # Step 1: Load documents
-        step_start = time.time()
-        documents = self.database_service.load_documents()
-        print(f"Loaded documents: {time.time() - step_start}s")
+def load(embedding_service: EmbeddingService, database_service: DatabaseService):
+    print("Start load steps...")
 
-        # Step 2: Chunk documents
-        step_start = time.time()
-        chunks = self.embedding_service.generate_chunks(documents)
-        print(f"Chunked documents: {time.time() - step_start}s")
+    with timed_step("load documents"):
+        documents = database_service.load_documents()
 
-        # Step 3: Save chunks
-        step_start = time.time()
-        chunks = self.database_service.save_chunks(chunks)
-        print(f"Saved chunks to database: {time.time() - step_start}s")
+    with timed_step("chunk documents"):
+        chunks = embedding_service.generate_chunks(
+            documents, chunk_size=300, overlap=50
+        )
+        chunks = database_service.save_chunks(chunks)
 
-        # Step 4: Generate embeddings
-        step_start = time.time()
-        chunks = self.embedding_service.generate_embeddings(chunks)
-        print(f"Generated embeddings: {time.time() - step_start}s")
+    with timed_step("generate embeddings"):
+        chunks = embedding_service.generate_embeddings(chunks)
 
-        # Step 5: Create FAISS index
-        step_start = time.time()
-        FaissUtils.create_faiss_index(chunks)
-        print(f"Created FAISS index: {time.time() - step_start}s")
-
-        total_time = time.time() - start_time
-        print(f"\n=== Pipeline completed in {total_time}s ===")
+    with timed_step("create FAISS index"):
+        FaissService.create_index(chunks)
 
 
 if __name__ == "__main__":
     Config.validate()
 
-    load_service = LoadService()
-    load_service.run()
+    embedding_service = EmbeddingService()
+    database_service = DatabaseService()
+
+    # load(embedding_service, database_service)
+
+    faiss_service = FaissService()
+    rag_service = RAGService(
+        embedding_service,
+        database_service,
+        faiss_service,
+    )
+
+    chatbot_service = ChatbotService()
+
+    # Example interaction
+    user_query = "Explain the use of CompressionQueryTransformer."
+    retrieved_chunks = rag_service.retrieve(user_query, top_k=5)
+    prompt_template = (
+        "Using the following context:\n{context}\nAnswer the question:\n{question}"
+    )
+    prompt = prompt_template.format(
+        context="\n".join([chunk for chunk in retrieved_chunks]),
+        question=user_query,
+    )
+    print(f"Prompt to chatbot:\n{prompt}\n")
+    response = chatbot_service.chat(prompt)
+
+    print(f"Chatbot response:\n{response}\n")

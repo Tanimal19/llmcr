@@ -1,0 +1,310 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.example:llmcr >--------------------------
+[INFO] Building llmcr 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.7:run (default-cli) > test-compile @ llmcr >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ llmcr ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ llmcr ---
+[INFO] skip non existing resourceDirectory /Users/bobch/Desktop/軟工專題/llmcr/spring-app/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.7:run (default-cli) < test-compile @ llmcr <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.7:run (default-cli) @ llmcr ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.7)
+
+2026-01-12T19:37:51.812+08:00  INFO 21230 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 21230 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+2026-01-12T19:37:51.812+08:00  INFO 21230 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-01-12T19:37:51.976+08:00  INFO 21230 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-12T19:37:52.023+08:00  INFO 21230 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 42 ms. Found 2 JPA repository interfaces.
+2026-01-12T19:37:52.124+08:00  INFO 21230 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-12T19:37:52.142+08:00  INFO 21230 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
+2026-01-12T19:37:52.153+08:00  INFO 21230 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-12T19:37:52.240+08:00  INFO 21230 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-12T19:37:52.253+08:00  INFO 21230 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-12T19:37:52.293+08:00  INFO 21230 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@273fa9e
+2026-01-12T19:37:52.294+08:00  INFO 21230 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-12T19:37:52.304+08:00  WARN 21230 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-12T19:37:52.311+08:00  INFO 21230 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 11.8.5
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-12T19:37:52.606+08:00  INFO 21230 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-12T19:37:52.654+08:00  INFO 21230 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-12T19:37:52.930+08:00  INFO 21230 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.233 seconds (process running for 1.346)
++ Creating data sources from paths...
+Parsed 16 Java sources from project path: ../_datasets/spring-ai-main simple
+Parsed 87 document sources from directory: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages
++ Data source parsing completed in 145ms
++ Starting data extraction...
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/advisor/RetrievalAugmentationAdvisor.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/CompressionQueryTransformer.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/TranslationQueryTransformer.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/QueryTransformer.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/expansion/MultiQueryExpander.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/expansion/QueryExpander.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/util/PromptAssert.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/retrieval/join/ConcatenationDocumentJoiner.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/retrieval/join/DocumentJoiner.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/retrieval/search/VectorStoreDocumentRetriever.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/retrieval/search/DocumentRetriever.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/postretrieval/document/DocumentPostProcessor.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/Query.java
+Extracted 2 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/generation/augmentation/ContextualQueryAugmenter.java
+Extracted 1 ClassNodes from CompilationUnitSource:/Users/bobch/Desktop/軟工專題/llmcr/spring-app/../_datasets/spring-ai-main simple/spring-ai-rag/src/main/java/org/springframework/ai/rag/generation/augmentation/QueryAugmenter.java
+2026-01-12T19:37:53.623+08:00 [main] WARN FilenoUtil : Native subprocess control requires open access to the JDK IO subsystem
+Pass '--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED' to enable.
+Extracted 45 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/upgrade-notes.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/getting-started.adoc
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/concepts.adoc
+Extracted 2 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/contribution-guidelines.adoc
+2026-01-12T19:37:55.126+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: _prompt_content
+2026-01-12T19:37:55.127+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: _prompt_content
+Extracted 20 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/observability/index.adoc
+Extracted 0 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/glossary.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/elasticsearch.adoc
+Extracted 9 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/mongodb.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/couchbase.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/gemfire.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/hana.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/pinecone.adoc
+Extracted 13 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/apache-cassandra.adoc
+Extracted 2 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/understand-vectordbs.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/oracle.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/typesense.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/hanadb-provision-a-trial-account.adoc
+Extracted 12 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/weaviate.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/opensearch.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/neo4j.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/azure-cosmos-db.adoc
+2026-01-12T19:37:57.723+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: run Chroma Locally
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/chroma.adoc
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/milvus.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/coherence.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/azure.adoc
+Extracted 13 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/mariadb.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/qdrant.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/redis.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/pgvector.adoc
+Extracted 4 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings.adoc
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/azure-openai-embeddings.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/ollama-embeddings.adoc
+Extracted 6 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/vertexai-embeddings-multimodal.adoc
+Extracted 6 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/onnx.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/bedrock-titan-embedding.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/zhipuai-embeddings.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/openai-embeddings.adoc
+Extracted 9 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/mistralai-embeddings.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/minimax-embeddings.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/bedrock-cohere-embedding.adoc
+Extracted 18 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/google-genai-embeddings-text.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/qianfan-embeddings.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/oci-genai-embeddings.adoc
+Extracted 15 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/openai-sdk-embeddings.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/vertexai-embeddings-text.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/embeddings/postgresml-embeddings.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/oci-genai/cohere-chat.adoc
+Extracted 21 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/google-genai-chat.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/minimax-chat.adoc
+Extracted 15 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/azure-openai-chat.adoc
+Extracted 22 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/bedrock-converse.adoc
+2026-01-12T19:38:02.489+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: low-level-api
+2026-01-12T19:38:02.490+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: low-level-api
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/huggingface.adoc
+Extracted 22 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/ollama-chat.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/comparison.adoc
+Extracted 18 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/prompt-engineering-patterns.adoc
+Extracted 26 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/openai-sdk-chat.adoc
+Extracted 9 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/zhipuai-chat.adoc
+Extracted 41 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/anthropic-chat.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/dmr-chat.adoc
+Extracted 31 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/openai-chat.adoc
+Extracted 8 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/nvidia-chat.adoc
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/perplexity-chat.adoc
+Extracted 17 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/mistralai-chat.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/google-vertexai.adoc
+2026-01-12T19:38:04.664+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: low-level-api
+2026-01-12T19:38:04.664+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: low-level-api
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/groq-chat.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/moonshot-chat.adoc
+Extracted 12 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/vertexai-gemini-chat.adoc
+Extracted 12 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/deepseek-chat.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat/qianfan-chat.adoc
+Extracted 32 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/tools.adoc
+2026-01-12T19:38:05.663+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: StringTemplate
+2026-01-12T19:38:05.664+08:00  INFO 21230 --- [llmcr] [           main] asciidoctor                              : possible invalid reference: StringTemplate
+Extracted 12 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/prompt.adoc
+Extracted 15 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chat-memory.adoc
+Extracted 4 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/aimetadata.adoc
+Extracted 14 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/tools-migration.adoc
+Extracted 4 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/advisors-recursive.adoc
+Extracted 23 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/etl-pipeline.adoc
+Extracted 14 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/effective-agents.adoc
+Extracted 2 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/multimodality.adoc
+Extracted 12 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/structured-output-converter.adoc
+Extracted 32 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs.adoc
+Extracted 6 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/usage-handling.adoc
+Extracted 10 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chatmodel.adoc
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/advisors.adoc
+Extracted 7 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/index.adoc
+Extracted 11 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/retrieval-augmented-generation.adoc
+Extracted 29 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/chatclient.adoc
+Extracted 1 paragraphs from AsciiDoc: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/index.adoc
++ Extraction completed in 15663ms
++ Starting data transformation...
+Bound 2 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer using keywords: [CompressionQueryTransformer, transformation]
+Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.util.PromptAssert using keywords: [PromptAssert, util]
+Generating summary for ClassNode: org.springframework.ai.rag.util.PromptAssert
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor using keywords: [RetrievalAugmentationAdvisor, advisor]
+Generating summary for ClassNode: org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor
+Bound 2 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.TranslationQueryTransformer using keywords: [TranslationQueryTransformer, transformation]
+Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.TranslationQueryTransformer
+Bound 5 paragraphs to ClassNode: org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter using keywords: [ContextualQueryAugmenter, augmentation]
+Generating summary for ClassNode: org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor using keywords: [DocumentPostProcessor, document]
+Generating summary for ClassNode: org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.search.DocumentRetriever using keywords: [DocumentRetriever, search]
+Generating summary for ClassNode: org.springframework.ai.rag.retrieval.search.DocumentRetriever
+Bound 3 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer using keywords: [QueryTransformer, transformation]
+Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.Query using keywords: [Query, rag]
+Generating summary for ClassNode: org.springframework.ai.rag.Query
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.Builder using keywords: [Builder, rag]
+Generating summary for ClassNode: org.springframework.ai.rag.Builder
+Bound 2 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander using keywords: [QueryExpander, expansion]
+Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.advisor.Builder using keywords: [Builder, advisor]
+Generating summary for ClassNode: org.springframework.ai.rag.advisor.Builder
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.search.Builder using keywords: [Builder, search]
+Generating summary for ClassNode: org.springframework.ai.rag.retrieval.search.Builder
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.Builder using keywords: [Builder, transformation]
+Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.Builder
+Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever using keywords: [VectorStoreDocumentRetriever, search]
+Generating summary for ClassNode: org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever
+2026-01-12T19:45:04.816+08:00  WARN 21230 --- [llmcr] [           main] o.s.a.r.a.SpringAiRetryAutoConfiguration : Retry error. Retry count: 1, Exception: Failed to generate content
+
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at io.micrometer.observation.Observation.observe(Observation.java:564) ~[micrometer-observation-1.15.5.jar:1.15.5]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at com.example.llmcr.ETLPipeline.enrichNodeWithSummary(ETLPipeline.java:160) ~[classes/:na]
+	at com.example.llmcr.ETLPipeline.transform(ETLPipeline.java:119) ~[classes/:na]
+	at com.example.llmcr.LlmcrApplication.run(LlmcrApplication.java:54) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325) ~[spring-boot-3.5.7.jar:3.5.7]
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:31) ~[classes/:na]
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.generateContent(Models.java:7758) ~[google-genai-1.17.0.jar:1.17.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	... 28 common frames omitted
+
+2026-01-12T19:45:04.821+08:00  INFO 21230 --- [llmcr] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-01-12T19:45:04.832+08:00 ERROR 21230 --- [llmcr] [           main] o.s.boot.SpringApplication               : Application run failed
+
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at io.micrometer.observation.Observation.observe(Observation.java:564) ~[micrometer-observation-1.15.5.jar:1.15.5]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at com.example.llmcr.ETLPipeline.enrichNodeWithSummary(ETLPipeline.java:160) ~[classes/:na]
+	at com.example.llmcr.ETLPipeline.transform(ETLPipeline.java:119) ~[classes/:na]
+	at com.example.llmcr.LlmcrApplication.run(LlmcrApplication.java:54) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325) ~[spring-boot-3.5.7.jar:3.5.7]
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:31) ~[classes/:na]
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.generateContent(Models.java:7758) ~[google-genai-1.17.0.jar:1.17.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	... 28 common frames omitted
+
+2026-01-12T19:45:04.836+08:00  INFO 21230 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-12T19:45:04.837+08:00  INFO 21230 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-12T19:45:04.839+08:00  INFO 21230 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  07:14 min
+[INFO] Finished at: 2026-01-12T19:45:04+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.7:run (default-cli) on project llmcr: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

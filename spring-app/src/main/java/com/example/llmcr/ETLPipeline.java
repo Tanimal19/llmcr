@@ -59,7 +59,7 @@ public class ETLPipeline {
             ClassNodeSummary.class);
     private final String summaryBackupFile = "summaries.json";
 
-    private final RateLimiter rateLimiter = RateLimiter.create(3.0 / 60.0);
+    private final RateLimiter rateLimiter = RateLimiter.create(2.0 / 60.0);
 
     private record ClassNodeSummary(
             String description,

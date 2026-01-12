@@ -1,0 +1,147 @@
+Loaded embedding model from google/embeddinggemma-300m
+Connected to MariaDB database: ragdb
+Loading FAISS index from ./faiss.index...
+Loaded FAISS index with 1732 vectors
+Initialized Gemini chatbot with model: gemma-3-27b-it
+Retrieving relevant chunks for query: Explain the use of CompressionQueryTransformer.
+[[0.6620052  0.6645396  0.66854876 0.6904026  0.824152  ]]
+[[ 1  3 79 77 78]]
+Prompt to chatbot:
+Using the following context:
+/**
+ * Uses a large language model to compress a conversation history and a follow-up query
+ * into a standalone query that captures the essence of the conversation.
+ * <p>
+ * This transformer is useful when the conversation history is long and the follow-up
+ * query is related to the conversation context.
+ *
+ * @author Thomas Vitale
+ * @since 1.0.0
+ */
+public class CompressionQueryTransformer implements QueryTransformer {
+
+    private static final Logger logger = LoggerFactory.getLogger(CompressionQueryTransformer.class);
+
+    private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
+        Given the following conversation history and a follow-up query, your task is to synthesize
+        a concise, standalone query that incorporates the context from the history.
+        Ensure the standalone query is clear, specific, and maintains the user's intent.
+        
+        Conversation history:
+        {history}
+        
+        Follow-up query:
+        {query}
+        
+        Standalone query:
+        """);
+
+    private final ChatClient chatClient;
+
+    private final PromptTemplate promptTemplate;
+
+    public CompressionQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate) {
+        Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
+        this.chatClient = chatClientBuilder.build();
+        this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
+        PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "history", "query");
+    }
+
+    @Override
+    public Query transform(Query query) {
+        Assert.notNull(query, "query cannot be null");
+        logger.debug("Compressing conversation history and follow-up query into a standalone query");
+        var compressedQueryText = this.chatClient.prompt().user(user -> user.text(this.promptTemplate.getTemplate()).param("history", formatConversationHistory(query.history())).param("query", query.text())).call().content();
+        if (!StringUtils.hasText(compressedQueryText)) {
+            logger.warn("Query compression result is null/empty. Returning the input query unchanged.");
+            return query;
+        }
+        return query.mutate().text(compressedQueryText).build();
+    }
+
+    private String formatConversationHistory(List<Message> history) {
+        if (history.isEmpty()) {
+            return "";
+        }
+        return history.stream().filter(message -> message.getMessageType().equals(MessageType.USER) || message.getMessageType().equals(MessageType.ASSISTANT)).map(message -> "%s: %s".formatted(message.getMessageType(), message.getText())).collect(Collectors.joining("\n"));
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static final class Builder {
+
+        private ChatClient.Builder chatClientBuilder;
+
+        @Nullable
+        private PromptTemplate promptTemplate;
+
+        private Builder() {
+        }
+
+        public Builder chatClientBuilder(ChatClient.Builder chatClientBuilder) {
+            this.chatClientBuilder = chatClientBuilder;
+            return this;
+        }
+
+        public Builder promptTemplate(PromptTemplate promptTemplate) {
+            this.promptTemplate = promptTemplate;
+            return this;
+        }
+
+        public CompressionQueryTransformer build() {
+            return new CompressionQueryTransformer(this.chatClientBuilder, this.promptTemplate);
+        }
+    }
+}
+This class implements the `QueryTransformer` interface and utilizes a `ChatClient` to interact with a language model. It's part of a RAG (Retrieval Augmented Generation) pipeline, specifically addressing query transformation for improved retrieval results. It works alongside other `QueryTransformer` implementations like `RewriteQueryTransformer` and `TranslationQueryTransformer`.
+This class implements the `QueryTransformer` interface and relies on a `ChatClient` (configured via `ChatClient.Builder`) and an optional `PromptTemplate` to perform the query compression. It's part of the pre-retrieval processing pipeline, working with `Query` objects.
+public static final class Builder {
+
+    private ChatClient.Builder chatClientBuilder;
+
+    @Nullable
+    private PromptTemplate promptTemplate;
+
+    private Builder() {
+    }
+
+    public Builder chatClientBuilder(ChatClient.Builder chatClientBuilder) {
+        this.chatClientBuilder = chatClientBuilder;
+        return this;
+    }
+
+    public Builder promptTemplate(PromptTemplate promptTemplate) {
+        this.promptTemplate = promptTemplate;
+        return this;
+    }
+
+    public CompressionQueryTransformer build() {
+        return new CompressionQueryTransformer(this.chatClientBuilder, this.promptTemplate);
+    }
+}
+The `CompressionQueryTransformer` class transforms a conversation history and follow-up query into a standalone query using a large language model. It's designed for long conversation histories where the context is crucial for accurate retrieval.
+Answer the question:
+Explain the use of CompressionQueryTransformer.
+
+Chatbot response:
+The `CompressionQueryTransformer` is used to condense a conversation history and a follow-up query into a single, standalone query. This is particularly useful when dealing with long conversation histories where the context is important for understanding the user's current intent. 
+
+Here's a breakdown of its purpose and how it works:
+
+* **Problem:** Long conversation histories can be difficult to effectively use for retrieval in a RAG pipeline.  The original query might not fully capture the context established in the conversation.
+* **Solution:** The `CompressionQueryTransformer` leverages a large language model (through a `ChatClient`) to *synthesize* a new query that incorporates the relevant information from the conversation history and the user's latest query.
+* **How it works:**
+    1. It takes a `Query` object containing the conversation history and the follow-up query.
+    2. It formats the conversation history into a string.
+    3. It uses a `PromptTemplate` (with a default template provided) to instruct the language model to create a concise, standalone query.
+    4. It sends the formatted history and query to the language model via the `ChatClient`.
+    5. It receives the compressed query from the language model.
+    6. It updates the original `Query` object with the compressed query text.
+* **Benefit:**  This results in a more focused and context-aware query that can improve the accuracy of retrieval and ultimately the quality of the generated response.
+
+
+
+In essence, it's a pre-retrieval step designed to improve the effectiveness of a RAG pipeline by ensuring the retrieval process has a clear and comprehensive understanding of the user's intent within the context of the conversation.
+
