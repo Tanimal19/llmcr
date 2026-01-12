@@ -1,0 +1,126 @@
+Loaded embedding model from google/embeddinggemma-300m
+Connected to MariaDB database: ragdb
+
+=== Starting document processing pipeline ===
+Loaded 96 documents from table class_nodes.
+Loaded 10 documents from table document_paragraphs.
+Loaded documents: 0.0038542747497558594s
+- skip chunking for non-paragraph document: 02beb8ba-56b4-4a2f-b645-659cbdcfd5df
+- skip chunking for non-paragraph document: 02beb8ba-56b4-4a2f-b645-659cbdcfd5df
+- skip chunking for non-paragraph document: 02beb8ba-56b4-4a2f-b645-659cbdcfd5df
+- skip chunking for non-paragraph document: 02beb8ba-56b4-4a2f-b645-659cbdcfd5df
+- skip chunking for non-paragraph document: 03134539-34e2-416f-85e1-a5f8211bc650
+- skip chunking for non-paragraph document: 03134539-34e2-416f-85e1-a5f8211bc650
+- skip chunking for non-paragraph document: 03134539-34e2-416f-85e1-a5f8211bc650
+- skip chunking for non-paragraph document: 03134539-34e2-416f-85e1-a5f8211bc650
+- skip chunking for non-paragraph document: 220ad522-0fa4-4d05-ac86-c155ab5f4433
+- skip chunking for non-paragraph document: 220ad522-0fa4-4d05-ac86-c155ab5f4433
+- skip chunking for non-paragraph document: 220ad522-0fa4-4d05-ac86-c155ab5f4433
+- skip chunking for non-paragraph document: 220ad522-0fa4-4d05-ac86-c155ab5f4433
+- skip chunking for non-paragraph document: 24e462fb-1d50-4e0e-93c1-a5262a3c8718
+- skip chunking for non-paragraph document: 24e462fb-1d50-4e0e-93c1-a5262a3c8718
+- skip chunking for non-paragraph document: 24e462fb-1d50-4e0e-93c1-a5262a3c8718
+- skip chunking for non-paragraph document: 24e462fb-1d50-4e0e-93c1-a5262a3c8718
+- skip chunking for non-paragraph document: 345412d5-5c3c-406b-b550-2512736b0eac
+- skip chunking for non-paragraph document: 345412d5-5c3c-406b-b550-2512736b0eac
+- skip chunking for non-paragraph document: 345412d5-5c3c-406b-b550-2512736b0eac
+- skip chunking for non-paragraph document: 345412d5-5c3c-406b-b550-2512736b0eac
+- skip chunking for non-paragraph document: 504bc120-bd40-49fc-9ef9-e0f2052f1ef5
+- skip chunking for non-paragraph document: 504bc120-bd40-49fc-9ef9-e0f2052f1ef5
+- skip chunking for non-paragraph document: 504bc120-bd40-49fc-9ef9-e0f2052f1ef5
+- skip chunking for non-paragraph document: 504bc120-bd40-49fc-9ef9-e0f2052f1ef5
+- skip chunking for non-paragraph document: 53f6965a-13f1-4258-81d6-29359c0491c1
+- skip chunking for non-paragraph document: 53f6965a-13f1-4258-81d6-29359c0491c1
+- skip chunking for non-paragraph document: 53f6965a-13f1-4258-81d6-29359c0491c1
+- skip chunking for non-paragraph document: 53f6965a-13f1-4258-81d6-29359c0491c1
+- skip chunking for non-paragraph document: 647e02fe-f606-49fa-b340-562cf5ed634d
+- skip chunking for non-paragraph document: 647e02fe-f606-49fa-b340-562cf5ed634d
+- skip chunking for non-paragraph document: 647e02fe-f606-49fa-b340-562cf5ed634d
+- skip chunking for non-paragraph document: 647e02fe-f606-49fa-b340-562cf5ed634d
+- skip chunking for non-paragraph document: 89ea0847-277e-451b-ab60-ea20f98fe715
+- skip chunking for non-paragraph document: 89ea0847-277e-451b-ab60-ea20f98fe715
+- skip chunking for non-paragraph document: 89ea0847-277e-451b-ab60-ea20f98fe715
+- skip chunking for non-paragraph document: 89ea0847-277e-451b-ab60-ea20f98fe715
+- skip chunking for non-paragraph document: 90763a46-c515-477b-a825-09fe00f2234a
+- skip chunking for non-paragraph document: 90763a46-c515-477b-a825-09fe00f2234a
+- skip chunking for non-paragraph document: 90763a46-c515-477b-a825-09fe00f2234a
+- skip chunking for non-paragraph document: 90763a46-c515-477b-a825-09fe00f2234a
+- skip chunking for non-paragraph document: 95e324ad-d149-46b4-947f-6ae1554f4731
+- skip chunking for non-paragraph document: 95e324ad-d149-46b4-947f-6ae1554f4731
+- skip chunking for non-paragraph document: 95e324ad-d149-46b4-947f-6ae1554f4731
+- skip chunking for non-paragraph document: 95e324ad-d149-46b4-947f-6ae1554f4731
+- skip chunking for non-paragraph document: 99786140-28ba-4d42-b33b-5a1ac9bbbe76
+- skip chunking for non-paragraph document: 99786140-28ba-4d42-b33b-5a1ac9bbbe76
+- skip chunking for non-paragraph document: 99786140-28ba-4d42-b33b-5a1ac9bbbe76
+- skip chunking for non-paragraph document: 99786140-28ba-4d42-b33b-5a1ac9bbbe76
+- skip chunking for non-paragraph document: 9d5a244c-9de8-4d5a-b2f0-7a342daf2f6b
+- skip chunking for non-paragraph document: 9d5a244c-9de8-4d5a-b2f0-7a342daf2f6b
+- skip chunking for non-paragraph document: 9d5a244c-9de8-4d5a-b2f0-7a342daf2f6b
+- skip chunking for non-paragraph document: 9d5a244c-9de8-4d5a-b2f0-7a342daf2f6b
+- skip chunking for non-paragraph document: a09f60f9-9a6a-4471-87bf-0ff21baf8a62
+- skip chunking for non-paragraph document: a09f60f9-9a6a-4471-87bf-0ff21baf8a62
+- skip chunking for non-paragraph document: a09f60f9-9a6a-4471-87bf-0ff21baf8a62
+- skip chunking for non-paragraph document: a09f60f9-9a6a-4471-87bf-0ff21baf8a62
+- skip chunking for non-paragraph document: a9aaa417-7461-4a79-9213-ebb4c759d219
+- skip chunking for non-paragraph document: a9aaa417-7461-4a79-9213-ebb4c759d219
+- skip chunking for non-paragraph document: a9aaa417-7461-4a79-9213-ebb4c759d219
+- skip chunking for non-paragraph document: a9aaa417-7461-4a79-9213-ebb4c759d219
+- skip chunking for non-paragraph document: ac6ef99f-621e-458d-a35a-59e4bb80f2fe
+- skip chunking for non-paragraph document: ac6ef99f-621e-458d-a35a-59e4bb80f2fe
+- skip chunking for non-paragraph document: ac6ef99f-621e-458d-a35a-59e4bb80f2fe
+- skip chunking for non-paragraph document: ac6ef99f-621e-458d-a35a-59e4bb80f2fe
+- skip chunking for non-paragraph document: b6d07c8c-5b6c-4aa5-8a84-e4a168227b63
+- skip chunking for non-paragraph document: b6d07c8c-5b6c-4aa5-8a84-e4a168227b63
+- skip chunking for non-paragraph document: b6d07c8c-5b6c-4aa5-8a84-e4a168227b63
+- skip chunking for non-paragraph document: b6d07c8c-5b6c-4aa5-8a84-e4a168227b63
+- skip chunking for non-paragraph document: c1cce61e-7c15-4718-a080-5318b2870248
+- skip chunking for non-paragraph document: c1cce61e-7c15-4718-a080-5318b2870248
+- skip chunking for non-paragraph document: c1cce61e-7c15-4718-a080-5318b2870248
+- skip chunking for non-paragraph document: c1cce61e-7c15-4718-a080-5318b2870248
+- skip chunking for non-paragraph document: d021a772-cde7-4bcf-ba54-46da06820f97
+- skip chunking for non-paragraph document: d021a772-cde7-4bcf-ba54-46da06820f97
+- skip chunking for non-paragraph document: d021a772-cde7-4bcf-ba54-46da06820f97
+- skip chunking for non-paragraph document: d021a772-cde7-4bcf-ba54-46da06820f97
+- skip chunking for non-paragraph document: e444a61e-7a56-43f7-996d-53e1a7a87afd
+- skip chunking for non-paragraph document: e444a61e-7a56-43f7-996d-53e1a7a87afd
+- skip chunking for non-paragraph document: e444a61e-7a56-43f7-996d-53e1a7a87afd
+- skip chunking for non-paragraph document: e444a61e-7a56-43f7-996d-53e1a7a87afd
+- skip chunking for non-paragraph document: ecb6da2a-89dc-4bc1-a21c-45df2bf0eab6
+- skip chunking for non-paragraph document: ecb6da2a-89dc-4bc1-a21c-45df2bf0eab6
+- skip chunking for non-paragraph document: ecb6da2a-89dc-4bc1-a21c-45df2bf0eab6
+- skip chunking for non-paragraph document: ecb6da2a-89dc-4bc1-a21c-45df2bf0eab6
+- skip chunking for non-paragraph document: eff26fb2-1e1c-4ea0-b247-63189224fea2
+- skip chunking for non-paragraph document: eff26fb2-1e1c-4ea0-b247-63189224fea2
+- skip chunking for non-paragraph document: eff26fb2-1e1c-4ea0-b247-63189224fea2
+- skip chunking for non-paragraph document: eff26fb2-1e1c-4ea0-b247-63189224fea2
+- skip chunking for non-paragraph document: f28f8918-f1bf-42b5-bb33-e80a79f9d87b
+- skip chunking for non-paragraph document: f28f8918-f1bf-42b5-bb33-e80a79f9d87b
+- skip chunking for non-paragraph document: f28f8918-f1bf-42b5-bb33-e80a79f9d87b
+- skip chunking for non-paragraph document: f28f8918-f1bf-42b5-bb33-e80a79f9d87b
+- skip chunking for non-paragraph document: f7097ef3-0232-4528-9432-2faa1aa15294
+- skip chunking for non-paragraph document: f7097ef3-0232-4528-9432-2faa1aa15294
+- skip chunking for non-paragraph document: f7097ef3-0232-4528-9432-2faa1aa15294
+- skip chunking for non-paragraph document: f7097ef3-0232-4528-9432-2faa1aa15294
++ chunking document 000b6bfb-5237-4f2e-8538-52829e091c61 with 508 tokens.
++ chunking document 00352219-8bb5-4e4c-9c92-afb09946aff2 with 187 tokens.
++ chunking document 005f5fb9-96b6-401e-a316-edb753d9924a with 487 tokens.
++ chunking document 011a22cc-ea22-4464-a2e6-acd42200b5bd with 216 tokens.
++ chunking document 011e4e5b-a1fc-4b32-b239-8b62988fc7e7 with 12 tokens.
++ chunking document 018ed22d-2757-4323-ab26-cf019457a3f4 with 26 tokens.
++ chunking document 0198eec9-b42a-4c9c-b355-5272c8f0afab with 224 tokens.
++ chunking document 01e08a03-944b-468e-a86e-e5def9efd851 with 287 tokens.
++ chunking document 0228e359-b4b9-461b-baf9-f46192e6947c with 329 tokens.
++ chunking document 022c7a94-8b3e-4e99-b63d-0cd028614e14 with 13 tokens.
+Generated 111 chunks from 106 documents.
+Chunked documents: 0.006578922271728516s
+Stored 111 chunks into the database.
+Saved chunks to database: 0.04228997230529785s
+Generating embeddings ...
+  Progress: 100/111 chunks
+Generated embeddings: 7.884171009063721s
+Creating FAISS index...
+Created FAISS index with 111 vectors
+Saved FAISS index to ./faiss.index
+Created FAISS index: 0.0018429756164550781s
+
+=== Pipeline completed in 7.93876314163208s ===

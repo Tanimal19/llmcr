@@ -8,7 +8,7 @@ dependencies = [
     "google-genai",
     "mariadb",
     "faiss-cpu",
-    "llama-cpp-python",
-    "numpy",
+    "sentence_transformers >=2.3.0",
+    "numpy !=2.4.0",
     "python-dotenv",
 ]

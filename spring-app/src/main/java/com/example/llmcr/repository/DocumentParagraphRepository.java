@@ -24,11 +24,6 @@ public interface DocumentParagraphRepository extends JpaRepository<DocumentParag
     List<DocumentParagraph> findBySource(String source);
 
     /**
-     * Find all DocumentParagraphs that haven't been processed yet.
-     */
-    List<DocumentParagraph> findByProcessedFalse();
-
-    /**
      * Find DocumentParagraphs by content containing keyword and source.
      */
     List<DocumentParagraph> findByContentContainingIgnoreCaseAndSource(String keyword, String source);

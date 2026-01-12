@@ -107,10 +107,6 @@ public class DataStore {
         return documentRepo.findAll();
     }
 
-    public List<DocumentParagraph> findUnprocessedDocumentParagraphs() {
-        return documentRepo.findByProcessedFalse();
-    }
-
     // Getters for direct access if needed
     public ClassNodeRepository getNodeRepo() {
         return nodeRepo;

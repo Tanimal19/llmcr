@@ -1,27 +1,26 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path="../.env")
 
 
 class Config:
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    # Chat Model
+    GEMINI_API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
     CHAT_MODEL = "gemma-3-27b-it"
 
     # Embedding
-    EMBEDDING_MODEL = "embeddinggemma-300m"
-    EMBEDDING_MODEL_PATH = "./embeddinggemma-300m-Q8_0.gguf"
-    EMBEDDING_DIM = 768
+    EMBEDDING_MODEL_PATH = "google/embeddinggemma-300m"
 
     # MariaDB
-    MARIADB_HOST = "localhost"
+    MARIADB_HOST = "127.0.0.1"
     MARIADB_PORT = 3306
     MARIADB_DATABASE = "ragdb"
     MARIADB_USER = "user"
     MARIADB_PASSWORD = "123"
 
     # FAISS Index
-    FAISS_INDEX_PATH = "./faiss_index.index"
+    FAISS_INDEX_PATH = "./faiss.index"
 
     @classmethod
     def validate(cls):

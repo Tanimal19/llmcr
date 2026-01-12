@@ -7,6 +7,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.*;
+import org.asciidoctor.jruby.ast.impl.ListItemImpl;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -15,13 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 @Component
 public class DocumentParagraphExtractor
         implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
-    private final int MAX_PDF_PARAGRAPH_LENGTH = 4096;
-    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH = 4096;
+    private final int MAX_PDF_PARAGRAPH_LENGTH = 2048;
+    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH = 2048;
 
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {
@@ -100,7 +102,7 @@ public class DocumentParagraphExtractor
                     org.asciidoctor.Options.builder().build());
             String ctx = "asciidoc::" + path.getFileName();
 
-            processAsciiDocBlock(document, ctx, result);
+            processAsciiDocNode(document, ctx, result, 0);
         } catch (IOException e) {
             System.err.println("AsciiDoc parse failed: " + path);
         }
@@ -110,41 +112,85 @@ public class DocumentParagraphExtractor
         return result;
     }
 
-    private void processAsciiDocBlock(StructuralNode node, String ctx, List<DocumentParagraph> result) {
-        if (node instanceof Section) {
-            ctx += "::" + ((Section) node).getTitle();
+    private void processAsciiDocNode(StructuralNode node, String ctx, List<DocumentParagraph> result, int depth) {
+        // System.out.println("Processing ctx: " + ctx);
+
+        if (depth < 2) {
+            // only process header levels up to 2
+            List<StructuralNode> subSections = node.getBlocks().stream()
+                    .filter(b -> b instanceof Section)
+                    .toList();
+            for (StructuralNode subSection : subSections) {
+                processAsciiDocNode(subSection, ctx + "::" + subSection.getTitle(), result, depth + 1);
+            }
         }
 
-        List<StructuralNode> subSections = node.getBlocks().stream()
-                .filter(b -> b instanceof Section)
-                .toList();
-        for (StructuralNode subSection : subSections) {
-            processAsciiDocBlock(subSection, ctx, result);
+        Stream<StructuralNode> contentBlocks;
+        if (depth < 2) {
+            // collect only direct contents under this node
+            contentBlocks = node.getBlocks().stream()
+                    .filter(b -> !(b instanceof Section));
+        } else {
+            // collect all contents recursively
+            contentBlocks = flatten(node);
         }
 
-        List<StructuralNode> contentBlocks = node.getBlocks().stream()
-                .filter(b -> b.getNodeName().equals("paragraph")
-                        || b.getNodeName().equals("literal")
-                        || b.getNodeName().equals("listing"))
-                .toList();
+        // chunk contents
         AtomicInteger count = new AtomicInteger(0);
         StringBuilder chunk = new StringBuilder();
-        for (StructuralNode contentBlock : contentBlocks) {
-            String text = contentBlock.getContent().toString().trim();
-            if (chunk.length() + text.length() > MAX_ASCIIDOC_PARAGRAPH_LENGTH && chunk.length() > 0) {
+
+        contentBlocks.forEach(block -> {
+            // System.out.println("Processing block of type: " +
+            // block.getClass().getSimpleName());
+
+            String content;
+            if (block instanceof Section) {
+                content = ((Section) block).getTitle();
+            } else if (block instanceof org.asciidoctor.ast.List list) {
+                // for list, we merge all list items into one block
+                List<StructuralNode> items = list.getItems();
+                StringBuilder listContent = new StringBuilder();
+                for (StructuralNode item : items) {
+                    listContent.append(((ListItemImpl) item).getText()).append("\n");
+                }
+                content = listContent.toString();
+            } else {
+                if (block.getContent() == null) {
+                    return; // skip empty content
+                }
+                content = block.getContent().toString();
+            }
+
+            if (chunk.length() + content.length() > MAX_ASCIIDOC_PARAGRAPH_LENGTH
+                    && chunk.length() > 0) {
+
                 result.add(new DocumentParagraph(
                         UUID.randomUUID().toString(),
                         ctx + "::" + count.getAndIncrement(),
                         chunk.toString().trim()));
                 chunk.setLength(0);
             }
-            chunk.append(text).append("\n\n");
-        }
+
+            chunk.append(content).append("\n\n");
+        });
+
+        // flush remaining chunk
         if (chunk.length() > 0) {
             result.add(new DocumentParagraph(
                     UUID.randomUUID().toString(),
                     ctx + "::" + count.getAndIncrement(),
                     chunk.toString().trim()));
         }
+    }
+
+    private Stream<StructuralNode> flatten(StructuralNode node) {
+        if (!(node instanceof Section) || node.getBlocks().isEmpty() || node.getBlocks() == null) {
+            return Stream.empty();
+        }
+
+        return node.getBlocks().stream()
+                .flatMap(child -> Stream.concat(
+                        Stream.of(child),
+                        flatten(child)));
     }
 }

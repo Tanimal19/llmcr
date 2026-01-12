@@ -1,219 +1,53 @@
-"""RAG Application using Gemini API, MariaDB, and FAISS."""
-
-import sys
-from typing import List
 from config import Config
-from embedding_service import EmbeddingService
-from mariadb_store import MariaDBVectorStore
-from faiss_search import FAISSSearchService
-from gemini_service import GeminiService
+from typing import List
+import time
+from service.embedding import EmbeddingService
+from service.database import Chunk, Document, DatabaseService
+from service.faiss import FaissUtils
 
 
-class RAGApplication:
-    def __init__(self):
-        Config.validate()
-
-        # Initialize services
+class LoadService:
+    def __init__(self, chunk_size: int = 500, overlap_size: int = 50):
+        self.chunk_size = chunk_size
+        self.overlap_size = overlap_size
         self.embedding_service = EmbeddingService()
-        self.db_store = MariaDBVectorStore()
-        self.faiss_search = FAISSSearchService(
-            embedding_dim=self.embedding_service.get_embedding_dimension()
-        )
-        self.gemini_service = GeminiService()
+        self.database_service = DatabaseService()
 
-        # Sync FAISS index with database
-        self._sync_index()
+    def run(self):
+        start_time = time.time()
+        print("\n=== Starting document processing pipeline ===")
 
-        print("=" * 60)
-        print("RAG Application Ready!")
-        print("=" * 60)
+        # Step 1: Load documents
+        step_start = time.time()
+        documents = self.database_service.load_documents()
+        print(f"Loaded documents: {time.time() - step_start}s")
 
-    def _sync_index(self):
-        """Synchronize FAISS index with database."""
-        doc_ids, embeddings = self.db_store.get_all_embeddings()
+        # Step 2: Chunk documents
+        step_start = time.time()
+        chunks = self.embedding_service.generate_chunks(documents)
+        print(f"Chunked documents: {time.time() - step_start}s")
 
-        if len(doc_ids) > 0:
-            print(f"Syncing {len(doc_ids)} documents to FAISS index...")
-            self.faiss_search.rebuild_index(embeddings, doc_ids)
-        else:
-            print("No documents in database yet.")
+        # Step 3: Save chunks
+        step_start = time.time()
+        chunks = self.database_service.save_chunks(chunks)
+        print(f"Saved chunks to database: {time.time() - step_start}s")
 
-    def add_documents(self, documents: List[str], metadata: List[dict] = None):
-        """
-        Add documents to the knowledge base.
+        # Step 4: Generate embeddings
+        step_start = time.time()
+        chunks = self.embedding_service.generate_embeddings(chunks)
+        print(f"Generated embeddings: {time.time() - step_start}s")
 
-        Args:
-            documents: List of document texts.
-            metadata: Optional list of metadata dictionaries.
-        """
-        if not documents:
-            print("No documents to add.")
-            return
+        # Step 5: Create FAISS index
+        step_start = time.time()
+        FaissUtils.create_faiss_index(chunks)
+        print(f"Created FAISS index: {time.time() - step_start}s")
 
-        print(f"\nAdding {len(documents)} documents...")
-
-        # Generate embeddings
-        print("Generating embeddings...")
-        embeddings = self.embedding_service.encode(documents)
-
-        # Store in database and FAISS
-        doc_ids = []
-        for i, (doc, emb) in enumerate(zip(documents, embeddings)):
-            meta = metadata[i] if metadata and i < len(metadata) else None
-            doc_id = self.db_store.add_document(doc, emb, meta)
-            doc_ids.append(doc_id)
-
-        # Update FAISS index
-        self.faiss_search.add_vectors(embeddings, doc_ids)
-
-        # Save FAISS index
-        self.faiss_search.save_index()
-
-        print(f"Successfully added {len(documents)} documents!")
-        print(f"Total documents in database: {self.db_store.get_document_count()}")
-
-    def query(self, question: str, top_k: int = 3) -> str:
-        """
-        Query the RAG system.
-
-        Args:
-            question: User's question.
-            top_k: Number of relevant documents to retrieve.
-
-        Returns:
-            Generated answer.
-        """
-        print(f"\nQuery: {question}")
-        print("-" * 60)
-
-        # Generate query embedding
-        query_embedding = self.embedding_service.encode(question)[0]
-
-        # Search for similar documents
-        doc_ids, distances = self.faiss_search.search(query_embedding, k=top_k)
-
-        if not doc_ids:
-            return (
-                "No documents found in the knowledge base. Please add documents first."
-            )
-
-        # Retrieve documents from database
-        documents = self.db_store.get_documents_by_ids(doc_ids)
-
-        print(f"Retrieved {len(documents)} relevant documents")
-        for i, (doc, dist) in enumerate(zip(documents, distances)):
-            print(f"  {i+1}. Document ID: {doc['id']}, Distance: {dist:.4f}")
-
-        # Generate response using Gemini
-        print("\nGenerating response with Gemini...")
-        response = self.gemini_service.generate_response(question, documents)
-
-        return response
-
-    def clear_knowledge_base(self):
-        """Clear all documents from the knowledge base."""
-        confirm = input("Are you sure you want to clear all documents? (yes/no): ")
-        if confirm.lower() == "yes":
-            self.db_store.clear_all()
-            self.faiss_search.clear()
-            self.faiss_search.save_index()
-            print("Knowledge base cleared!")
-        else:
-            print("Operation cancelled.")
-
-    def show_stats(self):
-        """Display statistics about the knowledge base."""
-        doc_count = self.db_store.get_document_count()
-        index_size = self.faiss_search.get_index_size()
-
-        print("\n" + "=" * 60)
-        print("Knowledge Base Statistics")
-        print("=" * 60)
-        print(f"Total documents in database: {doc_count}")
-        print(f"Total vectors in FAISS index: {index_size}")
-        print(
-            f"Embedding dimension: {self.embedding_service.get_embedding_dimension()}"
-        )
-        print("=" * 60)
-
-    def close(self):
-        """Clean up resources."""
-        self.db_store.close()
-        print("\nRAG Application closed.")
-
-
-def print_menu():
-    """Print the main menu."""
-    print("\n" + "=" * 60)
-    print("RAG Application Menu")
-    print("=" * 60)
-    print("1. Add documents to knowledge base")
-    print("2. Query the knowledge base")
-    print("3. Show statistics")
-    print("4. Clear knowledge base")
-    print("5. Exit")
-    print("=" * 60)
-
-
-def main():
-    """Main entry point."""
-    try:
-        app = RAGApplication()
-
-        while True:
-            print_menu()
-            choice = input("\nEnter your choice (1-5): ").strip()
-
-            if choice == "1":
-                print("\nEnter documents (one per line, empty line to finish):")
-                documents = []
-                while True:
-                    doc = input("> ")
-                    if not doc:
-                        break
-                    documents.append(doc)
-
-                if documents:
-                    app.add_documents(documents)
-                else:
-                    print("No documents entered.")
-
-            elif choice == "2":
-                question = input("\nEnter your question: ").strip()
-                if question:
-                    answer = app.query(question)
-                    print("\n" + "=" * 60)
-                    print("Answer:")
-                    print("=" * 60)
-                    print(answer)
-                    print("=" * 60)
-                else:
-                    print("No question entered.")
-
-            elif choice == "3":
-                app.show_stats()
-
-            elif choice == "4":
-                app.clear_knowledge_base()
-
-            elif choice == "5":
-                print("\nExiting...")
-                app.close()
-                break
-
-            else:
-                print("Invalid choice. Please enter 1-5.")
-
-    except KeyboardInterrupt:
-        print("\n\nInterrupted by user.")
-        sys.exit(0)
-    except Exception as e:
-        print(f"\nError: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
+        total_time = time.time() - start_time
+        print(f"\n=== Pipeline completed in {total_time}s ===")
 
 
 if __name__ == "__main__":
-    main()
+    Config.validate()
+
+    load_service = LoadService()
+    load_service.run()
