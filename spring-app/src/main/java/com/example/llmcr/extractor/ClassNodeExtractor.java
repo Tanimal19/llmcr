@@ -30,7 +30,7 @@ public class ClassNodeExtractor implements VoidDataSourceExtractor<List<ClassNod
 
         // Extract classes
         cu.findAll(ClassOrInterfaceDeclaration.class).forEach(classDecl -> {
-            String id = UUID.randomUUID().toString();
+            UUID id = UUID.randomUUID();
             String signature = packageName + "." + classDecl.getNameAsString();
             String codeText = classDecl.toString();
 
@@ -40,7 +40,7 @@ public class ClassNodeExtractor implements VoidDataSourceExtractor<List<ClassNod
 
         // Extract enums
         cu.findAll(EnumDeclaration.class).forEach(enumDecl -> {
-            String id = UUID.randomUUID().toString();
+            UUID id = UUID.randomUUID();
             String signature = packageName + "." + enumDecl.getNameAsString();
             String codeText = enumDecl.toString();
 
@@ -50,7 +50,7 @@ public class ClassNodeExtractor implements VoidDataSourceExtractor<List<ClassNod
 
         // Extract records (Java 14+)
         cu.findAll(RecordDeclaration.class).forEach(recordDecl -> {
-            String id = UUID.randomUUID().toString();
+            UUID id = UUID.randomUUID();
             String signature = packageName + "." + recordDecl.getNameAsString();
             String codeText = recordDecl.toString();
 

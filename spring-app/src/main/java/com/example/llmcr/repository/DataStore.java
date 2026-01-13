@@ -1,5 +1,6 @@
 package com.example.llmcr.repository;
 
+import com.example.llmcr.entity.Chunk;
 import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,14 @@ public class DataStore {
 
     private final ClassNodeRepository nodeRepo;
     private final DocumentParagraphRepository documentRepo;
+    private final ChunkRepository chunkRepo;
 
     @Autowired
-    public DataStore(ClassNodeRepository nodeRepo, DocumentParagraphRepository documentRepo) {
+    public DataStore(ClassNodeRepository nodeRepo, DocumentParagraphRepository documentRepo,
+            ChunkRepository chunkRepo) {
         this.nodeRepo = nodeRepo;
         this.documentRepo = documentRepo;
+        this.chunkRepo = chunkRepo;
     }
 
     // ClassNode operations
@@ -30,10 +34,6 @@ public class DataStore {
 
     public void saveAllClassNodes(List<ClassNode> classNodes) {
         nodeRepo.saveAll(classNodes);
-    }
-
-    public List<ClassNode> findAll(List<String> ids) {
-        return nodeRepo.findByIdIn(ids);
     }
 
     public List<ClassNode> findAllClassNodes() {
@@ -109,6 +109,19 @@ public class DataStore {
 
     public List<DocumentParagraph> findAllDocumentParagraphs() {
         return documentRepo.findAll();
+    }
+
+    // Chunk operations
+    public void saveAllChunks(List<Chunk> chunks) {
+        chunkRepo.saveAll(chunks);
+    }
+
+    public List<Chunk> findAllChunks() {
+        return chunkRepo.findAll();
+    }
+
+    public List<Chunk> findAllChunksByIds(List<Long> ids) {
+        return chunkRepo.findByIdIn(ids);
     }
 
     // Getters for direct access if needed

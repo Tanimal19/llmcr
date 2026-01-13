@@ -3,6 +3,7 @@ package com.example.llmcr.entity;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Represents an extracted class or code unit (e.g., for RAG indexing).
@@ -12,12 +13,12 @@ import java.util.List;
 public class ClassNode {
 
     @Id
-    private String id;
+    private UUID id;
 
-    @Column(name = "signature", columnDefinition = "TEXT")
+    @Column(name = "signature", columnDefinition = "TEXT", nullable = false)
     private String signature;
 
-    @Column(name = "code_text", columnDefinition = "TEXT")
+    @Column(name = "code_text", columnDefinition = "TEXT", nullable = false)
     private String codeText;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
@@ -40,7 +41,7 @@ public class ClassNode {
     public ClassNode() {
     }
 
-    public ClassNode(String id, String signature, String codeText) {
+    public ClassNode(UUID id, String signature, String codeText) {
         this.id = id;
         this.signature = signature;
         this.codeText = codeText;
@@ -48,11 +49,11 @@ public class ClassNode {
     }
 
     // Getters and setters
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

@@ -30,22 +30,7 @@ public class DocumentParagraphExtractor
 
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {
-        // List<DocumentParagraph> result = new ArrayList<>();
-        // CompilationUnit cu = source.getCu();
-        // String ctx = "java::" + cu.getStorage().get().getFileName();
-        // AtomicInteger count = new AtomicInteger(0);
-
-        // cu.getAllComments().forEach(c -> {
-        // result.add(new DocumentParagraph(
-        // UUID.randomUUID().toString(),
-        // ctx + "::" + count.getAndIncrement(),
-        // c.getContent().trim()));
-        // });
-
-        // System.out.println("Extracted " + result.size() + " comment paragraphs from
-        // Java file: "
-        // + cu.getStorage().get().getPath());
-
+        // comments in java source code is already parsed into ClassNode
         return new ArrayList<>();
     }
 
@@ -63,7 +48,7 @@ public class DocumentParagraphExtractor
             for (String line : text.split("\n")) {
                 if (chunk.length() + line.length() > MAX_PDF_PARAGRAPH_LENGTH && chunk.length() > 0) {
                     result.add(new DocumentParagraph(
-                            UUID.randomUUID().toString(),
+                            UUID.randomUUID(),
                             ctx + "::" + count.getAndIncrement(),
                             chunk.toString().trim()));
                     chunk.setLength(0);
@@ -73,7 +58,7 @@ public class DocumentParagraphExtractor
 
             if (chunk.length() > 0) {
                 result.add(new DocumentParagraph(
-                        UUID.randomUUID().toString(),
+                        UUID.randomUUID(),
                         ctx + "::" + count.getAndIncrement(),
                         chunk.toString().trim()));
             }
@@ -168,7 +153,7 @@ public class DocumentParagraphExtractor
                     && chunk.length() > 0) {
 
                 result.add(new DocumentParagraph(
-                        UUID.randomUUID().toString(),
+                        UUID.randomUUID(),
                         ctx + "::" + count.getAndIncrement(),
                         chunk.toString().trim()));
                 chunk.setLength(0);
@@ -180,7 +165,7 @@ public class DocumentParagraphExtractor
         // flush remaining chunk
         if (chunk.length() > 0) {
             result.add(new DocumentParagraph(
-                    UUID.randomUUID().toString(),
+                    UUID.randomUUID(),
                     ctx + "::" + count.getAndIncrement(),
                     chunk.toString().trim()));
         }

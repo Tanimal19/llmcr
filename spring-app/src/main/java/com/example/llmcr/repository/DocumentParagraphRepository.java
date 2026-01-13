@@ -5,26 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.UUID;
 
 /**
  * Repository interface for managing DocumentParagraph entities.
  */
 @Repository
-public interface DocumentParagraphRepository extends JpaRepository<DocumentParagraph, String> {
-
-    /**
-     * Find DocumentParagraphs by keyword in content.
-     */
-    List<DocumentParagraph> findByContentContainingIgnoreCase(String keyword);
-
-    /**
-     * Find DocumentParagraphs by source.
-     */
-    List<DocumentParagraph> findBySource(String source);
-
-    /**
-     * Find DocumentParagraphs by content containing keyword and source.
-     */
-    List<DocumentParagraph> findByContentContainingIgnoreCaseAndSource(String keyword, String source);
+public interface DocumentParagraphRepository extends JpaRepository<DocumentParagraph, UUID> {
 }

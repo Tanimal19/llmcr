@@ -21,6 +21,12 @@ services:
       - "8000:8000"
     volumes:
       - faiss_data:/app/faiss_index
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   ollama:
     build: ./ollama_service
@@ -33,6 +39,12 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
     entrypoint: ["/bin/sh", "/app/start.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   mariadb_data:

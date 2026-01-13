@@ -35,19 +35,19 @@
 
  :: Spring Boot ::                (v3.5.7)
 
-2026-01-12T20:10:03.435+08:00  INFO 26585 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 26585 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
-2026-01-12T20:10:03.436+08:00  INFO 26585 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
-2026-01-12T20:10:03.594+08:00  INFO 26585 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-01-12T20:10:03.641+08:00  INFO 26585 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 42 ms. Found 2 JPA repository interfaces.
-2026-01-12T20:10:03.736+08:00  INFO 26585 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2026-01-12T20:10:03.753+08:00  INFO 26585 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
-2026-01-12T20:10:03.763+08:00  INFO 26585 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2026-01-12T20:10:03.853+08:00  INFO 26585 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-01-12T20:10:03.862+08:00  INFO 26585 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-01-12T20:10:03.912+08:00  INFO 26585 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@273fa9e
-2026-01-12T20:10:03.913+08:00  INFO 26585 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-01-12T20:10:03.936+08:00  WARN 26585 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2026-01-12T20:10:03.955+08:00  INFO 26585 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+2026-01-13T22:31:41.767+08:00  INFO 9094 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 9094 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+2026-01-13T22:31:41.768+08:00  INFO 9094 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-01-13T22:31:41.948+08:00  INFO 9094 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-13T22:31:41.996+08:00  INFO 9094 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 44 ms. Found 3 JPA repository interfaces.
+2026-01-13T22:31:42.090+08:00  INFO 9094 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-13T22:31:42.111+08:00  INFO 9094 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
+2026-01-13T22:31:42.122+08:00  INFO 9094 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-13T22:31:42.214+08:00  INFO 9094 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-13T22:31:42.224+08:00  INFO 9094 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-13T22:31:42.261+08:00  INFO 9094 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@615efd1c
+2026-01-13T22:31:42.261+08:00  INFO 9094 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-13T22:31:42.273+08:00  WARN 9094 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-13T22:31:42.281+08:00  INFO 9094 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
 	Database driver: undefined/unknown
 	Database version: 11.8.5
@@ -55,37 +55,104 @@
 	Isolation level: undefined/unknown
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2026-01-12T20:10:04.258+08:00  INFO 26585 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-01-12T20:10:04.289+08:00  INFO 26585 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-01-12T20:10:04.545+08:00  INFO 26585 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.22 seconds (process running for 1.326)
-+ Creating data sources from paths...
-Parsed 16 Java sources from project path: ../_datasets/spring-ai-main simple
-Parsed 87 document sources from directory: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages
-+ Data source parsing completed in 151ms
-+ Starting data transformation...
-Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.Builder using keywords: [Builder, transformation]
-Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.Builder
-Bound 7 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner using keywords: [ConcatenationDocumentJoiner, join]
-Generating summary for ClassNode: org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner
-Bound 5 paragraphs to ClassNode: org.springframework.ai.rag.generation.augmentation.QueryAugmenter using keywords: [QueryAugmenter, augmentation]
-Generating summary for ClassNode: org.springframework.ai.rag.generation.augmentation.QueryAugmenter
-Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.Builder using keywords: [Builder, transformation]
-Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.Builder
-Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.expansion.Builder using keywords: [Builder, expansion]
-Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.expansion.Builder
-Bound 3 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer using keywords: [RewriteQueryTransformer, transformation]
-Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer
-Bound 2 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander using keywords: [MultiQueryExpander, expansion]
-Generating summary for ClassNode: org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander
-Bound 7 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.join.DocumentJoiner using keywords: [DocumentJoiner, join]
-Generating summary for ClassNode: org.springframework.ai.rag.retrieval.join.DocumentJoiner
-+ Transformation completed in 219688ms
-2026-01-12T20:13:44.428+08:00  INFO 26585 --- [llmcr] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
-2026-01-12T20:13:44.430+08:00  INFO 26585 --- [llmcr] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
-2026-01-12T20:13:44.434+08:00  INFO 26585 --- [llmcr] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-01-13T22:31:42.582+08:00  INFO 9094 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-13T22:31:42.619+08:00  INFO 9094 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-13T22:31:43.027+08:00  INFO 9094 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.375 seconds (process running for 1.489)
++ Starting data loading...
+2026-01-13T22:32:16.217+08:00  INFO 9094 --- [llmcr] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-01-13T22:32:16.223+08:00 ERROR 9094 --- [llmcr] [           main] o.s.boot.SpringApplication               : Application run failed
+
+org.springframework.web.reactive.function.client.WebClientRequestException: null
+	at org.springframework.web.reactive.function.client.ExchangeFunctions$DefaultExchangeFunction.lambda$wrapException$9(ExchangeFunctions.java:137) ~[spring-webflux-6.2.12.jar:6.2.12]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ Request to POST http://localhost:8080/index/add [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.ExchangeFunctions$DefaultExchangeFunction.lambda$wrapException$9(ExchangeFunctions.java:137) ~[spring-webflux-6.2.12.jar:6.2.12]
+		at reactor.core.publisher.MonoErrorSupplied.subscribe(MonoErrorSupplied.java:55) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.Mono.subscribe(Mono.java:4576) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.FluxOnErrorResume$ResumeSubscriber.onError(FluxOnErrorResume.java:103) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onError(FluxPeek.java:222) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onError(FluxPeek.java:222) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.onError(MonoIgnoreThen.java:280) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onError(FluxMap.java:134) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.MonoCompletionStage$MonoCompletionStageSubscription.apply(MonoCompletionStage.java:115) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.MonoCompletionStage$MonoCompletionStageSubscription.apply(MonoCompletionStage.java:67) ~[reactor-core-3.7.12.jar:3.7.12]
+		at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934) ~[na:na]
+		at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911) ~[na:na]
+		at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:510) ~[na:na]
+		at java.base/java.util.concurrent.CompletableFuture.postFire(CompletableFuture.java:614) ~[na:na]
+		at java.base/java.util.concurrent.CompletableFuture$UniWhenComplete.tryFire(CompletableFuture.java:844) ~[na:na]
+		at java.base/java.util.concurrent.CompletableFuture$Completion.exec(CompletableFuture.java:483) ~[na:na]
+		at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[na:na]
+		at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[na:na]
+		at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[na:na]
+		at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[na:na]
+		at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.7.12.jar:3.7.12]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.7.12.jar:3.7.12]
+		at com.example.llmcr.service.FaissService.addVectors(FaissService.java:34) ~[classes/:na]
+		at com.example.llmcr.repository.FaissVectorStore.add(FaissVectorStore.java:56) ~[classes/:na]
+		at com.example.llmcr.service.ETLPipeline.lambda$1(ETLPipeline.java:247) ~[classes/:na]
+		at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708) ~[na:na]
+		at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762) ~[na:na]
+		at com.example.llmcr.service.ETLPipeline.load(ETLPipeline.java:232) ~[classes/:na]
+		at com.example.llmcr.LlmcrApplication.run(LlmcrApplication.java:35) ~[classes/:na]
+		at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788) ~[spring-boot-3.5.7.jar:3.5.7]
+		at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.2.12.jar:6.2.12]
+		at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.2.12.jar:6.2.12]
+		at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.2.12.jar:6.2.12]
+		at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796) ~[spring-boot-3.5.7.jar:3.5.7]
+		at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.5.7.jar:3.5.7]
+		at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+		at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+		at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+		at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+		at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+		at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+		at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+		at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+		at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+		at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+		at org.springframework.boot.SpringApplication.run(SpringApplication.java:325) ~[spring-boot-3.5.7.jar:3.5.7]
+		at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:21) ~[classes/:na]
+Caused by: java.net.ConnectException: null
+	at java.net.http/jdk.internal.net.http.common.Utils.toConnectException(Utils.java:1065) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.connectAsync(PlainHttpConnection.java:227) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.checkRetryConnect(PlainHttpConnection.java:280) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.lambda$connectAsync$2(PlainHttpConnection.java:238) ~[java.net.http:na]
+	at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:510) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1773) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.nio.channels.ClosedChannelException: null
+	at java.base/sun.nio.ch.SocketChannelImpl.ensureOpen(SocketChannelImpl.java:202) ~[na:na]
+	at java.base/sun.nio.ch.SocketChannelImpl.beginConnect(SocketChannelImpl.java:786) ~[na:na]
+	at java.base/sun.nio.ch.SocketChannelImpl.connect(SocketChannelImpl.java:874) ~[na:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.lambda$connectAsync$1(PlainHttpConnection.java:210) ~[java.net.http:na]
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:571) ~[na:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.connectAsync(PlainHttpConnection.java:212) ~[java.net.http:na]
+	... 9 common frames omitted
+
+2026-01-13T22:32:16.226+08:00  INFO 9094 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-13T22:32:16.227+08:00  INFO 9094 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-13T22:32:16.228+08:00  INFO 9094 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
 [INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
+[INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  03:41 min
-[INFO] Finished at: 2026-01-12T20:13:44+08:00
+[INFO] Total time:  35.731 s
+[INFO] Finished at: 2026-01-13T22:32:16+08:00
 [INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.7:run (default-cli) on project llmcr: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

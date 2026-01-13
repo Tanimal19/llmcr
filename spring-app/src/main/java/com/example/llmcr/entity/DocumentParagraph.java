@@ -3,6 +3,7 @@ package com.example.llmcr.entity;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Represents an extracted textual paragraph (chunk) from a document.
@@ -12,12 +13,12 @@ import java.util.List;
 public class DocumentParagraph {
 
     @Id
-    private String id;
+    private UUID id;
 
-    @Column(name = "source")
+    @Column(name = "source", columnDefinition = "TEXT", nullable = false)
     private String source;
 
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @ManyToMany(mappedBy = "documentParagraphs", fetch = FetchType.LAZY)
@@ -27,18 +28,18 @@ public class DocumentParagraph {
     public DocumentParagraph() {
     }
 
-    public DocumentParagraph(String id, String source, String content) {
+    public DocumentParagraph(UUID id, String source, String content) {
         this.id = id;
         this.source = source;
         this.content = content;
     }
 
     // Getters and setters
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

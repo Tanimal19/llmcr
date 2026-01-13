@@ -22,7 +22,7 @@ import com.github.javaparser.ast.CompilationUnit;
  * Factory to create DataSource instances from various file types and
  * directories.
  */
-public class DataSourceFactoryUtils {
+public final class DataSourceFactoryUtils {
 
     private DataSourceFactoryUtils() {
     }
