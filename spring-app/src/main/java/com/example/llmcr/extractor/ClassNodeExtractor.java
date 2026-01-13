@@ -6,7 +6,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +14,10 @@ import java.util.UUID;
 /**
  * Extracts ClassNode objects from various data sources.
  */
-@Component
 public class ClassNodeExtractor implements VoidDataSourceExtractor<List<ClassNode>> {
+
+    public ClassNodeExtractor() {
+    }
 
     @Override
     public List<ClassNode> visit(CompilationUnitSource source) {

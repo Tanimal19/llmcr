@@ -1,19 +1,24 @@
 import faiss
+import os
 import numpy as np
 from typing import List
 
 
 index = None
-index_path = "faiss_index.index"
+index_path = "./faiss_index/index.bin"
 
 
-def is_index_loaded() -> bool:
+def load_index(update=False):
     global index
-    return index is not None
 
+    if not os.path.exists(index_path):
+        print(f"No existing index found at {index_path}.")
+        index = None
+        return
 
-def load_index():
-    global index
+    if index is not None and not update:
+        return
+
     print(f"load index from {index_path}")
     index = faiss.read_index(index_path)
     print(f"loaded {index.ntotal} vectors")
@@ -36,11 +41,12 @@ def create_index(ids: List[int], vectors: List[List[float]]) -> None:
     print(f"add index to {index_path}")
 
     # reload the index
-    load_index()
+    load_index(update=True)
 
 
 def search(query_vector: List[float], top_k: int):
     global index
+    load_index()
     if index is None:
         return None, None
 

@@ -20,9 +20,21 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./faiss_service/app:/app/app
       - faiss_data:/app/faiss_index
+
+  ollama:
+    build: ./ollama_service
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    entrypoint: ["/bin/sh", "/app/start.sh"]
 
 volumes:
   mariadb_data:
   faiss_data:
+  ollama_data:

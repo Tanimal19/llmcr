@@ -11,6 +11,11 @@ class AddVectorsRequest(BaseModel):
     vectors: List[List[float]]
 
 
+class AddVectorsResponse(BaseModel):
+    status: str
+    added_count: int
+
+
 class SearchRequest(BaseModel):
     qvector: List[float]
     top_k: int
@@ -36,7 +41,7 @@ async def add_vectors(request: AddVectorsRequest):
 
     create_index(request.ids, request.vectors)
 
-    return {"status": "success", "added_count": len(request.ids)}
+    return AddVectorsResponse(status="success", added_count=len(request.ids))
 
 
 @app.post("/index/search", response_model=SearchResponse)
@@ -63,3 +68,4 @@ async def startup_event():
         load_index()
     except Exception as e:
         print(f"Error loading FAISS index on startup: {e}")
+        print("please add index first")

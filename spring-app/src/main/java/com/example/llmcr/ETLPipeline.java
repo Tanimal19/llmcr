@@ -6,21 +6,20 @@ import com.example.llmcr.entity.DocumentParagraph;
 import com.example.llmcr.extractor.ClassNodeExtractor;
 import com.example.llmcr.extractor.DocumentParagraphExtractor;
 import com.example.llmcr.repository.DataStore;
+import com.example.llmcr.utils.LogUtils;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.VectorStore;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.RateLimiter;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.ArrayList;
@@ -34,9 +33,11 @@ public class ETLPipeline {
 
     private final DataStore dataStore;
     private final ChatModel chatModel;
+    private final VectorStore vectorStore;
+    private final LogUtils logUtils = LogUtils.getInstance();
 
+    // transform settings
     private final int MAX_PARAGRAPHS_PER_NODE = 10;
-
     private final PromptTemplate promptTemplate = PromptTemplate.builder()
             .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
             .template(
@@ -58,7 +59,6 @@ public class ETLPipeline {
     private final BeanOutputConverter<ClassNodeSummary> outputConverter = new BeanOutputConverter<>(
             ClassNodeSummary.class);
     private final String summaryBackupFile = "summaries.json";
-
     private final RateLimiter rateLimiter = RateLimiter.create(2.0 / 60.0);
 
     private record ClassNodeSummary(
@@ -69,9 +69,11 @@ public class ETLPipeline {
 
     public ETLPipeline(
             DataStore dataStore,
-            ChatModel chatModel) {
+            ChatModel chatModel,
+            VectorStore vectorStore) {
         this.dataStore = dataStore;
         this.chatModel = chatModel;
+        this.vectorStore = vectorStore;
     }
 
     /**
@@ -82,7 +84,7 @@ public class ETLPipeline {
         System.out.println("+ Starting data extraction...");
 
         ClassNodeExtractor classNodeExtractor = new ClassNodeExtractor();
-        DocumentParagraphExtractor documentParagraphExtractor = new DocumentParagraphExtractor();
+        DocumentParagraphExtractor documentParagraphExtractor = new DocumentParagraphExtractor(4096, 4096);
 
         List<ClassNode> allClassNodes = new ArrayList<>();
         List<DocumentParagraph> allDocumentParagraphs = new ArrayList<>();
@@ -109,7 +111,7 @@ public class ETLPipeline {
     /**
      * Transform ClassNodes by generating summaries using LLM.
      */
-    public ETLPipeline transform() {
+    public void transform() {
         long startTime = System.currentTimeMillis();
         System.out.println("+ Starting data transformation...");
         List<ClassNode> unprocessedNodes = dataStore.findUnprocessedClassNodes();
@@ -124,8 +126,6 @@ public class ETLPipeline {
 
         long endTime = System.currentTimeMillis();
         System.out.println("+ Transformation completed in " + (endTime - startTime) + "ms");
-
-        return this;
     }
 
     private ClassNode bindNodeWithParagraphs(ClassNode classNode) {
@@ -176,32 +176,53 @@ public class ETLPipeline {
         classNode.setUsageText(nodeSummary.usage());
         classNode.setRelationshipText(nodeSummary.relationship());
 
-        // backup generated summary into json for analysis
+        // backup generated summary into json
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(SerializationFeature.INDENT_OUTPUT);
-            File file = new File(summaryBackupFile);
-
-            ArrayNode array;
-            if (file.exists()) {
-                array = (ArrayNode) mapper.readTree(file);
-            } else {
-                array = mapper.createArrayNode();
-            }
-
-            ObjectNode entry = mapper.createObjectNode();
-            entry.put("timestamp", java.time.Instant.now().toString());
-            entry.put("prompt", prompt.toString());
-            entry.put("description", nodeSummary.description());
-            entry.put("exampleUsage", nodeSummary.usage());
-            entry.put("relationship", nodeSummary.relationship());
-
-            array.add(entry);
-            mapper.writeValue(file, array);
+            Map<String, Object> entry = Map.of(
+                    "timestamp", java.time.Instant.now().toString(),
+                    "prompt", prompt.toString(),
+                    "description", nodeSummary.description(),
+                    "exampleUsage", nodeSummary.usage(),
+                    "relationship", nodeSummary.relationship());
+            logUtils.appendJsonBackup(summaryBackupFile, entry);
         } catch (IOException e) {
             System.err.println("Failed to append to summaries.json: " + e.getMessage());
         }
 
         return classNode;
+    }
+
+    public ETLPipeline load() {
+        long startTime = System.currentTimeMillis();
+        System.out.println("+ Starting data loading...");
+
+        // load all class nodes
+        dataStore.findProcessedClassNodes().stream().forEach(node -> {
+            List<Document> documentsToEmbed = new ArrayList<>();
+            documentsToEmbed.add(
+                    new Document(node.getCodeText(), Map.of("type", "code", "source_id", node.getId())));
+            documentsToEmbed.add(
+                    new Document(node.getDescriptionText(), Map.of("type", "summary", "source_id", node.getId())));
+            documentsToEmbed
+                    .add(new Document(node.getUsageText(), Map.of("type", "summary", "source_id", node.getId())));
+            documentsToEmbed.add(
+                    new Document(node.getRelationshipText(), Map.of("type", "summary", "source_id", node.getId())));
+
+            vectorStore.add(documentsToEmbed);
+        });
+
+        // load all document paragraphs
+        TokenTextSplitter splitter = new TokenTextSplitter();
+        dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
+            Document doc = new Document(paragraph.getContent(),
+                    Map.of("type", "docParagraph", "source_id", paragraph.getId()));
+            List<Document> splitDocs = splitter.split(doc);
+            vectorStore.add(splitDocs);
+        });
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("+ Loading completed in " + (endTime - startTime) + "ms");
+
+        return this;
     }
 }

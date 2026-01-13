@@ -8,7 +8,6 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.*;
 import org.asciidoctor.jruby.ast.impl.ListItemImpl;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -18,12 +17,16 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-@Component
 public class DocumentParagraphExtractor
         implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
-    private final int MAX_PDF_PARAGRAPH_LENGTH = 4096;
-    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH = 4096;
+    private final int MAX_PDF_PARAGRAPH_LENGTH;
+    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH;
+
+    public DocumentParagraphExtractor(int maxPdfParagraphLength, int maxAsciiDocParagraphLength) {
+        this.MAX_PDF_PARAGRAPH_LENGTH = maxPdfParagraphLength;
+        this.MAX_ASCIIDOC_PARAGRAPH_LENGTH = maxAsciiDocParagraphLength;
+    }
 
     @Override
     public List<DocumentParagraph> visit(CompilationUnitSource source) {

@@ -44,6 +44,10 @@ public class DataStore {
         return nodeRepo.findByProcessedFalse();
     }
 
+    public List<ClassNode> findProcessedClassNodes() {
+        return nodeRepo.findByProcessedTrue();
+    }
+
     // DocumentParagraph operations
     public void save(DocumentParagraph paragraph) {
         documentRepo.save(paragraph);

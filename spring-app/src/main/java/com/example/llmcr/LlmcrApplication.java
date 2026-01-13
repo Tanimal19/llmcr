@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
@@ -11,8 +12,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.repository.DataStore;
+import com.example.llmcr.repository.FaissVectorStore;
+import com.example.llmcr.service.FaissService;
 import com.example.llmcr.utils.DataSourceFactoryUtils;
 
 @SpringBootApplication()
@@ -22,8 +24,10 @@ public class LlmcrApplication implements CommandLineRunner {
 	private DataStore dataStore;
 
 	@Autowired
-	@Qualifier("googleGenAiChatModel")
 	private ChatModel chatModel;
+
+	@Autowired
+	private FaissVectorStore vectorStore;
 
 	public static void main(String[] args) {
 		SpringApplication app = new SpringApplication(LlmcrApplication.class);
@@ -37,19 +41,10 @@ public class LlmcrApplication implements CommandLineRunner {
 		String javaDocPathString = javaProjectRootPathString +
 				"/spring-ai-docs/src/main/antora/modules/ROOT/pages/";
 
-		// create data sources
-		long startTime = System.currentTimeMillis();
-		System.out.println("+ Creating data sources from paths...");
-
-		List<DataSource> dataSources = new ArrayList<>();
-		dataSources.addAll(DataSourceFactoryUtils.createFromJavaProject(javaProjectRootPathString));
-		dataSources.addAll(DataSourceFactoryUtils.createFromPath(javaDocPathString));
-
-		long endTime = System.currentTimeMillis();
-		System.out.println("+ Data source parsing completed in " + (endTime - startTime) + "ms");
-
 		// ETL pipeline
-		new ETLPipeline(dataStore, chatModel)
+		new ETLPipeline(dataStore, chatModel, vectorStore)
+				.extract(DataSourceFactoryUtils.createFromJavaProject(javaProjectRootPathString))
+				.extract(DataSourceFactoryUtils.createFromPath(javaDocPathString))
 				.transform();
 	}
 }

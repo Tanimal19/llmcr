@@ -24,6 +24,11 @@ public interface ClassNodeRepository extends JpaRepository<ClassNode, String> {
     List<ClassNode> findByProcessedFalse();
 
     /**
+     * Find all ClassNodes that have been processed.
+     */
+    List<ClassNode> findByProcessedTrue();
+
+    /**
      * Find ClassNodes by signature containing a keyword.
      */
     List<ClassNode> findBySignatureContainingIgnoreCase(String keyword);
