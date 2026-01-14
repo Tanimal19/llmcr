@@ -3,11 +3,13 @@ package com.example.llmcr.service;
 import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
+import com.example.llmcr.entity.Chunk.ChunkType;
 import com.example.llmcr.extractor.ClassNodeExtractor;
 import com.example.llmcr.extractor.DocumentParagraphExtractor;
 import com.example.llmcr.repository.DataStore;
 import com.example.llmcr.utils.JsonBackupUtils;
 
+import org.jruby.RubyProcess.Sys;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -229,29 +231,31 @@ public class ETLPipeline {
         System.out.println("+ Starting data loading...");
 
         // load all class nodes
+        System.out.println("  - Loading class nodes");
         dataStore.findProcessedClassNodes().stream().forEach(node -> {
             List<Document> documentsToEmbed = new ArrayList<>();
             documentsToEmbed.add(
                     new Document(node.getCodeText(),
-                            Map.of("type", "code", "source_id", node.getId())));
+                            Map.of("type", ChunkType.CODE, "source_id", node.getId())));
             documentsToEmbed.add(
                     new Document(node.getDescriptionText(),
-                            Map.of("type", "summary", "source_id", node.getId())));
+                            Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
             documentsToEmbed
                     .add(new Document(node.getUsageText(),
-                            Map.of("type", "summary", "source_id", node.getId())));
+                            Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
             documentsToEmbed.add(
                     new Document(node.getRelationshipText(),
-                            Map.of("type", "summary", "source_id", node.getId())));
+                            Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
 
             vectorStore.add(documentsToEmbed);
         });
 
         // load all document paragraphs
+        System.out.println("  - Loading document paragraphs");
         TokenTextSplitter splitter = new TokenTextSplitter();
         dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
             Document doc = new Document(paragraph.getContent(),
-                    Map.of("type", "docParagraph", "source_id", paragraph.getId()));
+                    Map.of("type", ChunkType.PARAGRAPH, "source_id", paragraph.getId()));
             List<Document> splitDocs = splitter.split(doc);
             vectorStore.add(splitDocs);
         });

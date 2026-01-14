@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
-from app.faiss_utils import create_index, load_index, search
+from app.faiss_utils import *
 
 app = FastAPI(title="FAISS Vector Search Service")
 
@@ -33,14 +33,11 @@ async def root():
 
 @app.post("/index/add")
 async def add_vectors(request: AddVectorsRequest):
-    """Add vectors to the FAISS index"""
     if len(request.ids) != len(request.vectors):
         raise HTTPException(
             status_code=400, detail="ids and vectors must have the same length"
         )
-
     create_index(request.ids, request.vectors)
-
     return AddVectorsResponse(status="success", added_count=len(request.ids))
 
 
@@ -60,6 +57,15 @@ async def reload_index():
         return {"status": "success", "message": "FAISS index reloaded"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reloading index: {e}")
+
+
+@app.post("/index/remove", status_code=200)
+async def remove_index_endpoint():
+    try:
+        remove_index()
+        return {"status": "success", "message": "FAISS index removed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error removing index: {e}")
 
 
 @app.on_event("startup")

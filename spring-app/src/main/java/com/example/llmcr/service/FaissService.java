@@ -2,6 +2,7 @@ package com.example.llmcr.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -28,6 +29,7 @@ public class FaissService {
     public AddVectorsResponse addVectors(AddVectorsRequest request) {
         return webClient.post()
                 .uri("/index/add")
+                .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(AddVectorsResponse.class)
@@ -40,6 +42,7 @@ public class FaissService {
     public SearchVectorsResponse searchVectors(SearchVectorsRequest request) {
         return webClient.post()
                 .uri("/index/search")
+                .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(SearchVectorsResponse.class)

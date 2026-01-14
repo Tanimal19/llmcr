@@ -23,6 +23,13 @@ def load_index(update=False):
     index = faiss.read_index(index_path)
     print(f"loaded {index.ntotal} vectors")
 
+def remove_index():
+    global index
+    if os.path.exists(index_path):
+        os.remove(index_path)
+        print(f"Removed index file at {index_path}.")
+    index = None
+
 
 def create_index(ids: List[int], vectors: List[List[float]]) -> None:
     print(f"Creating FAISS index...")

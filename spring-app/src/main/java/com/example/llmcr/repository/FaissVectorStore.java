@@ -49,6 +49,7 @@ public class FaissVectorStore implements VectorStore {
         List<float[]> embeddings = documents.stream()
                 .map(d -> embeddingModel.embed(d))
                 .collect(Collectors.toList());
+        System.out.println("Generated " + embeddings.size() + " embeddings.");
 
         // generate FAISS index
         AddVectorsRequest req = new AddVectorsRequest(ids, embeddings);
