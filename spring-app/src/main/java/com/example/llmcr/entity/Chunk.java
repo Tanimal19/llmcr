@@ -39,10 +39,14 @@ public class Chunk {
     public Chunk(Document doc) {
         this.content = doc.getText();
         this.sourceId = (UUID) doc.getMetadata().get("source_id");
-        String typeString = (String) doc.getMetadata().get("chunk_type");
-        this.type = (typeString != null && !typeString.isEmpty())
-                ? ChunkType.valueOf(typeString)
-                : ChunkType.UNDEFINED;
+        Object typeObj = doc.getMetadata().get("type");
+        if (typeObj instanceof ChunkType) {
+            this.type = (ChunkType) typeObj;
+        } else if (typeObj instanceof String) {
+            this.type = ChunkType.valueOf((String) typeObj);
+        } else {
+            this.type = ChunkType.UNDEFINED;
+        }
     }
 
     public Long getId() {

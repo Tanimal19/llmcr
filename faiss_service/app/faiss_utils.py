@@ -5,30 +5,30 @@ from typing import List
 
 
 index = None
-index_path = "./faiss_index/index.bin"
+index_path = "./app/data/index.bin"
 
 
-def load_index(update=False):
+def load_index(update=False) -> str:
     global index
 
     if not os.path.exists(index_path):
-        print(f"No existing index found at {index_path}.")
         index = None
-        return
+        return "No index file found."
 
     if index is not None and not update:
-        return
+        return "Index already loaded. Use update=True to reload."
 
-    print(f"load index from {index_path}")
     index = faiss.read_index(index_path)
-    print(f"loaded {index.ntotal} vectors")
+    return f"Loaded index with {index.ntotal} vectors."
 
-def remove_index():
+def remove_index() -> str:
     global index
     if os.path.exists(index_path):
         os.remove(index_path)
-        print(f"Removed index file at {index_path}.")
-    index = None
+        index = None
+        return "FAISS index file removed."
+    else:
+        return "No FAISS index file to remove."
 
 
 def create_index(ids: List[int], vectors: List[List[float]]) -> None:

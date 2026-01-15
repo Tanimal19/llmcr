@@ -20,8 +20,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - faiss_data:/app/faiss_index
+      - ./faiss_service/app/data:/app/app/data
 
 volumes:
   mariadb_data:
-  faiss_data:

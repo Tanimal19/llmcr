@@ -9,7 +9,6 @@ import com.example.llmcr.extractor.DocumentParagraphExtractor;
 import com.example.llmcr.repository.DataStore;
 import com.example.llmcr.utils.JsonBackupUtils;
 
-import org.jruby.RubyProcess.Sys;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;

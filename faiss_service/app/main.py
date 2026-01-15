@@ -53,8 +53,8 @@ async def search_vectors(request: SearchRequest):
 @app.post("/index/reload", status_code=200)
 async def reload_index():
     try:
-        load_index()
-        return {"status": "success", "message": "FAISS index reloaded"}
+        msg = load_index(update=True)
+        return {"status": "success", "message": msg}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reloading index: {e}")
 
@@ -62,8 +62,8 @@ async def reload_index():
 @app.post("/index/remove", status_code=200)
 async def remove_index_endpoint():
     try:
-        remove_index()
-        return {"status": "success", "message": "FAISS index removed"}
+        msg = remove_index()
+        return {"status": "success", "message": msg}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error removing index: {e}")
 
@@ -74,4 +74,3 @@ async def startup_event():
         load_index()
     except Exception as e:
         print(f"Error loading FAISS index on startup: {e}")
-        print("please add index first")
