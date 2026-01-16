@@ -66,7 +66,7 @@ if __name__ == "__main__":
             "id": pr_json["id"],
             "html_url": pr_json["html_url"],
             "title": pr_json["title"],
-            "body": pr_json["body"],
+            "description": pr_json["body"],
         }
         diff_text = fetch_pr_diff(pr_json["html_url"])
         diff = parse_diff(diff_text)
