@@ -37,7 +37,7 @@ async def add_vectors(request: AddVectorsRequest):
         raise HTTPException(
             status_code=400, detail="ids and vectors must have the same length"
         )
-    create_index(request.ids, request.vectors)
+    add_index(request.ids, request.vectors)
     return AddVectorsResponse(status="success", added_count=len(request.ids))
 
 
@@ -45,8 +45,8 @@ async def add_vectors(request: AddVectorsRequest):
 async def search_vectors(request: SearchRequest):
     scores, ids = search(request.qvector, request.top_k)
     return SearchResponse(
-        ids=ids[0].tolist() if ids is not None else [],
-        scores=scores[0].tolist() if scores is not None else [],
+        ids=ids,
+        scores=scores,
     )
 
 

@@ -16,47 +16,62 @@ def load_index(update=False) -> str:
         return "No index file found."
 
     if index is not None and not update:
-        return "Index already loaded. Use update=True to reload."
+        return f"Index already loaded, index.ntotal = {index.ntotal}"
 
     index = faiss.read_index(index_path)
-    return f"Loaded index with {index.ntotal} vectors."
+    return f"Load index from file, index.ntotal = {index.ntotal}"
+
 
 def remove_index() -> str:
     global index
     if os.path.exists(index_path):
         os.remove(index_path)
         index = None
-        return "FAISS index file removed."
+        return "Index file removed."
     else:
-        return "No FAISS index file to remove."
+        return "No index file to remove."
 
 
-def create_index(ids: List[int], vectors: List[List[float]]) -> None:
-    print(f"Creating FAISS index...")
+def create_index(dim) -> None:
+    print(f"Creating FAISS index with dimension: {dim}")
+
+    base = faiss.IndexFlatIP(dim)
+    index = faiss.IndexIDMap2(base)
+    faiss.write_index(index, index_path)
+
+
+def add_index(ids: List[int], vectors: List[List[float]]) -> None:
+    global index
+    if index is None:
+        create_index(len(vectors[0]))
+        load_index()
+
+    if index is None:
+        print("Failed to load index.")
+        return
 
     vectors_np = np.array(vectors, dtype=np.float32)
     ids_np = np.array(ids, dtype=np.int64)
     faiss.normalize_L2(vectors_np)
-    index = faiss.IndexFlatIP(vectors_np.shape[1])
 
-    id_index = faiss.IndexIDMap2(index)
-    id_index.add_with_ids(vectors_np, ids_np)
+    index.add_with_ids(vectors_np, ids_np)
+    faiss.write_index(index, index_path)
 
-    faiss.write_index(id_index, index_path)
-
-    print(f"create {id_index.ntotal} vectors")
-    print(f"add index to {index_path}")
-
-    # reload the index
     load_index(update=True)
+    print(f"add {len(ids)} index, index.ntotal = {index.ntotal}")
 
 
 def search(query_vector: List[float], top_k: int):
     global index
-    load_index()
     if index is None:
-        return None, None
+        load_index()
+
+    if index is None:
+        print("Failed to load index.")
+        return [], []
 
     query_vector_np = np.array([query_vector], dtype=np.float32)
+    faiss.normalize_L2(query_vector_np)
+
     scores, ids = index.search(query_vector_np, top_k)
-    return scores, ids
+    return scores[0].tolist(), ids[0].tolist()

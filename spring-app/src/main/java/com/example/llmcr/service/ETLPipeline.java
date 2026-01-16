@@ -105,21 +105,14 @@ public class ETLPipeline {
                 maxPdfParagraphLength,
                 maxAsciiParagraphLength);
 
-        List<ClassNode> allClassNodes = new ArrayList<>();
-        List<DocumentParagraph> allDocumentParagraphs = new ArrayList<>();
-
         // Iterate over all raw data sources and extract data
-        for (DataSource source : rawDataSources) {
+        rawDataSources.stream().forEach(source -> {
             List<ClassNode> classNodes = source.accept(classNodeExtractor);
-            allClassNodes.addAll(classNodes);
+            dataStore.saveAllClassNodes(classNodes);
 
             List<DocumentParagraph> paragraphs = source.accept(documentParagraphExtractor);
-            allDocumentParagraphs.addAll(paragraphs);
-        }
-
-        // Persist extracted data
-        dataStore.saveAllClassNodes(allClassNodes);
-        dataStore.saveAllDocumentParagraphs(allDocumentParagraphs);
+            dataStore.saveAllDocumentParagraphs(paragraphs);
+        });
 
         long endTime = System.currentTimeMillis();
         System.out.println("+ Extraction completed in " + (endTime - startTime) + "ms");
@@ -135,14 +128,13 @@ public class ETLPipeline {
 
         RateLimiter rateLimiter = RateLimiter.create(transformRpm / 60.0);
 
-        List<ClassNode> unprocessedNodes = dataStore.findUnprocessedClassNodes();
-        for (ClassNode classNode : unprocessedNodes) {
+        dataStore.findUnprocessedClassNodes().stream().forEach(classNode -> {
             classNode.setProcessed(true);
             classNode = bindNodeWithParagraphs(classNode);
             classNode = enrichNodeWithSummary(classNode);
             dataStore.save(classNode);
             rateLimiter.acquire();
-        }
+        });
 
         long endTime = System.currentTimeMillis();
         System.out.println("+ Transformation completed in " + (endTime - startTime) + "ms");
@@ -191,17 +183,17 @@ public class ETLPipeline {
             return classNode;
         }
 
-        String rawOutput = response.getResult().getOutput().getText();
+        String rawResponse = response.getResult().getOutput().getText();
         ClassNodeSummary nodeSummary;
         try {
-            nodeSummary = outputConverter.convert(rawOutput);
+            nodeSummary = outputConverter.convert(rawResponse);
         } catch (Exception e) {
             System.err.println("Output conversion failed. Store raw output to summary. Error: "
                     + e.getMessage());
             nodeSummary = new ClassNodeSummary(
-                    rawOutput,
-                    null,
-                    null);
+                    rawResponse,
+                    "null",
+                    "null");
         }
 
         // update class node
@@ -219,7 +211,7 @@ public class ETLPipeline {
                     "relationship", nodeSummary.relationship());
             JsonBackupUtils.appendJsonBackup(transformChatHistoryFile, entry);
         } catch (IOException e) {
-            System.err.println("Failed to append to summaries.json: " + e.getMessage());
+            System.err.println("Failed to save history: " + e.getMessage());
         }
 
         return classNode;
@@ -251,7 +243,7 @@ public class ETLPipeline {
 
         // load all document paragraphs
         System.out.println("  - Loading document paragraphs");
-        TokenTextSplitter splitter = new TokenTextSplitter();
+        TokenTextSplitter splitter = new TokenTextSplitter(500, 350, 5, 10000, true);
         dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
             Document doc = new Document(paragraph.getContent(),
                     Map.of("type", ChunkType.PARAGRAPH, "source_id", paragraph.getId()));

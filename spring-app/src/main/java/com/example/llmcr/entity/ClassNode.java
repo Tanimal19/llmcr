@@ -18,7 +18,7 @@ public class ClassNode {
     @Column(name = "signature", columnDefinition = "TEXT", nullable = false)
     private String signature;
 
-    @Column(name = "code_text", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "code_text", columnDefinition = "MEDIUMTEXT", nullable = false)
     private String codeText;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
