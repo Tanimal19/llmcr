@@ -11,9 +11,11 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.example.llmcr.entity.Chunk;
+import com.example.llmcr.entity.IndexFile;
 import com.example.llmcr.service.FaissService;
 import com.example.llmcr.service.FaissService.AddVectorsRequest;
 import com.example.llmcr.service.FaissService.AddVectorsResponse;
@@ -26,19 +28,36 @@ public class FaissVectorStore implements VectorStore {
     private final DataStore dataStore;
     private final FaissService faissService;
     private final EmbeddingModel embeddingModel;
+    private final IndexFile indexFile;
 
     @Autowired
-    public FaissVectorStore(DataStore dataStore, FaissService faissService, EmbeddingModel embeddingModel) {
+    public FaissVectorStore(DataStore dataStore, FaissService faissService, EmbeddingModel embeddingModel,
+            @Value("${faiss.index.name:default}") String indexName) {
         this.dataStore = dataStore;
         this.faissService = faissService;
         this.embeddingModel = embeddingModel;
+
+        indexFile = dataStore.createIndexFile(new IndexFile(indexName));
+        System.out.println("Using FaissVectorStore with index file: " + indexName);
+    }
+
+    public IndexFile getIndexFile() {
+        return indexFile;
     }
 
     @Override
     public void add(List<Document> documents) {
         // store to database first to get IDs
+        if (documents.isEmpty()) {
+            return;
+        }
+
         List<Chunk> chunks = documents.stream()
                 .map(d -> new Chunk(d))
+                .map(d -> {
+                    d.addIndexFile(indexFile);
+                    return d;
+                })
                 .collect(Collectors.toList());
         dataStore.saveAllChunks(chunks);
         List<Long> ids = chunks.stream()
@@ -46,16 +65,16 @@ public class FaissVectorStore implements VectorStore {
                 .collect(Collectors.toList());
 
         // generate embeddings
-        List<float[]> embeddings = documents.stream()
-                .map(d -> embeddingModel.embed(d))
+        List<float[]> embeddings = chunks.stream()
+                .map(c -> embeddingModel.embed(c.getContent()))
                 .collect(Collectors.toList());
         System.out.println("Generated " + embeddings.size() + " embeddings.");
 
         // generate FAISS index
-        AddVectorsRequest req = new AddVectorsRequest(ids, embeddings);
+        AddVectorsRequest req = new AddVectorsRequest(indexFile.getName(), ids, embeddings);
 
         AddVectorsResponse res = faissService.addVectors(req);
-        System.out.println("Added " + res.added_count() + " vectors to FAISS index.");
+        System.out.println("Added " + res.added_count() + " vectors to index:" + indexFile.getName());
     }
 
     @Override
@@ -73,7 +92,7 @@ public class FaissVectorStore implements VectorStore {
     @Override
     public List<Document> similaritySearch(SearchRequest request) {
         float[] queryVector = embeddingModel.embed(request.getQuery());
-        SearchVectorsRequest req = new SearchVectorsRequest(queryVector, request.getTopK());
+        SearchVectorsRequest req = new SearchVectorsRequest(indexFile.getName(), queryVector, request.getTopK());
 
         SearchVectorsResponse res = faissService.searchVectors(req);
 

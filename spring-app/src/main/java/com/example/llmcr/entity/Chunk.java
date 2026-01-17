@@ -1,6 +1,9 @@
 package com.example.llmcr.entity;
 
 import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.ai.document.Document;
@@ -26,6 +29,10 @@ public class Chunk {
 
     @Column(name = "source_id", nullable = false)
     private UUID sourceId;
+
+    @ManyToMany
+    @JoinTable(name = "chunk_index_file", joinColumns = @JoinColumn(name = "chunk_id"), inverseJoinColumns = @JoinColumn(name = "index_file_name"))
+    private Set<IndexFile> indexFiles = new HashSet<>();
 
     public Chunk() {
     }
@@ -79,6 +86,14 @@ public class Chunk {
 
     public void setSourceId(UUID sourceId) {
         this.sourceId = sourceId;
+    }
+
+    public Set<IndexFile> getIndexFiles() {
+        return indexFiles;
+    }
+
+    public void addIndexFile(IndexFile indexFile) {
+        this.indexFiles.add(indexFile);
     }
 
     @Override

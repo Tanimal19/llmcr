@@ -31,13 +31,10 @@ public class LlmcrApplication implements CommandLineRunner {
 		String javaDocPathString = javaProjectRootPathString +
 				"/spring-ai-docs/src/main/antora/modules/ROOT/pages/";
 
-		// ETL pipeline
-		// etlPipeline
-		// .extract(DataSourceFactoryUtils.createFromJavaProject(javaProjectRootPathString))
-		// .extract(DataSourceFactoryUtils.createFromPath(javaDocPathString))
-		// .transform()
-		// .load();
-
-		new EvaluationTask().run(ragService);
+		etlPipeline
+				// .extract(DataSourceFactoryUtils.createFromJavaProject(javaProjectRootPathString))
+				// .extract(DataSourceFactoryUtils.createFromPath(javaDocPathString))
+				// .transform()
+				.load();
 	}
 }

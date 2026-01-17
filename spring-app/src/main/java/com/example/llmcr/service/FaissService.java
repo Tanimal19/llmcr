@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -33,6 +34,7 @@ public class FaissService {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(AddVectorsResponse.class)
+                .timeout(Duration.ofSeconds(30))
                 .block();
     }
 
@@ -46,11 +48,13 @@ public class FaissService {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(SearchVectorsResponse.class)
+                .timeout(Duration.ofSeconds(30))
                 .block();
     }
 
     // Request/Response DTOs
     public record AddVectorsRequest(
+            String index_name,
             List<Long> ids,
             List<float[]> vectors) {
     }
@@ -61,6 +65,7 @@ public class FaissService {
     }
 
     public record SearchVectorsRequest(
+            String index_name,
             float[] qvector,
             int top_k) {
     }

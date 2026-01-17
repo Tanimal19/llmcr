@@ -3,6 +3,8 @@ package com.example.llmcr.repository;
 import com.example.llmcr.entity.Chunk;
 import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
+import com.example.llmcr.entity.IndexFile;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,13 +20,15 @@ public class DataStore {
     private final ClassNodeRepository nodeRepo;
     private final DocumentParagraphRepository documentRepo;
     private final ChunkRepository chunkRepo;
+    private final IndexFileRepository indexFileRepo;
 
     @Autowired
     public DataStore(ClassNodeRepository nodeRepo, DocumentParagraphRepository documentRepo,
-            ChunkRepository chunkRepo) {
+            ChunkRepository chunkRepo, IndexFileRepository indexFileRepo) {
         this.nodeRepo = nodeRepo;
         this.documentRepo = documentRepo;
         this.chunkRepo = chunkRepo;
+        this.indexFileRepo = indexFileRepo;
     }
 
     // ClassNode operations
@@ -112,8 +116,16 @@ public class DataStore {
     }
 
     // Chunk operations
+    public void save(Chunk chunk) {
+        chunkRepo.save(chunk);
+    }
+
     public void saveAllChunks(List<Chunk> chunks) {
         chunkRepo.saveAll(chunks);
+    }
+
+    public Chunk findChunkById(Long id) {
+        return chunkRepo.findById(id).orElse(null);
     }
 
     public List<Chunk> findAllChunks() {
@@ -122,6 +134,16 @@ public class DataStore {
 
     public List<Chunk> findAllChunksByIds(List<Long> ids) {
         return chunkRepo.findByIdIn(ids);
+    }
+
+    // IndexFile operations
+    public IndexFile createIndexFile(IndexFile indexFile) {
+        if (indexFileRepo.findByName(indexFile.getName()) == null) {
+            indexFileRepo.save(indexFile);
+        } else {
+            System.out.println("IndexFile with name " + indexFile.getName() + " already exists. Skipping creation.");
+        }
+        return indexFileRepo.findByName(indexFile.getName());
     }
 
     // Getters for direct access if needed

@@ -4,50 +4,63 @@ import numpy as np
 from typing import List
 
 
-index = None
-index_path = "./app/data/index.bin"
+INDEX = None
+CURRENT_INDEX_NAME = None
 
 
-def load_index(update=False) -> str:
-    global index
-
-    if not os.path.exists(index_path):
-        index = None
-        return "No index file found."
-
-    if index is not None and not update:
-        return f"Index already loaded, index.ntotal = {index.ntotal}"
-
-    index = faiss.read_index(index_path)
-    return f"Load index from file, index.ntotal = {index.ntotal}"
+def get_index_path(index_name: str) -> str:
+    return f"./app/data/{index_name}.index"
 
 
-def remove_index() -> str:
-    global index
-    if os.path.exists(index_path):
-        os.remove(index_path)
-        index = None
-        return "Index file removed."
+def load_index(index_name: str) -> str:
+    global INDEX, CURRENT_INDEX_NAME
+
+    if not os.path.exists(get_index_path(index_name)):
+        return f"Index file {index_name} does not exist."
     else:
-        return "No index file to remove."
+        INDEX = faiss.read_index(get_index_path(index_name))
+        CURRENT_INDEX_NAME = index_name
+        return f"Load index {index_name} from file, index.ntotal = {INDEX.ntotal}"
 
 
-def create_index(dim) -> None:
-    print(f"Creating FAISS index with dimension: {dim}")
+def remove_index(index_name: str) -> str:
+    global INDEX, CURRENT_INDEX_NAME
+    if os.path.exists(get_index_path(index_name)):
+        os.remove(get_index_path(index_name))
+        INDEX = None
+        CURRENT_INDEX_NAME = None
+        return f"Index {index_name} removed."
+    else:
+        return f"Index {index_name} does not exist."
 
+
+def create_index(index_name: str, dim: int) -> str:
     base = faiss.IndexFlatIP(dim)
-    index = faiss.IndexIDMap2(base)
-    faiss.write_index(index, index_path)
+    idmap = faiss.IndexIDMap2(base)
+    faiss.write_index(idmap, get_index_path(index_name))
+    return f"Created new index {index_name} with dimension {dim}."
 
 
-def add_index(ids: List[int], vectors: List[List[float]]) -> None:
-    global index
+def get_index(index_name: str, dim: int | None):
+    global INDEX, CURRENT_INDEX_NAME
+
+    if CURRENT_INDEX_NAME != index_name:
+        load_index(index_name)
+
+    if INDEX is None:
+        if dim is None:
+            print("Dimension must be provided to create a new index.")
+            return None
+        create_index(index_name, dim)
+        load_index(index_name)
+
+    return INDEX
+
+
+def add_index(index_name: str, ids: List[int], vectors: List[List[float]]) -> None:
+    index = get_index(index_name, len(vectors[0]))
     if index is None:
-        create_index(len(vectors[0]))
-        load_index()
-
-    if index is None:
-        print("Failed to load index.")
+        print("Failed to get index.")
         return
 
     vectors_np = np.array(vectors, dtype=np.float32)
@@ -55,19 +68,16 @@ def add_index(ids: List[int], vectors: List[List[float]]) -> None:
     faiss.normalize_L2(vectors_np)
 
     index.add_with_ids(vectors_np, ids_np)
-    faiss.write_index(index, index_path)
+    faiss.write_index(index, get_index_path(index_name))
+    print(f"Add {len(ids)} index to {index_name}.")
 
-    load_index(update=True)
-    print(f"add {len(ids)} index, index.ntotal = {index.ntotal}")
+    load_index(index_name)
 
 
-def search(query_vector: List[float], top_k: int):
-    global index
+def search(index_name: str, query_vector: List[float], top_k: int):
+    index = get_index(index_name, None)
     if index is None:
-        load_index()
-
-    if index is None:
-        print("Failed to load index.")
+        print("Failed to get index.")
         return [], []
 
     query_vector_np = np.array([query_vector], dtype=np.float32)

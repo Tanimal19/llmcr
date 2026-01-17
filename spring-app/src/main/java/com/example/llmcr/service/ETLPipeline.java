@@ -221,6 +221,8 @@ public class ETLPipeline {
         long startTime = System.currentTimeMillis();
         System.out.println("+ Starting data loading...");
 
+        TokenTextSplitter splitter = new TokenTextSplitter(500, 350, 100, 10000, true);
+
         // load all class nodes
         System.out.println("  - Loading class nodes");
         dataStore.findProcessedClassNodes().stream().forEach(node -> {
@@ -228,22 +230,22 @@ public class ETLPipeline {
             documentsToEmbed.add(
                     new Document(node.getCodeText(),
                             Map.of("type", ChunkType.CODE, "source_id", node.getId())));
-            documentsToEmbed.add(
-                    new Document(node.getDescriptionText(),
-                            Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
-            documentsToEmbed
-                    .add(new Document(node.getUsageText(),
-                            Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
-            documentsToEmbed.add(
-                    new Document(node.getRelationshipText(),
-                            Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
+            // documentsToEmbed.add(
+            // new Document(node.getDescriptionText(),
+            // Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
+            // documentsToEmbed.add(
+            // new Document(node.getUsageText(),
+            // Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
+            // documentsToEmbed.add(
+            // new Document(node.getRelationshipText(),
+            // Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
 
-            vectorStore.add(documentsToEmbed);
+            List<Document> splitDocs = splitter.split(documentsToEmbed);
+            vectorStore.add(splitDocs);
         });
 
         // load all document paragraphs
         System.out.println("  - Loading document paragraphs");
-        TokenTextSplitter splitter = new TokenTextSplitter(500, 350, 5, 10000, true);
         dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
             Document doc = new Document(paragraph.getContent(),
                     Map.of("type", ChunkType.PARAGRAPH, "source_id", paragraph.getId()));
