@@ -1,4 +1,4 @@
-package com.example.llmcr.service.rag.strategy;
+package com.example.llmcr.service.rag.retrieval;
 
 import java.util.List;
 
@@ -6,19 +6,15 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
-public class AdaptiveKStrategy implements RAGStrategy {
+public class AdaptiveKStrategy implements RetrievalStrategy {
 
-    private VectorStore vectorStore;
     private final int topN = 100;
 
-    public AdaptiveKStrategy() {
+    public String getUsedIndexName() {
+        return "enriched";
     }
 
-    public void setVectorStore(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
-    }
-
-    public List<Document> retrieveRelevantChunks(String query, int topK) {
+    public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
         SearchRequest request = SearchRequest.builder()
                 .query(query)
                 .topK(topN)

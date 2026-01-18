@@ -20,12 +20,10 @@ import java.util.stream.Stream;
 public class DocumentParagraphExtractor
         implements VoidDataSourceExtractor<List<DocumentParagraph>> {
 
-    private final int MAX_PDF_PARAGRAPH_LENGTH;
-    private final int MAX_ASCIIDOC_PARAGRAPH_LENGTH;
+    private final int maxParagraphLength;
 
-    public DocumentParagraphExtractor(int maxPdfParagraphLength, int maxAsciiDocParagraphLength) {
-        this.MAX_PDF_PARAGRAPH_LENGTH = maxPdfParagraphLength;
-        this.MAX_ASCIIDOC_PARAGRAPH_LENGTH = maxAsciiDocParagraphLength;
+    public DocumentParagraphExtractor(int maxParagraphLength) {
+        this.maxParagraphLength = maxParagraphLength;
     }
 
     @Override
@@ -46,7 +44,7 @@ public class DocumentParagraphExtractor
             AtomicInteger count = new AtomicInteger(0);
 
             for (String line : text.split("\n")) {
-                if (chunk.length() + line.length() > MAX_PDF_PARAGRAPH_LENGTH && chunk.length() > 0) {
+                if (chunk.length() + line.length() > maxParagraphLength && chunk.length() > 0) {
                     result.add(new DocumentParagraph(
                             UUID.randomUUID(),
                             ctx + "::" + count.getAndIncrement(),
@@ -149,7 +147,7 @@ public class DocumentParagraphExtractor
                 content = block.getContent().toString();
             }
 
-            if (chunk.length() + content.length() > MAX_ASCIIDOC_PARAGRAPH_LENGTH
+            if (chunk.length() + content.length() > maxParagraphLength
                     && chunk.length() > 0) {
 
                 result.add(new DocumentParagraph(

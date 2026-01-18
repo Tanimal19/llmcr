@@ -1,4 +1,4 @@
-package com.example.llmcr.utils;
+package com.example.llmcr.service.etl;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,13 +18,9 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 
-/**
- * Factory to create DataSource instances from various file types and
- * directories.
- */
-public final class DataSourceFactoryUtils {
+public final class DataSourceFactoryService {
 
-    private DataSourceFactoryUtils() {
+    private DataSourceFactoryService() {
     }
 
     public static List<DataSource> createFromJavaProject(String javaProjectRootPathString) {

@@ -136,14 +136,32 @@ public class DataStore {
         return chunkRepo.findByIdIn(ids);
     }
 
+    public List<Chunk> findChunksByType(Chunk.ChunkType type) {
+        return chunkRepo.findByType(type);
+    }
+
     // IndexFile operations
-    public IndexFile createIndexFile(IndexFile indexFile) {
-        if (indexFileRepo.findByName(indexFile.getName()) == null) {
+    public void createIndexIfNotExist(String indexName) {
+        if (indexFileRepo.findByName(indexName) == null) {
+            indexFileRepo.save(new IndexFile(indexName));
+        } else {
+            System.out.println("IndexFile with name " + indexName + " already exists. Skipping creation.");
+        }
+    }
+
+    public IndexFile findIndexByName(String indexName) {
+        return indexFileRepo.findByName(indexName);
+    }
+
+    public void addAllChunksToIndexFileByIds(String indexName, List<Long> chunkIds) {
+        IndexFile indexFile = indexFileRepo.findByName(indexName);
+        if (indexFile != null) {
+            List<Chunk> chunks = chunkRepo.findByIdIn(chunkIds);
+            indexFile.getChunks().addAll(chunks);
             indexFileRepo.save(indexFile);
         } else {
-            System.out.println("IndexFile with name " + indexFile.getName() + " already exists. Skipping creation.");
+            System.out.println("IndexFile with name " + indexName + " not found. Cannot add chunks.");
         }
-        return indexFileRepo.findByName(indexFile.getName());
     }
 
     // Getters for direct access if needed

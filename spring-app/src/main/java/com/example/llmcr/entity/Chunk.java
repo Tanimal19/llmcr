@@ -92,8 +92,8 @@ public class Chunk {
         return indexFiles;
     }
 
-    public void addIndexFile(IndexFile indexFile) {
-        this.indexFiles.add(indexFile);
+    public void setIndexFiles(Set<IndexFile> indexFiles) {
+        this.indexFiles = indexFiles;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.example.llmcr.repository;
+package com.example.llmcr.faiss;
 
 import java.util.List;
 import java.util.Map;
@@ -10,71 +10,51 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import com.example.llmcr.entity.Chunk;
-import com.example.llmcr.entity.IndexFile;
-import com.example.llmcr.service.FaissService;
-import com.example.llmcr.service.FaissService.AddVectorsRequest;
-import com.example.llmcr.service.FaissService.AddVectorsResponse;
-import com.example.llmcr.service.FaissService.SearchVectorsRequest;
-import com.example.llmcr.service.FaissService.SearchVectorsResponse;
+import com.example.llmcr.faiss.FaissService.AddVectorsRequest;
+import com.example.llmcr.faiss.FaissService.AddVectorsResponse;
+import com.example.llmcr.faiss.FaissService.SearchVectorsRequest;
+import com.example.llmcr.faiss.FaissService.SearchVectorsResponse;
+import com.example.llmcr.repository.DataStore;
 
-@Component
 public class FaissVectorStore implements VectorStore {
 
     private final DataStore dataStore;
     private final FaissService faissService;
     private final EmbeddingModel embeddingModel;
-    private final IndexFile indexFile;
+    private final String indexName;
 
-    @Autowired
     public FaissVectorStore(DataStore dataStore, FaissService faissService, EmbeddingModel embeddingModel,
-            @Value("${faiss.index.name:default}") String indexName) {
+            String indexName) {
         this.dataStore = dataStore;
         this.faissService = faissService;
         this.embeddingModel = embeddingModel;
-
-        indexFile = dataStore.createIndexFile(new IndexFile(indexName));
-        System.out.println("Using FaissVectorStore with index file: " + indexName);
-    }
-
-    public IndexFile getIndexFile() {
-        return indexFile;
+        this.indexName = indexName;
     }
 
     @Override
     public void add(List<Document> documents) {
-        // store to database first to get IDs
         if (documents.isEmpty()) {
             return;
         }
 
-        List<Chunk> chunks = documents.stream()
-                .map(d -> new Chunk(d))
-                .map(d -> {
-                    d.addIndexFile(indexFile);
-                    return d;
-                })
+        // update index file record
+        List<Long> ids = documents.stream()
+                .map(d -> (Long) d.getMetadata().get("chunk_id"))
                 .collect(Collectors.toList());
-        dataStore.saveAllChunks(chunks);
-        List<Long> ids = chunks.stream()
-                .map(Chunk::getId)
-                .collect(Collectors.toList());
+        dataStore.addAllChunksToIndexFileByIds(indexName, ids);
 
         // generate embeddings
-        List<float[]> embeddings = chunks.stream()
-                .map(c -> embeddingModel.embed(c.getContent()))
+        List<float[]> embeddings = documents.stream()
+                .map(d -> embeddingModel.embed(d))
                 .collect(Collectors.toList());
-        System.out.println("Generated " + embeddings.size() + " embeddings.");
 
         // generate FAISS index
-        AddVectorsRequest req = new AddVectorsRequest(indexFile.getName(), ids, embeddings);
+        AddVectorsRequest req = new AddVectorsRequest(indexName, ids, embeddings);
 
         AddVectorsResponse res = faissService.addVectors(req);
-        System.out.println("Added " + res.added_count() + " vectors to index:" + indexFile.getName());
+        System.out.println("Added " + res.added_count() + " vectors to index:" + indexName);
     }
 
     @Override
@@ -92,7 +72,7 @@ public class FaissVectorStore implements VectorStore {
     @Override
     public List<Document> similaritySearch(SearchRequest request) {
         float[] queryVector = embeddingModel.embed(request.getQuery());
-        SearchVectorsRequest req = new SearchVectorsRequest(indexFile.getName(), queryVector, request.getTopK());
+        SearchVectorsRequest req = new SearchVectorsRequest(indexName, queryVector, request.getTopK());
 
         SearchVectorsResponse res = faissService.searchVectors(req);
 

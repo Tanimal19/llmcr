@@ -1,13 +1,10 @@
-package com.example.llmcr.service;
+package com.example.llmcr.service.etl;
 
-import com.example.llmcr.datasource.DataSource;
-import com.example.llmcr.entity.ClassNode;
-import com.example.llmcr.entity.DocumentParagraph;
-import com.example.llmcr.entity.Chunk.ChunkType;
-import com.example.llmcr.extractor.ClassNodeExtractor;
-import com.example.llmcr.extractor.DocumentParagraphExtractor;
-import com.example.llmcr.repository.DataStore;
-import com.example.llmcr.utils.JsonBackupUtils;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -16,41 +13,21 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.template.st.StTemplateRenderer;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 
+import com.example.llmcr.entity.Chunk;
+import com.example.llmcr.entity.Chunk.ChunkType;
+import com.example.llmcr.entity.ClassNode;
+import com.example.llmcr.entity.DocumentParagraph;
+import com.example.llmcr.repository.DataStore;
+import com.example.llmcr.utils.JsonBackupUtils;
 import com.google.common.util.concurrent.RateLimiter;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-/**
- * Orchestrates the Extract, Transform, and Load process.
- */
-@Service
-public class ETLPipeline {
+public class TransformService {
 
     private final DataStore dataStore;
     private final ChatModel chatModel;
-    private final VectorStore vectorStore;
-
-    @Value("${etl.options.extract.pdf.maxParagraphLength:4096}")
-    private int maxPdfParagraphLength;
-
-    @Value("${etl.options.extract.ascii.maxParagraphLength:4096}")
-    private int maxAsciiParagraphLength;
-
-    @Value("${etl.options.transform.maxParagraphsPerNode:10}")
-    private int maxParagraphsPerNode;
-
-    @Value("${etl.options.transform.requestPerMinute:2}")
-    private int transformRpm;
+    private String transformChatHistoryFile = "transform_history.json";
 
     private final PromptTemplate promptTemplate = PromptTemplate.builder()
             .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
@@ -62,10 +39,15 @@ public class ETLPipeline {
                             - **exampleUsage**: best practices of this class, only include the most important examples.
                             - **relationship**: how does this class relate to other classes or components in the project?
 
-                            Raw code:
+                            Raw code at below.
+                            -----------------
                             <code>
-                            Documentation contents:
+                            -----------------
+
+                            Documentation contents at below.
+                            -----------------
                             <doc>
+                            -----------------
 
                             <format>
                                 """)
@@ -79,70 +61,32 @@ public class ETLPipeline {
             String relationship) {
     }
 
-    @Value("${etl.backup.transformChatHistoryFile:transform_history.json}")
-    private String transformChatHistoryFile;
-
-    @Autowired
-    public ETLPipeline(
-            DataStore dataStore,
-            ChatModel chatModel,
-            VectorStore vectorStore) {
+    public TransformService(DataStore dataStore, ChatModel chatModel) {
         this.dataStore = dataStore;
         this.chatModel = chatModel;
-        this.vectorStore = vectorStore;
     }
 
-    public ETLPipeline extract(List<DataSource> rawDataSources) {
+    public void enrich(int maxParagraphsPerNode, int chatRequestPerMinute) {
         long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data extraction...");
-        System.out.println(
-                "  - maxPdfParagraphLength: " + maxPdfParagraphLength);
-        System.out.println(
-                "  - maxAsciiParagraphLength: " + maxAsciiParagraphLength);
-
-        ClassNodeExtractor classNodeExtractor = new ClassNodeExtractor();
-        DocumentParagraphExtractor documentParagraphExtractor = new DocumentParagraphExtractor(
-                maxPdfParagraphLength,
-                maxAsciiParagraphLength);
-
-        // Iterate over all raw data sources and extract data
-        rawDataSources.stream().forEach(source -> {
-            List<ClassNode> classNodes = source.accept(classNodeExtractor);
-            dataStore.saveAllClassNodes(classNodes);
-
-            List<DocumentParagraph> paragraphs = source.accept(documentParagraphExtractor);
-            dataStore.saveAllDocumentParagraphs(paragraphs);
-        });
-
-        long endTime = System.currentTimeMillis();
-        System.out.println("+ Extraction completed in " + (endTime - startTime) + "ms");
-
-        return this;
-    }
-
-    public ETLPipeline transform() {
-        long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data transformation...");
+        System.out.println("+ Starting data enrichment...");
         System.out.println("  - maxParagraphsPerNode: " + maxParagraphsPerNode);
-        System.out.println("  - transformRpm: " + transformRpm);
+        System.out.println("  - chatRequestPerMinute: " + chatRequestPerMinute);
 
-        RateLimiter rateLimiter = RateLimiter.create(transformRpm / 60.0);
+        RateLimiter rateLimiter = RateLimiter.create(chatRequestPerMinute / 60.0);
 
         dataStore.findUnprocessedClassNodes().stream().forEach(classNode -> {
             classNode.setProcessed(true);
-            classNode = bindNodeWithParagraphs(classNode);
+            classNode = bindNodeWithParagraphs(classNode, maxParagraphsPerNode);
             classNode = enrichNodeWithSummary(classNode);
             dataStore.save(classNode);
             rateLimiter.acquire();
         });
 
         long endTime = System.currentTimeMillis();
-        System.out.println("+ Transformation completed in " + (endTime - startTime) + "ms");
-
-        return this;
+        System.out.println("+ Enrichment completed in " + (endTime - startTime) + "ms");
     }
 
-    private ClassNode bindNodeWithParagraphs(ClassNode classNode) {
+    private ClassNode bindNodeWithParagraphs(ClassNode classNode, int maxParagraphsPerNode) {
         List<String> keywords = new ArrayList<>();
         String[] parts = classNode.getSignature().split("\\.");
         keywords.add(parts[parts.length - 1]); // class name
@@ -217,45 +161,48 @@ public class ETLPipeline {
         return classNode;
     }
 
-    public ETLPipeline load() {
+    public void chunk(TextSplitter splitter) {
         long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data loading...");
+        System.out.println("+ Starting data chunking...");
 
-        TokenTextSplitter splitter = new TokenTextSplitter(500, 350, 100, 10000, true);
-
-        // load all class nodes
-        System.out.println("  - Loading class nodes");
+        // chunk all class nodes
         dataStore.findProcessedClassNodes().stream().forEach(node -> {
-            List<Document> documentsToEmbed = new ArrayList<>();
-            documentsToEmbed.add(
-                    new Document(node.getCodeText(),
-                            Map.of("type", ChunkType.CODE, "source_id", node.getId())));
-            // documentsToEmbed.add(
-            // new Document(node.getDescriptionText(),
-            // Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
-            // documentsToEmbed.add(
-            // new Document(node.getUsageText(),
-            // Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
-            // documentsToEmbed.add(
-            // new Document(node.getRelationshipText(),
-            // Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
+            List<Document> docs = new ArrayList<>();
+            docs.add(new Document(node.getCodeText(),
+                    Map.of("type", ChunkType.CODE, "source_id", node.getId())));
+            docs.add(new Document(node.getDescriptionText(),
+                    Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
+            docs.add(new Document(node.getUsageText(),
+                    Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
+            docs.add(new Document(node.getRelationshipText(),
+                    Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
 
-            List<Document> splitDocs = splitter.split(documentsToEmbed);
-            vectorStore.add(splitDocs);
+            List<Document> splitDocs = splitter.split(docs);
+            saveAllDocumentsToChunks(dataStore, splitDocs);
+            System.out.println("Created " + splitDocs.size() + " chunks for ClassNode: "
+                    + node.getSignature());
         });
 
-        // load all document paragraphs
-        System.out.println("  - Loading document paragraphs");
+        // chunk all document paragraphs
         dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
             Document doc = new Document(paragraph.getContent(),
                     Map.of("type", ChunkType.PARAGRAPH, "source_id", paragraph.getId()));
             List<Document> splitDocs = splitter.split(doc);
-            vectorStore.add(splitDocs);
+            saveAllDocumentsToChunks(dataStore, splitDocs);
+            System.out
+                    .println("Created " + splitDocs.size() + " chunks for DocumentParagraph ID: "
+                            + paragraph.getId());
         });
 
         long endTime = System.currentTimeMillis();
-        System.out.println("+ Loading completed in " + (endTime - startTime) + "ms");
-
-        return this;
+        System.out.println("+ Chunking completed in " + (endTime - startTime) + "ms");
     }
+
+    private void saveAllDocumentsToChunks(DataStore dataStore, List<Document> documents) {
+        List<Chunk> chunks = documents.stream()
+                .map(d -> new Chunk(d))
+                .collect(Collectors.toList());
+        dataStore.saveAllChunks(chunks);
+    }
+
 }
