@@ -18,7 +18,7 @@ public class RAGService {
     private final VectorStore vectorStore;
     private RetrievalStrategy retrievalStrategy;
     private PromptBuilder promptBuilder;
-    private int topK = 5;
+    private int topK = 10;
 
     public RAGService(ChatModel chatModel, VectorStore vectorStore) {
         this.chatModel = chatModel;
@@ -38,9 +38,15 @@ public class RAGService {
     }
 
     public Map<String, Object> generation(Object input) {
+        long startTime = System.currentTimeMillis();
+
         promptBuilder = promptBuilder.augmentInput(input);
         List<Document> documents = retrievalStrategy.retrieve(promptBuilder.getQuery(), topK, vectorStore);
         Prompt prompt = promptBuilder.augmentContext(documents).build();
+
+        long retrievalEndTime = System.currentTimeMillis();
+        System.out.println("+ Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
+        System.out.println("Input length: " + prompt.toString().length() + " char");
 
         // call chat model
         ChatResponse response;
@@ -50,6 +56,9 @@ public class RAGService {
             e.printStackTrace();
             return null;
         }
+
+        long generationEndTime = System.currentTimeMillis();
+        System.out.println("+ Generation completed in " + (generationEndTime - retrievalEndTime) + "ms");
 
         String rawResponse = response.getResult().getOutput().getText();
 

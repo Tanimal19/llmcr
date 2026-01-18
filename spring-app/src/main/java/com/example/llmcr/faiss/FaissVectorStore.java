@@ -74,6 +74,8 @@ public class FaissVectorStore implements VectorStore {
 
     @Override
     public List<Document> similaritySearch(SearchRequest request) {
+        long startTime = System.currentTimeMillis();
+
         float[] queryVector = embeddingModel.embed(request.getQuery());
         SearchVectorsRequest req = new SearchVectorsRequest(indexName, queryVector, request.getTopK());
 
@@ -97,6 +99,9 @@ public class FaissVectorStore implements VectorStore {
             Float score = idToScoreMap.get(chunkId);
             doc.getMetadata().put("similarity_score", score);
         }
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("+ Search completed in " + (endTime - startTime) + "ms");
 
         return documents;
     }

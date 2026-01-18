@@ -37,6 +37,7 @@ public class RAGRunner implements CommandLineRunner {
         while (!isExit) {
             System.out.print("Enter your query (or 'exit' to quit): ");
             String query = scanner.nextLine();
+            System.out.println(query);
             if (query.equalsIgnoreCase("exit")) {
                 isExit = true;
                 scanner.close();
