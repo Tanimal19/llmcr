@@ -18,6 +18,10 @@ public class AsciiDocSource implements DataSource {
         return path;
     }
 
+    public String getSourceCtx() {
+        return "asciidoc::" + path.getFileName();
+    }
+
     @Override
     public <T> T accept(VoidDataSourceExtractor<T> extractor) {
         return extractor.visit(this);

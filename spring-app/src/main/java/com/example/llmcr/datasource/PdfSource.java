@@ -18,6 +18,10 @@ public class PdfSource implements DataSource {
         return path;
     }
 
+    public String getSourceCtx() {
+        return "pdf::" + path.getFileName();
+    }
+
     @Override
     public <T> T accept(VoidDataSourceExtractor<T> extractor) {
         return extractor.visit(this);

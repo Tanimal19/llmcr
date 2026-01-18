@@ -38,7 +38,7 @@ public class DocumentParagraphExtractor
         Path path = source.getPath();
 
         try (PDDocument doc = Loader.loadPDF(path.toFile())) {
-            String ctx = "pdf::" + path.getFileName();
+            String ctx = source.getSourceCtx();
             String text = new PDFTextStripper().getText(doc);
             StringBuilder chunk = new StringBuilder();
             AtomicInteger count = new AtomicInteger(0);
@@ -86,7 +86,7 @@ public class DocumentParagraphExtractor
             Asciidoctor asciidoctor = Asciidoctor.Factory.create();
             org.asciidoctor.ast.Document document = asciidoctor.load(content,
                     org.asciidoctor.Options.builder().build());
-            String ctx = "asciidoc::" + path.getFileName();
+            String ctx = source.getSourceCtx();
 
             processAsciiDocNode(document, ctx, result, 0);
         } catch (IOException e) {

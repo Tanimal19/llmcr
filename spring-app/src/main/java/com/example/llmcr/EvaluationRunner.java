@@ -6,6 +6,9 @@ import java.util.Map;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.example.llmcr.faiss.FaissVectorStore;
@@ -24,36 +27,39 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-public class EvaluationRunner {
-    private final ChatModel chatModel;
-    private final FaissVectorStoreFactory FaissVectorStoreFactory;
-
-    private final List<PullRequest> pullRequests;
-    private final String historyFile = "evaluation_history.json";
+@ConditionalOnProperty(name = "app.mode", havingValue = "evaluation")
+public class EvaluationRunner implements CommandLineRunner {
+    @Autowired
+    private ChatModel chatModel;
 
     @Autowired
-    public EvaluationRunner(ChatModel chatModel, FaissVectorStoreFactory FaissVectorStoreFactory) {
-        this.chatModel = chatModel;
-        this.FaissVectorStoreFactory = FaissVectorStoreFactory;
-        this.pullRequests = readPullRequest("../evaluation/pull_requests.json");
-    }
+    private FaissVectorStoreFactory FaissVectorStoreFactory;
 
-    public void runAllGroups() {
-        runGroup("adaptive-enrich");
-        runGroup("simple-enrich");
+    @Value("${evaluation.input.path}")
+    private String inputFilePath;
+
+    private List<PullRequest> pullRequests;
+    private String historyFile = "evaluation_history.json";
+
+    @Override
+    public void run(String... args) {
+        this.pullRequests = readPullRequest(inputFilePath);
+
+        runGroup("adaptive-enriched");
+        runGroup("simple-enriched");
         runGroup("adaptive-plain");
     }
 
-    public void runGroup(String group) {
+    private void runGroup(String group) {
         RetrievalStrategy retrievalStrategy;
         FaissVectorStore vectorStore;
 
-        if (group.equalsIgnoreCase("adaptive-enrich")) {
+        if (group.equalsIgnoreCase("adaptive-enriched")) {
             retrievalStrategy = new AdaptiveKStrategy();
-            vectorStore = FaissVectorStoreFactory.create("enrich");
-        } else if (group.equalsIgnoreCase("simple-enrich")) {
+            vectorStore = FaissVectorStoreFactory.create("enriched");
+        } else if (group.equalsIgnoreCase("simple-enriched")) {
             retrievalStrategy = new SimpleRAGStrategy();
-            vectorStore = FaissVectorStoreFactory.create("enrich");
+            vectorStore = FaissVectorStoreFactory.create("enriched");
         } else if (group.equalsIgnoreCase("adaptive-plain")) {
             retrievalStrategy = new AdaptiveKStrategy();
             vectorStore = FaissVectorStoreFactory.create("plain");

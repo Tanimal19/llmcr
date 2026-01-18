@@ -18,6 +18,10 @@ public class MarkdownSource implements DataSource {
         return path;
     }
 
+    public String getSourceCtx() {
+        return "markdown::" + path.getFileName();
+    }
+
     @Override
     public <T> T accept(VoidDataSourceExtractor<T> extractor) {
         return extractor.visit(this);

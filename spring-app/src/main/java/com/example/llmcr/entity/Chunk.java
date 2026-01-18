@@ -30,8 +30,7 @@ public class Chunk {
     @Column(name = "source_id", nullable = false)
     private UUID sourceId;
 
-    @ManyToMany
-    @JoinTable(name = "chunk_index_file", joinColumns = @JoinColumn(name = "chunk_id"), inverseJoinColumns = @JoinColumn(name = "index_file_name"))
+    @ManyToMany(mappedBy = "chunks")
     private Set<IndexFile> indexFiles = new HashSet<>();
 
     public Chunk() {
@@ -107,9 +106,9 @@ public class Chunk {
 
     public Document toDocument() {
         Document doc = new Document(this.content);
-        doc.getMetadata().put("chunk_id", this.id.toString());
-        doc.getMetadata().put("chunk_type", this.type.toString());
-        doc.getMetadata().put("source_id", this.sourceId.toString());
+        doc.getMetadata().put("chunk_id", this.id);
+        doc.getMetadata().put("chunk_type", this.type);
+        doc.getMetadata().put("source_id", this.sourceId);
         return doc;
     }
 

@@ -1,0 +1,51 @@
+package com.example.llmcr;
+
+import java.util.Map;
+import java.util.Scanner;
+
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+import com.example.llmcr.faiss.FaissVectorStore;
+import com.example.llmcr.faiss.FaissVectorStoreFactory;
+import com.example.llmcr.service.rag.RAGService;
+import com.example.llmcr.service.rag.augmentation.AnswerQueryPromptBuilder;
+import com.example.llmcr.service.rag.retrieval.AdaptiveKStrategy;
+
+@Component
+@ConditionalOnProperty(name = "app.mode", havingValue = "rag")
+public class RAGRunner implements CommandLineRunner {
+    @Autowired
+    private ChatModel defaultChatModel;
+
+    @Autowired
+    private FaissVectorStoreFactory FaissVectorStoreFactory;
+
+    @Override
+    public void run(String... args) throws Exception {
+        FaissVectorStore defaultFaiss = FaissVectorStoreFactory.create("enriched");
+        RAGService r = new RAGService(defaultChatModel, defaultFaiss);
+        r.setStrategy(new AdaptiveKStrategy());
+        r.setPromptBuilder(new AnswerQueryPromptBuilder());
+
+        // get query from console
+        boolean isExit = false;
+        Scanner scanner = new Scanner(System.in);
+        while (!isExit) {
+            System.out.print("Enter your query (or 'exit' to quit): ");
+            String query = scanner.nextLine();
+            if (query.equalsIgnoreCase("exit")) {
+                isExit = true;
+                scanner.close();
+                System.out.println("Exiting...");
+                break;
+            }
+
+            Map<String, Object> reponse = r.generation(query);
+            System.out.println("Response: " + reponse.get("response"));
+        }
+    }
+}

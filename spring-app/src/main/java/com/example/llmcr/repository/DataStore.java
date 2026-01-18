@@ -7,6 +7,7 @@ import com.example.llmcr.entity.IndexFile;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -144,21 +145,24 @@ public class DataStore {
     public void createIndexIfNotExist(String indexName) {
         if (indexFileRepo.findByName(indexName) == null) {
             indexFileRepo.save(new IndexFile(indexName));
+            System.out.println("Created new IndexFile with name: " + indexName);
         } else {
             System.out.println("IndexFile with name " + indexName + " already exists. Skipping creation.");
         }
     }
 
-    public IndexFile findIndexByName(String indexName) {
-        return indexFileRepo.findByName(indexName);
-    }
-
+    @Transactional
     public void addAllChunksToIndexFileByIds(String indexName, List<Long> chunkIds) {
         IndexFile indexFile = indexFileRepo.findByName(indexName);
         if (indexFile != null) {
             List<Chunk> chunks = chunkRepo.findByIdIn(chunkIds);
             indexFile.getChunks().addAll(chunks);
             indexFileRepo.save(indexFile);
+
+            // Also update non-owning side for bidirectional consistency
+            for (Chunk chunk : chunks) {
+                chunk.getIndexFiles().add(indexFile);
+            }
         } else {
             System.out.println("IndexFile with name " + indexName + " not found. Cannot add chunks.");
         }

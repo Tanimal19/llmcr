@@ -1,6 +1,6 @@
 source ../.env
 
-SPRING_ARGUMENTS="--faiss.index.name=plain"
+SPRING_ARGUMENTS="--app.mode=etl"
 
 ./mvnw spring-boot:run \
     -Dspring-boot.run.arguments="$SPRING_ARGUMENTS" \

@@ -6,6 +6,8 @@ import java.util.Set;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
@@ -17,7 +19,8 @@ public class IndexFile {
     @Column(length = 255)
     private String name;
 
-    @ManyToMany(mappedBy = "indexFiles")
+    @ManyToMany
+    @JoinTable(name = "chunk_index_file", joinColumns = @JoinColumn(name = "index_file_name"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
     private Set<Chunk> chunks = new HashSet<>();
 
     public IndexFile() {

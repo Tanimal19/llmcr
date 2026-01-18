@@ -31,6 +31,8 @@ public class FaissVectorStore implements VectorStore {
         this.faissService = faissService;
         this.embeddingModel = embeddingModel;
         this.indexName = indexName;
+
+        dataStore.createIndexIfNotExist(indexName);
     }
 
     @Override
@@ -54,7 +56,8 @@ public class FaissVectorStore implements VectorStore {
         AddVectorsRequest req = new AddVectorsRequest(indexName, ids, embeddings);
 
         AddVectorsResponse res = faissService.addVectors(req);
-        System.out.println("Added " + res.added_count() + " vectors to index:" + indexName);
+        System.out.println("Added " + res.added_count() + " vectors to index:" +
+                indexName);
     }
 
     @Override
@@ -90,7 +93,7 @@ public class FaissVectorStore implements VectorStore {
             idToScoreMap.put(ids.get(i), scores.get(i));
         }
         for (Document doc : documents) {
-            Long chunkId = Long.parseLong(doc.getMetadata().get("chunk_id").toString());
+            Long chunkId = (Long) doc.getMetadata().get("chunk_id");
             Float score = idToScoreMap.get(chunkId);
             doc.getMetadata().put("similarity_score", score);
         }
