@@ -168,13 +168,13 @@ public class TransformService {
         // chunk all class nodes
         dataStore.findProcessedClassNodes().stream().forEach(node -> {
             List<Document> docs = new ArrayList<>();
-            docs.add(new Document(node.getCodeText(),
+            docs.add(new Document(cleanText(node.getCodeText()),
                     Map.of("type", ChunkType.CODE, "source_id", node.getId())));
-            docs.add(new Document(node.getDescriptionText(),
+            docs.add(new Document(cleanText(node.getDescriptionText()),
                     Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
-            docs.add(new Document(node.getUsageText(),
+            docs.add(new Document(cleanText(node.getUsageText()),
                     Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
-            docs.add(new Document(node.getRelationshipText(),
+            docs.add(new Document(cleanText(node.getRelationshipText()),
                     Map.of("type", ChunkType.SUMMARY, "source_id", node.getId())));
 
             List<Document> splitDocs = splitter.split(docs);
@@ -185,7 +185,7 @@ public class TransformService {
 
         // chunk all document paragraphs
         dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
-            Document doc = new Document(paragraph.getContent(),
+            Document doc = new Document(cleanText(paragraph.getContent()),
                     Map.of("type", ChunkType.PARAGRAPH, "source_id", paragraph.getId()));
             List<Document> splitDocs = splitter.split(doc);
             saveAllDocumentsToChunks(dataStore, splitDocs);
@@ -205,4 +205,9 @@ public class TransformService {
         dataStore.saveAllChunks(chunks);
     }
 
+    private String cleanText(String text) {
+        return text
+                .replaceAll("\\\\u[0-9a-fA-F]{4}", "<UNICODE>") // replace unicode sequences
+                .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", ""); // remove control characters except newlines and tabs
+    }
 }

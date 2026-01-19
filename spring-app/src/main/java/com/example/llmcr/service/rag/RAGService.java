@@ -11,12 +11,14 @@ import org.springframework.ai.vectorstore.VectorStore;
 
 import com.example.llmcr.service.rag.augmentation.RAGTemplate;
 import com.example.llmcr.service.rag.retrieval.RetrievalStrategy;
+import com.example.llmcr.service.rag.retrieval.fusion.FusionStrategy;
 
 public class RAGService {
 
     private final ChatModel chatModel;
     private final VectorStore vectorStore;
     private RetrievalStrategy retrievalStrategy;
+    private FusionStrategy fusionStrategy;
     private RAGTemplate ragTemplate;
     private int topK = 10;
 
@@ -25,8 +27,9 @@ public class RAGService {
         this.vectorStore = vectorStore;
     }
 
-    public void setStrategy(RetrievalStrategy retrievalStrategy) {
+    public void setStrategy(RetrievalStrategy retrievalStrategy, FusionStrategy fusionStrategy) {
         this.retrievalStrategy = retrievalStrategy;
+        this.fusionStrategy = fusionStrategy;
     }
 
     public void setRAGTemplate(RAGTemplate ragTemplate) {
@@ -41,9 +44,14 @@ public class RAGService {
         long startTime = System.currentTimeMillis();
 
         // retrieve documents for each query
-        List<Document> documents = ragTemplate.getQueries(input).stream()
-                .flatMap(query -> retrievalStrategy.retrieve(query, topK, vectorStore).stream())
-                .toList();
+        List<String> queries = ragTemplate.getQueries(input);
+        List<Document> documents;
+        if (queries.size() == 1) {
+            documents = retrievalStrategy.retrieve(queries.get(0), topK, vectorStore);
+        } else {
+            System.out.println("Performing multi-query retrieval for " + queries.size() + " queries.");
+            documents = retrievalStrategy.retrieveAll(queries, topK, vectorStore, fusionStrategy);
+        }
 
         Prompt prompt = ragTemplate.getBuilder().augmentInput(input).augmentContext(documents).build();
 

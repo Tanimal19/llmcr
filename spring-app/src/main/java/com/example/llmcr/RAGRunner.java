@@ -14,6 +14,7 @@ import com.example.llmcr.faiss.FaissVectorStoreFactory;
 import com.example.llmcr.service.rag.RAGService;
 import com.example.llmcr.service.rag.augmentation.AnswerQueryTemplate;
 import com.example.llmcr.service.rag.retrieval.AdaptiveKStrategy;
+import com.example.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "rag")
@@ -28,7 +29,7 @@ public class RAGRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         FaissVectorStore defaultFaiss = FaissVectorStoreFactory.create("enriched");
         RAGService r = new RAGService(defaultChatModel, defaultFaiss);
-        r.setStrategy(new AdaptiveKStrategy());
+        r.setStrategy(new AdaptiveKStrategy(), new RankFusionStrategy());
         r.setRAGTemplate(new AnswerQueryTemplate());
 
         // get query from console

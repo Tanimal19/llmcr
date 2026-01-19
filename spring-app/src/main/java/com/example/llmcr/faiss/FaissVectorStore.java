@@ -20,6 +20,8 @@ import com.example.llmcr.repository.DataStore;
 
 public class FaissVectorStore implements VectorStore {
 
+    private static final int MAX_QUERY_LENGTH = 8000; // ~2000 tokens
+
     private final DataStore dataStore;
     private final FaissService faissService;
     private final EmbeddingModel embeddingModel;
@@ -76,7 +78,8 @@ public class FaissVectorStore implements VectorStore {
     public List<Document> similaritySearch(SearchRequest request) {
         long startTime = System.currentTimeMillis();
 
-        float[] queryVector = embeddingModel.embed(request.getQuery());
+        String query = truncateQuery(request.getQuery());
+        float[] queryVector = embeddingModel.embed(query);
         SearchVectorsRequest req = new SearchVectorsRequest(indexName, queryVector, request.getTopK());
 
         SearchVectorsResponse res = faissService.searchVectors(req);
@@ -104,5 +107,16 @@ public class FaissVectorStore implements VectorStore {
         System.out.println("+ Search completed in " + (endTime - startTime) + "ms");
 
         return documents;
+    }
+
+    private String truncateQuery(String query) {
+        if (query == null || query.length() <= MAX_QUERY_LENGTH) {
+            return query;
+        }
+
+        String truncated = query.substring(0, MAX_QUERY_LENGTH);
+        System.out.println(
+                "[WARNING] Query truncated from " + query.length() + " to " + MAX_QUERY_LENGTH + " characters");
+        return truncated;
     }
 }

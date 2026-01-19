@@ -18,7 +18,7 @@ public class CodeInterpretationTemplate extends BasePullRequestTemplate {
 
     public class PromptBuilder extends BasePullRequestTemplate.PromptBuilder {
         private final String template = """
-                You are a code interpreter. Given the code change hunks and relevant project context, your task is to explain what does the code change do and why does the code change is proposed.
+                You are a code interpreter. Given the code change hunks and relevant project context, your task is to give a concise description that explain what does the code change do.
 
                 Code change hunks at below.
                 -----------------
