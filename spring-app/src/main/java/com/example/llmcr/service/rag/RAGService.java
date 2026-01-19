@@ -12,6 +12,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import com.example.llmcr.service.rag.augmentation.RAGTemplate;
 import com.example.llmcr.service.rag.retrieval.RetrievalStrategy;
 import com.example.llmcr.service.rag.retrieval.fusion.FusionStrategy;
+import com.google.common.util.concurrent.RateLimiter;
 
 public class RAGService {
 
@@ -20,7 +21,10 @@ public class RAGService {
     private RetrievalStrategy retrievalStrategy;
     private FusionStrategy fusionStrategy;
     private RAGTemplate ragTemplate;
-    private int topK = 10;
+
+    private int topK;
+
+    private RateLimiter rateLimiter = RateLimiter.create(1.0 / 90.0);
 
     public RAGService(ChatModel chatModel, VectorStore vectorStore) {
         this.chatModel = chatModel;
@@ -50,22 +54,38 @@ public class RAGService {
             documents = retrievalStrategy.retrieve(queries.get(0), topK, vectorStore);
         } else {
             System.out.println("Performing multi-query retrieval for " + queries.size() + " queries.");
-            documents = retrievalStrategy.retrieveAll(queries, topK, vectorStore, fusionStrategy);
+            List<List<Document>> documentLists = queries.stream()
+                    .map(query -> retrievalStrategy.retrieve(query, topK, vectorStore))
+                    .toList();
+            documents = fusionStrategy.fuse(documentLists, topK);
         }
+        List<Long> docIds = documents.stream()
+                .map(doc -> (Long) doc.getMetadata().get("chunk_id"))
+                .toList();
+        System.out.println("Retrieved " + documents.size() + " documents: " + docIds);
+        long retrievalEndTime = System.currentTimeMillis();
+        System.out.println("+ Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
 
         Prompt prompt = ragTemplate.getBuilder().augmentInput(input).augmentContext(documents).build();
-
-        long retrievalEndTime = System.currentTimeMillis();
-        System.out.println("+ Retrieval and Augmentation completed in " + (retrievalEndTime - startTime) + "ms");
-        System.out.println("Input length: " + prompt.toString().length() + " char");
+        System.out.println("Input context length: " + prompt.toString().length() + " char");
 
         // call chat model
         ChatResponse response;
-        try {
-            response = chatModel.call(prompt);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        int count = 0;
+        while (true) {
+            rateLimiter.acquire();
+            try {
+                response = chatModel.call(prompt);
+                break;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            count++;
+            System.out.println("unable to call chat model, retrying... (attempt #" + count + ")");
+            if (count > 5) {
+                throw new RuntimeException("Exceeded maximum inference attempts");
+            }
         }
 
         long generationEndTime = System.currentTimeMillis();
@@ -76,7 +96,7 @@ public class RAGService {
         Map<String, Object> entry = Map.of(
                 "timestamp", java.time.Instant.now().toString(),
                 "prompt", prompt.toString(),
-                "documents", documents,
+                "documents", docIds,
                 "response", rawResponse);
         return entry;
     }

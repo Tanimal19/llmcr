@@ -207,7 +207,8 @@ public class TransformService {
 
     private String cleanText(String text) {
         return text
-                .replaceAll("\\\\u[0-9a-fA-F]{4}", "<UNICODE>") // replace unicode sequences
-                .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", ""); // remove control characters except newlines and tabs
+                .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "") // remove control characters except newlines and tabs
+                .replaceAll("_serializedATN\\s*=\\s*\"[\\s\\S]*?\";",
+                        "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";"); // specific cleaning for ANTLR serialized ATN
     }
 }

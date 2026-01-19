@@ -20,7 +20,7 @@ import com.example.llmcr.repository.DataStore;
 
 public class FaissVectorStore implements VectorStore {
 
-    private static final int MAX_QUERY_LENGTH = 8000; // ~2000 tokens
+    private static final int MAX_QUERY_LENGTH = 8000; // characters
 
     private final DataStore dataStore;
     private final FaissService faissService;

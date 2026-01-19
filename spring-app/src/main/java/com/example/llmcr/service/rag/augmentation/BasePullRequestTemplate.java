@@ -40,7 +40,6 @@ public abstract class BasePullRequestTemplate extends RAGTemplate {
         @Override
         protected void doAugmentInput(Object input) {
             if (input instanceof PullRequest pr) {
-                System.out.println("Augmenting input for PR: " + pr.title + " (" + pr.id + ")");
                 this.getVariables().put("description", pr.description);
                 this.getVariables().put("hunks", buildHunksVariable(pr.hunks));
             } else {

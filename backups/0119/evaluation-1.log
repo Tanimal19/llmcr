@@ -1,0 +1,1506 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.example:llmcr >--------------------------
+[INFO] Building llmcr 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.7:run (default-cli) > test-compile @ llmcr >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ llmcr ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ llmcr ---
+[INFO] skip non existing resourceDirectory /Users/bobch/Desktop/軟工專題/llmcr/spring-app/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.7:run (default-cli) < test-compile @ llmcr <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.7:run (default-cli) @ llmcr ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.7)
+
+2026-01-19T15:48:44.055+08:00  INFO 69873 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 69873 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+2026-01-19T15:48:44.056+08:00  INFO 69873 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-01-19T15:48:44.243+08:00  INFO 69873 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-19T15:48:44.295+08:00  INFO 69873 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 48 ms. Found 4 JPA repository interfaces.
+2026-01-19T15:48:44.390+08:00  INFO 69873 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-19T15:48:44.409+08:00  INFO 69873 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
+2026-01-19T15:48:44.421+08:00  INFO 69873 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-19T15:48:44.516+08:00  INFO 69873 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-19T15:48:44.526+08:00  INFO 69873 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-19T15:48:44.567+08:00  INFO 69873 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@681061d6
+2026-01-19T15:48:44.568+08:00  INFO 69873 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-19T15:48:44.579+08:00  WARN 69873 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-19T15:48:44.586+08:00  INFO 69873 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 11.8.5
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-19T15:48:44.888+08:00  INFO 69873 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-19T15:48:44.931+08:00  INFO 69873 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-19T15:48:45.245+08:00 ERROR 69873 --- [llmcr] [           main] i.n.r.d.DnsServerAddressStreamProviders  : Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+2026-01-19T15:48:45.341+08:00  INFO 69873 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.393 seconds (process running for 1.505)
+IndexFile with name enriched already exists. Skipping creation.
++ Running evaluation for group: adaptive-enriched
++ Starting task: code_interpretation
+Performing multi-query retrieval for 4 queries.
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientIT.java", "content": "@@ -389,7 +389,7 @@ void customTemplateRendererWithCall() {
+ 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+ 								+ "<format>")
+ 						.param("format", outputConverter.getFormat()))
+-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
++				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
+ 				.call()
+ 				.content();
+ 		// @formatter:on
+@@ -413,7 +413,7 @@ void customTemplateRendererWithCallAndAdvisor() {
+ 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+ 								+ "<format>")
+ 						.param("format", outputConverter.getFormat()))
+-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
++				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
+ 				.call()
+ 				.content();
+ 		// @formatter:on
+@@ -438,7 +438,7 @@ void customTemplateRendererWithStream() {
+ 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+ 								+ "<format>")
+ 						.param("format", outputConverter.getFormat()))
+-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
++				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
+ 				.stream()
+ 				.chatResponse();
+ 
+@@ -474,7 +474,7 @@ void customTemplateRendererWithStreamAndAdvisor() {
+ 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+ 								+ "<format>")
+ 						.param("format", outputConverter.getFormat()))
+-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
++				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
+ 				.stream()
+ 				.chatResponse();
+ 
+"}
++ Search completed in 1515ms
+Max score gap (0.001907587) at index = 174
+AdaptiveKStrategy: Selected top K = 174
+Top documents:
+604::0.68005764
+540::0.6497736
+631::0.6480503
+1206::0.645344
+1184::0.6433482
+1088::0.6401699
+684::0.6395011
+849::0.6392616
+624::0.63875794
+892::0.6327332
+1042::0.63265914
+1526::0.63163435
+1558::0.63130784
+1594::0.62917703
+765::0.6278028
+1444::0.62708735
+1292::0.62415344
+676::0.6232338
+1176::0.6232338
+1376::0.62248284
+1080::0.6220602
+1368::0.6180955
+1180::0.61770356
+636::0.6174929
+693::0.61571544
+831::0.6153339
+1233::0.6142678
+1473::0.61414695
+955::0.61302125
+1457::0.61168265
+900::0.61098325
+846::0.61056066
+884::0.60888875
+1023::0.6069325
+1015::0.6068326
+1243::0.60592186
+608::0.6058926
+1435::0.60351527
+1395::0.6033938
+882::0.60206854
+1619::0.60072196
+1120::0.60064507
+1487::0.60014635
+755::0.6001139
+815::0.59959835
+1349::0.5995431
+705::0.59927124
+1426::0.5984703
+1355::0.5956826
+1639::0.59421366
+970::0.5941436
+1361::0.59383106
+1190::0.59360194
+1607::0.5919732
+600::0.58996
+1461::0.58982396
+670::0.5890409
+1047::0.58880466
+717::0.5877811
+871::0.5874158
+1573::0.58668506
+1265::0.5863371
+1433::0.58614624
+1002::0.5853474
+1232::0.5847834
+916::0.5840649
+729::0.58394396
+1321::0.58350253
+963::0.5833392
+1391::0.5824355
+792::0.5820905
+778::0.58188653
+1447::0.5815645
+160::0.5814328
+1449::0.5813247
+541::0.580447
+889::0.57992536
+1490::0.5795774
+1400::0.57940656
+1270::0.5787386
+1353::0.57749516
+971::0.5771647
+1600::0.5765685
+581::0.57648283
+999::0.5764445
+938::0.5762325
+741::0.5757444
+1625::0.5752815
+836::0.5744332
+1508::0.5731468
+1221::0.5728221
+1595::0.5719712
+742::0.5717213
+1269::0.5717213
+1467::0.5717213
+677::0.57128906
+825::0.57121193
+1464::0.5707268
+1032::0.57003546
+1112::0.5696726
+1108::0.56943846
+657::0.56900746
+1463::0.5684477
+1637::0.5676229
+1289::0.56701756
+1543::0.5665058
+1534::0.5656997
+1283::0.5647119
+767::0.5633148
+878::0.5630773
+801::0.5630683
+1335::0.5626136
+652::0.5624577
+788::0.56243473
+759::0.5620843
+191::0.5619055
+1644::0.56176174
+790::0.5609638
+675::0.5603187
+990::0.55954826
+817::0.558213
+1380::0.55778086
+1298::0.55766726
+637::0.55712694
+976::0.5570246
+1291::0.5569013
+758::0.55678046
+1128::0.5567683
+1123::0.556755
+810::0.5563598
+713::0.55614436
+744::0.55585593
+698::0.5556698
+829::0.55548
+1635::0.5553524
+588::0.5552899
+907::0.5547347
+918::0.5546199
+674::0.55346584
+163::0.55271673
+923::0.5526886
+927::0.55231774
+926::0.5519955
+834::0.55193913
+966::0.5516008
+696::0.55095017
+632::0.5497898
+1520::0.5489044
+534::0.5488065
+726::0.5486576
+1017::0.54732996
+1493::0.54724926
+822::0.54708916
+1094::0.54675484
+1089::0.5461222
+1402::0.54578257
+716::0.5446435
+780::0.54461515
+903::0.54429686
+1129::0.5440191
+1060::0.5439978
+1012::0.5437105
+1549::0.5429539
+1338::0.542794
+1483::0.542749
+772::0.5425986
+746::0.5425953
+663::0.5423169
+1393::0.54231066
+1127::0.5419613
+1106::0.5418488
+1178::0.54184437
+1174::0.5418048
+886::0.54157573
+1256::0.5414393
+1136::0.5395317
+1505::0.5395317
+1238::0.53951275
+1384::0.5384718
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/DefaultChatClientUtilsTests.java", "content": "@@ -342,8 +342,8 @@ void whenCustomTemplateRendererIsProvidedThenItIsUsedForRendering() {
+ 		String systemText = "Instructions <name>";
+ 		Map<String, Object> systemParams = Map.of("name", "Spring AI");
+ 		TemplateRenderer customRenderer = StTemplateRenderer.builder()
+-			.startDelimiterToken('<')
+-			.endDelimiterToken('>')
++			.startDelimiterToken("<")
++			.endDelimiterToken(">")
+ 			.build();
+ 		ChatModel chatModel = mock(ChatModel.class);
+ 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+"}
++ Search completed in 130ms
+Max score gap (0.0039388537) at index = 40
+AdaptiveKStrategy: Selected top K = 40
+Top documents:
+1088::0.6664978
+1243::0.63266337
+1607::0.5897003
+1314::0.58265907
+971::0.56630874
+1233::0.56360817
+930::0.560582
+1336::0.5603553
+1231::0.55892813
+1190::0.5526959
+884::0.5523282
+1292::0.5513433
+1312::0.5505153
+676::0.5499625
+1176::0.5499625
+1594::0.54896593
+1625::0.5463027
+1546::0.54465294
+907::0.5431652
+1180::0.5431254
+900::0.54275304
+846::0.54219294
+1221::0.54171336
+1081::0.5411967
+693::0.54099244
+1368::0.54042137
+871::0.5376606
+1447::0.53671837
+677::0.5347526
+1168::0.53454524
+1639::0.53157395
+1089::0.53153086
+191::0.53134775
+1644::0.5286107
+632::0.527345
+1335::0.52655697
+624::0.52643794
+882::0.52570546
+271::0.52498114
+1015::0.5246974
+801::0.523712
+1002::0.5197731
+636::0.5185959
+878::0.51820976
+1184::0.5176339
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: spring-ai-template-st/src/main/java/org/springframework/ai/template/st/StTemplateRenderer.java", "content": "@@ -1,24 +1,11 @@
+-/*
+- * Copyright 2023-2025 the original author or authors.
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      https://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+ package org.springframework.ai.template.st;
+ 
++import java.util.Collections;
+ import java.util.HashSet;
+ import java.util.Map;
+ import java.util.Set;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
+ 
+ import org.antlr.runtime.Token;
+ import org.antlr.runtime.TokenStream;
+@@ -26,6 +13,7 @@
+ import org.slf4j.LoggerFactory;
+ import org.stringtemplate.v4.ST;
+ import org.stringtemplate.v4.compiler.Compiler;
++import org.stringtemplate.v4.compiler.STException;
+ import org.stringtemplate.v4.compiler.STLexer;
+ 
+ import org.springframework.ai.template.TemplateRenderer;
+@@ -57,106 +45,125 @@ public class StTemplateRenderer implements TemplateRenderer {
+ 
+ 	private static final String VALIDATION_MESSAGE = "Not all variables were replaced in the template. Missing variable names are: %s.";
+ 
+-	private static final char DEFAULT_START_DELIMITER_TOKEN = '{';
++	private static final String DEFAULT_START_DELIMITER = "{";
+ 
+-	private static final char DEFAULT_END_DELIMITER_TOKEN = '}';
++	private static final String DEFAULT_END_DELIMITER = "}";
+ 
+ 	private static final ValidationMode DEFAULT_VALIDATION_MODE = ValidationMode.THROW;
+ 
+ 	private static final boolean DEFAULT_VALIDATE_ST_FUNCTIONS = false;
+ 
+-	private final char startDelimiterToken;
++	private final String startDelimiterToken;
+ 
+-	private final char endDelimiterToken;
++	private final String endDelimiterToken;
+ 
+ 	private final ValidationMode validationMode;
+ 
+ 	private final boolean validateStFunctions;
+ 
+ 	/**
+-	 * Constructs a new {@code StTemplateRenderer} with the specified delimiter tokens,
+-	 * validation mode, and function validation flag.
+-	 * @param startDelimiterToken the character used to denote the start of a template
+-	 * variable (e.g., '{')
+-	 * @param endDelimiterToken the character used to denote the end of a template
+-	 * variable (e.g., '}')
+-	 * @param validationMode the mode to use for template variable validation; must not be
+-	 * null
+-	 * @param validateStFunctions whether to validate StringTemplate functions in the
+-	 * template
++	 * Constructs a StTemplateRenderer with custom delimiters, validation mode, and
++	 * function validation flag.
++	 * @param startDelimiterToken Multi-character start delimiter (non-null/non-empty)
++	 * @param endDelimiterToken Multi-character end delimiter (non-null/non-empty)
++	 * @param validationMode Mode for handling missing variables (non-null)
++	 * @param validateStFunctions Whether to treat ST built-in functions as variables
+ 	 */
+-	public StTemplateRenderer(char startDelimiterToken, char endDelimiterToken, ValidationMode validationMode,
++	public StTemplateRenderer(String startDelimiterToken, String endDelimiterToken, ValidationMode validationMode,
+ 			boolean validateStFunctions) {
+-		Assert.notNull(validationMode, "validationMode cannot be null");
++		Assert.notNull(validationMode, "validationMode must not be null");
++		Assert.hasText(startDelimiterToken, "startDelimiterToken must not be null or empty");
++		Assert.hasText(endDelimiterToken, "endDelimiterToken must not be null or empty");
++
+ 		this.startDelimiterToken = startDelimiterToken;
+ 		this.endDelimiterToken = endDelimiterToken;
+ 		this.validationMode = validationMode;
+ 		this.validateStFunctions = validateStFunctions;
+ 	}
+ 
++	/**
++	 * Renders the template by first converting custom delimiters to ST's native format,
++	 * then replacing variables.
++	 * @param template Template string with variables (non-null/non-empty)
++	 * @param variables Map of variable names to values (non-null, keys must not be null)
++	 * @return Rendered string with variables replaced
++	 */
+ 	@Override
+ 	public String apply(String template, Map<String, Object> variables) {
+-		Assert.hasText(template, "template cannot be null or empty");
+-		Assert.notNull(variables, "variables cannot be null");
+-		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
++		Assert.hasText(template, "template must not be null or empty");
++		Assert.notNull(variables, "variables must not be null");
++		Assert.noNullElements(variables.keySet(), "variables keys must not contain null");
+ 
+-		ST st = createST(template);
+-		for (Map.Entry<String, Object> entry : variables.entrySet()) {
+-			st.add(entry.getKey(), entry.getValue());
++		try {
++			String processedTemplate = preprocessTemplate(template);
++			ST st = new ST(processedTemplate, '{', '}');
++			variables.forEach(st::add);
++
++			if (validationMode != ValidationMode.NONE) {
++				validate(st, variables);
++			}
++
++			return st.render();
+ 		}
+-		if (this.validationMode != ValidationMode.NONE) {
+-			validate(st, variables);
++		catch (STException e) {
++			throw new IllegalArgumentException("Failed to render template", e);
+ 		}
+-		return st.render();
+ 	}
+ 
+-	private ST createST(String template) {
+-		try {
+-			return new ST(template, this.startDelimiterToken, this.endDelimiterToken);
+-		}
+-		catch (Exception ex) {
+-			throw new IllegalArgumentException("The template string is not valid.", ex);
++	/**
++	 * Converts custom delimiter-wrapped variables (e.g., <name>) to ST's native format
++	 * ({name}).
++	 */
++	private String preprocessTemplate(String template) {
++		if ("{".equals(startDelimiterToken) && "}".equals(endDelimiterToken)) {
++			return template;
+ 		}
++		String escapedStart = Pattern.quote(startDelimiterToken);
++		String escapedEnd = Pattern.quote(endDelimiterToken);
++		String variablePattern = escapedStart + "([a-zA-Z_][a-zA-Z0-9_]*)" + escapedEnd;
++		return template.replaceAll(variablePattern, "{$1}");
+ 	}
+ 
+ 	/**
+-	 * Validates that all required template variables are provided in the model. Returns
+-	 * the set of missing variables for further handling or logging.
+-	 * @param st the StringTemplate instance
+-	 * @param templateVariables the provided variables
+-	 * @return set of missing variable names, or empty set if none are missing
++	 * Validates that all template variables have been provided in the variables map.
+ 	 */
+-	private Set<String> validate(ST st, Map<String, Object> templateVariables) {
++	private void validate(ST st, Map<String, Object> templateVariables) {
+ 		Set<String> templateTokens = getInputVariables(st);
+-		Set<String> modelKeys = templateVariables != null ? templateVariables.keySet() : new HashSet<>();
++		Set<String> modelKeys = templateVariables != null ? templateVariables.keySet() : Collections.emptySet();
+ 		Set<String> missingVariables = new HashSet<>(templateTokens);
+ 		missingVariables.removeAll(modelKeys);
+ 
+ 		if (!missingVariables.isEmpty()) {
+-			if (this.validationMode == ValidationMode.WARN) {
+-				logger.warn(VALIDATION_MESSAGE.formatted(missingVariables));
++			String message = VALIDATION_MESSAGE.formatted(missingVariables);
++			if (validationMode == ValidationMode.WARN) {
++				logger.warn(message);
+ 			}
+-			else if (this.validationMode == ValidationMode.THROW) {
+-				throw new IllegalStateException(VALIDATION_MESSAGE.formatted(missingVariables));
++			else if (validationMode == ValidationMode.THROW) {
++				throw new IllegalStateException(message);
+ 			}
+ 		}
+-		return missingVariables;
+ 	}
+ 
++	/**
++	 * Extracts variable names from the template using ST's token stream and regex
++	 * validation.
++	 */
+ 	private Set<String> getInputVariables(ST st) {
+-		TokenStream tokens = st.impl.tokens;
+ 		Set<String> inputVariables = new HashSet<>();
++		TokenStream tokens = st.impl.tokens;
+ 		boolean isInsideList = false;
+ 
++		Set<String> stKeywords = Set.of("if", "elseif", "else", "endif", "for", "endfor", "while", "endwhile", "switch",
++				"endswitch", "case", "default");
++
+ 		for (int i = 0; i < tokens.size(); i++) {
+ 			Token token = tokens.get(i);
+ 
+-			// Handle list variables with option (e.g., {items; separator=", "})
+ 			if (token.getType() == STLexer.LDELIM && i + 1 < tokens.size()
+ 					&& tokens.get(i + 1).getType() == STLexer.ID) {
+ 				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
+ 					String text = tokens.get(i + 1).getText();
+-					if (!Compiler.funcs.containsKey(text) || this.validateStFunctions) {
++					if ((!Compiler.funcs.containsKey(text) || validateStFunctions) && !stKeywords.contains(text)) {
+ 						inputVariables.add(text);
+ 						isInsideList = true;
+ 					}
+@@ -165,34 +172,49 @@ private Set<String> getInputVariables(ST st) {
+ 			else if (token.getType() == STLexer.RDELIM) {
+ 				isInsideList = false;
+ 			}
+-			// Only add IDs that are not function calls (i.e., not immediately followed by
+ 			else if (!isInsideList && token.getType() == STLexer.ID) {
+ 				boolean isFunctionCall = (i + 1 < tokens.size() && tokens.get(i + 1).getType() == STLexer.LPAREN);
+ 				boolean isDotProperty = (i > 0 && tokens.get(i - 1).getType() == STLexer.DOT);
+-				// Only add as variable if:
+-				// - Not a function call
+-				// - Not a built-in function used as property (unless validateStFunctions)
+-				if (!isFunctionCall && (!Compiler.funcs.containsKey(token.getText()) || this.validateStFunctions
+-						|| !(isDotProperty && Compiler.funcs.containsKey(token.getText())))) {
+-					inputVariables.add(token.getText());
++				String tokenText = token.getText();
++				if (!isFunctionCall && (!Compiler.funcs.containsKey(tokenText) || validateStFunctions
++						|| !(isDotProperty && Compiler.funcs.containsKey(tokenText)))) {
++					if (!stKeywords.contains(tokenText)) {
++						inputVariables.add(tokenText);
++					}
+ 				}
+ 			}
+ 		}
++
++		Pattern varPattern = Pattern.compile(Pattern.quote("{") + "([a-zA-Z_][a-zA-Z0-9_]*)" + Pattern.quote("}"));
++		Matcher matcher = varPattern.matcher(st.impl.template);
++		while (matcher.find()) {
++			String var = matcher.group(1);
++			if (!stKeywords.contains(var)) {
++				inputVariables.add(var);
++			}
++		}
++
++		Set<String> localVariables = Set.of("it", "item", "index", "key", "value");
++		inputVariables.removeAll(localVariables);
++
+ 		return inputVariables;
+ 	}
+ 
++	/**
++	 * Creates a builder for configuring StTemplateRenderer instances.
++	 */
+ 	public static Builder builder() {
+ 		return new Builder();
+ 	}
+ 
+ 	/**
+-	 * Builder for configuring and creating {@link StTemplateRenderer} instances.
++	 * Builder for fluent configuration of StTemplateRenderer.
+ 	 */
+ 	public static final class Builder {
+ 
+-		private char startDelimiterToken = DEFAULT_START_DELIMITER_TOKEN;
++		private String startDelimiterToken = DEFAULT_START_DELIMITER;
+ 
+-		private char endDelimiterToken = DEFAULT_END_DELIMITER_TOKEN;
++		private String endDelimiterToken = DEFAULT_END_DELIMITER;
+ 
+ 		private ValidationMode validationMode = DEFAULT_VALIDATION_MODE;
+ 
+@@ -202,33 +224,23 @@ private Builder() {
+ 		}
+ 
+ 		/**
+-		 * Sets the character used as the start delimiter for template expressions.
+-		 * Default is '{'.
+-		 * @param startDelimiterToken The start delimiter character.
+-		 * @return This builder instance for chaining.
++		 * Sets the multi-character start delimiter (e.g., "{{" or "<").
+ 		 */
+-		public Builder startDelimiterToken(char startDelimiterToken) {
++		public Builder startDelimiterToken(String startDelimiterToken) {
+ 			this.startDelimiterToken = startDelimiterToken;
+ 			return this;
+ 		}
+ 
+ 		/**
+-		 * Sets the character used as the end delimiter for template expressions. Default
+-		 * is '}'.
+-		 * @param endDelimiterToken The end delimiter character.
+-		 * @return This builder instance for chaining.
++		 * Sets the multi-character end delimiter (e.g., "}}" or ">").
+ 		 */
+-		public Builder endDelimiterToken(char endDelimiterToken) {
++		public Builder endDelimiterToken(String endDelimiterToken) {
+ 			this.endDelimiterToken = endDelimiterToken;
+ 			return this;
+ 		}
+ 
+ 		/**
+-		 * Sets the validation mode to control behavior when the provided variables do not
+-		 * match the variables required by the template. Default is
+-		 * {@link ValidationMode#THROW}.
+-		 * @param validationMode The desired validation mode.
+-		 * @return This builder instance for chaining.
++		 * Sets the validation mode for missing variables.
+ 		 */
+ 		public Builder validationMode(ValidationMode validationMode) {
+ 			this.validationMode = validationMode;
+@@ -236,17 +248,7 @@ public Builder validationMode(ValidationMode validationMode) {
+ 		}
+ 
+ 		/**
+-		 * Configures the renderer to support StringTemplate's built-in functions during
+-		 * validation.
+-		 * <p>
+-		 * When enabled (set to true), identifiers in the template that match known ST
+-		 * function names (e.g., "first", "rest", "length") will not be treated as
+-		 * required input variables during validation.
+-		 * <p>
+-		 * When disabled (default, false), these identifiers are treated like regular
+-		 * variables and must be provided in the input map if validation is enabled
+-		 * ({@link ValidationMode#WARN} or {@link ValidationMode#THROW}).
+-		 * @return This builder instance for chaining.
++		 * Enables validation of ST built-in functions (treats them as variables).
+ 		 */
+ 		public Builder validateStFunctions() {
+ 			this.validateStFunctions = true;
+@@ -254,13 +256,10 @@ public Builder validateStFunctions() {
+ 		}
+ 
+ 		/**
+-		 * Builds and returns a new {@link StTemplateRenderer} instance with the
+-		 * configured settings.
+-		 * @return A configured {@link StTemplateRenderer}.
++		 * Builds the configured StTemplateRenderer instance.
+ 		 */
+ 		public StTemplateRenderer build() {
+-			return new StTemplateRenderer(this.startDelimiterToken, this.endDelimiterToken, this.validationMode,
+-					this.validateStFunctions);
++			return new StTemplateRenderer(startDelimiterToken, endDelimiterToken, validationMode, validateStFunctions);
+ 		}
+ 
+ 	}
+"}
+[WARNING] Query truncated from 14256 to 8000 characters
++ Search completed in 11208ms
+Max score gap (0.015787274) at index = 26
+AdaptiveKStrategy: Selected top K = 26
+Top documents:
+401::0.67228377
+409::0.66477174
+411::0.66460675
+408::0.66260487
+413::0.6548253
+223::0.64710325
+405::0.6427275
+226::0.64244056
+407::0.633289
+218::0.62306005
+210::0.61995286
+404::0.61729753
+400::0.6121723
+406::0.6006954
+403::0.5899171
+412::0.58778465
+225::0.5803733
+410::0.5634291
+222::0.55126226
+217::0.5294322
+209::0.5259998
+402::0.52378345
+1426::0.5184963
+224::0.51724815
+65::0.5056745
+212::0.50431657
+426::0.50318503
+216::0.48739776
+904::0.48288888
+371::0.48209834
+208::0.4818796
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: spring-ai-template-st/src/test/java/org/springframework/ai/template/st/StTemplateRendererTests.java", "content": "@@ -38,15 +38,15 @@ class StTemplateRendererTests {
+ 	void shouldNotAcceptNullValidationMode() {
+ 		assertThatThrownBy(() -> StTemplateRenderer.builder().validationMode(null).build())
+ 			.isInstanceOf(IllegalArgumentException.class)
+-			.hasMessageContaining("validationMode cannot be null");
++			.hasMessageContaining("validationMode must not be null");
+ 	}
+ 
+ 	@Test
+ 	void shouldUseDefaultValuesWhenUsingBuilder() {
+ 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+ 
+-		assertThat(ReflectionTestUtils.getField(renderer, "startDelimiterToken")).isEqualTo('{');
+-		assertThat(ReflectionTestUtils.getField(renderer, "endDelimiterToken")).isEqualTo('}');
++		assertThat(ReflectionTestUtils.getField(renderer, "startDelimiterToken")).isEqualTo("{");
++		assertThat(ReflectionTestUtils.getField(renderer, "endDelimiterToken")).isEqualTo("}");
+ 		assertThat(ReflectionTestUtils.getField(renderer, "validationMode")).isEqualTo(ValidationMode.THROW);
+ 	}
+ 
+@@ -80,14 +80,14 @@ void shouldNotRenderEmptyTemplate() {
+ 		Map<String, Object> variables = new HashMap<>();
+ 
+ 		assertThatThrownBy(() -> renderer.apply("", variables)).isInstanceOf(IllegalArgumentException.class)
+-			.hasMessageContaining("template cannot be null or empty");
++			.hasMessageContaining("template must not be null or empty");
+ 	}
+ 
+ 	@Test
+ 	void shouldNotAcceptNullVariables() {
+ 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+ 		assertThatThrownBy(() -> renderer.apply("Hello!", null)).isInstanceOf(IllegalArgumentException.class)
+-			.hasMessageContaining("variables cannot be null");
++			.hasMessageContaining("variables must not be null");
+ 	}
+ 
+ 	@Test
+@@ -98,7 +98,7 @@ void shouldNotAcceptVariablesWithNullKeySet() {
+ 		variables.put(null, "Spring AI");
+ 
+ 		assertThatThrownBy(() -> renderer.apply(template, variables)).isInstanceOf(IllegalArgumentException.class)
+-			.hasMessageContaining("variables keys cannot be null");
++			.hasMessageContaining("variables keys must not contain null");
+ 	}
+ 
+ 	@Test
+@@ -108,7 +108,7 @@ void shouldThrowExceptionForInvalidTemplateSyntax() {
+ 		variables.put("name", "Spring AI");
+ 
+ 		assertThatThrownBy(() -> renderer.apply("Hello {name!", variables)).isInstanceOf(IllegalArgumentException.class)
+-			.hasMessageContaining("The template string is not valid.");
++			.hasMessageContaining("Failed to render template");
+ 	}
+ 
+ 	@Test
+@@ -148,8 +148,8 @@ void shouldRenderWithoutValidationInNoneMode() {
+ 	@Test
+ 	void shouldRenderWithCustomDelimiters() {
+ 		StTemplateRenderer renderer = StTemplateRenderer.builder()
+-			.startDelimiterToken('<')
+-			.endDelimiterToken('>')
++			.startDelimiterToken("<")
++			.endDelimiterToken(">")
+ 			.build();
+ 		Map<String, Object> variables = new HashMap<>();
+ 		variables.put("name", "Spring AI");
+@@ -159,11 +159,40 @@ void shouldRenderWithCustomDelimiters() {
+ 		assertThat(result).isEqualTo("Hello Spring AI!");
+ 	}
+ 
++	@Test
++	void shouldRenderWithDoubleAngleBracketDelimiters() {
++		StTemplateRenderer renderer = StTemplateRenderer.builder()
++			.startDelimiterToken("<<")
++			.endDelimiterToken(">>")
++			.build();
++
++		Map<String, Object> variables = new HashMap<>();
++		variables.put("name", "Spring AI");
++
++		String result = renderer.apply("Hello <<name>>!", variables);
++
++		assertThat(result).isEqualTo("Hello Spring AI!");
++	}
++
++	@Test
++	void shouldHandleDoubleCurlyBracesAsDelimiters() {
++		StTemplateRenderer renderer = StTemplateRenderer.builder()
++			.startDelimiterToken("{{")
++			.endDelimiterToken("}}")
++			.build();
++		Map<String, Object> variables = new HashMap<>();
++		variables.put("name", "Spring AI");
++
++		String result = renderer.apply("Hello {{name}}!", variables);
++
++		assertThat(result).isEqualTo("Hello Spring AI!");
++	}
++
+ 	@Test
+ 	void shouldHandleSpecialCharactersAsDelimiters() {
+ 		StTemplateRenderer renderer = StTemplateRenderer.builder()
+-			.startDelimiterToken('$')
+-			.endDelimiterToken('$')
++			.startDelimiterToken("$")
++			.endDelimiterToken("$")
+ 			.build();
+ 		Map<String, Object> variables = new HashMap<>();
+ 		variables.put("name", "Spring AI");
+@@ -287,9 +316,11 @@ void shouldHandleObjectVariables() {
+ 	 */
+ 	@Test
+ 	void shouldRenderTemplateWithBuiltInFunctions() {
+-		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
++		StTemplateRenderer renderer = StTemplateRenderer.builder().validationMode(ValidationMode.THROW).build();
++
+ 		Map<String, Object> variables = new HashMap<>();
+ 		variables.put("memory", "you are a helpful assistant");
++
+ 		String template = "{if(strlen(memory))}Hello!{endif}";
+ 
+ 		String result = renderer.apply(template, variables);
+"}
++ Search completed in 2133ms
+Max score gap (0.013313234) at index = 2
+AdaptiveKStrategy: Selected top K = 2
+Top documents:
+1243::0.6265212
+930::0.55388063
+604::0.5458462
+1426::0.532533
+1233::0.53113127
+58::0.5256871
+1088::0.5197758
+RankFusionStrategy: Scores:
+{907=0.01773436998008096, 1461=0.008620689655172414, 1338=0.004464285714285714, 1336=0.014705882352941176, 1457=0.011111111111111112, 1335=0.01623062015503876, 1573=0.008264462809917356, 916=0.007936507936507936, 918=0.005050505050505051, 1231=0.014492753623188406, 1473=0.011363636363636364, 1594=0.02667140825035562, 1349=0.009433962264150943, 1106=0.004329004329004329, 1467=0.0064516129032258064, 1464=0.006329113924050633, 1463=0.006134969325153374, 1221=0.018670709327375728, 801=0.005847953216374269, 923=0.004975124378109453, 926=0.0049261083743842365, 927=0.0049504950495049506, 1108=0.006211180124223602, 1483=0.0044444444444444444, 1120=0.00980392156862745, 1361=0.008928571428571428, 1355=0.009174311926605505, 930=0.031054405392392875, 1112=0.00625, 1233=0.02664576802507837, 810=0.005263157894736842, 1595=0.006578947368421052, 1353=0.0070921985815602835, 1232=0.008, 815=0.009523809523809525, 817=0.0055248618784530384, 938=0.00684931506849315, 1493=0.0047169811320754715, 1490=0.007246376811594203, 1129=0.004545454545454545, 1128=0.005319148936170213, 1127=0.004347826086956522, 1368=0.0238230289279637, 1487=0.009708737864077669, 1123=0.005291005291005291, 1002=0.008064516129032258, 1243=0.042939141547682, 822=0.004694835680751174, 825=0.006369426751592357, 705=0.009345794392523364, 829=0.005154639175257732, 271=0.010101010101010102, 1380=0.005494505494505495, 1017=0.004739336492890996, 1015=0.020526315789473684, 831=0.011627906976744186, 1376=0.0125, 1012=0.0045045045045045045, 834=0.004901960784313725, 713=0.005235602094240838, 955=0.011235955056179775, 836=0.006711409395973154, 716=0.004608294930875576, 717=0.008403361344537815, 1032=0.006289308176100629, 1395=0.010101010101010102, 1393=0.004366812227074236, 160=0.007462686567164179, 1270=0.007142857142857143, 1391=0.007692307692307693, 163=0.005, 1269=0.006493506493506494, 963=0.007751937984496124, 600=0.008695652173913044, 1265=0.00819672131147541, 1023=0.010638297872340425, 966=0.004878048780487805, 846=0.023064687168610817, 604=0.01639344262295082, 726=0.004761904761904762, 849=0.014705882352941176, 729=0.007874015748031496, 608=0.010309278350515464, 65=0.011764705882352941, 1042=0.014084507042253521, 1283=0.005952380952380952, 970=0.009009009009009009, 971=0.022426868905742147, 976=0.005405405405405406, 1176=0.0259915611814346, 1174=0.004291845493562232, 1292=0.026875901875901876, 1291=0.005376344086021506, 1600=0.006993006993006993, 741=0.006802721088435374, 1168=0.011111111111111112, 1289=0.006060606060606061, 742=0.006535947712418301, 1047=0.00847457627118644, 744=0.005208333333333333, 624=0.02480203197370387, 746=0.004405286343612335, 1607=0.024644945697577275, 191=0.016434506353861192, 1184=0.015384615384615385, 1060=0.004524886877828055, 1180=0.02454819277108434, 990=0.005555555555555556, 871=0.01982758620689655, 631=0.015873015873015872, 632=0.015357233663869818, 1178=0.004310344827586207, 1298=0.00546448087431694, 755=0.009615384615384616, 878=0.0058823529411764705, 999=0.006896551724137931, 636=0.011904761904761904, 758=0.0053475935828877, 637=0.005434782608695652, 1619=0.009900990099009901, 759=0.005714285714285714, 1190=0.023135271807838177, 882=0.02020408163265306, 400=0.0136986301369863, 884=0.02483719521429653, 401=0.01639344262295082, 402=0.012195121951219513, 886=0.004273504273504274, 765=0.013333333333333334, 403=0.013333333333333334, 404=0.013888888888888888, 767=0.005917159763313609, 405=0.014925373134328358, 889=0.0072992700729927005, 406=0.013513513513513514, 407=0.014492753623188406, 1508=0.006666666666666667, 408=0.015625, 409=0.016129032258064516, 1625=0.019743769743769745, 1080=0.012345679012345678, 1088=0.031544957774465976, 1081=0.011904761904761904, 1635=0.005128205128205128, 892=0.014285714285714285, 772=0.004424778761061947, 410=0.01282051282051282, 652=0.005780346820809248, 411=0.015873015873015872, 412=0.013157894736842105, 413=0.015384615384615385, 534=0.004784688995215311, 657=0.006172839506172839, 778=0.007575757575757576, 1639=0.02007992007992008, 1637=0.006097560975609756, 1094=0.004672897196261682, 780=0.0045871559633027525, 540=0.016129032258064516, 1402=0.004629629629629629, 1644=0.016288015386464717, 541=0.007352941176470588, 663=0.0043859649122807015, 1400=0.007194244604316547, 1520=0.004807692307692308, 1089=0.015520728008088978, 788=0.005747126436781609, 1526=0.013888888888888888, 790=0.0056179775280898875, 670=0.008547008547008548, 792=0.007633587786259542, 1534=0.005988023952095809, 674=0.005025125628140704, 675=0.00558659217877095, 676=0.026334026334026334, 677=0.017646211466436183, 1426=0.021307452030343597, 1546=0.01282051282051282, 684=0.014925373134328358, 1543=0.006024096385542169, 209=0.012345679012345678, 1549=0.004484304932735426, 693=0.023529411764705882, 1558=0.0136986301369863, 210=0.014084507042253521, 1314=0.015625, 1435=0.01020408163265306, 212=0.011627906976744186, 696=0.0048543689320388345, 1312=0.0136986301369863, 1433=0.008130081300813009, 698=0.0051813471502590676, 217=0.0125, 218=0.014285714285714285, 581=0.006944444444444444, 1206=0.015625, 1447=0.018882433356117567, 222=0.012658227848101266, 223=0.015151515151515152, 224=0.011904761904761904, 1444=0.013157894736842105, 225=0.012987012987012988, 588=0.00510204081632653, 226=0.014705882352941176, 1321=0.0078125, 900=0.02333469000135667, 903=0.0045662100456621, 1449=0.007407407407407408}
+Augmenting input for PR: Feature (template): Supports multi character template separators (2661444569)
++ Retrieval and Augmentation completed in 15012ms
+Input length: 49223 char
++ Generation completed in 4627ms
++ Saved evaluation result for PR #2661444569
+Performing multi-query retrieval for 3 queries.
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: vector-stores/spring-ai-pgvector-store/src/main/java/org/springframework/ai/vectorstore/pgvector/PgVectorSchemaValidator.java", "content": "@@ -49,9 +49,8 @@ static boolean isValidNameForDatabaseObject(String name) {
+ 			return false;
+ 		}
+ 
+-		// Check if the table or schema has Only alphanumeric characters and underscores
+-		// and should be less than 64 characters
+-		if (!name.matches("^[a-zA-Z0-9_]{1,64}$")) {
++		// Check basic constraints: non-empty and reasonable length
++		if (name.trim().isEmpty() || name.length() > 64) {
+ 			return false;
+ 		}
+ 
+@@ -60,6 +59,21 @@ static boolean isValidNameForDatabaseObject(String name) {
+ 			return false;
+ 		}
+ 
++		// Reject names with potentially dangerous characters that could indicate SQL
++		// injection
++		// These would be problematic even when quoted
++		if (name.contains(";") || // Statement separator
++				name.contains("--") || // SQL comment
++				name.contains("/*") || // Block comment start
++				name.contains("*/") || // Block comment end
++				name.contains("\0") || // Null byte
++				name.contains("\n") || // Newline
++				name.contains("\r") || // Carriage return
++				name.toLowerCase().matches(".*\\b(drop|alter|create|insert|update|delete|select)\\b.*")) { // SQL
++																											// keywords
++			return false;
++		}
++
+ 		return true;
+ 
+ 	}
+@@ -80,11 +94,11 @@ void validateTableSchema(String schemaName, String tableName) {
+ 
+ 		if (!isValidNameForDatabaseObject(schemaName)) {
+ 			throw new IllegalArgumentException(
+-					"Schema name should only contain alphanumeric characters and underscores");
++					"Schema name must be non-empty, not exceed 64 characters, and not contain dangerous characters");
+ 		}
+ 		if (!isValidNameForDatabaseObject(tableName)) {
+ 			throw new IllegalArgumentException(
+-					"Table name should only contain alphanumeric characters and underscores");
++					"Table name must be non-empty, not exceed 64 characters, and not contain dangerous characters");
+ 		}
+ 
+ 		if (!isTableExists(schemaName, tableName)) {
+@@ -138,13 +152,14 @@ void validateTableSchema(String schemaName, String tableName) {
+ 						+ "   CREATE EXTENSION IF NOT EXISTS vector;\n" + "   CREATE EXTENSION IF NOT EXISTS hstore;\n"
+ 						+ "   CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\n"
+ 						+ "2. Verify that the table exists with the appropriate structure. If it does not exist, create it using a SQL command similar to the following, replacing 'embedding_dimensions' with the appropriate size based on your vector embeddings:\n"
+-						+ String.format("   CREATE TABLE IF NOT EXISTS %s (\n"
++						+ String.format("   CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" (\n"
+ 								+ "       id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,\n" + "       content text,\n"
+ 								+ "       metadata json,\n"
+ 								+ "       embedding vector(embedding_dimensions)  // Replace 'embedding_dimensions' with your specific value\n"
+-								+ "   );\n", schemaName + "." + tableName)
++								+ "   );\n", schemaName, tableName)
+ 						+ "3. Create an appropriate index for the vector embedding to optimize performance. Adjust the index type and options based on your usage. Example SQL for creating an index:\n"
+-						+ String.format("   CREATE INDEX ON %s USING HNSW (embedding vector_cosine_ops);\n", tableName)
++						+ String.format("   CREATE INDEX ON \"%s\".\"%s\" USING HNSW (embedding vector_cosine_ops);\n",
++								schemaName, tableName)
+ 						+ "\nPlease adjust these commands based on your specific configuration and the capabilities of your vector database system.");
+ 			throw new IllegalStateException(e);
+ 
+"}
++ Search completed in 1343ms
+Max score gap (0.0026776195) at index = 59
+AdaptiveKStrategy: Selected top K = 59
+Top documents:
+1103::0.68588734
+1153::0.64719975
+1021::0.638554
+1524::0.63673514
+285::0.6235382
+879::0.6165026
+977::0.6132892
+1098::0.6095867
+880::0.60471475
+756::0.6032192
+231::0.6004156
+1141::0.5997853
+843::0.59957707
+1307::0.59869593
+69::0.5940719
+1097::0.5887172
+272::0.5886066
+1415::0.5860963
+1398::0.58163863
+111::0.5787139
+1317::0.5751446
+109::0.57483685
+1426::0.5736042
+1331::0.5735822
+1533::0.5718218
+116::0.5710328
+671::0.5687999
+547::0.56814915
+349::0.5669782
+1422::0.56652045
+562::0.56651294
+13::0.5651003
+138::0.56307244
+232::0.5630664
+1306::0.5613975
+904::0.5612819
+1101::0.5609875
+641::0.5607538
+1245::0.5601189
+649::0.5594923
+614::0.55832475
+136::0.55684024
+46::0.5561012
+143::0.5560994
+290::0.55571616
+236::0.55530816
+1009::0.55332357
+1230::0.55326533
+110::0.55240285
+316::0.55106944
+1302::0.5506958
+1303::0.55044794
+108::0.54935396
+1634::0.54869974
+492::0.5482587
+137::0.5481432
+115::0.5480946
+426::0.5478507
+571::0.5471891
+1288::0.54595095
+470::0.5432733
+1557::0.54281974
+15::0.542466
+352::0.5424352
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: vector-stores/spring-ai-pgvector-store/src/main/java/org/springframework/ai/vectorstore/pgvector/PgVectorStore.java", "content": "@@ -107,7 +107,7 @@
+  * </p>
+  * <pre>{@code
+  * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+- *     .schemaName("custom_schema")
++ *     .schemaName("custom-schema")  // Special characters like hyphens are supported
+  *     .vectorTableName("custom_vectors")
+  *     .distanceType(PgDistanceType.NEGATIVE_INNER_PRODUCT)
+  *     .removeExistingVectorStoreTable(true)
+@@ -429,7 +429,7 @@ public void afterPropertiesSet() {
+ 			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+ 		}
+ 
+-		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", this.getSchemaName()));
++		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS \"%s\"", this.getSchemaName()));
+ 
+ 		// Remove existing VectorStoreTable
+ 		if (this.removeExistingVectorStoreTable) {
+@@ -453,8 +453,15 @@ embedding vector(%d)
+ 		}
+ 	}
+ 
++	/**
++	 * Returns the fully qualified table name with proper PostgreSQL identifier quoting.
++	 * This method ensures that schema and table names containing special characters (such
++	 * as hyphens, spaces, or reserved keywords) are properly quoted to prevent SQL syntax
++	 * errors.
++	 * @return the fully qualified table name in the format "schema"."table"
++	 */
+ 	private String getFullyQualifiedTableName() {
+-		return this.schemaName + "." + this.vectorTableName;
++		return "\"" + this.schemaName + "\".\"" + this.vectorTableName + "\"";
+ 	}
+ 
+ 	private PgIdType getIdType() {
+"}
++ Search completed in 289ms
+Max score gap (0.005959511) at index = 39
+AdaptiveKStrategy: Selected top K = 39
+Top documents:
+1021::0.72688806
+1103::0.70600337
+977::0.6638349
+1098::0.64688027
+1307::0.62447965
+13::0.61123383
+756::0.609949
+1317::0.609199
+1153::0.6078627
+1097::0.59550416
+1166::0.5880319
+1303::0.5825699
+15::0.5809505
+1141::0.5800202
+562::0.5760062
+1148::0.5649417
+1076::0.5575193
+1333::0.55665207
+1245::0.5520849
+1524::0.55099374
+843::0.54838455
+1398::0.5462417
+1302::0.5459155
+1415::0.54509306
+109::0.54454684
+1107::0.5439309
+272::0.54384005
+111::0.5380721
+1101::0.5358016
+1469::0.5332123
+783::0.5331093
+641::0.53292954
+14::0.53123736
+285::0.53091884
+614::0.5307791
+231::0.52992773
+1557::0.52917075
+1533::0.5287218
+110::0.5284726
+933::0.5284661
+349::0.5225066
+1309::0.52122104
+823::0.52068776
+649::0.52034587
+AdaptiveKStrategy: Retrieving documents for query: {"filepath: vector-stores/spring-ai-pgvector-store/src/test/java/org/springframework/ai/vectorstore/pgvector/PgVectorStoreSchemaQuotingTest.java", "content": "@@ -0,0 +1,104 @@
++/*
++ * Copyright 2023-2024 the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      https://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.springframework.ai.vectorstore.pgvector;
++
++import java.lang.reflect.Method;
++import java.util.List;
++import java.util.Map;
++
++import org.junit.jupiter.api.Test;
++import org.mockito.ArgumentCaptor;
++
++import org.springframework.ai.document.Document;
++import org.springframework.ai.embedding.EmbeddingModel;
++import org.springframework.ai.vectorstore.SearchRequest;
++import org.springframework.jdbc.core.JdbcTemplate;
++import org.springframework.jdbc.core.RowMapper;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.mockito.ArgumentMatchers.any;
++import static org.mockito.ArgumentMatchers.anyString;
++import static org.mockito.Mockito.mock;
++import static org.mockito.Mockito.verify;
++import static org.mockito.Mockito.when;
++
++/**
++ * Unit test to demonstrate the schema quoting fix for GitHub issue #4130. Verifies that
++ * hyphenated schema names are properly quoted in SQL generation.
++ *
++ * @author Claude Code Assistant
++ */
++public class PgVectorStoreSchemaQuotingTest {
++
++	/**
++	 * Verifies that hyphenated schema names (issue #4130) are properly quoted in SQL
++	 * identifiers.
++	 */
++	@Test
++	public void shouldProperlyQuoteHyphenatedSchemaNames() throws Exception {
++		JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
++		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
++		when(embeddingModel.dimensions()).thenReturn(1536);
++
++		// Create PgVectorStore with the problematic hyphenated schema from issue #4130
++		PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
++			.schemaName("demo-1998")
++			.vectorTableName("vector_store")
++			.initializeSchema(false)
++			.build();
++
++		// Access the private method to verify quoting behavior
++		Method getFullyQualifiedTableNameMethod = PgVectorStore.class.getDeclaredMethod("getFullyQualifiedTableName");
++		getFullyQualifiedTableNameMethod.setAccessible(true);
++		String fullyQualifiedTableName = (String) getFullyQualifiedTableNameMethod.invoke(vectorStore);
++
++		// Verify proper PostgreSQL identifier quoting
++		assertThat(fullyQualifiedTableName).isEqualTo("\"demo-1998\".\"vector_store\"");
++	}
++
++	/**
++	 * Verifies that similarity search generates properly quoted SQL for hyphenated
++	 * schemas.
++	 */
++	@Test
++	public void shouldGenerateQuotedSQLInSimilaritySearch() throws Exception {
++		JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
++		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
++
++		when(embeddingModel.dimensions()).thenReturn(1536);
++		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 1.0f, 2.0f, 3.0f });
++		when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any()))
++			.thenReturn(List.of(Document.builder().id("1").text("test").metadata(Map.of("distance", 0.5)).build()));
++
++		PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
++			.schemaName("demo-1998")
++			.vectorTableName("vector_store")
++			.initializeSchema(false)
++			.build();
++
++		// Execute similarity search
++		vectorStore.doSimilaritySearch(SearchRequest.builder().query("test").topK(5).build());
++
++		// Verify the generated SQL contains properly quoted identifiers
++		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
++		verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(), any(), any(), any());
++
++		String generatedSQL = sqlCaptor.getValue();
++		assertThat(generatedSQL).contains("\"demo-1998\".\"vector_store\"");
++	}
++
++}
+\ No newline at end of file
+"}
++ Search completed in 1208ms
+Max score gap (0.0026686192) at index = 171
+AdaptiveKStrategy: Selected top K = 171
+Top documents:
+143::0.6582311
+146::0.6390747
+136::0.637578
+135::0.6338399
+649::0.62730175
+145::0.6241759
+977::0.6205287
+1398::0.61830497
+144::0.6172368
+1245::0.6121105
+290::0.61180544
+1153::0.6103007
+1021::0.6068927
+138::0.6047467
+1524::0.6044641
+285::0.60321766
+147::0.6016618
+756::0.5999299
+1306::0.59949636
+1533::0.5986093
+843::0.5982785
+1098::0.5956922
+1317::0.5948072
+316::0.5934099
+879::0.59055614
+547::0.5896625
+1103::0.5854918
+880::0.5826447
+1097::0.5766423
+309::0.5765752
+571::0.57566595
+137::0.57198083
+69::0.5663987
+231::0.5663127
+148::0.5662033
+142::0.56561905
+1422::0.56513846
+1166::0.5636588
+671::0.56363183
+1415::0.56307036
+139::0.56198287
+272::0.56144285
+641::0.56104517
+151::0.5603509
+1307::0.5602244
+140::0.5576332
+672::0.5576155
+286::0.55670357
+109::0.55575275
+1323::0.55470884
+111::0.5517292
+562::0.55132407
+1282::0.5503925
+958::0.55020094
+1070::0.5498234
+51::0.5484698
+1302::0.54813874
+976::0.5476917
+149::0.5464352
+116::0.5458789
+1578::0.54541063
+1101::0.54407287
+311::0.54285794
+115::0.5427908
+1631::0.54259753
+56::0.54167724
+58::0.54116964
+232::0.53975767
+1608::0.5394974
+664::0.53880847
+1333::0.538772
+1426::0.53834546
+54::0.53820705
+492::0.5379241
+1309::0.5378501
+110::0.536831
+497::0.53639466
+1609::0.5363433
+46::0.5362449
+108::0.5342891
+74::0.53408444
+259::0.5337425
+614::0.5332805
+1603::0.5332351
+349::0.5332252
+1339::0.53315747
+823::0.53256536
+310::0.5316568
+308::0.5308595
+484::0.5305489
+426::0.53045696
+1141::0.5302597
+307::0.52999747
+236::0.52912104
+1500::0.5289385
+553::0.52882373
+474::0.5287347
+1094::0.5287323
+493::0.52798057
+1107::0.52786136
+868::0.5273801
+1557::0.5272249
+625::0.5270395
+352::0.5266653
+312::0.526562
+1009::0.5243358
+141::0.5242256
+909::0.52320707
+470::0.5222678
+317::0.52213275
+501::0.5211199
+1205::0.5207997
+950::0.52078295
+1331::0.52072275
+4::0.5200949
+453::0.51835454
+1570::0.5180554
+592::0.51732045
+1281::0.5167537
+1322::0.5164783
+1604::0.51629865
+117::0.51619893
+291::0.5156975
+15::0.5156231
+591::0.5135689
+1236::0.5135288
+431::0.51297086
+906::0.51213866
+1522::0.5120448
+1287::0.5119257
+953::0.511406
+711::0.5110675
+724::0.5104109
+1506::0.5101932
+1303::0.5099294
+1288::0.5098282
+294::0.5092035
+1182::0.5084673
+98::0.50813127
+1::0.5071662
+1634::0.5066229
+1254::0.50566053
+1469::0.5051268
+52::0.5050688
+1468::0.50491995
+498::0.5046969
+150::0.50465924
+72::0.5041324
+904::0.5040259
+1124::0.50371087
+1148::0.50332505
+13::0.5030315
+648::0.5028876
+1230::0.5028566
+776::0.502768
+440::0.50244683
+1620::0.5021807
+1371::0.5014186
+75::0.50134134
+1574::0.5010971
+495::0.49978763
+721::0.4997672
+1521::0.49927658
+1125::0.49814737
+103::0.49781668
+53::0.49780768
+1076::0.49728686
+1488::0.49685302
+2::0.4958729
+1250::0.4956443
+1100::0.49525204
+613::0.4946928
+1204::0.49202418
+940::0.49190062
+1072::0.49181083
+1264::0.49099758
+RankFusionStrategy: Scores:
+{909=0.005952380952380952, 1182=0.005050505050505051, 591=0.005405405405405406, 470=0.005917159763313609, 592=0.0056179775280898875, 352=0.006097560975609756, 110=0.0266282632040862, 231=0.035139471581260615, 474=0.006369426751592357, 232=0.018450797872340427, 111=0.03287264537264537, 1578=0.008264462809917356, 1333=0.02045410060677236, 115=0.016611524676040806, 236=0.015927468757657437, 1574=0.004545454545454545, 116=0.019961240310077517, 117=0.005494505494505495, 1331=0.017651888341543513, 756=0.04203160024055547, 879=0.026916221033868093, 98=0.005025125628140704, 1339=0.00684931506849315, 13=0.030738061500981927, 14=0.010752688172043012, 15=0.019133412745681953, 1076=0.017392299330625322, 1230=0.013932156455520942, 1070=0.008695652173913044, 484=0.006666666666666667, 1107=0.017877906976744184, 880=0.025856389986824768, 1=0.005, 1469=0.016037219485495347, 2=0.004366812227074236, 1468=0.004878048780487805, 1500=0.0064516129032258064, 641=0.030782384714122032, 1620=0.004608294930875576, 4=0.005714285714285714, 1103=0.04401672775457856, 1101=0.02974195471817065, 1100=0.004329004329004329, 648=0.004694835680751174, 649=0.025384615384615387, 1506=0.005154639175257732, 492=0.01615833874107722, 493=0.006289308176100629, 495=0.004524886877828055, 1634=0.013747054202670856, 497=0.0072992700729927005, 498=0.0048543689320388345, 1236=0.005376344086021506, 135=0.015625, 1631=0.008, 136=0.025676937441643323, 137=0.019490254872563718, 776=0.004651162790697674, 259=0.007042253521126761, 138=0.024266201685556526, 139=0.009900990099009901, 1098=0.04252600430416069, 1097=0.03867956407873616, 1250=0.004347826086956522, 1371=0.0045871559633027525, 1094=0.006329113924050633, 140=0.009433962264150943, 141=0.005988023952095809, 142=0.010416666666666666, 143=0.026008827238335436, 144=0.014492753623188406, 1524=0.04145833333333333, 145=0.015151515151515152, 783=0.01098901098901099, 1522=0.005291005291005291, 146=0.016129032258064516, 1488=0.0043859649122807015, 1125=0.004464285714285714, 1521=0.004484304932735426, 664=0.007692307692307693, 147=0.012987012987012988, 1124=0.004761904761904762, 148=0.010526315789473684, 1245=0.03704495223482565, 149=0.008403361344537815, 426=0.015097092827477832, 547=0.02299154334038055, 823=0.006802721088435374, 307=0.006535947712418301, 308=0.006711409395973154, 309=0.011111111111111112, 1009=0.015369890778065533, 46=0.016902982468394216, 1021=0.045965088632953, 1141=0.033981349770823455, 150=0.004830917874396135, 151=0.009615384615384616, 272=0.034285187429203653, 671=0.021595262974573322, 1415=0.03472527472527472, 672=0.009345794392523364, 431=0.0053475935828877, 310=0.006756756756756757, 553=0.00641025641025641, 311=0.008130081300813009, 1533=0.034468787515006, 950=0.005780346820809248, 312=0.006060606060606061, 1254=0.0049504950495049506, 711=0.005208333333333333, 953=0.005235602094240838, 316=0.020995670995670995, 317=0.0058823529411764705, 51=0.008620689655172414, 958=0.008771929824561403, 52=0.004901960784313725, 53=0.004424778761061947, 54=0.007518796992481203, 56=0.007936507936507936, 58=0.007874015748031496, 1153=0.04451067477014181, 285=0.03918080799379792, 440=0.004629629629629629, 286=0.009259259259259259, 1426=0.019623950346841914, 562=0.03325091575091575, 1303=0.027945665445665444, 1148=0.0178972312297331, 1302=0.029604210327101897, 1422=0.021420389461626575, 721=0.0045045045045045045, 843=0.03838998816167766, 724=0.0051813471502590676, 1309=0.007407407407407408, 1307=0.038421938421938424, 1306=0.02318454363757495, 69=0.024086021505376344, 290=0.023608316566063048, 291=0.00546448087431694, 1282=0.008849557522123894, 294=0.005076142131979695, 1281=0.00558659217877095, 571=0.019392372333548805, 1557=0.0164821178566883, 453=0.005681818181818182, 1398=0.03955923215226195, 976=0.00847457627118644, 614=0.027420312881490577, 977=0.04572376214167259, 72=0.004807692307692308, 74=0.0070921985815602835, 75=0.0045662100456621, 1317=0.03909975413637119, 1570=0.005649717514124294, 1205=0.005813953488372093, 103=0.0044444444444444444, 1323=0.00909090909090909, 1322=0.005555555555555556, 1288=0.00510204081632653, 501=0.005847953216374269, 1287=0.005263157894736842, 1166=0.024288588674906582, 349=0.018132506780317706, 625=0.006134969325153374, 1609=0.007246376811594203, 108=0.015992414664981035, 868=0.006211180124223602, 1608=0.007751937984496124, 109=0.033134139760177955, 904=0.015201355661881976, 1604=0.0055248618784530384, 906=0.005319148936170213, 1603=0.006944444444444444}
+Augmenting input for PR: Issue 4130 similaritySearch throwing Exception due to schema name fix (2749021458)
++ Retrieval and Augmentation completed in 2845ms
+Input length: 34198 char
+2026-01-19T15:49:08.147+08:00  WARN 69873 --- [llmcr] [           main] o.s.a.r.a.SpringAiRetryAutoConfiguration : Retry error. Retry count: 1, Exception: Failed to generate content
+
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at io.micrometer.observation.Observation.observe(Observation.java:564) ~[micrometer-observation-1.15.5.jar:1.15.5]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at com.example.llmcr.service.rag.RAGService.generation(RAGService.java:65) ~[classes/:na]
+	at com.example.llmcr.EvaluationRunner.runTask(EvaluationRunner.java:90) ~[classes/:na]
+	at com.example.llmcr.EvaluationRunner.runGroup(EvaluationRunner.java:81) ~[classes/:na]
+	at com.example.llmcr.EvaluationRunner.run(EvaluationRunner.java:53) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325) ~[spring-boot-3.5.7.jar:3.5.7]
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12) ~[classes/:na]
+Caused by: com.google.genai.errors.ClientException: 429 . You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 15000, model: gemma-3-27b
+Please retry in 51.884736321s.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:94) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.generateContent(Models.java:7758) ~[google-genai-1.17.0.jar:1.17.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	... 29 common frames omitted
+
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.rag.RAGService.generation(RAGService.java:65)
+	at com.example.llmcr.EvaluationRunner.runTask(EvaluationRunner.java:90)
+	at com.example.llmcr.EvaluationRunner.runGroup(EvaluationRunner.java:81)
+	at com.example.llmcr.EvaluationRunner.run(EvaluationRunner.java:53)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ClientException: 429 . You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 15000, model: gemma-3-27b
+Please retry in 51.884736321s.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:94)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 29 more
+2026-01-19T15:49:08.152+08:00  INFO 69873 --- [llmcr] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-01-19T15:49:08.163+08:00 ERROR 69873 --- [llmcr] [           main] o.s.boot.SpringApplication               : Application run failed
+
+java.lang.NullPointerException: Cannot invoke "java.util.Map.size()" because "m" is null
+	at java.base/java.util.HashMap.putMapEntries(HashMap.java:503) ~[na:na]
+	at java.base/java.util.HashMap.<init>(HashMap.java:492) ~[na:na]
+	at com.example.llmcr.EvaluationRunner.runTask(EvaluationRunner.java:90) ~[classes/:na]
+	at com.example.llmcr.EvaluationRunner.runGroup(EvaluationRunner.java:81) ~[classes/:na]
+	at com.example.llmcr.EvaluationRunner.run(EvaluationRunner.java:53) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325) ~[spring-boot-3.5.7.jar:3.5.7]
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12) ~[classes/:na]
+
+2026-01-19T15:49:12.435+08:00  INFO 69873 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-19T15:49:12.437+08:00  INFO 69873 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-19T15:49:12.438+08:00  INFO 69873 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  29.333 s
+[INFO] Finished at: 2026-01-19T15:49:12+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.7:run (default-cli) on project llmcr: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

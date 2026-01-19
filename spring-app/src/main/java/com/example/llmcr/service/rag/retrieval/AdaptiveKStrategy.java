@@ -10,10 +10,10 @@ import org.springframework.ai.vectorstore.VectorStore;
 public class AdaptiveKStrategy implements RetrievalStrategy {
 
     private final int topN = 1000;
-    private final float garanteedScore = 0.55f; // documents with high scores will always be included
+    private final float garanteedScore = 0.6f; // documents with high scores will always be included
     private final float minScoreThreshold = 0.3f; // minimum score to consider
 
-    public List<Document> retrieve(String query, int TopK, VectorStore vectorStore) {
+    public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
         System.out.println("AdaptiveKStrategy: Retrieving documents for query: " + query);
 
         SearchRequest request = SearchRequest.builder()
@@ -27,17 +27,14 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
 
         // find largest gap
         int optimalK = findLargestGapIndex(relevantDocuments);
-        // int selectedK = Math.min(optimalK, TopK);
-        int selectedK = optimalK;
 
-        System.out.println("AdaptiveKStrategy: Selected top K = " + selectedK);
-        System.out.println("Top documents:\n" + relevantDocuments.stream().limit(selectedK + 5)
+        System.out.println("AdaptiveKStrategy: Top documents:\n" + relevantDocuments.stream().limit(optimalK + 5)
                 .map(d -> d.getMetadata().get("chunk_id").toString() + "::"
                         + d.getMetadata().get("similarity_score").toString())
                 .reduce((s1, s2) -> s1 + "\n" + s2).orElse(""));
 
         return new ArrayList<>(
-                relevantDocuments.subList(0, Math.min(selectedK, relevantDocuments.size())));
+                relevantDocuments.subList(0, Math.min(optimalK, relevantDocuments.size())));
     }
 
     private int findLargestGapIndex(List<Document> sortedDocuments) {
