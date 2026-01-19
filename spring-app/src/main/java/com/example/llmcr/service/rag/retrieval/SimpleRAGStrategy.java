@@ -7,10 +7,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 public class SimpleRAGStrategy implements RetrievalStrategy {
-    public String getUsedIndexName() {
-        return "plain";
-    }
-
     public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
         SearchRequest request = SearchRequest.builder()
                 .query(query)

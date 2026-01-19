@@ -12,10 +12,6 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
     private final int maxTopK = 20;
     private final float garanteedScore = 0.55f; // documents with high scores will always be included
 
-    public String getUsedIndexName() {
-        return "enriched";
-    }
-
     public List<Document> retrieve(String query, int minTopK, VectorStore vectorStore) {
         SearchRequest request = SearchRequest.builder()
                 .query(query)

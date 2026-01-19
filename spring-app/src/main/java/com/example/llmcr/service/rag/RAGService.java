@@ -9,7 +9,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 
-import com.example.llmcr.service.rag.augmentation.PromptBuilder;
+import com.example.llmcr.service.rag.augmentation.RAGTemplate;
 import com.example.llmcr.service.rag.retrieval.RetrievalStrategy;
 
 public class RAGService {
@@ -17,7 +17,7 @@ public class RAGService {
     private final ChatModel chatModel;
     private final VectorStore vectorStore;
     private RetrievalStrategy retrievalStrategy;
-    private PromptBuilder promptBuilder;
+    private RAGTemplate ragTemplate;
     private int topK = 10;
 
     public RAGService(ChatModel chatModel, VectorStore vectorStore) {
@@ -29,8 +29,8 @@ public class RAGService {
         this.retrievalStrategy = retrievalStrategy;
     }
 
-    public void setPromptBuilder(PromptBuilder promptBuilder) {
-        this.promptBuilder = promptBuilder;
+    public void setRAGTemplate(RAGTemplate ragTemplate) {
+        this.ragTemplate = ragTemplate;
     }
 
     public void setTopK(int topK) {
@@ -40,12 +40,15 @@ public class RAGService {
     public Map<String, Object> generation(Object input) {
         long startTime = System.currentTimeMillis();
 
-        promptBuilder = promptBuilder.augmentInput(input);
-        List<Document> documents = retrievalStrategy.retrieve(promptBuilder.getQuery(), topK, vectorStore);
-        Prompt prompt = promptBuilder.augmentContext(documents).build();
+        // retrieve documents for each query
+        List<Document> documents = ragTemplate.getQueries(input).stream()
+                .flatMap(query -> retrievalStrategy.retrieve(query, topK, vectorStore).stream())
+                .toList();
+
+        Prompt prompt = ragTemplate.getBuilder().augmentInput(input).augmentContext(documents).build();
 
         long retrievalEndTime = System.currentTimeMillis();
-        System.out.println("+ Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
+        System.out.println("+ Retrieval and Augmentation completed in " + (retrievalEndTime - startTime) + "ms");
         System.out.println("Input length: " + prompt.toString().length() + " char");
 
         // call chat model
@@ -64,9 +67,8 @@ public class RAGService {
 
         Map<String, Object> entry = Map.of(
                 "timestamp", java.time.Instant.now().toString(),
-                "full_prompt", prompt.toString(),
-                "query", promptBuilder.getQuery(),
-                "context", documents,
+                "prompt", prompt.toString(),
+                "documents", documents,
                 "response", rawResponse);
         return entry;
     }

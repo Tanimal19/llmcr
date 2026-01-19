@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import com.example.llmcr.faiss.FaissVectorStore;
 import com.example.llmcr.faiss.FaissVectorStoreFactory;
 import com.example.llmcr.service.rag.RAGService;
-import com.example.llmcr.service.rag.augmentation.AnswerQueryPromptBuilder;
+import com.example.llmcr.service.rag.augmentation.AnswerQueryTemplate;
 import com.example.llmcr.service.rag.retrieval.AdaptiveKStrategy;
 
 @Component
@@ -29,7 +29,7 @@ public class RAGRunner implements CommandLineRunner {
         FaissVectorStore defaultFaiss = FaissVectorStoreFactory.create("enriched");
         RAGService r = new RAGService(defaultChatModel, defaultFaiss);
         r.setStrategy(new AdaptiveKStrategy());
-        r.setPromptBuilder(new AnswerQueryPromptBuilder());
+        r.setRAGTemplate(new AnswerQueryTemplate());
 
         // get query from console
         boolean isExit = false;

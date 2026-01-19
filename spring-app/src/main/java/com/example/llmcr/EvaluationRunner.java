@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component;
 import com.example.llmcr.faiss.FaissVectorStore;
 import com.example.llmcr.faiss.FaissVectorStoreFactory;
 import com.example.llmcr.service.rag.RAGService;
-import com.example.llmcr.service.rag.augmentation.CodeInterpretationPromptBuilder;
-import com.example.llmcr.service.rag.augmentation.CodeReviewPromptBuilder;
-import com.example.llmcr.service.rag.augmentation.PromptBuilder;
-import com.example.llmcr.service.rag.augmentation.BasePullRequestPromptBuilder.PullRequest;
+import com.example.llmcr.service.rag.augmentation.CodeInterpretationTemplate;
+import com.example.llmcr.service.rag.augmentation.CodeReviewTemplate;
+import com.example.llmcr.service.rag.augmentation.RAGTemplate;
+import com.example.llmcr.service.rag.augmentation.BasePullRequestTemplate.PullRequest;
 import com.example.llmcr.service.rag.retrieval.AdaptiveKStrategy;
 import com.example.llmcr.service.rag.retrieval.RetrievalStrategy;
 import com.example.llmcr.service.rag.retrieval.SimpleRAGStrategy;
@@ -25,6 +25,7 @@ import com.example.llmcr.utils.JsonBackupUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.RateLimiter;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "evaluation")
@@ -71,13 +72,15 @@ public class EvaluationRunner implements CommandLineRunner {
         RAGService ragService = new RAGService(chatModel, vectorStore);
         ragService.setStrategy(retrievalStrategy);
 
-        runTask(ragService, new CodeInterpretationPromptBuilder(), group, "code_interpretation");
-        runTask(ragService, new CodeReviewPromptBuilder(), group, "code_review");
+        runTask(ragService, new CodeInterpretationTemplate(), group, "code_interpretation");
+        runTask(ragService, new CodeReviewTemplate(), group, "code_review");
     }
 
-    private void runTask(RAGService ragService, PromptBuilder promptBuilder, String group, String taskName) {
+    private void runTask(RAGService ragService, RAGTemplate ragTemplate, String group, String taskName) {
         System.out.println("+ Starting task: " + taskName);
-        ragService.setPromptBuilder(promptBuilder);
+        ragService.setRAGTemplate(ragTemplate);
+
+        RateLimiter rateLimiter = RateLimiter.create(2 / 60.0);
 
         for (PullRequest pr : pullRequests) {
             Map<String, Object> response = ragService.generation(pr);
@@ -90,6 +93,8 @@ public class EvaluationRunner implements CommandLineRunner {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            rateLimiter.acquire();
         }
     }
 
