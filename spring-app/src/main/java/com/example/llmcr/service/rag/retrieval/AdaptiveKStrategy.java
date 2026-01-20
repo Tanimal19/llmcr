@@ -10,7 +10,8 @@ import org.springframework.ai.vectorstore.VectorStore;
 
 public class AdaptiveKStrategy implements RetrievalStrategy {
 
-    private final int topN = 1000;
+    private final int topN = 500;
+    private final int buffer = 5;
     private final float highConfidenceScore = 0.6f;
     private final float lowConfidenceScore = 0.3f;
 
@@ -24,12 +25,16 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
                 .topK(topN)
                 .build();
 
+        // find topN
         List<Document> relevantDocuments = vectorStore.similaritySearch(request);
         relevantDocuments.sort((d1, d2) -> Float.compare(
                 (Float) d2.getMetadata().get("similarity_score"),
                 (Float) d1.getMetadata().get("similarity_score")));
 
-        // find largest gap
+        // find optimalK
+        // FUTURE WORK: currently we select optimalK based on the same similarity
+        // scores. In future, we can use a more powerful method to determine similarity
+        // between the query and topN documents.
         float maxGap = 0;
         int optimalK = 0;
         for (int i = 0; i < relevantDocuments.size() - 1; i++) {
@@ -51,6 +56,6 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
 
         logger.info("Find optimalK = " + optimalK + " with max gap = " + maxGap + ")");
         return new ArrayList<>(
-                relevantDocuments.subList(0, Math.min(optimalK, relevantDocuments.size())));
+                relevantDocuments.subList(0, Math.min(optimalK + buffer, relevantDocuments.size())));
     }
 }

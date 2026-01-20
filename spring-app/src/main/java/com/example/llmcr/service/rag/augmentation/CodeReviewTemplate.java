@@ -21,7 +21,7 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
 
     public class PromptBuilder extends BasePullRequestTemplate.PromptBuilder {
         private final String template = """
-                You are a code reviewer. Given the pull request description, code change hunks, and relevant project context, your task is to generate a concise code review of the given change.
+                You are a code reviewer. Given the pull request description, code change hunks, and relevant project context, your task is to generate a concise and comprehensive code review of the given change.
 
                 Pull request description at below.
                 -----------------
@@ -42,7 +42,7 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
                 1. Focus on the changes made in the code, not on unchanged parts.
                 2. If you can't determine the quality of the change from the given information, just say so, don't make assumptions.
                 3. Do not use statements like "Based on the code change, it seems that...".
-                4. You should end with a clear recommendation: "Approve", "Request changes", or "Reject".
+                4. You should end with a clear recommendation: "Approve", "Reject" or "Discussion needed". For "Discussion needed", provide a brief explanation.
                 """;
 
         private final Map<String, Object> variables = new java.util.HashMap<>();

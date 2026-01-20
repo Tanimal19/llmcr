@@ -40,7 +40,7 @@ public class EvaluationRunner implements CommandLineRunner {
     private String inputFilePath;
 
     private List<PullRequest> pullRequests;
-    private String historyFile = "result.json";
+    private String resultFile = "result.json";
 
     private static final Logger logger = java.util.logging.Logger.getLogger(EvaluationRunner.class.getName());
 
@@ -94,7 +94,7 @@ public class EvaluationRunner implements CommandLineRunner {
             logger.info("Response for PR #" + pr.id() + ": " + response.get("response"));
 
             try {
-                JsonBackupUtils.appendJsonBackup(historyFile, response);
+                JsonBackupUtils.appendJsonBackup(resultFile, response);
             } catch (Exception e) {
                 e.printStackTrace();
             }
