@@ -17,6 +17,10 @@ public class CompilationUnitSource implements DataSource {
         return cu;
     }
 
+    public String getSourceName() {
+        return "cu::" + cu.getStorage().map(s -> s.getFileName()).orElse("unknown");
+    }
+
     @Override
     public <T> T accept(VoidDataSourceExtractor<T> extractor) {
         return extractor.visit(this);

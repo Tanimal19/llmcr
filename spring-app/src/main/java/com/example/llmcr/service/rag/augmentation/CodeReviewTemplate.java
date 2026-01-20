@@ -9,7 +9,8 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
     public List<String> doGetQueries(PullRequest pr) {
         List<String> queries = new java.util.ArrayList<>();
         queries.add(pr.description());
-        queries.addAll(pr.hunks().stream().map(hunk -> hunk.toString()).toList());
+        queries.addAll(pr.hunks().stream()
+                .map(hunk -> "Generate a concise code review of the given change: " + hunk.toString()).toList());
         return queries;
     }
 
@@ -20,7 +21,7 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
 
     public class PromptBuilder extends BasePullRequestTemplate.PromptBuilder {
         private final String template = """
-                You are a code reviewer. Given the pull request description, code change hunks, and relevant project context, your task is to generate a concise review on the quality of the code change.
+                You are a code reviewer. Given the pull request description, code change hunks, and relevant project context, your task is to generate a concise code review of the given change.
 
                 Pull request description at below.
                 -----------------

@@ -28,12 +28,18 @@ public class RankFusionStrategy implements FusionStrategy {
             }
         }
 
-        System.out.println("RankFusionStrategy: Scores:\n" + scores);
-
-        return scores.entrySet().stream()
+        List<Document> selectedDocs = scores.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(topK)
                 .map(e -> docMap.get(e.getKey()))
                 .collect(Collectors.toList());
+
+        // Annotate documents with their RRF scores
+        selectedDocs.forEach(doc -> {
+            String id = doc.getMetadata().get("chunk_id").toString();
+            doc.getMetadata().put("rrf_score", scores.get(id));
+        });
+
+        return selectedDocs;
     }
 }

@@ -3,6 +3,7 @@ package com.example.llmcr.faiss;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.document.Document;
@@ -26,6 +27,8 @@ public class FaissVectorStore implements VectorStore {
     private final FaissService faissService;
     private final EmbeddingModel embeddingModel;
     private final String indexName;
+
+    private static final Logger logger = java.util.logging.Logger.getLogger(FaissVectorStore.class.getName());
 
     public FaissVectorStore(DataStore dataStore, FaissService faissService, EmbeddingModel embeddingModel,
             String indexName) {
@@ -58,7 +61,7 @@ public class FaissVectorStore implements VectorStore {
         AddVectorsRequest req = new AddVectorsRequest(indexName, ids, embeddings);
 
         AddVectorsResponse res = faissService.addVectors(req);
-        System.out.println("Added " + res.added_count() + " vectors to index:" +
+        logger.fine("Added " + res.added_count() + " vectors to index:" +
                 indexName);
     }
 
@@ -104,7 +107,7 @@ public class FaissVectorStore implements VectorStore {
         }
 
         long endTime = System.currentTimeMillis();
-        System.out.println("+ Search completed in " + (endTime - startTime) + "ms");
+        logger.info("Similarity search completed in " + (endTime - startTime) + "ms");
 
         return documents;
     }
@@ -115,8 +118,7 @@ public class FaissVectorStore implements VectorStore {
         }
 
         String truncated = query.substring(0, MAX_QUERY_LENGTH);
-        System.out.println(
-                "[WARNING] Query truncated from " + query.length() + " to " + MAX_QUERY_LENGTH + " characters");
+        logger.warning("Query truncated from " + query.length() + " to " + MAX_QUERY_LENGTH + " characters");
         return truncated;
     }
 }

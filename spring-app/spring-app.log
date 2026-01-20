@@ -1,0 +1,179 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.example:llmcr >--------------------------
+[INFO] Building llmcr 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.7:run (default-cli) > test-compile @ llmcr >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ llmcr ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ llmcr ---
+[INFO] skip non existing resourceDirectory /Users/bobch/Desktop/軟工專題/llmcr/spring-app/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.7:run (default-cli) < test-compile @ llmcr <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.7:run (default-cli) @ llmcr ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.7)
+
+2026-01-20T15:56:21.068+08:00  INFO 20315 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Starting LlmcrApplication using Java 21.0.8 with PID 20315 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+2026-01-20T15:56:21.069+08:00  INFO 20315 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-01-20T15:56:21.280+08:00  INFO 20315 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-20T15:56:21.331+08:00  INFO 20315 --- [llmcr] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 48 ms. Found 4 JPA repository interfaces.
+2026-01-20T15:56:21.431+08:00  INFO 20315 --- [llmcr] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-20T15:56:21.456+08:00  INFO 20315 --- [llmcr] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.33.Final
+2026-01-20T15:56:21.470+08:00  INFO 20315 --- [llmcr] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-20T15:56:21.576+08:00  INFO 20315 --- [llmcr] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-20T15:56:21.587+08:00  INFO 20315 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-20T15:56:21.638+08:00  INFO 20315 --- [llmcr] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.mariadb.jdbc.Connection@681061d6
+2026-01-20T15:56:21.638+08:00  INFO 20315 --- [llmcr] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-20T15:56:21.651+08:00  WARN 20315 --- [llmcr] [           main] org.hibernate.orm.deprecation            : HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-20T15:56:21.660+08:00  INFO 20315 --- [llmcr] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 11.8.5
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-20T15:56:21.968+08:00  INFO 20315 --- [llmcr] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-20T15:56:22.025+08:00  INFO 20315 --- [llmcr] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-20T15:56:22.371+08:00 ERROR 20315 --- [llmcr] [           main] i.n.r.d.DnsServerAddressStreamProviders  : Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+2026-01-20T15:56:22.467+08:00  INFO 20315 --- [llmcr] [           main] com.example.llmcr.LlmcrApplication       : Started LlmcrApplication in 1.533 seconds (process running for 1.661)
+IndexFile with name enriched already exists. Skipping creation.
+Enter your query (or 'exit' to quit): What is the purpose of document joiner?
+AdaptiveKStrategy: Retrieving documents for query: What is the purpose of document joiner?
++ Search completed in 1197ms
+Max score gap (0.06159535) at index = 7
+AdaptiveKStrategy: Top documents:
+157::SUMMARY::0.6557835
+8::SUMMARY::0.59819436
+158::SUMMARY::0.5813809
+7::SUMMARY::0.57497746
+933::PARAGRAPH::0.5691575
+954::PARAGRAPH::0.5691575
+6::SUMMARY::0.5392246
+156::CODE::0.5270467
+259::SUMMARY::0.46545133
+5::CODE::0.46257022
+1052::PARAGRAPH::0.45370293
+1073::PARAGRAPH::0.45370293
+Retrieved 7 documents: [157, 8, 158, 7, 933, 954, 6]
++ Retrieval completed in 1201ms
+Input context length: 3748 char
++ Generation completed in 15348ms
+Response: The purpose of a `DocumentJoiner` is to combine documents retrieved from multiple queries and data sources into a single list. It handles duplicate documents and allows for different strategies to be used during the joining process, such as reciprocal ranking. Specifically, it takes a map of queries to lists of document lists and returns a single list of unique `Document` objects sorted by score.
+
+Enter your query (or 'exit' to quit): How the builder pattern being used in the project?
+AdaptiveKStrategy: Retrieving documents for query: How the builder pattern being used in the project?
++ Search completed in 135ms
+Max score gap (0.017606318) at index = 5
+AdaptiveKStrategy: Top documents:
+83::SUMMARY::0.54118556
+97::SUMMARY::0.53568363
+84::SUMMARY::0.5352241
+1203::PARAGRAPH::0.53312325
+1224::PARAGRAPH::0.53312325
+431::SUMMARY::0.5249672
+50::SUMMARY::0.5073609
+93::SUMMARY::0.49886814
+119::SUMMARY::0.49844715
+102::SUMMARY::0.49816284
+Retrieved 5 documents: [83, 97, 84, 1203, 1224]
++ Retrieval completed in 136ms
+Input context length: 3236 char
+2026-01-20T15:58:36.160+08:00  WARN 20315 --- [llmcr] [           main] o.s.a.r.a.SpringAiRetryAutoConfiguration : Retry error. Retry count: 1, Exception: Failed to generate content
+
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230) ~[spring-retry-2.0.12.jar:na]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at io.micrometer.observation.Observation.observe(Observation.java:564) ~[micrometer-observation-1.15.5.jar:1.15.5]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	at com.example.llmcr.service.rag.RAGService.generation(RAGService.java:78) ~[classes/:na]
+	at com.example.llmcr.RAGRunner.run(RAGRunner.java:49) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.2.12.jar:6.2.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772) ~[spring-boot-3.5.7.jar:3.5.7]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325) ~[spring-boot-3.5.7.jar:3.5.7]
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12) ~[classes/:na]
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603) ~[google-genai-1.17.0.jar:1.17.0]
+	at com.google.genai.Models.generateContent(Models.java:7758) ~[google-genai-1.17.0.jar:1.17.0]
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842) ~[spring-ai-google-genai-1.1.0.jar:1.1.0]
+	... 27 common frames omitted
+
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.rag.RAGService.generation(RAGService.java:78)
+	at com.example.llmcr.RAGRunner.run(RAGRunner.java:49)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 27 more
+unable to call chat model, retrying... (attempt #1)

@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,9 @@ public class EvaluationRunner implements CommandLineRunner {
     private String inputFilePath;
 
     private List<PullRequest> pullRequests;
-    private String historyFile = "evaluation_history.json";
+    private String historyFile = "result.json";
+
+    private static final Logger logger = java.util.logging.Logger.getLogger(EvaluationRunner.class.getName());
 
     @Override
     public void run(String... args) {
@@ -72,27 +75,26 @@ public class EvaluationRunner implements CommandLineRunner {
             throw new IllegalArgumentException("Unknown evaluation group: " + group);
         }
 
-        System.out.println("+ Running evaluation for group: " + group);
-        runTask(ragService, new CodeInterpretationTemplate(), group, "code_interpretation");
-        runTask(ragService, new CodeReviewTemplate(), group, "code_review");
+        logger.info("Starting evaluation for group: " + group);
+        runTask(ragService, new CodeInterpretationTemplate(), group, "interpretation");
+        runTask(ragService, new CodeReviewTemplate(), group, "review");
     }
 
     private void runTask(RAGService ragService, RAGTemplate ragTemplate, String group, String taskName) {
-        System.out.println("+ Starting task: " + taskName);
+        logger.info("Starting task: " + taskName);
         ragService.setRAGTemplate(ragTemplate);
 
         for (PullRequest pr : pullRequests) {
-            System.out.println("Start generation for PR #" + pr.id());
+            logger.info("Start generation for PR #" + pr.id());
             Map<String, Object> response = new HashMap<>(ragService.generation(pr));
             response.put("group", group);
             response.put("task", taskName);
             response.put("pr_id", pr.id());
-            System.out.println(
-                    "Response for PR #" + pr.id() + ": " + response.get("response"));
+
+            logger.info("Response for PR #" + pr.id() + ": " + response.get("response"));
 
             try {
                 JsonBackupUtils.appendJsonBackup(historyFile, response);
-                System.out.println("Saved generation result for PR #" + pr.id());
             } catch (Exception e) {
                 e.printStackTrace();
             }

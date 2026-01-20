@@ -8,4 +8,6 @@ import com.example.llmcr.extractor.VoidDataSourceExtractor;
  */
 public interface DataSource {
     <T> T accept(VoidDataSourceExtractor<T> extractor);
+
+    public String getSourceName();
 }

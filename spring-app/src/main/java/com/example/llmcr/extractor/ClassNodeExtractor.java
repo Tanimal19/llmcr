@@ -58,9 +58,6 @@ public class ClassNodeExtractor implements VoidDataSourceExtractor<List<ClassNod
             classNodes.add(classNode);
         });
 
-        System.out.println("Extracted " + classNodes.size() + " ClassNodes from CompilationUnitSource:"
-                + cu.getStorage().get().getPath());
-
         return classNodes;
     }
 

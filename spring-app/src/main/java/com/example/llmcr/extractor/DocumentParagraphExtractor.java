@@ -38,7 +38,7 @@ public class DocumentParagraphExtractor
         Path path = source.getPath();
 
         try (PDDocument doc = Loader.loadPDF(path.toFile())) {
-            String ctx = source.getSourceCtx();
+            String ctx = source.getSourceName();
             String text = new PDFTextStripper().getText(doc);
             StringBuilder chunk = new StringBuilder();
             AtomicInteger count = new AtomicInteger(0);
@@ -61,11 +61,8 @@ public class DocumentParagraphExtractor
                         chunk.toString().trim()));
             }
         } catch (IOException e) {
-            System.err.println("PDF parse failed: " + path);
+            e.printStackTrace();
         }
-
-        System.out.println("Extracted " + result.size() + " paragraphs from PDF: " + path);
-
         return result;
     }
 
@@ -86,15 +83,12 @@ public class DocumentParagraphExtractor
             Asciidoctor asciidoctor = Asciidoctor.Factory.create();
             org.asciidoctor.ast.Document document = asciidoctor.load(content,
                     org.asciidoctor.Options.builder().build());
-            String ctx = source.getSourceCtx();
+            String ctx = source.getSourceName();
 
             processAsciiDocNode(document, ctx, result, 0);
         } catch (IOException e) {
-            System.err.println("AsciiDoc parse failed: " + path);
+            e.printStackTrace();
         }
-
-        System.out.println("Extracted " + result.size() + " paragraphs from AsciiDoc: " + path);
-
         return result;
     }
 
@@ -126,9 +120,6 @@ public class DocumentParagraphExtractor
         StringBuilder chunk = new StringBuilder();
 
         contentBlocks.forEach(block -> {
-            // System.out.println("Processing block of type: " +
-            // block.getClass().getSimpleName());
-
             String content;
             if (block instanceof Section) {
                 content = ((Section) block).getTitle();

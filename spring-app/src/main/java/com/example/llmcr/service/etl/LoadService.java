@@ -2,6 +2,7 @@ package com.example.llmcr.service.etl;
 
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -14,6 +15,8 @@ public class LoadService {
     private final DataStore dataStore;
     private final VectorStore vectorStore;
 
+    private static final Logger logger = Logger.getLogger(LoadService.class.getName());
+
     public LoadService(DataStore dataStore, VectorStore vectorStore) {
         this.dataStore = dataStore;
         this.vectorStore = vectorStore;
@@ -21,7 +24,7 @@ public class LoadService {
 
     public void load(Set<ChunkType> loadedChunkTypes) {
         long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data loading...");
+        logger.info("Start data loading");
 
         for (ChunkType type : loadedChunkTypes) {
             List<Document> documents = dataStore.findChunksByType(type).stream()
@@ -30,11 +33,11 @@ public class LoadService {
 
             if (!documents.isEmpty()) {
                 vectorStore.add(documents);
-                System.out.println("+ Loaded " + documents.size() + " documents for type: " + type);
+                logger.fine("+ Loaded " + documents.size() + " documents for type: " + type);
             }
         }
 
         long endTime = System.currentTimeMillis();
-        System.out.println("+ Loading completed in " + (endTime - startTime) + "ms");
+        logger.info("Data loading completed in " + (endTime - startTime) + "ms");
     }
 }

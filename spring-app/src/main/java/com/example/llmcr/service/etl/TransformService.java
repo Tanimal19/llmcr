@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.model.ChatModel;
@@ -55,6 +56,8 @@ public class TransformService {
     private final BeanOutputConverter<ClassNodeSummary> outputConverter = new BeanOutputConverter<>(
             ClassNodeSummary.class);
 
+    private static final Logger logger = Logger.getLogger(TransformService.class.getName());
+
     private record ClassNodeSummary(
             String description,
             String usage,
@@ -68,9 +71,7 @@ public class TransformService {
 
     public void enrich(int maxParagraphsPerNode, int chatRequestPerMinute) {
         long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data enrichment...");
-        System.out.println("  - maxParagraphsPerNode: " + maxParagraphsPerNode);
-        System.out.println("  - chatRequestPerMinute: " + chatRequestPerMinute);
+        logger.info("Start data enrichment");
 
         RateLimiter rateLimiter = RateLimiter.create(chatRequestPerMinute / 60.0);
 
@@ -83,7 +84,7 @@ public class TransformService {
         });
 
         long endTime = System.currentTimeMillis();
-        System.out.println("+ Enrichment completed in " + (endTime - startTime) + "ms");
+        logger.info("Data enrichment completed in " + (endTime - startTime) + "ms");
     }
 
     private ClassNode bindNodeWithParagraphs(ClassNode classNode, int maxParagraphsPerNode) {
@@ -95,17 +96,13 @@ public class TransformService {
         List<DocumentParagraph> relevantParagraphs = dataStore
                 .findAllDocumentParagraphsByKeywords(keywords, maxParagraphsPerNode);
         classNode.setDocumentParagraphs(relevantParagraphs);
-        System.out.println(
-                "Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: "
-                        + classNode.getSignature()
-                        + " using keywords: " + keywords);
+        logger.fine("Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: "
+                + classNode.getSignature()
+                + " using keywords: " + keywords);
         return classNode;
     }
 
     private ClassNode enrichNodeWithSummary(ClassNode classNode) {
-        System.out.println("Generating summary for ClassNode: " + classNode.getSignature());
-
-        // perpare prompt
         String formatInstruction = outputConverter.getFormat();
         Map<String, Object> variables = Map.of(
                 "code", classNode.getCodeText(),
@@ -120,7 +117,7 @@ public class TransformService {
         try {
             response = chatModel.call(prompt);
         } catch (Exception e) {
-            System.err.println("Chat model call failed for ClassNode: "
+            logger.warning("Chat model call failed for ClassNode: "
                     + classNode.getSignature()
                     + ". Error: " + e.getMessage());
             classNode.setProcessed(false);
@@ -132,8 +129,9 @@ public class TransformService {
         try {
             nodeSummary = outputConverter.convert(rawResponse);
         } catch (Exception e) {
-            System.err.println("Output conversion failed. Store raw output to summary. Error: "
-                    + e.getMessage());
+            logger.warning("Output conversion failed for ClassNode: "
+                    + classNode.getSignature()
+                    + ". Error: " + e.getMessage());
             nodeSummary = new ClassNodeSummary(
                     rawResponse,
                     "null",
@@ -155,15 +153,19 @@ public class TransformService {
                     "relationship", nodeSummary.relationship());
             JsonBackupUtils.appendJsonBackup(transformChatHistoryFile, entry);
         } catch (IOException e) {
-            System.err.println("Failed to save history: " + e.getMessage());
+            logger.warning("Failed to save transform history for ClassNode: "
+                    + classNode.getSignature()
+                    + ". Error: " + e.getMessage());
         }
+
+        logger.fine("Enriched ClassNode: " + classNode.getSignature());
 
         return classNode;
     }
 
     public void chunk(TextSplitter splitter) {
         long startTime = System.currentTimeMillis();
-        System.out.println("+ Starting data chunking...");
+        logger.info("Start data chunking");
 
         // chunk all class nodes
         dataStore.findProcessedClassNodes().stream().forEach(node -> {
@@ -179,7 +181,7 @@ public class TransformService {
 
             List<Document> splitDocs = splitter.split(docs);
             saveAllDocumentsToChunks(dataStore, splitDocs);
-            System.out.println("Created " + splitDocs.size() + " chunks for ClassNode: "
+            logger.fine("Created " + splitDocs.size() + " chunks for ClassNode: "
                     + node.getSignature());
         });
 
@@ -189,13 +191,11 @@ public class TransformService {
                     Map.of("type", ChunkType.PARAGRAPH, "source_id", paragraph.getId()));
             List<Document> splitDocs = splitter.split(doc);
             saveAllDocumentsToChunks(dataStore, splitDocs);
-            System.out
-                    .println("Created " + splitDocs.size() + " chunks for DocumentParagraph ID: "
-                            + paragraph.getId());
+            logger.fine("Created " + splitDocs.size() + " chunks for DocumentParagraph: " + paragraph.getId());
         });
 
         long endTime = System.currentTimeMillis();
-        System.out.println("+ Chunking completed in " + (endTime - startTime) + "ms");
+        logger.info("Data chunking completed in " + (endTime - startTime) + "ms");
     }
 
     private void saveAllDocumentsToChunks(DataStore dataStore, List<Document> documents) {

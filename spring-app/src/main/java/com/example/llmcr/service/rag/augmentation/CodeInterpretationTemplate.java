@@ -7,7 +7,10 @@ public class CodeInterpretationTemplate extends BasePullRequestTemplate {
     @Override
     public List<String> doGetQueries(PullRequest pr) {
         List<String> queries = new java.util.ArrayList<>();
-        queries.addAll(pr.hunks().stream().map(hunk -> hunk.toString()).toList());
+        queries.addAll(pr.hunks().stream().map(
+                hunk -> "Give an explaination on what does the code change do and what is the purpose of the change: "
+                        + hunk.toString())
+                .toList());
         return queries;
     }
 

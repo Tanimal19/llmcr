@@ -18,7 +18,7 @@ public class PdfSource implements DataSource {
         return path;
     }
 
-    public String getSourceCtx() {
+    public String getSourceName() {
         return "pdf::" + path.getFileName();
     }
 

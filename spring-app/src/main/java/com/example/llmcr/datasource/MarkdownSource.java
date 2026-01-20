@@ -18,7 +18,7 @@ public class MarkdownSource implements DataSource {
         return path;
     }
 
-    public String getSourceCtx() {
+    public String getSourceName() {
         return "markdown::" + path.getFileName();
     }
 

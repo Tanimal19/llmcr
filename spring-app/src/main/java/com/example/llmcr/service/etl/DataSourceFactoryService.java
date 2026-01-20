@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,6 +21,8 @@ import com.github.javaparser.ast.CompilationUnit;
 
 public final class DataSourceFactoryService {
 
+    private static final Logger logger = java.util.logging.Logger.getLogger(DataSourceFactoryService.class.getName());
+
     private DataSourceFactoryService() {
     }
 
@@ -27,30 +30,32 @@ public final class DataSourceFactoryService {
         List<DataSource> dataSources = new ArrayList<>();
 
         Path javaProjectRoot = Paths.get(javaProjectRootPathString);
-        if (Files.exists(javaProjectRoot) && Files.isDirectory(javaProjectRoot)) {
-            JavaParser parser = new JavaParser();
-            try (Stream<Path> paths = Files.walk(javaProjectRoot)) {
-                paths
-                        .filter(Files::isRegularFile)
-                        .filter(p -> p.toString().endsWith(".java")
-                                && !p.getFileName().toString().equals("package-info.java"))
-                        .forEach(p -> {
-                            try {
-                                ParseResult<CompilationUnit> result = parser.parse(p);
-                                result.getResult().ifPresent(cu -> dataSources.add(new CompilationUnitSource(cu)));
-                            } catch (IOException e) {
-                                System.err.println("Parse failed for " + p + ": " + e.getMessage());
-                            }
-                        });
-            } catch (IOException e) {
-                System.err.println("Error walking Java project path: " + e.getMessage());
-            }
-        } else {
-            System.out.println("Java project path does not exist or is not a directory: " + javaProjectRoot);
+        if (Files.exists(javaProjectRoot) || Files.isDirectory(javaProjectRoot)) {
+            logger.warning("Java project root path does not exist or is not a directory: " + javaProjectRoot);
+            return dataSources;
         }
 
-        System.out.println(
-                "Parsed " + dataSources.size() + " Java sources from project path: " + javaProjectRootPathString);
+        JavaParser parser = new JavaParser();
+        try (Stream<Path> paths = Files.walk(javaProjectRoot)) {
+            paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".java")
+                            && !p.getFileName().toString().equals("package-info.java"))
+                    .forEach(p -> {
+                        try {
+                            ParseResult<CompilationUnit> result = parser.parse(p);
+                            result.getResult().ifPresent(cu -> dataSources.add(new CompilationUnitSource(cu)));
+                        } catch (IOException e) {
+                            logger.warning("Parse failed for " + p + ": " + e.getMessage());
+                        }
+                    });
+
+            logger.info(
+                    "Parsed " + dataSources.size() + " Java sources from project path: "
+                            + javaProjectRootPathString);
+        } catch (IOException e) {
+            logger.warning("Error walking Java project path: " + e.getMessage());
+        }
 
         return dataSources;
     }
@@ -58,7 +63,7 @@ public final class DataSourceFactoryService {
     public static List<DataSource> createFromPath(String sourcePathString) {
         Path sourcePath = Paths.get(sourcePathString);
         if (!Files.exists(sourcePath)) {
-            System.out.println("Source path does not exist: " + sourcePath);
+            logger.warning("Source path does not exist: " + sourcePath);
             return new ArrayList<>();
         }
 
@@ -80,9 +85,9 @@ public final class DataSourceFactoryService {
             for (Path filePath : files) {
                 dataSources.add(createFromFile(filePath));
             }
-            System.out.println("Parsed " + dataSources.size() + " document sources from directory: " + directoryPath);
+            logger.info("Parsed " + dataSources.size() + " document sources from directory: " + directoryPath);
         } catch (IOException e) {
-            System.err.println("Error reading directory: " + e.getMessage());
+            logger.warning("Error walking directory path: " + e.getMessage());
         }
 
         return dataSources;
@@ -96,9 +101,9 @@ public final class DataSourceFactoryService {
             return new AsciiDocSource(filePath);
         } else if (fileName.endsWith(".pdf")) {
             return new PdfSource(filePath);
+        } else {
+            logger.warning("Unsupported file type for data source: " + filePath);
+            return null;
         }
-
-        System.out.println("Unsupported file type: " + filePath);
-        return null;
     }
 }

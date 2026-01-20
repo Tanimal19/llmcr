@@ -2,6 +2,7 @@ package com.example.llmcr.service.rag.retrieval;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -10,11 +11,13 @@ import org.springframework.ai.vectorstore.VectorStore;
 public class AdaptiveKStrategy implements RetrievalStrategy {
 
     private final int topN = 1000;
-    private final float garanteedScore = 0.6f; // documents with high scores will always be included
-    private final float minScoreThreshold = 0.3f; // minimum score to consider
+    private final float highConfidenceScore = 0.6f;
+    private final float lowConfidenceScore = 0.3f;
+
+    private static final Logger logger = Logger.getLogger(AdaptiveKStrategy.class.getName());
 
     public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
-        System.out.println("AdaptiveKStrategy: Retrieving documents for query: " + query);
+        logger.info("Query: " + query);
 
         SearchRequest request = SearchRequest.builder()
                 .query(query)
@@ -22,42 +25,32 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
                 .build();
 
         List<Document> relevantDocuments = vectorStore.similaritySearch(request);
-        relevantDocuments.sort((d1, d2) -> Float.compare((Float) d2.getMetadata().get("similarity_score"),
+        relevantDocuments.sort((d1, d2) -> Float.compare(
+                (Float) d2.getMetadata().get("similarity_score"),
                 (Float) d1.getMetadata().get("similarity_score")));
 
         // find largest gap
-        int optimalK = findLargestGapIndex(relevantDocuments);
-
-        System.out.println("AdaptiveKStrategy: Top documents:\n" + relevantDocuments.stream().limit(optimalK + 5)
-                .map(d -> d.getMetadata().get("chunk_id").toString() + "::"
-                        + d.getMetadata().get("similarity_score").toString())
-                .reduce((s1, s2) -> s1 + "\n" + s2).orElse(""));
-
-        return new ArrayList<>(
-                relevantDocuments.subList(0, Math.min(optimalK, relevantDocuments.size())));
-    }
-
-    private int findLargestGapIndex(List<Document> sortedDocuments) {
         float maxGap = 0;
-        int gapIndex = 0;
-
-        for (int i = 0; i < sortedDocuments.size() - 1; i++) {
-            float score1 = (Float) sortedDocuments.get(i).getMetadata().get("similarity_score");
-            if (score1 >= garanteedScore) {
-                continue; // skip high-confidence documents
-            } else if (score1 < minScoreThreshold) {
-                break; // drop low-confidence documents
+        int optimalK = 0;
+        for (int i = 0; i < relevantDocuments.size() - 1; i++) {
+            float score1 = (Float) relevantDocuments.get(i).getMetadata().get("similarity_score");
+            if (score1 >= highConfidenceScore) {
+                optimalK = i + 1;
+                continue; // always include high-confidence documents
+            } else if (score1 < lowConfidenceScore) {
+                break; // drop all low-confidence documents
             }
 
-            float score2 = (Float) sortedDocuments.get(i + 1).getMetadata().get("similarity_score");
+            float score2 = (Float) relevantDocuments.get(i + 1).getMetadata().get("similarity_score");
             float gap = score1 - score2;
             if (gap > maxGap) {
                 maxGap = gap;
-                gapIndex = i;
+                optimalK = i + 1;
             }
         }
 
-        System.out.println("Max score gap (" + maxGap + ") at index = " + gapIndex);
-        return gapIndex;
+        logger.info("Find optimalK = " + optimalK + " with max gap = " + maxGap + ")");
+        return new ArrayList<>(
+                relevantDocuments.subList(0, Math.min(optimalK, relevantDocuments.size())));
     }
 }

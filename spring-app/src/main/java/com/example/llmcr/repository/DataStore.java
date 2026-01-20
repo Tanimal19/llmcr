@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Aggregates repositories for data persistence and retrieval.
@@ -22,6 +23,8 @@ public class DataStore {
     private final DocumentParagraphRepository documentRepo;
     private final ChunkRepository chunkRepo;
     private final IndexFileRepository indexFileRepo;
+
+    private static final Logger logger = java.util.logging.Logger.getLogger(DataStore.class.getName());
 
     @Autowired
     public DataStore(ClassNodeRepository nodeRepo, DocumentParagraphRepository documentRepo,
@@ -145,9 +148,9 @@ public class DataStore {
     public void createIndexIfNotExist(String indexName) {
         if (indexFileRepo.findByName(indexName) == null) {
             indexFileRepo.save(new IndexFile(indexName));
-            System.out.println("Created new IndexFile with name: " + indexName);
+            logger.info("Created new index: " + indexName);
         } else {
-            System.out.println("IndexFile with name " + indexName + " already exists. Skipping creation.");
+            logger.info("Index: " + indexName + " already exists. Skipping creation.");
         }
     }
 
@@ -164,7 +167,7 @@ public class DataStore {
                 chunk.getIndexFiles().add(indexFile);
             }
         } else {
-            System.out.println("IndexFile with name " + indexName + " not found. Cannot add chunks.");
+            logger.warning("Index: " + indexName + " not found. Cannot add chunks.");
         }
     }
 

@@ -18,7 +18,7 @@ public class AsciiDocSource implements DataSource {
         return path;
     }
 
-    public String getSourceCtx() {
+    public String getSourceName() {
         return "asciidoc::" + path.getFileName();
     }
 

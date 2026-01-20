@@ -8,8 +8,6 @@ import org.springframework.ai.vectorstore.VectorStore;
 
 public class SimpleRetrievalStrategy implements RetrievalStrategy {
     public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
-        System.out.println("SimpleRAGStrategy: Retrieving documents for query: " + query);
-
         SearchRequest request = SearchRequest.builder()
                 .query(query)
                 .topK(topK)
