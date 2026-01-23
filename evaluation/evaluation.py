@@ -1,6 +1,16 @@
-REVIEW_EVA_PROMPT = """You are a highly skilled software engineer who has a lot of experience reviewing code changes. Your task is to rate the relevance of any given code change.
+REVIEW_EVA_PROMPT = """You are an expert Java software engineer with extensive experience conducting professional code reviews. Your task is to evaluate the relevance of a code review with respect to a given Java code change.
 
-You will be asked to rate the relevance of reviews for given Java code changes. A relevant review is one which is both concise and comprehensive. A concise review contains very little text not related to the code change. A comprehensive review contains all the information about a code change that should be covered by a review. A relevant review is comprehensive while being concise.
+A review is considered relevant if it meets both of the following criteria:
+1. Comprehensiveness: 
+    - Correctly identifies and discusses the key functional, structural, performance, readability, maintainability, or correctness implications of the code change.
+    - Mentions important issues, risks, or improvements that a competent reviewer would reasonably be expected to notice.
+    - Does not omit major concerns that are clearly present in the change.
+2. Conciseness
+    - Stays strictly focused on the provided code change.
+    - Avoids irrelevant commentary, generic advice, or restating obvious code behavior without analysis.
+	•	Uses minimal wording while still conveying necessary insights.
+
+A relevant review balances these two aspects: it is thorough without being verbose, and focused without being superficial.
 
 Now look at the Java code change and review below and score the relevance of the review on a scale of 1 to 5.
 
@@ -18,9 +28,9 @@ You should only respond with a single integer number between 1 and 5.
 Relevance score (1-5):
 """
 
-INTERPRETATION_EVA_PROMPT = """You are a highly skilled software engineer who has a lot of experience reviewing code changes. Your task is to rate the relevance of any given code change explanation.
+INTERPRETATION_EVA_PROMPT = """You are a highly skilled software engineer who has a lot of experience reviewing code changes. Your task is to evaluate the relevance of any given code change explanation.
 
-You will be asked to rate the relevance of explanations for given Java code changes. A relevant explanation is one which is both concise and comprehensive. A concise explanation contains very little text not related to the code change. A comprehensive explanation contains all the information about a code change that should be covered by an explanation. A relevant explanation is comprehensive while being concise.
+A relevant explanation is one that effectively clarifies the purpose, functionality, and implications of the code change. It should provide insights into why the change was made and how it affects the existing codebase.
 
 Now look at the Java code change and explanation below and score the relevance of the explanation on a scale of 1 to 5.
 
@@ -38,18 +48,40 @@ You should only respond with a single integer number between 1 and 5.
 Relevance score (1-5):
 """
 
+QUERY_ANSWER_EVA_PROMPT = """You are an expert software engineer with extensive experience in Spring AI project. Your task is to evaluate the relevance of answers provided to questions about the project.
+
+A relevant answer is one that directly addresses the question posed, providing clear, accurate, and concise information. It should demonstrate a thorough understanding of the codebase and the specific context of the question.
+
+Now look at the question and answer below and score the relevance of the answer on a scale of 1 to 5.
+
+Question: <query>
+
+Answer: <answer>
+
+You should only respond with a single integer number between 1 and 5.
+Relevance score (1-5):
+"""
+
 from dataclasses import dataclass
+from google import genai
 import json
 
 
 @dataclass
+class Document:
+    source_name: str
+    embedding_ids: list[int]
+    similarity_score: float
+
+
+@dataclass
 class TaskResult:
-    pr_id: str
-    task: str  # code_review | code_interpretation
+    task: str  # review | interpretation | query-answer
     group: str  # adaptive-enriched | simple-enriched | adaptive-plain
     reponse: str
-    documents: list[int]
-    eva_response: str | None = None
+    documents: list[Document]
+    query: str  # for query_answer task
+    pr_id: str  # for review and interpretation tasks
     score: int | None = None
 
 
@@ -64,12 +96,23 @@ def load_inference_results(file_path: str) -> list[TaskResult]:
     with open(file_path, "r") as f:
         data = json.load(f)
         for item in data:
+            documents = item.get("documents", [])
+            item["documents"] = [
+                Document(
+                    source_name=doc["source_name"],
+                    embedding_ids=doc["embedding_ids"],
+                    similarity_score=doc["similarity_score"],
+                )
+                for doc in documents
+            ]
+
             result = TaskResult(
-                pr_id=str(item["pr_id"]),
                 task=item["task"],
                 group=item["group"],
                 reponse=item["response"],
                 documents=item["documents"],
+                query=item.get("query", "null"),
+                pr_id=item.get("pr_id", "null"),
             )
             results.append(result)
     return results
@@ -89,135 +132,180 @@ def load_pull_requests(file_path: str) -> dict[str, PullRequest]:
 
 
 if __name__ == "__main__":
-    results = load_inference_results("results.json")
-    prs = load_pull_requests("pull_requests.json")
+    results = load_inference_results("./data/results.json")
+    prs = load_pull_requests("./data/pull_requests.json")
 
     # run evaluation for each result
-    for result in results:
-        if result.task == "code_review":
-            prompt = REVIEW_EVA_PROMPT
-            prompt = prompt.replace("<hunks>", "\n".join(prs[result.pr_id].hunks))
-            prompt = prompt.replace("<review>", result.reponse)
-        elif result.task == "code_interpretation":
-            prompt = INTERPRETATION_EVA_PROMPT
-            prompt = prompt.replace("<hunks>", "\n".join(prs[result.pr_id].hunks))
-            prompt = prompt.replace("<explanation>", result.reponse)
-        else:
-            continue
+    # client = genai.Client(api_key="AIzaSyDeH8CVEVIHp1NHO20m3TDJo6XQCgpRXe4")
+    # for result in results:
+    #     if result.task == "review":
+    #         prompt = REVIEW_EVA_PROMPT
+    #         prompt = prompt.replace("<hunks>", "\n".join(prs[result.pr_id].hunks))
+    #         prompt = prompt.replace("<review>", result.reponse)
+    #     elif result.task == "interpretation":
+    #         prompt = INTERPRETATION_EVA_PROMPT
+    #         prompt = prompt.replace("<hunks>", "\n".join(prs[result.pr_id].hunks))
+    #         prompt = prompt.replace("<explanation>", result.reponse)
+    #     elif result.task == "query-answer":
+    #         prompt = QUERY_ANSWER_EVA_PROMPT
+    #         prompt = prompt.replace("<query>", result.query)
+    #         prompt = prompt.replace("<answer>", result.reponse)
+    #     else:
+    #         print("Unknown task:", result.task)
+    #         continue
 
-        print(prompt)
+    #     print("=" * 20)
+    #     print("task:", result.task, "group:", result.group)
+    #     print(prompt)
 
-        # Here you would integrate with your LLM to get the evaluation response
-        # For demonstration, we'll just set a dummy response and score
-        result.eva_response = "Dummy evaluation response"
-        result.score = 5  # Dummy score
+    #     response = client.models.generate_content(
+    #         model="gemini-3-flash-preview",
+    #         contents=prompt,
+    #     )
 
-    # Calculate average scores per group and task
+    #     print("Model response:", response.text.strip())
+    #     try:
+    #         result.score = int(response.text.strip())
+    #     except ValueError:
+    #         result.score = -1  # invalid score
+    #     print("Assigned score:", result.score)
+
+    # Per-item analysis: analyze each pull request and each query individually
     from collections import defaultdict
 
-    scores_by_group_task = defaultdict(list)
+    # Group results by task and identifier (pr_id or query), then by group
+    # Structure: task -> identifier -> group -> result
+    grouped_results = defaultdict(lambda: defaultdict(dict))
+
     for result in results:
-        if result.score is not None:
-            key = (result.group, result.task)
-            scores_by_group_task[key].append(result.score)
+        task = result.task
+        group = result.group
+        if task in ["review", "interpretation"]:
+            identifier = result.pr_id
+        elif task == "query-answer":
+            identifier = result.query
+        else:
+            identifier = "unknown"
+        grouped_results[task][identifier][group] = result
 
-    # Print table of average scores
-    print("\nAverage Scores by Group and Task:")
-    print("-" * 80)
-    print(f"{'Group':<30} {'Task':<30} {'Avg Score':<10} {'Count':<10}")
-    print("-" * 80)
-    for (group, task), scores in sorted(scores_by_group_task.items()):
-        avg_score = sum(scores) / len(scores) if scores else 0
-        print(f"{group:<30} {task:<30} {avg_score:<10.2f} {len(scores):<10}")
-    print("-" * 80)
+    # Print per-item analysis - comparing groups within each task
+    print("\n" + "=" * 80)
+    print("PER-ITEM DOCUMENT ANALYSIS - COMPARING GROUPS")
+    print("=" * 80)
 
-    # Analyze document IDs distribution per pr_id between groups
-    print("\n\nDocument IDs Distribution Analysis per PR:")
-    print("=" * 120)
+    for task in sorted(grouped_results.keys()):
+        print(f"\n{'=' * 80}")
+        print(f"Task: {task}")
+        print("=" * 80)
 
-    # Group results by PR ID and task
-    pr_task_results = defaultdict(lambda: defaultdict(dict))
-    for result in results:
-        pr_task_results[result.pr_id][result.task][result.group] = set(result.documents)
+        for identifier in sorted(grouped_results[task].keys()):
+            if task in ["review", "interpretation"]:
+                print(f"\n{'-' * 80}")
+                print(f"Pull Request ID: {identifier}")
+                print("-" * 80)
+            elif task == "query-answer":
+                print(f"\n{'-' * 80}")
+                print(f"Query: {identifier}")
+                print("-" * 80)
 
-    # Analyze each PR and task combination
-    for pr_id in sorted(pr_task_results.keys()):
-        for task in sorted(pr_task_results[pr_id].keys()):
-            print(f"\nPR: {pr_id} | Task: {task}")
-            print("-" * 120)
+            # Compare all groups for this specific item
+            group_results = grouped_results[task][identifier]
 
-            groups_data = pr_task_results[pr_id][task]
+            for group in sorted(group_results.keys()):
+                result = group_results[group]
+                print(f"\n  [{group}]")
+                print(f"    Documents retrieved: {len(result.documents)}")
 
-            # Get document sets for each group
-            ae_docs = groups_data.get("adaptive-enriched", set())
-            se_docs = groups_data.get("simple-enriched", set())
-            ap_docs = groups_data.get("adaptive-plain", set())
+                if result.documents:
+                    # Calculate statistics for this specific item/group
+                    scores = [doc.similarity_score for doc in result.documents]
+                    avg_score = sum(scores) / len(scores)
+                    min_score = min(scores)
+                    max_score = max(scores)
 
-            # Print retrieved documents for each group
-            print(
-                f"  adaptive-enriched:  {sorted(ae_docs) if ae_docs else '[]'} (count: {len(ae_docs)})"
+                    print(f"    Similarity scores:")
+                    print(f"      Average: {avg_score:.4f}")
+                    print(f"      Min: {min_score:.4f}")
+                    print(f"      Max: {max_score:.4f}")
+
+                    print(f"\n    Document details:")
+                    for i, doc in enumerate(result.documents, 1):
+                        print(f"      [{i}] {doc.source_name}")
+                        print(f"          Similarity: {doc.similarity_score:.4f}")
+                        print(f"          Embedding IDs: {doc.embedding_ids}")
+                else:
+                    print("    No documents retrieved")
+
+            print()  # Extra line between items
+
+    # comparing groups within each task
+    print("\n" + "=" * 80)
+    print("SUMMARY STATISTICS - COMPARING GROUPS WITHIN EACH TASK")
+    print("=" * 80)
+
+    for task in sorted(grouped_results.keys()):
+        print(f"\n{'=' * 80}")
+        print(f"Task: {task}")
+        print("=" * 80)
+
+        # Collect all groups for this task
+        all_groups = set()
+        for identifier in grouped_results[task].values():
+            all_groups.update(identifier.keys())
+
+        # Calculate statistics for each group
+        group_stats = {}
+        for group in sorted(all_groups):
+            all_scores = []
+            all_doc_counts = []
+            unique_docs = set()
+
+            for identifier, group_results in grouped_results[task].items():
+                if group in group_results:
+                    result = group_results[group]
+                    all_doc_counts.append(len(result.documents))
+                    for doc in result.documents:
+                        all_scores.append(doc.similarity_score)
+                        unique_docs.add(doc.source_name)
+
+            num_items = sum(
+                1
+                for id_results in grouped_results[task].values()
+                if group in id_results
             )
-            print(
-                f"  simple-enriched:    {sorted(se_docs) if se_docs else '[]'} (count: {len(se_docs)})"
-            )
-            print(
-                f"  adaptive-plain:     {sorted(ap_docs) if ap_docs else '[]'} (count: {len(ap_docs)})"
-            )
+            total_retrievals = sum(all_doc_counts)
+            avg_docs_per_item = total_retrievals / num_items if num_items > 0 else 0
 
-            # Calculate overlaps and differences
-            all_docs = ae_docs | se_docs | ap_docs
-            common_all = ae_docs & se_docs & ap_docs
+            group_stats[group] = {
+                "num_items": num_items,
+                "total_retrievals": total_retrievals,
+                "avg_docs_per_item": avg_docs_per_item,
+                "unique_docs": len(unique_docs),
+                "avg_score": sum(all_scores) / len(all_scores) if all_scores else 0,
+                "min_score": min(all_scores) if all_scores else 0,
+                "max_score": max(all_scores) if all_scores else 0,
+            }
 
-            print(
-                f"\n  Common to all groups:     {sorted(common_all) if common_all else '[]'} (count: {len(common_all)})"
-            )
+        # Display comparison
+        print("\nGroup Comparison:")
+        print(f"{'Metric':<30} " + " ".join(f"{g:>25}" for g in sorted(all_groups)))
+        print("-" * 80)
 
-            # Unique to each group
-            ae_unique = ae_docs - se_docs - ap_docs
-            se_unique = se_docs - ae_docs - ap_docs
-            ap_unique = ap_docs - ae_docs - se_docs
+        metrics = [
+            ("Total items", "num_items", "{}"),
+            ("Total doc retrievals", "total_retrievals", "{}"),
+            ("Avg docs per item", "avg_docs_per_item", "{:.2f}"),
+            ("Unique documents", "unique_docs", "{}"),
+            ("Avg similarity", "avg_score", "{:.4f}"),
+            ("Min similarity", "min_score", "{:.4f}"),
+            ("Max similarity", "max_score", "{:.4f}"),
+        ]
 
-            if ae_unique or se_unique or ap_unique:
-                print(
-                    f"  Unique to adaptive-enriched:  {sorted(ae_unique) if ae_unique else '[]'} (count: {len(ae_unique)})"
-                )
-                print(
-                    f"  Unique to simple-enriched:    {sorted(se_unique) if se_unique else '[]'} (count: {len(se_unique)})"
-                )
-                print(
-                    f"  Unique to adaptive-plain:     {sorted(ap_unique) if ap_unique else '[]'} (count: {len(ap_unique)})"
-                )
+        for metric_name, metric_key, fmt in metrics:
+            values = [
+                fmt.format(group_stats[g][metric_key]) for g in sorted(all_groups)
+            ]
+            print(f"{metric_name:<30} " + " ".join(f"{v:>25}" for v in values))
+            print(f"      Max: {max_score:.4f}")
 
-            # Pairwise overlaps (excluding common to all)
-            ae_se_only = (ae_docs & se_docs) - ap_docs - common_all
-            ae_ap_only = (ae_docs & ap_docs) - se_docs - common_all
-            se_ap_only = (se_docs & ap_docs) - ae_docs - common_all
-
-            if ae_se_only or ae_ap_only or se_ap_only:
-                print(
-                    f"  Common to adaptive-enriched & simple-enriched only: {sorted(ae_se_only) if ae_se_only else '[]'}"
-                )
-                print(
-                    f"  Common to adaptive-enriched & adaptive-plain only:  {sorted(ae_ap_only) if ae_ap_only else '[]'}"
-                )
-                print(
-                    f"  Common to simple-enriched & adaptive-plain only:    {sorted(se_ap_only) if se_ap_only else '[]'}"
-                )
-
-    print("\n" + "=" * 120)
-
-    # Overall statistics
-    print("\n\nOverall Document Retrieval Statistics:")
-    print("-" * 80)
-    print(f"{'Group':<30} {'Avg Docs':<12} {'Min':<8} {'Max':<8} {'Total Results':<15}")
-    print("-" * 80)
-    for group in ["adaptive-enriched", "simple-enriched", "adaptive-plain"]:
-        all_docs = [len(r.documents) for r in results if r.group == group]
-        if all_docs:
-            avg_docs = sum(all_docs) / len(all_docs)
-            min_docs = min(all_docs)
-            max_docs = max(all_docs)
-            print(
-                f"{group:<30} {avg_docs:<12.2f} {min_docs:<8} {max_docs:<8} {len(all_docs):<15}"
-            )
-    print("-" * 80)
+    print("\n" + "=" * 80)

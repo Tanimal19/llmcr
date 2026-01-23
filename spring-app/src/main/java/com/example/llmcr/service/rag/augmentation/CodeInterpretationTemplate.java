@@ -6,9 +6,10 @@ import java.util.Map;
 public class CodeInterpretationTemplate extends BasePullRequestTemplate {
     @Override
     public List<String> doGetQueries(PullRequest pr) {
+        // build each hunk as a separate query
         List<String> queries = new java.util.ArrayList<>();
         queries.addAll(pr.hunks().stream().map(
-                hunk -> "Give an explaination on what does the code change do and what is the purpose of the change: "
+                hunk -> "Task: write a CL description including 'what change is being made?' and 'why are these changes being made?'. Given code changes: "
                         + hunk.toString())
                 .toList());
         return queries;
@@ -21,7 +22,8 @@ public class CodeInterpretationTemplate extends BasePullRequestTemplate {
 
     public class PromptBuilder extends BasePullRequestTemplate.PromptBuilder {
         private final String template = """
-                You are a code interpreter. Given the code change hunks and relevant project context, your task is to give an explaination on what does the code change do and what is the purpose of the change.
+                You are a experienced Java developer. Given the code change hunks and relevant project context, your task is to write a code change description. A code change description is a public record of change, and it is important that it communicates:
+                - What change is being made? This should summarize the major changes such that readers have a sense of what is being changed without needing to read the entire CL.- Why are these changes being made? What contexts did you have as an author when making this change? Were there decisions you made that aren't reflected in the source code? etc.
 
                 Code change hunks at below.
                 -----------------
@@ -34,9 +36,8 @@ public class CodeInterpretationTemplate extends BasePullRequestTemplate {
                 -----------------
 
                 Rules:
-                1. Focus on the changes made in the code, not on unchanged parts.
-                2. If you can't give an explaination from the given information, just say so, don't make assumptions.
-                3. Do not use statements like "Based on the code change, it seems that...".
+                1. Don't make assumptions on anything that is not clear from the given information.
+                2. Do not use statements like "Based on the code change, it seems that...".
                 """;
 
         private final Map<String, Object> variables = new java.util.HashMap<>();

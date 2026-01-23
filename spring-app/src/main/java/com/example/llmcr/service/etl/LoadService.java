@@ -2,42 +2,43 @@ package com.example.llmcr.service.etl;
 
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 
-import com.example.llmcr.entity.Chunk;
-import com.example.llmcr.entity.Chunk.ChunkType;
+import com.example.llmcr.entity.Embedding;
+import com.example.llmcr.entity.Embedding.EmbeddingContentType;
 import com.example.llmcr.repository.DataStore;
 
 public class LoadService {
     private final DataStore dataStore;
     private final VectorStore vectorStore;
 
-    private static final Logger logger = Logger.getLogger(LoadService.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoadService.class);
 
     public LoadService(DataStore dataStore, VectorStore vectorStore) {
         this.dataStore = dataStore;
         this.vectorStore = vectorStore;
     }
 
-    public void load(Set<ChunkType> loadedChunkTypes) {
+    public void load(Set<EmbeddingContentType> loadedEmbeddingTypes) {
         long startTime = System.currentTimeMillis();
-        logger.info("Start data loading");
+        LOGGER.info("Start data loading");
 
-        for (ChunkType type : loadedChunkTypes) {
-            List<Document> documents = dataStore.findChunksByType(type).stream()
-                    .map(Chunk::toDocument)
+        for (EmbeddingContentType type : loadedEmbeddingTypes) {
+            List<Document> documents = dataStore.findAllEmbeddingsByContentType(type).stream()
+                    .map(Embedding::toDocument)
                     .toList();
 
             if (!documents.isEmpty()) {
                 vectorStore.add(documents);
-                logger.fine("+ Loaded " + documents.size() + " documents for type: " + type);
+                LOGGER.info("+ Loaded " + documents.size() + " documents for type: " + type);
             }
         }
 
         long endTime = System.currentTimeMillis();
-        logger.info("Data loading completed in " + (endTime - startTime) + "ms");
+        LOGGER.info("Data loading completed in " + (endTime - startTime) + "ms");
     }
 }

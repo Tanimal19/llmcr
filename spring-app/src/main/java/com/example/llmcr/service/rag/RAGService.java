@@ -2,8 +2,9 @@ package com.example.llmcr.service.rag;
 
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -27,7 +28,7 @@ public class RAGService {
 
     private RateLimiter rateLimiter = RateLimiter.create(1.0 / 90.0);
 
-    private static final Logger logger = java.util.logging.Logger.getLogger(RAGService.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(RAGService.class);
 
     public RAGService(ChatModel chatModel, VectorStore vectorStore) {
         this.chatModel = chatModel;
@@ -37,7 +38,7 @@ public class RAGService {
     public void setStrategy(RetrievalStrategy retrievalStrategy, FusionStrategy fusionStrategy) {
         this.retrievalStrategy = retrievalStrategy;
         this.fusionStrategy = fusionStrategy;
-        logger.info("Using retrieval strategy: "
+        LOGGER.info("Using retrieval strategy: "
                 + retrievalStrategy.getClass().getSimpleName()
                 + " and fusion strategy: "
                 + fusionStrategy.getClass().getSimpleName());
@@ -45,7 +46,7 @@ public class RAGService {
 
     public void setRAGTemplate(RAGTemplate ragTemplate) {
         this.ragTemplate = ragTemplate;
-        logger.info("Using RAG template: " + ragTemplate.getClass().getSimpleName());
+        LOGGER.info("Using RAG template: " + ragTemplate.getClass().getSimpleName());
     }
 
     public void setTopK(int topK) {
@@ -53,6 +54,11 @@ public class RAGService {
     }
 
     public Map<String, Object> generation(Object input) {
+        assert retrievalStrategy != null : "Retrieval Strategy is not set.";
+        assert fusionStrategy != null : "Fusion Strategy is not set.";
+        assert ragTemplate != null : "RAG Template is not set.";
+        assert topK > 0 : "topK is not set.";
+
         long startTime = System.currentTimeMillis();
 
         // retrieve documents for each query
@@ -67,14 +73,14 @@ public class RAGService {
             documents = fusionStrategy.fuse(documentLists, topK);
         }
 
-        logger.fine("Retrieved documents:\n" + documents.stream()
-                .map(d -> d.getMetadata().get("chunk_id").toString() + "::"
-                        + d.getMetadata().get("chunk_type") + "::"
+        LOGGER.info("Retrieved documents:\n" + documents.stream()
+                .map(d -> d.getMetadata().get("source_id").toString() + "::"
+                        + d.getMetadata().get("source_name") + "::"
                         + d.getMetadata().get("similarity_score").toString())
                 .reduce((s1, s2) -> s1 + "\n" + s2).orElse(""));
 
         long retrievalEndTime = System.currentTimeMillis();
-        logger.info("Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
+        LOGGER.info("Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
 
         Prompt prompt = ragTemplate.getBuilder().augmentInput(input).augmentContext(documents).build();
 
@@ -87,18 +93,18 @@ public class RAGService {
                 response = chatModel.call(prompt);
                 break;
             } catch (Exception e) {
-                logger.warning("Chat model call failed: " + e.getMessage());
+                LOGGER.warn("Chat model call failed: " + e.getMessage());
             }
 
             count++;
-            logger.warning("Retry: attempt #" + count);
+            LOGGER.warn("Retry: attempt #" + count);
             if (count > 5) {
                 throw new RuntimeException("Failed to call chat model.");
             }
         }
 
         long generationEndTime = System.currentTimeMillis();
-        logger.info("Generation completed in " + (generationEndTime - retrievalEndTime) + "ms");
+        LOGGER.info("Generation completed in " + (generationEndTime - retrievalEndTime) + "ms");
 
         Map<String, Object> responseBody = Map.of(
                 "timestamp", java.time.Instant.now().toString(),

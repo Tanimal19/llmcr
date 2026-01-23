@@ -9,14 +9,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.example.llmcr.entity.Chunk.ChunkType;
-import com.example.llmcr.faiss.FaissVectorStore;
-import com.example.llmcr.faiss.FaissVectorStoreFactory;
+import com.example.llmcr.entity.Embedding.EmbeddingContentType;
 import com.example.llmcr.repository.DataStore;
 import com.example.llmcr.service.etl.DataSourceFactoryService;
 import com.example.llmcr.service.etl.ExtractService;
 import com.example.llmcr.service.etl.LoadService;
 import com.example.llmcr.service.etl.TransformService;
+import com.example.llmcr.service.faiss.FaissVectorStoreFactory;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "etl")
@@ -36,23 +35,30 @@ public class ETLRunner implements CommandLineRunner {
         String javaDocPathString = javaProjectRootPathString +
                 "/spring-ai-docs/src/main/antora/modules/ROOT/pages/";
 
-        FaissVectorStore enrichFaiss = FaissVectorStoreFactory.create("enriched");
-        FaissVectorStore plainFaiss = FaissVectorStoreFactory.create("plain");
-
-        ExtractService e = new ExtractService(defaultDataStore);
-        e.extract(DataSourceFactoryService.createFromJavaProject(javaProjectRootPathString),
-                3000);
-        e.extract(DataSourceFactoryService.createFromPath(javaDocPathString), 3000);
+        // ExtractService e = new ExtractService(defaultDataStore);
+        // e.extract(
+        // DataSourceFactoryService.createFromJavaProject(javaProjectRootPathString),
+        // 3000);
+        // e.extract(
+        // DataSourceFactoryService.createFromPath(javaDocPathString), 3000);
 
         TransformService t = new TransformService(defaultDataStore,
                 defaultChatModel);
-        t.enrich(10, 2);
+        // t.enrich(10);
         t.chunk(new TokenTextSplitter(500, 350, 100, 10000, true));
 
-        LoadService l_enrich = new LoadService(defaultDataStore, enrichFaiss);
-        l_enrich.load(Set.of(ChunkType.CODE, ChunkType.SUMMARY, ChunkType.PARAGRAPH));
+        // create three different index sets
+        new LoadService(defaultDataStore,
+                FaissVectorStoreFactory.create("full"))
+                .load(Set.of(EmbeddingContentType.CODE, EmbeddingContentType.ENRICHMENT,
+                        EmbeddingContentType.DOCUMENT));
+        new LoadService(defaultDataStore,
+                FaissVectorStoreFactory.create("enriched"))
+                .load(Set.of(EmbeddingContentType.ENRICHMENT,
+                        EmbeddingContentType.DOCUMENT));
+        new LoadService(defaultDataStore,
+                FaissVectorStoreFactory.create("plain"))
+                .load(Set.of(EmbeddingContentType.CODE, EmbeddingContentType.DOCUMENT));
 
-        LoadService l_plain = new LoadService(defaultDataStore, plainFaiss);
-        l_plain.load(Set.of(ChunkType.CODE, ChunkType.PARAGRAPH));
     }
 }

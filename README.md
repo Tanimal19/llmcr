@@ -1,47 +1,21 @@
 
-## main application (spring)
+## Container Services
+This application depends on two services: FAISS for vector search, and mariadb for data storage. You can see the configuration in `docker-compose.yml`.
 
-## services
-- `mariadb`: database to store etl data
-- `faiss`: vector search service
-  
 ```sh
-docker-compose down -v {service}
-docker-compose up -d {service}
-
-docker-compose stop {service}
-docker-compose restart {service}
+docker-compose up -d    # start the service in background
+docker-compose stop     # pause the service
+docker-compose restart  # resume the service
+docker-compose down -v  # delete the service and volume
 ```
 
-## faiss service
+The index file of FAISS is stored in `./faiss_service/data`.
+The database data is stored in docker volume, you can backup it via:
+```sh
+docker exec mariadb \ 
+  mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
+```
 
-#### `POST /index/add`
-```json
-{
-    "ids": [1, 2, 3],
-    "vectors": [
-        [0.1, 0.2, 0.3],
-        [0.4, 0.5, 0.6],
-        [0.7, 0.8, 0.9]
-    ]
-}
-```
-#### `POST /index/search`
-request:
-```json
-{
-    "qvector": [0.1, 0.2, 0.3],
-    "top_k": 2
-}
-```
-response:
-```json
-{
-    "ids": [1, 2],
-    "vectors": [
-        [0.1, 0.2, 0.3],
-        [0.4, 0.5, 0.6]
-    ],
-    "scores": [0.9, 0.5]
-}
-```
+## ETL Process
+The ETL (Extract, Transform, Load) process is implemented in the `ETLRunner.java` file.
+To run the ETL process, execute `spring-app/run.sh`.

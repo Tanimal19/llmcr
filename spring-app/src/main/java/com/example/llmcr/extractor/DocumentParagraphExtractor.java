@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -46,7 +45,6 @@ public class DocumentParagraphExtractor
             for (String line : text.split("\n")) {
                 if (chunk.length() + line.length() > maxParagraphLength && chunk.length() > 0) {
                     result.add(new DocumentParagraph(
-                            UUID.randomUUID(),
                             ctx + "::" + count.getAndIncrement(),
                             chunk.toString().trim()));
                     chunk.setLength(0);
@@ -56,7 +54,6 @@ public class DocumentParagraphExtractor
 
             if (chunk.length() > 0) {
                 result.add(new DocumentParagraph(
-                        UUID.randomUUID(),
                         ctx + "::" + count.getAndIncrement(),
                         chunk.toString().trim()));
             }
@@ -142,7 +139,6 @@ public class DocumentParagraphExtractor
                     && chunk.length() > 0) {
 
                 result.add(new DocumentParagraph(
-                        UUID.randomUUID(),
                         ctx + "::" + count.getAndIncrement(),
                         chunk.toString().trim()));
                 chunk.setLength(0);
@@ -154,7 +150,6 @@ public class DocumentParagraphExtractor
         // flush remaining chunk
         if (chunk.length() > 0) {
             result.add(new DocumentParagraph(
-                    UUID.randomUUID(),
                     ctx + "::" + count.getAndIncrement(),
                     chunk.toString().trim()));
         }

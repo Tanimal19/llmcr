@@ -19,7 +19,7 @@ public class RankFusionStrategy implements FusionStrategy {
         for (List<Document> docs : documentsLists) {
             for (int rank = 0; rank < docs.size(); rank++) {
                 Document d = docs.get(rank);
-                String id = d.getMetadata().get("chunk_id").toString();
+                String id = d.getMetadata().get("source_id").toString();
 
                 docMap.putIfAbsent(id, d);
 
@@ -36,7 +36,7 @@ public class RankFusionStrategy implements FusionStrategy {
 
         // Annotate documents with their RRF scores
         selectedDocs.forEach(doc -> {
-            String id = doc.getMetadata().get("chunk_id").toString();
+            String id = doc.getMetadata().get("source_id").toString();
             doc.getMetadata().put("rrf_score", scores.get(id));
         });
 

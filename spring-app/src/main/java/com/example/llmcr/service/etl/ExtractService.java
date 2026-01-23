@@ -1,7 +1,9 @@
 package com.example.llmcr.service.etl;
 
 import java.util.List;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.llmcr.datasource.DataSource;
 import com.example.llmcr.entity.ClassNode;
@@ -14,7 +16,7 @@ public class ExtractService {
 
     private final DataStore dataStore;
 
-    private static final Logger logger = Logger.getLogger(ExtractService.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtractService.class);
 
     public ExtractService(DataStore dataStore) {
         this.dataStore = dataStore;
@@ -22,7 +24,7 @@ public class ExtractService {
 
     public void extract(List<DataSource> rawDataSources, int maxParagraphLength) {
         long startTime = System.currentTimeMillis();
-        logger.info("Start data extraction");
+        LOGGER.info("Start data extraction");
 
         ClassNodeExtractor classNodeExtractor = new ClassNodeExtractor();
         DocumentParagraphExtractor documentParagraphExtractor = new DocumentParagraphExtractor(maxParagraphLength);
@@ -31,15 +33,15 @@ public class ExtractService {
         rawDataSources.stream().forEach(source -> {
             List<ClassNode> classNodes = source.accept(classNodeExtractor);
             dataStore.saveAllClassNodes(classNodes);
-            logger.fine("Extracted " + classNodes.size() + " class nodes from source: " + source.getSourceName());
+            LOGGER.info("Extracted " + classNodes.size() + " class nodes from source: " + source.getSourceName());
 
             List<DocumentParagraph> paragraphs = source.accept(documentParagraphExtractor);
             dataStore.saveAllDocumentParagraphs(paragraphs);
-            logger.fine(
+            LOGGER.info(
                     "Extracted " + paragraphs.size() + " document paragraphs from source: " + source.getSourceName());
         });
 
         long endTime = System.currentTimeMillis();
-        logger.info("Data extraction completed in " + (endTime - startTime) + "ms");
+        LOGGER.info("Data extraction completed in " + (endTime - startTime) + "ms");
     }
 }

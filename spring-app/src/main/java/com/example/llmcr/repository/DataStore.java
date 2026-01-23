@@ -1,17 +1,21 @@
 package com.example.llmcr.repository;
 
-import com.example.llmcr.entity.Chunk;
 import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
-import com.example.llmcr.entity.IndexFile;
+import com.example.llmcr.entity.Embedding;
+import com.example.llmcr.entity.IndexSet;
+import com.example.llmcr.entity.Embedding.EmbeddingContentType;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Aggregates repositories for data persistence and retrieval.
@@ -21,18 +25,18 @@ public class DataStore {
 
     private final ClassNodeRepository nodeRepo;
     private final DocumentParagraphRepository documentRepo;
-    private final ChunkRepository chunkRepo;
-    private final IndexFileRepository indexFileRepo;
+    private final EmbeddingRepository embeddingRepo;
+    private final IndexSetRepository indexSetRepo;
 
-    private static final Logger logger = java.util.logging.Logger.getLogger(DataStore.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataStore.class);
 
     @Autowired
     public DataStore(ClassNodeRepository nodeRepo, DocumentParagraphRepository documentRepo,
-            ChunkRepository chunkRepo, IndexFileRepository indexFileRepo) {
+            EmbeddingRepository embeddingRepo, IndexSetRepository indexSetRepo) {
         this.nodeRepo = nodeRepo;
         this.documentRepo = documentRepo;
-        this.chunkRepo = chunkRepo;
-        this.indexFileRepo = indexFileRepo;
+        this.embeddingRepo = embeddingRepo;
+        this.indexSetRepo = indexSetRepo;
     }
 
     // ClassNode operations
@@ -119,55 +123,62 @@ public class DataStore {
         return documentRepo.findAll();
     }
 
-    // Chunk operations
-    public void save(Chunk chunk) {
-        chunkRepo.save(chunk);
+    // Embedding operations
+    public void save(Embedding embedding) {
+        embeddingRepo.save(embedding);
     }
 
-    public void saveAllChunks(List<Chunk> chunks) {
-        chunkRepo.saveAll(chunks);
+    public void saveAllEmbeddings(List<Embedding> embeddings) {
+        embeddingRepo.saveAll(embeddings);
     }
 
-    public Chunk findChunkById(Long id) {
-        return chunkRepo.findById(id).orElse(null);
+    public void saveAllEmbeddingsByDocuments(List<Document> documents) {
+        List<Embedding> embeddings = documents.stream()
+                .map(d -> new Embedding(d))
+                .collect(Collectors.toList());
+        embeddingRepo.saveAll(embeddings);
     }
 
-    public List<Chunk> findAllChunks() {
-        return chunkRepo.findAll();
+    public Embedding findEmbeddingById(Long id) {
+        return embeddingRepo.findById(id).orElse(null);
     }
 
-    public List<Chunk> findAllChunksByIds(List<Long> ids) {
-        return chunkRepo.findByIdIn(ids);
+    public List<Embedding> findAllEmbeddings() {
+        return embeddingRepo.findAll();
     }
 
-    public List<Chunk> findChunksByType(Chunk.ChunkType type) {
-        return chunkRepo.findByType(type);
+    public List<Embedding> findAllEmbeddingsByIds(List<Long> ids) {
+        return embeddingRepo.findByIdIn(ids);
     }
 
-    // IndexFile operations
+    public List<Embedding> findAllEmbeddingsByContentType(EmbeddingContentType contentType) {
+        return embeddingRepo.findByContentType(contentType);
+    }
+
+    // IndexSet operations
     public void createIndexIfNotExist(String indexName) {
-        if (indexFileRepo.findByName(indexName) == null) {
-            indexFileRepo.save(new IndexFile(indexName));
-            logger.info("Created new index: " + indexName);
+        if (indexSetRepo.findByName(indexName) == null) {
+            indexSetRepo.save(new IndexSet(indexName));
+            LOGGER.info("Created new index: " + indexName);
         } else {
-            logger.info("Index: " + indexName + " already exists. Skipping creation.");
+            LOGGER.info("Index: " + indexName + " already exists. Skipping creation.");
         }
     }
 
     @Transactional
-    public void addAllChunksToIndexFileByIds(String indexName, List<Long> chunkIds) {
-        IndexFile indexFile = indexFileRepo.findByName(indexName);
-        if (indexFile != null) {
-            List<Chunk> chunks = chunkRepo.findByIdIn(chunkIds);
-            indexFile.getChunks().addAll(chunks);
-            indexFileRepo.save(indexFile);
+    public void addAllEmbeddingsToIndexSetByIds(String indexName, List<Long> embeddingIds) {
+        IndexSet indexSet = indexSetRepo.findByName(indexName);
+        if (indexSet != null) {
+            List<Embedding> embeddings = embeddingRepo.findByIdIn(embeddingIds);
+            indexSet.getEmbeddings().addAll(embeddings);
+            indexSetRepo.save(indexSet);
 
             // Also update non-owning side for bidirectional consistency
-            for (Chunk chunk : chunks) {
-                chunk.getIndexFiles().add(indexFile);
+            for (Embedding embedding : embeddings) {
+                embedding.getIndexSets().add(indexSet);
             }
         } else {
-            logger.warning("Index: " + indexName + " not found. Cannot add chunks.");
+            LOGGER.warn("Index: " + indexName + " not found. Cannot add embeddings.");
         }
     }
 

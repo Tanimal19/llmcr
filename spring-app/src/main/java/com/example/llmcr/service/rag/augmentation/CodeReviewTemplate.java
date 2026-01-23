@@ -7,10 +7,13 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
 
     @Override
     public List<String> doGetQueries(PullRequest pr) {
+        // build each hunk as a separate query
         List<String> queries = new java.util.ArrayList<>();
         queries.add(pr.description());
         queries.addAll(pr.hunks().stream()
-                .map(hunk -> "Generate a concise code review of the given change: " + hunk.toString()).toList());
+                .map(hunk -> "Task: write code review comments that evaluate the quality of the change. Given code changes:"
+                        + hunk.toString())
+                .toList());
         return queries;
     }
 
@@ -21,7 +24,9 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
 
     public class PromptBuilder extends BasePullRequestTemplate.PromptBuilder {
         private final String template = """
-                You are a code reviewer. Given the pull request description, code change hunks, and relevant project context, your task is to generate a concise and comprehensive code review of the given change.
+                You are a experienced code reviewer. Given the pull request description, code change hunks, and relevant project context, your task is to write code review comments. A code review is an evaluation of a code change on its quality, correctness, and, most importantly, does the change improves the overall maintainability, readability, and understandability of the system.
+
+                Make sure to review every line of code you've been asked to review, look at the context, make sure you're improving code health, and compliment developers on good things that they do. You should give reasoning for any comments you make.
 
                 Pull request description at below.
                 -----------------
@@ -39,10 +44,8 @@ public class CodeReviewTemplate extends BasePullRequestTemplate {
                 -----------------
 
                 Rules:
-                1. Focus on the changes made in the code, not on unchanged parts.
-                2. If you can't determine the quality of the change from the given information, just say so, don't make assumptions.
-                3. Do not use statements like "Based on the code change, it seems that...".
-                4. You should end with a clear recommendation: "Approve", "Reject" or "Discussion needed". For "Discussion needed", provide a brief explanation.
+                1. Don't make assumptions on anything that is not clear from the given information.
+                2. Do not use statements like "Based on the code change, it seems that...".
                 """;
 
         private final Map<String, Object> variables = new java.util.HashMap<>();

@@ -9,8 +9,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.example.llmcr.faiss.FaissVectorStore;
-import com.example.llmcr.faiss.FaissVectorStoreFactory;
+import com.example.llmcr.service.faiss.FaissVectorStore;
+import com.example.llmcr.service.faiss.FaissVectorStoreFactory;
 import com.example.llmcr.service.rag.RAGService;
 import com.example.llmcr.service.rag.augmentation.AnswerQueryTemplate;
 import com.example.llmcr.service.rag.retrieval.AdaptiveKStrategy;
@@ -27,10 +27,11 @@ public class RAGRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        FaissVectorStore defaultFaiss = FaissVectorStoreFactory.create("enriched");
+        FaissVectorStore defaultFaiss = FaissVectorStoreFactory.create("plain");
         RAGService r = new RAGService(defaultChatModel, defaultFaiss);
         r.setStrategy(new AdaptiveKStrategy(), new RankFusionStrategy());
         r.setRAGTemplate(new AnswerQueryTemplate());
+        r.setTopK(10);
 
         // get query from console
         boolean isExit = false;

@@ -2,7 +2,6 @@ package com.example.llmcr.service.rag.retrieval;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -15,10 +14,8 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
     private final float highConfidenceScore = 0.6f;
     private final float lowConfidenceScore = 0.3f;
 
-    private static final Logger logger = Logger.getLogger(AdaptiveKStrategy.class.getName());
-
     public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
-        logger.info("Query: " + query);
+        System.out.println("Query: " + query.substring(0, Math.min(100, query.length())) + "...");
 
         SearchRequest request = SearchRequest.builder()
                 .query(query)
@@ -53,9 +50,9 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
                 optimalK = i + 1;
             }
         }
+        System.out.println("Adaptive K: Find optimalK = " + optimalK + " with max gap = " + maxGap + ")");
 
-        logger.info("Find optimalK = " + optimalK + " with max gap = " + maxGap + ")");
         return new ArrayList<>(
-                relevantDocuments.subList(0, Math.min(optimalK + buffer, relevantDocuments.size())));
+                relevantDocuments.subList(0, Math.min(Math.min(optimalK + buffer, topK), relevantDocuments.size())));
     }
 }

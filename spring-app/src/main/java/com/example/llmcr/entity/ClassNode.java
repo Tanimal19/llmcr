@@ -1,29 +1,18 @@
 package com.example.llmcr.entity;
 
 import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Represents an extracted class or code unit (e.g., for RAG indexing).
  */
 @Entity
 @Table(name = "class_nodes")
-public class ClassNode {
-
-    @Id
-    private UUID id;
-
-    @Column(name = "signature", columnDefinition = "TEXT", nullable = false)
+public class ClassNode extends Source {
+    @Column(name = "signature", nullable = false)
     private String signature;
-
-    @Column(name = "code_text", columnDefinition = "MEDIUMTEXT", nullable = false)
-    private String codeText;
-
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "class_node_document_paragraph", joinColumns = @JoinColumn(name = "class_node_id"), inverseJoinColumns = @JoinColumn(name = "document_paragraph_id"))
-    private List<DocumentParagraph> documentParagraphs = new ArrayList<>();
 
     @Column(name = "description_text", columnDefinition = "TEXT")
     private String descriptionText;
@@ -34,27 +23,18 @@ public class ClassNode {
     @Column(name = "relationship_text", columnDefinition = "TEXT")
     private String relationshipText;
 
-    @Column(name = "processed")
-    private boolean processed;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinTable(name = "class_node_related_document_paragraph", joinColumns = @JoinColumn(name = "class_node_id"), inverseJoinColumns = @JoinColumn(name = "document_paragraph_id"))
+    private List<DocumentParagraph> documentParagraphs = new ArrayList<>();
 
-    // Default constructor for JPA
     public ClassNode() {
     }
 
-    public ClassNode(UUID id, String signature, String codeText) {
-        this.id = id;
+    public ClassNode(String sourceName, String content, String signature) {
+        this.sourceName = sourceName;
+        this.content = content;
         this.signature = signature;
-        this.codeText = codeText;
         this.processed = false;
-    }
-
-    // Getters and setters
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public String getSignature() {
@@ -63,22 +43,6 @@ public class ClassNode {
 
     public void setSignature(String signature) {
         this.signature = signature;
-    }
-
-    public String getCodeText() {
-        return codeText;
-    }
-
-    public void setCodeText(String codeText) {
-        this.codeText = codeText;
-    }
-
-    public List<DocumentParagraph> getDocumentParagraphs() {
-        return documentParagraphs;
-    }
-
-    public void setDocumentParagraphs(List<DocumentParagraph> documentParagraphs) {
-        this.documentParagraphs = documentParagraphs;
     }
 
     public String getDescriptionText() {
@@ -105,15 +69,11 @@ public class ClassNode {
         this.relationshipText = relationshipText;
     }
 
-    public boolean isProcessed() {
-        return processed;
+    public List<DocumentParagraph> getDocumentParagraphs() {
+        return documentParagraphs;
     }
 
-    public void setProcessed(boolean processed) {
-        this.processed = processed;
-    }
-
-    public void addDocumentParagraph(DocumentParagraph paragraph) {
-        this.documentParagraphs.add(paragraph);
+    public void setDocumentParagraphs(List<DocumentParagraph> documentParagraphs) {
+        this.documentParagraphs = documentParagraphs;
     }
 }
