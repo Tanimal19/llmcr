@@ -15,8 +15,6 @@ public class AdaptiveKStrategy implements RetrievalStrategy {
     private final float lowConfidenceScore = 0.3f;
 
     public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
-        System.out.println("Query: " + query.substring(0, Math.min(100, query.length())) + "...");
-
         SearchRequest request = SearchRequest.builder()
                 .query(query)
                 .topK(topN)

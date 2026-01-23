@@ -26,7 +26,7 @@ public class RAGService {
     private RAGTemplate ragTemplate;
     private int topK;
 
-    private RateLimiter rateLimiter = RateLimiter.create(1.0 / 90.0);
+    private RateLimiter rateLimiter = RateLimiter.create(1.0 / 10.0);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RAGService.class);
 
@@ -65,8 +65,14 @@ public class RAGService {
         List<String> queries = ragTemplate.getQueries(input);
         List<Document> documents;
         if (queries.size() == 1) {
+            LOGGER.info(
+                    "Single query retrieval: " + queries.get(0).substring(0, Math.min(200, queries.get(0).length())));
             documents = retrievalStrategy.retrieve(queries.get(0), topK, vectorStore);
         } else {
+            LOGGER.info(
+                    "Multi query retrieval: " + queries.stream()
+                            .map(q -> q.substring(0, Math.min(200, q.length())))
+                            .reduce((q1, q2) -> q1 + "\n" + q2).orElse(""));
             List<List<Document>> documentLists = queries.stream()
                     .map(query -> retrievalStrategy.retrieve(query, topK, vectorStore))
                     .toList();

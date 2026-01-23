@@ -64,6 +64,7 @@ Relevance score (1-5):
 
 from dataclasses import dataclass
 from google import genai
+from dotenv import load_dotenv
 import json
 
 
@@ -136,7 +137,7 @@ if __name__ == "__main__":
     prs = load_pull_requests("./data/pull_requests.json")
 
     # run evaluation for each result
-    # client = genai.Client(api_key="AIzaSyDeH8CVEVIHp1NHO20m3TDJo6XQCgpRXe4")
+    # client = genai.Client(api_key="")
     # for result in results:
     #     if result.task == "review":
     #         prompt = REVIEW_EVA_PROMPT
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     #     print(prompt)
 
     #     response = client.models.generate_content(
-    #         model="gemini-3-flash-preview",
+    #         model="gemini-2.5-flash-lite",
     #         contents=prompt,
     #     )
 

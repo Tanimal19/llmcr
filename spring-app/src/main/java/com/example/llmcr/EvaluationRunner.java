@@ -107,9 +107,9 @@ public class EvaluationRunner implements CommandLineRunner {
                 new TaskType("query_answer", AnswerQueryTemplate::new, getEvaluationQueries()));
 
         this.groups = List.of(
-                new GroupType("adaptive_full", AdaptiveKStrategy::new, RankFusionStrategy::new, 5, "full"),
-                new GroupType("simple_full", SimpleRetrievalStrategy::new, RankFusionStrategy::new, 5, "full"),
-                new GroupType("adaptive_plain", AdaptiveKStrategy::new, RankFusionStrategy::new, 5, "plain"));
+                new GroupType("adaptive_full", AdaptiveKStrategy::new, RankFusionStrategy::new, 20, "full"),
+                new GroupType("simple_full", SimpleRetrievalStrategy::new, RankFusionStrategy::new, 20, "full"),
+                new GroupType("adaptive_plain", AdaptiveKStrategy::new, RankFusionStrategy::new, 20, "plain"));
 
         for (TaskType task : tasks) {
             runTask(task);
@@ -124,7 +124,7 @@ public class EvaluationRunner implements CommandLineRunner {
             count++;
             LOGGER.info("Running input #" + count);
             LOGGER.info("input: " + input.toString().substring(0,
-                    Math.min(100, input.toString().length())));
+                    Math.min(200, input.toString().length())));
 
             for (GroupType group : groups) {
                 LOGGER.info("Using group: " + group.name);

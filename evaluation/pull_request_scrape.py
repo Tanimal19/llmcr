@@ -57,7 +57,7 @@ def parse_diff(diff_text):
 if __name__ == "__main__":
     org = "spring-projects"
     repo = "spring-ai"
-    pr_ids = ["4166", "4256", "4597"]
+    pr_ids = ["4256", "4597"]
 
     results = []
     for pr_id in pr_ids:

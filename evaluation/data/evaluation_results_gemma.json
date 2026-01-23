@@ -1,0 +1,1151 @@
+[
+  {
+    "duration": 9775,
+    "input": {
+      "id": "2780291623",
+      "title": "GH-4232 Introduce the `ValidationMode` property to `RewriteQueryTransformer`",
+      "description": "As described in the issue, the current `RewriteQueryTransformer` allows users to customize templates via the constructor, but enforces strict validation of placeholders in the template—this can be overly restrictive in certain scenarios. This PR introduces a new `ValidationMode` property to `RewriteQueryTransformer`, supporting three modes: `THROW`, `WARN`, and `NONE`. The default mode is `THROW`, which preserves the original behavior. If set to `WARN`, the system will perform validation as usual, but when a required variable is missing from the template, it will only log a warning instead of throwing an exception. If set to `NONE`, validation is completely skipped.\r\n\r\nChanges included in this PR:\r\n1. Added the `ValidationMode` property to `RewriteQueryTransformer` to enable flexible control over placeholder validation;\r\n2. Implemented corresponding unit tests to ensure correctness across all validation modes.\r\n\r\nFixes #4232 ",
+      "hunks": [
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java",
+          "content": "@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java",
+          "content": "@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java",
+          "content": "@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n"
+        }
+      ]
+    },
+    "task": "code_interpretation",
+    "documents": [
+      {
+        "rrf_score": 0.03252247488101534,
+        "embedding_ids": [217, 218, 219, 220, 221],
+        "source_id": "8c72f1f5-82b9-4d76-ae77-5ff19fc82b35",
+        "similarity_score": 0.85223526,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03252247488101534,
+        "embedding_ids": [358, 359, 360, 361],
+        "source_id": "fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d",
+        "similarity_score": 0.8151314,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.0315136476426799,
+        "embedding_ids": [1614],
+        "source_id": "8f14cef3-965e-445a-9244-fd668e51bf86",
+        "similarity_score": 0.5724559,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 20, 2023 Update::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1009, 1010, 1011],
+        "source_id": "569c4df7-9209-4584-8bc1-77e6e6192f06",
+        "similarity_score": 0.59370387,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0"
+      },
+      {
+        "rrf_score": 0.015873015873015872,
+        "embedding_ids": [722, 723],
+        "source_id": "d7bfb0a3-1183-4a2e-a30a-33a162fd4c88",
+        "similarity_score": 0.6360349,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-RC1::Breaking Changes::0"
+      }
+    ],
+    "response": "## Code Change Description\n\n**Summary:**\n\nThis change introduces a `ValidationMode` enum and integrates it into the `RewriteQueryTransformer` to control prompt template validation.  The transformer now validates that the prompt template contains the required placeholders (\"target\" and \"query\") either by throwing an exception (default), logging a warning, or performing no validation. A new constructor was added to allow specifying the validation mode during transformer creation.\n\n**Motivation:**\n\nThe existing `RewriteQueryTransformer` always threw an exception if the prompt template lacked the necessary placeholders. This change provides more flexibility by allowing developers to choose between strict validation (throwing an exception), lenient validation (logging a warning), or skipping validation altogether. This is useful in scenarios where the prompt template is dynamically generated or provided by a user, and strict validation might be undesirable.  The addition of the `ValidationMode` enum promotes code clarity and maintainability.",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 7989,
+    "input": {
+      "id": "2780291623",
+      "title": "GH-4232 Introduce the `ValidationMode` property to `RewriteQueryTransformer`",
+      "description": "As described in the issue, the current `RewriteQueryTransformer` allows users to customize templates via the constructor, but enforces strict validation of placeholders in the template—this can be overly restrictive in certain scenarios. This PR introduces a new `ValidationMode` property to `RewriteQueryTransformer`, supporting three modes: `THROW`, `WARN`, and `NONE`. The default mode is `THROW`, which preserves the original behavior. If set to `WARN`, the system will perform validation as usual, but when a required variable is missing from the template, it will only log a warning instead of throwing an exception. If set to `NONE`, validation is completely skipped.\r\n\r\nChanges included in this PR:\r\n1. Added the `ValidationMode` property to `RewriteQueryTransformer` to enable flexible control over placeholder validation;\r\n2. Implemented corresponding unit tests to ensure correctness across all validation modes.\r\n\r\nFixes #4232 ",
+      "hunks": [
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java",
+          "content": "@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java",
+          "content": "@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java",
+          "content": "@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n"
+        }
+      ]
+    },
+    "task": "code_interpretation",
+    "documents": [
+      {
+        "rrf_score": 0.03252247488101534,
+        "embedding_ids": [217, 218, 219, 220],
+        "source_id": "8c72f1f5-82b9-4d76-ae77-5ff19fc82b35",
+        "similarity_score": 0.85223526,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03252247488101534,
+        "embedding_ids": [358, 359, 360, 361],
+        "source_id": "fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d",
+        "similarity_score": 0.8151314,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.0315136476426799,
+        "embedding_ids": [1614],
+        "source_id": "8f14cef3-965e-445a-9244-fd668e51bf86",
+        "similarity_score": 0.5724559,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 20, 2023 Update::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1010, 1011],
+        "source_id": "569c4df7-9209-4584-8bc1-77e6e6192f06",
+        "similarity_score": 0.59370387,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0"
+      },
+      {
+        "rrf_score": 0.015873015873015872,
+        "embedding_ids": [722],
+        "source_id": "d7bfb0a3-1183-4a2e-a30a-33a162fd4c88",
+        "similarity_score": 0.6360349,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-RC1::Breaking Changes::0"
+      }
+    ],
+    "response": "## Code Change Description\n\n**Summary:**\n\nThis change introduces a `ValidationMode` enum and integrates it into the `RewriteQueryTransformer` to control prompt template validation.  The transformer now validates that the prompt template contains the required placeholders (\"target\" and \"query\") either by throwing an exception (default), logging a warning, or performing no validation.\n\n**Motivation:**\n\nThe existing `RewriteQueryTransformer` always threw an exception if the prompt template was missing required placeholders. This change adds flexibility by allowing users to configure the validation behavior.  This is useful in scenarios where a custom prompt template might intentionally omit a placeholder, or where a less strict validation approach is desired.  The new `ValidationMode` enum provides options for `THROW` (default), `WARN`, and `NONE`.  The builder pattern for `RewriteQueryTransformer` has been updated to allow setting the `ValidationMode`.  The tests have been updated to verify the new validation modes.\n\n\n\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 98346,
+    "input": {
+      "id": "2780291623",
+      "title": "GH-4232 Introduce the `ValidationMode` property to `RewriteQueryTransformer`",
+      "description": "As described in the issue, the current `RewriteQueryTransformer` allows users to customize templates via the constructor, but enforces strict validation of placeholders in the template—this can be overly restrictive in certain scenarios. This PR introduces a new `ValidationMode` property to `RewriteQueryTransformer`, supporting three modes: `THROW`, `WARN`, and `NONE`. The default mode is `THROW`, which preserves the original behavior. If set to `WARN`, the system will perform validation as usual, but when a required variable is missing from the template, it will only log a warning instead of throwing an exception. If set to `NONE`, validation is completely skipped.\r\n\r\nChanges included in this PR:\r\n1. Added the `ValidationMode` property to `RewriteQueryTransformer` to enable flexible control over placeholder validation;\r\n2. Implemented corresponding unit tests to ensure correctness across all validation modes.\r\n\r\nFixes #4232 ",
+      "hunks": [
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java",
+          "content": "@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java",
+          "content": "@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java",
+          "content": "@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n"
+        }
+      ]
+    },
+    "task": "code_interpretation",
+    "documents": [
+      {
+        "rrf_score": 0.03278688524590164,
+        "embedding_ids": [217, 218],
+        "source_id": "8c72f1f5-82b9-4d76-ae77-5ff19fc82b35",
+        "similarity_score": 0.85223526,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.031754032258064516,
+        "embedding_ids": [1614],
+        "source_id": "8f14cef3-965e-445a-9244-fd668e51bf86",
+        "similarity_score": 0.5724559,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 20, 2023 Update::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1009, 1010, 1011],
+        "source_id": "569c4df7-9209-4584-8bc1-77e6e6192f06",
+        "similarity_score": 0.59370387,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [722, 723],
+        "source_id": "d7bfb0a3-1183-4a2e-a30a-33a162fd4c88",
+        "similarity_score": 0.6360349,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-RC1::Breaking Changes::0"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [358],
+        "source_id": "fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d",
+        "similarity_score": 0.7755856,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      }
+    ],
+    "response": "## Code Change Description\n\n**Summary:**\n\nThis change introduces a `ValidationMode` enum and integrates it into the `RewriteQueryTransformer` to control prompt template validation.  A new constructor is added to allow specifying the validation mode, and the builder pattern is updated accordingly.\n\n**Motivation:**\n\nThe existing `RewriteQueryTransformer` always enforced prompt template validation, requiring \"target\" and \"query\" placeholders. This change provides flexibility by allowing users to choose between:\n\n*   `THROW` (default):  Throws an exception if the template is invalid.\n*   `WARN`: Logs a warning if the template is invalid, but continues execution.\n*   `NONE`: Skips template validation entirely.\n\nThis addresses scenarios where users might want to use templates that don't conform to the strict requirements, or prefer a more lenient approach where missing placeholders are logged rather than causing a failure.  The addition of `ValidationMode` enhances the configurability and usability of the `RewriteQueryTransformer`.",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 5360,
+    "input": {
+      "id": "2903282044",
+      "title": "Optimization: remove redundant check on each vector operation",
+      "description": "Each vector operation (such as `ElasticsearchVectorStore#doAdd`）calls  `ElasticsearchIndicesClient#exists`  via an HTTP request to check whether the index exists. This redundant check wastes performance, so a small refactor was performed to eliminate it.",
+      "hunks": [
+        {
+          "filepath": "vector-stores/spring-ai-elasticsearch-store/src/main/java/org/springframework/ai/vectorstore/elasticsearch/ElasticsearchVectorStore.java",
+          "content": "@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n"
+        }
+      ]
+    },
+    "task": "code_interpretation",
+    "documents": [
+      {
+        "embedding_ids": [1100],
+        "source_id": "30537618-3861-4d4a-b003-8a39532d4220",
+        "similarity_score": 0.6350394,
+        "source_name": "asciidoc::elasticsearch.adoc::Auto-configuration::1"
+      },
+      {
+        "embedding_ids": [430, 431, 432, 435, 436],
+        "source_id": "1c63079a-1158-4fd8-8a0d-cc3167638019",
+        "similarity_score": 0.62960875,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "embedding_ids": [760],
+        "source_id": "fbd896d2-8a11-4ebb-8414-3d2e4df7c6ac",
+        "similarity_score": 0.6295694,
+        "source_name": "asciidoc::elasticsearch.adoc::Manual Configuration::0"
+      },
+      {
+        "embedding_ids": [175, 176, 177, 178, 179],
+        "source_id": "3f285ddc-df96-48b3-845a-44f3f976bfa6",
+        "similarity_score": 0.6275999,
+        "source_name": "cu::VectorStore.java"
+      },
+      {
+        "embedding_ids": [1002, 1003],
+        "source_id": "0fdfd453-3fa8-4683-87c7-76df5d2cf73b",
+        "similarity_score": 0.6137401,
+        "source_name": "asciidoc::azure.adoc::Sample Code::0"
+      }
+    ],
+    "response": "## Code Change Description\n\nThis change removes the automatic index existence check in `ElasticsearchVectorStore`'s `doAdd`, `doDelete`, and `doDelete(Filter.Expression)` methods, and modifies the `afterPropertiesSet` method to throw an exception if the index does not exist and `initializeSchema` is false.\n\nPreviously, the vector store would throw an exception if the Elasticsearch index did not exist during add or delete operations. This behavior has been altered to align with the documentation which states that the index must either be pre-created or schema initialization must be enabled.  The `afterPropertiesSet` method now only creates the index if `initializeSchema` is true, and throws an exception if the index doesn't exist and initialization is disabled. This change reflects a breaking change in Spring AI where schema initialization is no longer automatic by default.",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 94471,
+    "input": {
+      "id": "2903282044",
+      "title": "Optimization: remove redundant check on each vector operation",
+      "description": "Each vector operation (such as `ElasticsearchVectorStore#doAdd`）calls  `ElasticsearchIndicesClient#exists`  via an HTTP request to check whether the index exists. This redundant check wastes performance, so a small refactor was performed to eliminate it.",
+      "hunks": [
+        {
+          "filepath": "vector-stores/spring-ai-elasticsearch-store/src/main/java/org/springframework/ai/vectorstore/elasticsearch/ElasticsearchVectorStore.java",
+          "content": "@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n"
+        }
+      ]
+    },
+    "task": "code_interpretation",
+    "documents": [
+      {
+        "embedding_ids": [1100],
+        "source_id": "30537618-3861-4d4a-b003-8a39532d4220",
+        "similarity_score": 0.6350394,
+        "source_name": "asciidoc::elasticsearch.adoc::Auto-configuration::1"
+      },
+      {
+        "embedding_ids": [430, 431, 432],
+        "source_id": "1c63079a-1158-4fd8-8a0d-cc3167638019",
+        "similarity_score": 0.62960875,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "embedding_ids": [760],
+        "source_id": "fbd896d2-8a11-4ebb-8414-3d2e4df7c6ac",
+        "similarity_score": 0.6295694,
+        "source_name": "asciidoc::elasticsearch.adoc::Manual Configuration::0"
+      },
+      {
+        "embedding_ids": [175],
+        "source_id": "3f285ddc-df96-48b3-845a-44f3f976bfa6",
+        "similarity_score": 0.6275999,
+        "source_name": "cu::VectorStore.java"
+      },
+      {
+        "embedding_ids": [1002],
+        "source_id": "0fdfd453-3fa8-4683-87c7-76df5d2cf73b",
+        "similarity_score": 0.6137401,
+        "source_name": "asciidoc::azure.adoc::Sample Code::0"
+      }
+    ],
+    "response": "## Code Change Description\n\nThis change removes the automatic index existence check in `ElasticsearchVectorStore`'s `doAdd`, `doDelete`, and `doDelete(Filter.Expression)` methods, and modifies the `afterPropertiesSet` method to throw an exception if the index does not exist and `initializeSchema` is false.\n\nPreviously, the vector store would throw an exception if the Elasticsearch index did not exist during add or delete operations. This behavior has been altered to align with the documentation which states that the index must either be pre-created or schema initialization must be enabled.  The `afterPropertiesSet` method now only creates the index if `initializeSchema` is true, and throws an exception if the index doesn't exist and initialization is disabled. This change reflects a breaking change in Spring AI where schema initialization is no longer automatic.",
+    "group": "simple_full"
+  },
+  {
+    "duration": 6548,
+    "input": {
+      "id": "2903282044",
+      "title": "Optimization: remove redundant check on each vector operation",
+      "description": "Each vector operation (such as `ElasticsearchVectorStore#doAdd`）calls  `ElasticsearchIndicesClient#exists`  via an HTTP request to check whether the index exists. This redundant check wastes performance, so a small refactor was performed to eliminate it.",
+      "hunks": [
+        {
+          "filepath": "vector-stores/spring-ai-elasticsearch-store/src/main/java/org/springframework/ai/vectorstore/elasticsearch/ElasticsearchVectorStore.java",
+          "content": "@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n"
+        }
+      ]
+    },
+    "task": "code_interpretation",
+    "documents": [
+      {
+        "embedding_ids": [1100],
+        "source_id": "30537618-3861-4d4a-b003-8a39532d4220",
+        "similarity_score": 0.6350394,
+        "source_name": "asciidoc::elasticsearch.adoc::Auto-configuration::1"
+      },
+      {
+        "embedding_ids": [430, 431, 432],
+        "source_id": "1c63079a-1158-4fd8-8a0d-cc3167638019",
+        "similarity_score": 0.62960875,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "embedding_ids": [760],
+        "source_id": "fbd896d2-8a11-4ebb-8414-3d2e4df7c6ac",
+        "similarity_score": 0.6295694,
+        "source_name": "asciidoc::elasticsearch.adoc::Manual Configuration::0"
+      },
+      {
+        "embedding_ids": [175, 176],
+        "source_id": "3f285ddc-df96-48b3-845a-44f3f976bfa6",
+        "similarity_score": 0.6275999,
+        "source_name": "cu::VectorStore.java"
+      },
+      {
+        "embedding_ids": [1002, 1003],
+        "source_id": "0fdfd453-3fa8-4683-87c7-76df5d2cf73b",
+        "similarity_score": 0.6137401,
+        "source_name": "asciidoc::azure.adoc::Sample Code::0"
+      }
+    ],
+    "response": "## Code Change Description\n\nThis change removes the automatic index existence check in `ElasticsearchVectorStore`'s `doAdd`, `doDelete`, and `doDelete(Filter.Expression)` methods, and modifies the `afterPropertiesSet` method to throw an exception if the index does not exist and `initializeSchema` is false.\n\nPreviously, the vector store would throw an exception if the Elasticsearch index did not exist during add or delete operations. This behavior has been altered to align with the documentation which states that the index must either be pre-created or schema initialization must be enabled.  The `afterPropertiesSet` method now only creates the index if `initializeSchema` is true, and throws an exception if it's false and the index doesn't exist. This enforces the documented contract and provides more explicit control to the user regarding index creation.\n\nThis is a breaking change as the default behavior of automatically checking for and throwing an exception when the index is missing has been removed. Users who rely on this implicit check must now either pre-create the index or explicitly set `initializeSchema` to `true`.",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 146743,
+    "input": {
+      "id": "2780291623",
+      "title": "GH-4232 Introduce the `ValidationMode` property to `RewriteQueryTransformer`",
+      "description": "As described in the issue, the current `RewriteQueryTransformer` allows users to customize templates via the constructor, but enforces strict validation of placeholders in the template—this can be overly restrictive in certain scenarios. This PR introduces a new `ValidationMode` property to `RewriteQueryTransformer`, supporting three modes: `THROW`, `WARN`, and `NONE`. The default mode is `THROW`, which preserves the original behavior. If set to `WARN`, the system will perform validation as usual, but when a required variable is missing from the template, it will only log a warning instead of throwing an exception. If set to `NONE`, validation is completely skipped.\r\n\r\nChanges included in this PR:\r\n1. Added the `ValidationMode` property to `RewriteQueryTransformer` to enable flexible control over placeholder validation;\r\n2. Implemented corresponding unit tests to ensure correctness across all validation modes.\r\n\r\nFixes #4232 ",
+      "hunks": [
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java",
+          "content": "@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java",
+          "content": "@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java",
+          "content": "@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n"
+        }
+      ]
+    },
+    "task": "code_review",
+    "documents": [
+      {
+        "rrf_score": 0.048915917503966164,
+        "embedding_ids": [217, 218, 219, 220, 221],
+        "source_id": "8c72f1f5-82b9-4d76-ae77-5ff19fc82b35",
+        "similarity_score": 0.5090182,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.048131080389144903,
+        "embedding_ids": [358, 359, 360, 361],
+        "source_id": "fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d",
+        "similarity_score": 0.50865793,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03149801587301587,
+        "embedding_ids": [417, 418, 419, 420, 421],
+        "source_id": "94d4865d-073e-46eb-bb82-c1e0f7436a2a",
+        "similarity_score": 0.46611136,
+        "source_name": "cu::TranslationQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03076923076923077,
+        "embedding_ids": [890, 891],
+        "source_id": "3385347a-12e4-4a1c-a36a-5f4086c722ce",
+        "similarity_score": 0.46422452,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [93, 94, 95, 96],
+        "source_id": "a2906bd2-0ec2-4e6b-9667-215e55e628d1",
+        "similarity_score": 0.54279363,
+        "source_name": "cu::QueryTransformer.java"
+      }
+    ],
+    "response": "Okay, here's a code review based on the provided pull request information. I'll focus on clarity, correctness, and maintainability.\n\n```java\n@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n```\n\n**Overall Impression:**\n\nThis is a well-implemented feature with good test coverage. The introduction of `ValidationMode` provides a valuable level of flexibility for users. The code is clean, readable, and follows good practices.\n\n**Specific Comments:**\n\n*   **`RewriteQueryTransformer.java`:**\n    *   Good job adding the `@author` tag for Sun Yuhan.\n    *   The new constructor with `ValidationMode` is well-defined and handles the default value correctly.\n    *   The `validate()` method is clear and concise, using a `switch` statement for different validation behaviors.\n    *   The `Builder` class has been updated correctly to include the `validationMode` option.\n*   **`ValidationMode.java`:**\n    *   The enum is well-documented, explaining each mode clearly.\n*   **`RewriteQueryTransformerTests.java`:**\n    *   The tests are comprehensive and cover all three validation modes.\n    *   The use of `ListAppender` to capture log messages is a good approach for verifying the `WARN` mode behavior.\n    *   The assertions are clear and verify the expected outcomes.\n\n**Suggestions/Minor Improvements:**\n\n*   **Logging Level:** Consider if `WARN` is the appropriate logging level for missing placeholders. Depending on the severity and expected frequency, `DEBUG` or `INFO` might be more suitable.  This is a minor point and depends on the overall logging strategy of the project.\n*   **Documentation:** While the code is well-commented, consider adding a brief Javadoc comment to the `ValidationMode` enum explaining when each mode might be useful in a practical scenario.  For example:\n    ```java\n    /**\n     * If the validation fails, a warning is logged.  Useful for development or testing\n     * where you want to be aware of potential issues but don't want the application to halt.\n     */\n    WARN,\n    ```\n\n**Conclusion:**\n\nThis pull request is well-executed and addresses the issue effectively. The code is clean, well-tested, and provides a useful feature to users. I approve this pull request.  Great work!\n",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 58563,
+    "input": {
+      "id": "2780291623",
+      "title": "GH-4232 Introduce the `ValidationMode` property to `RewriteQueryTransformer`",
+      "description": "As described in the issue, the current `RewriteQueryTransformer` allows users to customize templates via the constructor, but enforces strict validation of placeholders in the template—this can be overly restrictive in certain scenarios. This PR introduces a new `ValidationMode` property to `RewriteQueryTransformer`, supporting three modes: `THROW`, `WARN`, and `NONE`. The default mode is `THROW`, which preserves the original behavior. If set to `WARN`, the system will perform validation as usual, but when a required variable is missing from the template, it will only log a warning instead of throwing an exception. If set to `NONE`, validation is completely skipped.\r\n\r\nChanges included in this PR:\r\n1. Added the `ValidationMode` property to `RewriteQueryTransformer` to enable flexible control over placeholder validation;\r\n2. Implemented corresponding unit tests to ensure correctness across all validation modes.\r\n\r\nFixes #4232 ",
+      "hunks": [
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java",
+          "content": "@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java",
+          "content": "@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java",
+          "content": "@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n"
+        }
+      ]
+    },
+    "task": "code_review",
+    "documents": [
+      {
+        "rrf_score": 0.048915917503966164,
+        "embedding_ids": [217, 218, 219, 220],
+        "source_id": "8c72f1f5-82b9-4d76-ae77-5ff19fc82b35",
+        "similarity_score": 0.5090182,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.048131080389144903,
+        "embedding_ids": [358, 359, 360, 361],
+        "source_id": "fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d",
+        "similarity_score": 0.50865793,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03149801587301587,
+        "embedding_ids": [417, 418, 420, 421],
+        "source_id": "94d4865d-073e-46eb-bb82-c1e0f7436a2a",
+        "similarity_score": 0.46611136,
+        "source_name": "cu::TranslationQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03076923076923077,
+        "embedding_ids": [890],
+        "source_id": "3385347a-12e4-4a1c-a36a-5f4086c722ce",
+        "similarity_score": 0.46422452,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [93, 94, 95],
+        "source_id": "a2906bd2-0ec2-4e6b-9667-215e55e628d1",
+        "similarity_score": 0.54279363,
+        "source_name": "cu::QueryTransformer.java"
+      }
+    ],
+    "response": "Okay, here's a code review based on the provided pull request information. I'll focus on clarity, correctness, and maintainability.\n\n```java\n@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n```\n\n**Overall Impression:**\n\nThis is a well-implemented feature with good test coverage. The introduction of `ValidationMode` provides a valuable level of flexibility for users. The code is clean, readable, and follows good practices.\n\n**Specific Comments:**\n\n*   **`RewriteQueryTransformer.java`:**\n    *   Good job adding the `@author` tag for Sun Yuhan.\n    *   The new constructor with `ValidationMode` is well-defined and handles the default value correctly.\n    *   The `validate()` method is clear and concise, using a `switch` statement for different validation behaviors.\n    *   The `Builder` class has been updated correctly to include the `validationMode` option.\n*   **`ValidationMode.java`:**\n    *   The enum is well-documented, explaining each mode clearly.\n*   **`RewriteQueryTransformerTests.java`:**\n    *   The tests are comprehensive and cover all three `ValidationMode` options.\n    *   The use of `ListAppender` to capture log messages is a good approach for verifying the `WARN` mode behavior.\n    *   The assertions are clear and verify the expected outcomes.\n\n**Suggestions/Minor Improvements:**\n\n*   **Logging Level:** Consider if `WARN` is the appropriate logging level for missing placeholders. Depending on the severity, `ERROR` might be more suitable, especially if missing placeholders can lead to incorrect results.\n*   **Documentation:** While the code is well-commented, consider adding a brief Javadoc comment to the `ValidationMode` enum explaining when each mode might be appropriate to use.  For example:\n    ```java\n    /**\n     * If the validation fails, a warning is logged.  Use this mode when you want to\n     * be informed of potential issues but still allow the transformation to proceed.\n     */\n    WARN,\n    ```\n\n**Conclusion:**\n\nThis pull request is well-executed and addresses the issue effectively. The code is clean, well-tested, and provides a useful feature to users. I approve this pull request.  Great work!\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 57853,
+    "input": {
+      "id": "2780291623",
+      "title": "GH-4232 Introduce the `ValidationMode` property to `RewriteQueryTransformer`",
+      "description": "As described in the issue, the current `RewriteQueryTransformer` allows users to customize templates via the constructor, but enforces strict validation of placeholders in the template—this can be overly restrictive in certain scenarios. This PR introduces a new `ValidationMode` property to `RewriteQueryTransformer`, supporting three modes: `THROW`, `WARN`, and `NONE`. The default mode is `THROW`, which preserves the original behavior. If set to `WARN`, the system will perform validation as usual, but when a required variable is missing from the template, it will only log a warning instead of throwing an exception. If set to `NONE`, validation is completely skipped.\r\n\r\nChanges included in this PR:\r\n1. Added the `ValidationMode` property to `RewriteQueryTransformer` to enable flexible control over placeholder validation;\r\n2. Implemented corresponding unit tests to ensure correctness across all validation modes.\r\n\r\nFixes #4232 ",
+      "hunks": [
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java",
+          "content": "@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java",
+          "content": "@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n"
+        },
+        {
+          "filepath": "spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java",
+          "content": "@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n"
+        }
+      ]
+    },
+    "task": "code_review",
+    "documents": [
+      {
+        "rrf_score": 0.04918032786885246,
+        "embedding_ids": [217, 218],
+        "source_id": "8c72f1f5-82b9-4d76-ae77-5ff19fc82b35",
+        "similarity_score": 0.5090182,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03200204813108039,
+        "embedding_ids": [358],
+        "source_id": "fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d",
+        "similarity_score": 0.4708631,
+        "source_name": "cu::RewriteQueryTransformer.java"
+      },
+      {
+        "rrf_score": 0.03125,
+        "embedding_ids": [890, 891],
+        "source_id": "3385347a-12e4-4a1c-a36a-5f4086c722ce",
+        "similarity_score": 0.46422452,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1009, 1010, 1011],
+        "source_id": "569c4df7-9209-4584-8bc1-77e6e6192f06",
+        "similarity_score": 0.5725722,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [772, 773],
+        "source_id": "ff98f8b8-d141-480d-a99b-3f0ce934a2cb",
+        "similarity_score": 0.6219792,
+        "source_name": "asciidoc::index.adoc::0"
+      }
+    ],
+    "response": "Okay, here's a code review, broken down by file, with explanations for each comment.\n\n**Overall Impression:**\n\nThis is a well-structured and thoughtful addition to the `RewriteQueryTransformer`.  The introduction of `ValidationMode` provides a significant amount of flexibility for users who may have scenarios where strict validation is not desirable. The tests are comprehensive and cover the different modes effectively.  Good job!\n\n---\n\n**File: `spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformer.java`**\n\n```java\n@@ -35,6 +35,7 @@\n  * irrelevant information that may affect the quality of the search results.\n  *\n  * @author Thomas Vitale\n+ * @author Sun Yuhan\n  * @since 1.0.0\n  * @see <a href=\"https://arxiv.org/pdf/2305.14283\">arXiv:2305.14283</a>\n  */\n@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {\n \n \tprivate final String targetSearchSystem;\n \n+\tprivate final ValidationMode validationMode;\n+\n \tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n \t\t\t@Nullable String targetSearchSystem) {\n \t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n@@ -67,8 +70,19 @@ public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable P\n \t\tthis.chatClient = chatClientBuilder.build();\n \t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n \t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = ValidationMode.THROW;\n+\t\tvalidate();\n+\t}\n+\n+\tpublic RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,\n+\t\t\t@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {\n+\t\tAssert.notNull(chatClientBuilder, \"chatClientBuilder cannot be null\");\n \n-\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\tthis.chatClient = chatClientBuilder.build();\n+\t\tthis.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;\n+\t\tthis.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;\n+\t\tthis.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;\n+\t\tvalidate();\n \t}\n \n \t@Override\n@@ -92,6 +106,23 @@ public Query transform(Query query) {\n \t\treturn query.mutate().text(rewrittenQueryText).build();\n \t}\n \n+\t/**\n+\t * Verify whether the template contains the required variables.\n+\t */\n+\tprivate void validate() {\n+\t\tswitch (this.validationMode) {\n+\t\t\tcase THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\tcase WARN -> {\n+\t\t\t\ttry {\n+\t\t\t\t\tPromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, \"target\", \"query\");\n+\t\t\t\t}\n+\t\t\t\tcatch (IllegalArgumentException e) {\n+\t\t\t\t\tlogger.warn(e.getMessage());\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n+\t}\n+\n \tpublic static Builder builder() {\n \t\treturn new Builder();\n \t}\n@@ -106,6 +137,9 @@ public static final class Builder {\n \t\t@Nullable\n \t\tprivate String targetSearchSystem;\n \n+\t\t@Nullable\n+\t\tprivate ValidationMode validationMode;\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -124,8 +158,14 @@ public Builder targetSearchSystem(String targetSearchSystem) {\n \t\t\treturn this;\n \t\t}\n \n+\t\tpublic Builder validationMode(ValidationMode validationMode) {\n+\t\t\tthis.validationMode = validationMode;\n+\t\t\treturn this;\n+\t\t}\n+\n \t\tpublic RewriteQueryTransformer build() {\n-\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);\n+\t\t\treturn new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,\n+\t\t\t\t\tthis.validationMode);\n \t\t}\n \n \t}\n```\n\n*   **Line 61:**  Good addition of the `validationMode` field.\n*   **Lines 68-70, 72-75:** The constructor logic is clear and handles null values appropriately.  Setting the default `validationMode` to `THROW` is a good choice, maintaining backward compatibility.\n*   **Lines 92-105:** The `validate()` method is well-structured using a `switch` statement.  The `try-catch` block in the `WARN` case is the correct way to handle the potential `IllegalArgumentException` without halting execution.\n*   **Lines 126-128:** The `Builder` class now includes the `validationMode` field and a corresponding setter. This is consistent and makes the API easy to use.\n*   **Line 130:** The `build()` method in the `Builder` class correctly passes the `validationMode` to the `RewriteQueryTransformer` constructor.\n\n**File: `spring-ai-rag/src/main/java/org/springframework/ai/rag/preretrieval/query/transformation/ValidationMode.java`**\n\n```java\n@@ -0,0 +1,41 @@\n+/*\n+ * Copyright 2025-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.rag.preretrieval.query.transformation;\n+\n+/**\n+ * Validation modes for {@link RewriteQueryTransformer}.\n+ *\n+ * @author Sun Yuhan\n+ */\n+public enum ValidationMode {\n+\n+\t/**\n+\t * If the validation fails, an exception is thrown. This is the default mode.\n+\t */\n+\tTHROW,\n+\n+\t/**\n+\t * If the validation fails, a warning is logged.\n+\t */\n+\tWARN,\n+\n+\t/**\n+\t * No validation is performed.\n+\t */\n+\tNONE\n+\n+}\n```\n\n*   The enum is well-defined and documented. The descriptions for each mode are clear and concise.\n\n**File: `spring-ai-rag/src/test/java/org/springframework/ai/rag/preretrieval/query/transformation/RewriteQueryTransformerTests.java`**\n\n```java\n@@ -16,11 +16,16 @@\n \n package org.springframework.ai.rag.preretrieval.query.transformation;\n \n+import ch.qos.logback.classic.Logger;\n+import ch.qos.logback.classic.spi.ILoggingEvent;\n+import ch.qos.logback.core.read.ListAppender;\n import org.junit.jupiter.api.Test;\n+import org.slf4j.LoggerFactory;\n \n import org.springframework.ai.chat.client.ChatClient;\n import org.springframework.ai.chat.prompt.PromptTemplate;\n \n+import static org.assertj.core.api.Assertions.assertThat;\n import static org.assertj.core.api.Assertions.assertThatThrownBy;\n import static org.mockito.Mockito.mock;\n \n@@ -71,4 +76,90 @@ void whenPromptHasMissingQueryPlaceholderThenThrow() {\n \t\t\t.hasMessageContaining(\"query\");\n \t}\n \n+\t@Test\n+\tvoid shouldLoggingWithMissingTargetPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: target\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldLoggingWithMissingQueryPlaceholderInWarnMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite for {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.WARN)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isNotEmpty();\n+\t\tassertThat(logsList.get(0).getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);\n+\t\tassertThat(logsList.get(0).getMessage())\n+\t\t\t.contains(\"The following placeholders must be present in the prompt template: query\");\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingTargetPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {target}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"vector store\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n+\t@Test\n+\tvoid shouldContinueWithMissingQueryPlaceholderInNoneMode() {\n+\t\tPromptTemplate customPromptTemplate = new PromptTemplate(\"Rewrite {query}\");\n+\t\tLogger logger = (Logger) LoggerFactory.getLogger(RewriteQueryTransformer.class);\n+\n+\t\tListAppender<ILoggingEvent> listAppender = new ListAppender<>();\n+\t\tlistAppender.start();\n+\t\tlogger.addAppender(listAppender);\n+\n+\t\tRewriteQueryTransformer.builder()\n+\t\t\t.chatClientBuilder(mock(ChatClient.Builder.class))\n+\t\t\t.targetSearchSystem(\"search engine\")\n+\t\t\t.validationMode(ValidationMode.NONE)\n+\t\t\t.promptTemplate(customPromptTemplate)\n+\t\t\t.build();\n+\t\tvar logsList = listAppender.list;\n+\n+\t\tassertThat(logsList).isEmpty();\n+\t}\n+\n }\n```\n\n*   The tests are well-written and cover all three `ValidationMode` options.\n*   The use of `ListAppender` to capture log messages is a clever way to verify that warnings are logged as expected in `WARN` mode.\n*   The assertions are clear and concise.\n\n---\n\n**Conclusion:**\n\nThis is a high-quality pull request. The code is well-written, well-tested, and addresses the issue effectively. The addition of `ValidationMode` significantly enhances the flexibility of the `RewriteQueryTransformer`.  I approve this PR.",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 24264,
+    "input": {
+      "id": "2903282044",
+      "title": "Optimization: remove redundant check on each vector operation",
+      "description": "Each vector operation (such as `ElasticsearchVectorStore#doAdd`）calls  `ElasticsearchIndicesClient#exists`  via an HTTP request to check whether the index exists. This redundant check wastes performance, so a small refactor was performed to eliminate it.",
+      "hunks": [
+        {
+          "filepath": "vector-stores/spring-ai-elasticsearch-store/src/main/java/org/springframework/ai/vectorstore/elasticsearch/ElasticsearchVectorStore.java",
+          "content": "@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n"
+        }
+      ]
+    },
+    "task": "code_review",
+    "documents": [
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1512],
+        "source_id": "d6a12d1f-9368-455e-b081-e5e053bec5ef",
+        "similarity_score": 0.50686777,
+        "source_name": "asciidoc::elasticsearch.adoc::Accessing the Native Client::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1100],
+        "source_id": "30537618-3861-4d4a-b003-8a39532d4220",
+        "similarity_score": 0.62349546,
+        "source_name": "asciidoc::elasticsearch.adoc::Auto-configuration::1"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [1421],
+        "source_id": "a19f389e-a90f-4827-8a61-d36ca1ba72bf",
+        "similarity_score": 0.49806494,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 27, 2023 Update::0"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [430, 431, 432, 434, 435, 436],
+        "source_id": "1c63079a-1158-4fd8-8a0d-cc3167638019",
+        "similarity_score": 0.6217654,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "rrf_score": 0.015873015873015872,
+        "embedding_ids": [1177],
+        "source_id": "5a08e869-6208-4bc8-a324-9a168272c5bd",
+        "similarity_score": 0.4806836,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0"
+      }
+    ],
+    "response": "Okay, here's a code review of the provided changes, keeping in mind the context and aiming for clarity, maintainability, and correctness.\n\n```java\n@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n }\n```\n\n**Overall Impression:**\n\nThis is a good refactoring! Removing the redundant `indexExists()` checks improves performance and simplifies the code.  The change is focused and addresses the problem described in the pull request description effectively.\n\n**Specific Comments:**\n\n*   **Line 178-180, 216-218, 232-234:**  These blocks of commented-out code were removed, which is great.  Removing dead code is always a positive step.\n*   **Line 351-353:** The logic in `afterPropertiesSet()` is a bit convoluted now.  It first checks if the index exists, and if it does, it returns.  Then, if `initializeSchema` is false, it throws an exception.  This could be simplified.  Consider:\n\n    ```java\n    @Override\n    public void afterPropertiesSet() {\n        if (!this.initializeSchema && !indexExists()) {\n            throw new IllegalArgumentException(\"Index not found\");\n        }\n        createIndexMapping();\n    }\n    ```\n\n    This makes the intent clearer:  If we're *not* initializing the schema, the index *must* already exist.  If we *are* initializing the schema, we'll create it regardless.\n*   **`indexExists()` method:** It would be helpful to see the implementation of the `indexExists()` method.  Is it caching the result?  If not, consider adding caching to avoid repeated calls to Elasticsearch.  This would further improve performance.\n*   **Exception Message:** The exception message \"Index not found\" is a bit generic.  Consider making it more specific, e.g., \"Elasticsearch index 'indexName' not found.  Ensure the index exists or set `initializeSchema` to `true`.\"  This will help users diagnose the problem more easily.\n*   **Context Awareness:** Given the project context, it's good that this change doesn't affect the core `VectorStore` interface.  It's an internal optimization within the `ElasticsearchVectorStore` implementation.\n\n**Good Practices:**\n\n*   The code is well-formatted and easy to read.\n*   The change is focused and addresses a specific performance issue.\n*   The pull request description clearly explains the purpose of the change.\n\n**Suggestion:**\n\n*   Add a comment to the `indexExists()` method explaining its purpose and any caching behavior.\n\nOverall, this is a well-executed refactoring.  The suggested changes are minor and aimed at further improving clarity and robustness.  Good job!\n",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 23339,
+    "input": {
+      "id": "2903282044",
+      "title": "Optimization: remove redundant check on each vector operation",
+      "description": "Each vector operation (such as `ElasticsearchVectorStore#doAdd`）calls  `ElasticsearchIndicesClient#exists`  via an HTTP request to check whether the index exists. This redundant check wastes performance, so a small refactor was performed to eliminate it.",
+      "hunks": [
+        {
+          "filepath": "vector-stores/spring-ai-elasticsearch-store/src/main/java/org/springframework/ai/vectorstore/elasticsearch/ElasticsearchVectorStore.java",
+          "content": "@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n"
+        }
+      ]
+    },
+    "task": "code_review",
+    "documents": [
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1512],
+        "source_id": "d6a12d1f-9368-455e-b081-e5e053bec5ef",
+        "similarity_score": 0.50686777,
+        "source_name": "asciidoc::elasticsearch.adoc::Accessing the Native Client::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1100],
+        "source_id": "30537618-3861-4d4a-b003-8a39532d4220",
+        "similarity_score": 0.62349546,
+        "source_name": "asciidoc::elasticsearch.adoc::Auto-configuration::1"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [1421],
+        "source_id": "a19f389e-a90f-4827-8a61-d36ca1ba72bf",
+        "similarity_score": 0.49806494,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 27, 2023 Update::0"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [430, 431, 432],
+        "source_id": "1c63079a-1158-4fd8-8a0d-cc3167638019",
+        "similarity_score": 0.6217654,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "rrf_score": 0.015873015873015872,
+        "embedding_ids": [1177],
+        "source_id": "5a08e869-6208-4bc8-a324-9a168272c5bd",
+        "similarity_score": 0.4806836,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0"
+      }
+    ],
+    "response": "Okay, here's a code review for the provided pull request. I'll focus on clarity, correctness, and maintainability, given the context.\n\n```java\n@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n```\n\n**Overall Impression:**\n\nThis is a good refactoring! Removing the redundant `indexExists()` checks improves performance as described in the pull request description. The logic is now more streamlined.\n\n**Specific Comments:**\n\n*   **Line 178-180, 216-218, 232-234:** These commented-out blocks were correctly removed.  Good job identifying and eliminating this duplication.\n*   **Line 351-353:** The logic in `afterPropertiesSet()` is a bit inverted now. It first checks if the index exists, and if it does, it returns. Then, it checks if `initializeSchema` is false, and if it is, it throws an exception. This is a bit confusing. It might be clearer to rephrase it as:\n\n    ```java\n    @Override\n    public void afterPropertiesSet() {\n        if (!this.initializeSchema && !indexExists()) {\n            throw new IllegalArgumentException(\"Index not found\");\n        }\n        if (!indexExists()) {\n            createIndexMapping();\n        }\n    }\n    ```\n\n    This way, the exception is thrown only when `initializeSchema` is false *and* the index doesn't exist, which aligns with the documented behavior.\n\n*   **Consider adding a log message:** In `afterPropertiesSet()`, when `createIndexMapping()` is called, it might be helpful to add a log message indicating that the index is being created. This can aid in debugging and monitoring.\n\n*   **Documentation:** The pull request description is good. However, it might be beneficial to update any relevant documentation (e.g., README, API documentation) to reflect this change in behavior, especially regarding the `initializeSchema` flag.  The context provided highlights that this was a breaking change in earlier versions, so ensuring clarity in the documentation is crucial.\n\n**Positive Feedback:**\n\n*   The code is well-structured and easy to follow.\n*   The removal of redundant checks is a significant performance improvement.\n*   The use of the builder pattern (mentioned in the context) is a good practice for creating objects with many dependencies.\n\n**Summary:**\n\nThis is a well-executed refactoring. The suggested change to `afterPropertiesSet()` is a minor improvement for clarity.  The most important thing is to ensure the documentation is updated to reflect the new behavior.  Overall, good work!\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 23652,
+    "input": {
+      "id": "2903282044",
+      "title": "Optimization: remove redundant check on each vector operation",
+      "description": "Each vector operation (such as `ElasticsearchVectorStore#doAdd`）calls  `ElasticsearchIndicesClient#exists`  via an HTTP request to check whether the index exists. This redundant check wastes performance, so a small refactor was performed to eliminate it.",
+      "hunks": [
+        {
+          "filepath": "vector-stores/spring-ai-elasticsearch-store/src/main/java/org/springframework/ai/vectorstore/elasticsearch/ElasticsearchVectorStore.java",
+          "content": "@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n"
+        }
+      ]
+    },
+    "task": "code_review",
+    "documents": [
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1512],
+        "source_id": "d6a12d1f-9368-455e-b081-e5e053bec5ef",
+        "similarity_score": 0.50686777,
+        "source_name": "asciidoc::elasticsearch.adoc::Accessing the Native Client::0"
+      },
+      {
+        "rrf_score": 0.01639344262295082,
+        "embedding_ids": [1100],
+        "source_id": "30537618-3861-4d4a-b003-8a39532d4220",
+        "similarity_score": 0.62349546,
+        "source_name": "asciidoc::elasticsearch.adoc::Auto-configuration::1"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [1421],
+        "source_id": "a19f389e-a90f-4827-8a61-d36ca1ba72bf",
+        "similarity_score": 0.49806494,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 27, 2023 Update::0"
+      },
+      {
+        "rrf_score": 0.016129032258064516,
+        "embedding_ids": [430, 431, 432],
+        "source_id": "1c63079a-1158-4fd8-8a0d-cc3167638019",
+        "similarity_score": 0.6217654,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "rrf_score": 0.015873015873015872,
+        "embedding_ids": [1177],
+        "source_id": "5a08e869-6208-4bc8-a324-9a168272c5bd",
+        "similarity_score": 0.4806836,
+        "source_name": "asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0"
+      }
+    ],
+    "response": "Okay, here's a code review for the provided pull request. I'll focus on clarity, correctness, and maintainability, given the context.\n\n```java\n@@ -176,11 +176,6 @@ protected ElasticsearchVectorStore(Builder builder) {\n \n \t@Override\n \tpublic void doAdd(List<Document> documents) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n \n \t\tList<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),\n@@ -214,11 +209,6 @@ private Object getDocument(Document document, float[] embedding, String embeddin\n \t@Override\n \tpublic void doDelete(List<String> idList) {\n \t\tBulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n \t\tfor (String id : idList) {\n \t\t\tbulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));\n \t\t}\n@@ -229,12 +219,6 @@ public void doDelete(List<String> idList) {\n \n \t@Override\n \tpublic void doDelete(Filter.Expression filterExpression) {\n-\t\t// For the index to be present, either it must be pre-created or set the\n-\t\t// initializeSchema to true.\n-\t\tif (!indexExists()) {\n-\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n-\t\t}\n-\n \t\ttry {\n \t\t\tthis.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())\n \t\t\t\t.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));\n@@ -349,12 +333,15 @@ private DenseVectorSimilarity parseSimilarity(String similarity) {\n \n \t@Override\n \tpublic void afterPropertiesSet() {\n-\t\tif (!this.initializeSchema) {\n+\t\t// For the index to be present, either it must be pre-created or set the\n+\t\t// initializeSchema to true.\n+\t\tif (indexExists()) {\n \t\t\treturn;\n \t\t}\n-\t\tif (!indexExists()) {\n-\t\t\tcreateIndexMapping();\n+\t\tif (!this.initializeSchema) {\n+\t\t\tthrow new IllegalArgumentException(\"Index not found\");\n \t\t}\n+\t\tcreateIndexMapping();\n \t}\n \n \t@Override\n```\n\n**Overall Impression:**\n\nThis is a good refactoring! Removing the redundant `indexExists()` checks improves performance as described in the pull request description. The logic is now more streamlined.\n\n**Specific Comments:**\n\n*   **Line 178-180, 216-218, 232-234:** These commented-out blocks were correctly removed.  Good job identifying and eliminating this duplication.\n*   **Line 351-353:** The logic in `afterPropertiesSet()` is a bit inverted now. It first checks if the index exists, and if it does, it returns. Then, it checks if `initializeSchema` is false, and if it is, it throws an exception. This is a bit confusing. It might be clearer to rephrase it as:\n\n    ```java\n    @Override\n    public void afterPropertiesSet() {\n        if (!this.initializeSchema && !indexExists()) {\n            throw new IllegalArgumentException(\"Index not found\");\n        }\n        if (!indexExists()) {\n            createIndexMapping();\n        }\n    }\n    ```\n\n    This way, the exception is thrown only when `initializeSchema` is false *and* the index doesn't exist, which aligns with the documented behavior.\n\n*   **Context Consideration:** Given the project context, it's important to ensure that the `indexExists()` method itself is reliable and doesn't have its own performance issues. If `indexExists()` is also making an HTTP request, the benefit of removing these checks might be diminished.  (This is more of a question for the author, but worth considering).\n*   **Documentation:** The comment \"// For the index to be present, either it must be pre-created or set the initializeSchema to true.\" is still present in `afterPropertiesSet()`. It should be removed as the code now reflects the described behavior.\n\n**Positive Feedback:**\n\n*   The code is well-structured and easy to follow.\n*   The removal of redundant checks is a clear performance improvement.\n*   The changes are focused and address the problem described in the pull request description.\n\n**Suggestion:**\n\n*   Consider adding a unit test to specifically verify the behavior when `initializeSchema` is false and the index does not exist. This will help prevent regressions in the future.\n\nOverall, this is a well-executed refactoring.  Addressing the minor point about the `afterPropertiesSet()` logic would make it even clearer.\n",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 21598,
+    "input": "What is the purpose of document joiner?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [17, 18, 19, 20],
+        "source_id": "99d38a42-eccf-410d-9fe4-0a9ad93ba57d",
+        "similarity_score": 0.65909445,
+        "source_name": "cu::DocumentJoiner.java"
+      },
+      {
+        "embedding_ids": [258, 259, 260, 261],
+        "source_id": "e9382a70-e4af-4c5c-aa56-856a7e631ea2",
+        "similarity_score": 0.59278214,
+        "source_name": "cu::ConcatenationDocumentJoiner.java"
+      },
+      {
+        "embedding_ids": [720, 721],
+        "source_id": "bcbf0cba-a9a2-4dbd-9d16-33084ba52b74",
+        "similarity_score": 0.5691575,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0"
+      },
+      {
+        "embedding_ids": [385, 386, 387, 388],
+        "source_id": "0d44bd03-329d-412c-9928-bd8e2a14bbbb",
+        "similarity_score": 0.47004005,
+        "source_name": "cu::DocumentPostProcessor.java"
+      },
+      {
+        "embedding_ids": [1547],
+        "source_id": "cd1ac72b-a8e3-4df0-a799-ee55204c38f1",
+        "similarity_score": 0.45370293,
+        "source_name": "asciidoc::etl-pipeline.adoc::Transformers::TextSplitter::0"
+      }
+    ],
+    "response": "The purpose of a Document Joiner is to combine documents retrieved from multiple queries and/or multiple data sources into a single collection of documents. It can also handle duplicate documents and reciprocal ranking strategies during this process. Specifically, a `ConcatenationDocumentJoiner` concatenates the documents, keeping the first occurrence of duplicates and maintaining the original scores, then sorts the result by score in descending order.\n",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 24058,
+    "input": "What is the purpose of document joiner?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [17, 18, 19, 20],
+        "source_id": "99d38a42-eccf-410d-9fe4-0a9ad93ba57d",
+        "similarity_score": 0.65909445,
+        "source_name": "cu::DocumentJoiner.java"
+      },
+      {
+        "embedding_ids": [258, 259, 260, 261],
+        "source_id": "e9382a70-e4af-4c5c-aa56-856a7e631ea2",
+        "similarity_score": 0.59278214,
+        "source_name": "cu::ConcatenationDocumentJoiner.java"
+      },
+      {
+        "embedding_ids": [721],
+        "source_id": "bcbf0cba-a9a2-4dbd-9d16-33084ba52b74",
+        "similarity_score": 0.5691575,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0"
+      },
+      {
+        "embedding_ids": [386, 387, 388],
+        "source_id": "0d44bd03-329d-412c-9928-bd8e2a14bbbb",
+        "similarity_score": 0.47004005,
+        "source_name": "cu::DocumentPostProcessor.java"
+      },
+      {
+        "embedding_ids": [1547],
+        "source_id": "cd1ac72b-a8e3-4df0-a799-ee55204c38f1",
+        "similarity_score": 0.45370293,
+        "source_name": "asciidoc::etl-pipeline.adoc::Transformers::TextSplitter::0"
+      }
+    ],
+    "response": "The purpose of a Document Joiner is to combine documents retrieved from multiple queries and/or multiple data sources into a single collection of documents. It can also handle duplicate documents and reciprocal ranking strategies during this process. Specifically, a `ConcatenationDocumentJoiner` concatenates the documents, keeping the first occurrence of duplicates and maintaining the original scores, then sorts the result by score in descending order.\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 23035,
+    "input": "What is the purpose of document joiner?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [720, 721],
+        "source_id": "bcbf0cba-a9a2-4dbd-9d16-33084ba52b74",
+        "similarity_score": 0.5691575,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0"
+      },
+      {
+        "embedding_ids": [17],
+        "source_id": "99d38a42-eccf-410d-9fe4-0a9ad93ba57d",
+        "similarity_score": 0.5270467,
+        "source_name": "cu::DocumentJoiner.java"
+      },
+      {
+        "embedding_ids": [258],
+        "source_id": "e9382a70-e4af-4c5c-aa56-856a7e631ea2",
+        "similarity_score": 0.46257022,
+        "source_name": "cu::ConcatenationDocumentJoiner.java"
+      },
+      {
+        "embedding_ids": [1547],
+        "source_id": "cd1ac72b-a8e3-4df0-a799-ee55204c38f1",
+        "similarity_score": 0.45370293,
+        "source_name": "asciidoc::etl-pipeline.adoc::Transformers::TextSplitter::0"
+      },
+      {
+        "embedding_ids": [1371, 1372],
+        "source_id": "f325ff7c-ff17-49d3-885b-c965ab87b505",
+        "similarity_score": 0.43707934,
+        "source_name": "asciidoc::etl-pipeline.adoc::DocumentReaders::HTML (JSoup)::1"
+      }
+    ],
+    "response": "The purpose of a document joiner is to combine documents retrieved from multiple queries and/or multiple data sources into a single collection of documents. It can also handle duplicate documents and reciprocal ranking strategies during this process. Specifically, a `ConcatenationDocumentJoiner` combines these documents by concatenating them, keeping the first occurrence of duplicates and maintaining the original scores.\n",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 49865,
+    "input": "Give me an simple example of building RAG service in Spring AI.",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [620],
+        "source_id": "1972911f-9779-4f20-81c1-1b2943944269",
+        "similarity_score": 0.65057313,
+        "source_name": "asciidoc::mongodb.adoc::Tutorials and Code Examples::0"
+      },
+      {
+        "embedding_ids": [1113],
+        "source_id": "ba894ae6-23db-4fe2-bca4-8cbe39afb9f6",
+        "similarity_score": 0.6350122,
+        "source_name": "asciidoc::getting-started.adoc::Spring AI samples::0"
+      },
+      {
+        "embedding_ids": [975],
+        "source_id": "b056945a-d0b0-4b35-9d97-6fcd23d7fdad",
+        "similarity_score": 0.6277128,
+        "source_name": "asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0"
+      },
+      {
+        "embedding_ids": [1277],
+        "source_id": "929d0b1e-77d0-4d91-87d0-b45c5b90b8a0",
+        "similarity_score": 0.619525,
+        "source_name": "asciidoc::index.adoc::Introduction::Tool Calling API::0"
+      },
+      {
+        "embedding_ids": [810],
+        "source_id": "bfe9cbb3-f973-47da-941c-4b38f1e8ea8b",
+        "similarity_score": 0.61081713,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::0"
+      }
+    ],
+    "response": "Here's a simple example of building a RAG service in Spring AI, based on the provided context:\n\n```java\n@RestController\nclass MyController {\n\n    private final ChatClient chatClient;\n\n    public MyController(ChatClient.Builder chatClientBuilder) {\n        this.chatClient = chatClientBuilder.build();\n    }\n\n    @GetMapping(\"/ai\")\n    String generation(String userInput) {\n        return this.chatClient.prompt()\n            .user(userInput)\n            .call()\n            .content();\n    }\n}\n```\n\n**Explanation:**\n\n*   **`@RestController`**:  This annotation marks the class as a REST controller, handling incoming web requests.\n*   **`ChatClient chatClient;`**: This declares a field to hold an instance of the `ChatClient`, which is used to interact with the AI model.\n*   **`MyController(ChatClient.Builder chatClientBuilder)`**: This is the constructor. Spring AI's autoconfiguration provides a `ChatClient.Builder` bean, which is injected here.  The builder is then used to create a `ChatClient` instance.\n*   **`@GetMapping(\"/ai\")`**: This annotation maps the `/ai` endpoint to the `generation` method, handling GET requests.\n*   **`String generation(String userInput)`**: This method takes the user's input as a string.\n*   **`this.chatClient.prompt().user(userInput).call().content();`**: This is the core of the interaction:\n    *   `this.chatClient.prompt()`: Creates a prompt object.\n    *   `.user(userInput)`: Sets the user's input as the message for the AI.\n    *   `.call()`: Sends the prompt to the AI model and receives a response.\n    *   `.content()`: Extracts the AI model's response as a String.\n\nThis example demonstrates the simplest use case, where Spring AI provides a `ChatClient.Builder` bean through autoconfiguration.  It retrieves a String response from the AI model based on the user's input.\n\nFor a more comprehensive RAG example with MongoDB, refer to the [detailed tutorial](https://www.mongodb.com/developer/languages/java/retrieval-augmented-generation-spring-ai/).\n",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 24115,
+    "input": "Give me an simple example of building RAG service in Spring AI.",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [620],
+        "source_id": "1972911f-9779-4f20-81c1-1b2943944269",
+        "similarity_score": 0.65057313,
+        "source_name": "asciidoc::mongodb.adoc::Tutorials and Code Examples::0"
+      },
+      {
+        "embedding_ids": [1113],
+        "source_id": "ba894ae6-23db-4fe2-bca4-8cbe39afb9f6",
+        "similarity_score": 0.6350122,
+        "source_name": "asciidoc::getting-started.adoc::Spring AI samples::0"
+      },
+      {
+        "embedding_ids": [975],
+        "source_id": "b056945a-d0b0-4b35-9d97-6fcd23d7fdad",
+        "similarity_score": 0.6277128,
+        "source_name": "asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0"
+      },
+      {
+        "embedding_ids": [1277],
+        "source_id": "929d0b1e-77d0-4d91-87d0-b45c5b90b8a0",
+        "similarity_score": 0.619525,
+        "source_name": "asciidoc::index.adoc::Introduction::Tool Calling API::0"
+      },
+      {
+        "embedding_ids": [810],
+        "source_id": "bfe9cbb3-f973-47da-941c-4b38f1e8ea8b",
+        "similarity_score": 0.61081713,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::0"
+      }
+    ],
+    "response": "Here's a simple example of building a RAG service in Spring AI, based on the provided context:\n\n```java\n@RestController\nclass MyController {\n\n    private final ChatClient chatClient;\n\n    public MyController(ChatClient.Builder chatClientBuilder) {\n        this.chatClient = chatClientBuilder.build();\n    }\n\n    @GetMapping(\"/ai\")\n    String generation(String userInput) {\n        return this.chatClient.prompt()\n            .user(userInput)\n            .call()\n            .content();\n    }\n}\n```\n\n**Explanation:**\n\n*   **`@RestController`**:  This annotation marks the class as a REST controller, handling incoming web requests.\n*   **`ChatClient chatClient;`**: This declares a field to hold an instance of the `ChatClient`, which is used to interact with the AI model.\n*   **`MyController(ChatClient.Builder chatClientBuilder)`**: This is the constructor. Spring AI provides autoconfiguration that creates a `ChatClient.Builder` bean, which is injected here.  The builder is then used to create the `ChatClient` instance.\n*   **`@GetMapping(\"/ai\")`**: This annotation maps the `/ai` endpoint to the `generation` method, handling GET requests.\n*   **`String generation(String userInput)`**: This method takes the user's input as a string.\n*   **`this.chatClient.prompt().user(userInput).call().content();`**: This is the core of the interaction:\n    *   `this.chatClient.prompt()`: Starts a new prompt.\n    *   `.user(userInput)`: Sets the user's input as the message for the AI.\n    *   `.call()`: Sends the prompt to the AI model and receives a response.\n    *   `.content()`: Extracts the AI model's response as a `String`.\n\nThis example demonstrates the simplest use case, where Spring AI's autoconfiguration handles the setup, and you simply inject a `ChatClient.Builder` to build a `ChatClient` and use it to send prompts and retrieve responses.  The context states this is a basic RAG setup.\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 24728,
+    "input": "Give me an simple example of building RAG service in Spring AI.",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [620],
+        "source_id": "1972911f-9779-4f20-81c1-1b2943944269",
+        "similarity_score": 0.65057313,
+        "source_name": "asciidoc::mongodb.adoc::Tutorials and Code Examples::0"
+      },
+      {
+        "embedding_ids": [1113],
+        "source_id": "ba894ae6-23db-4fe2-bca4-8cbe39afb9f6",
+        "similarity_score": 0.6350122,
+        "source_name": "asciidoc::getting-started.adoc::Spring AI samples::0"
+      },
+      {
+        "embedding_ids": [975],
+        "source_id": "b056945a-d0b0-4b35-9d97-6fcd23d7fdad",
+        "similarity_score": 0.6277128,
+        "source_name": "asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0"
+      },
+      {
+        "embedding_ids": [1277],
+        "source_id": "929d0b1e-77d0-4d91-87d0-b45c5b90b8a0",
+        "similarity_score": 0.619525,
+        "source_name": "asciidoc::index.adoc::Introduction::Tool Calling API::0"
+      },
+      {
+        "embedding_ids": [810],
+        "source_id": "bfe9cbb3-f973-47da-941c-4b38f1e8ea8b",
+        "similarity_score": 0.61081713,
+        "source_name": "asciidoc::retrieval-augmented-generation.adoc::Modules::0"
+      }
+    ],
+    "response": "Here's a simple example of building a RAG service in Spring AI, based on the provided context:\n\n```java\n@RestController\nclass MyController {\n\n    private final ChatClient chatClient;\n\n    public MyController(ChatClient.Builder chatClientBuilder) {\n        this.chatClient = chatClientBuilder.build();\n    }\n\n    @GetMapping(\"/ai\")\n    String generation(String userInput) {\n        return this.chatClient.prompt()\n            .user(userInput)\n            .call()\n            .content();\n    }\n}\n```\n\n**Explanation:**\n\n*   **`@RestController`**:  This annotation marks the class as a REST controller, handling incoming web requests.\n*   **`ChatClient chatClient;`**: This declares a field to hold an instance of the `ChatClient`.  Spring AI provides autoconfiguration to create a `ChatClient.Builder` bean.\n*   **`MyController(ChatClient.Builder chatClientBuilder)`**: This is the constructor. It receives a `ChatClient.Builder` as a dependency (injected by Spring) and uses it to build the `ChatClient` instance.\n*   **`@GetMapping(\"/ai\")`**: This annotation maps the `/ai` endpoint to the `generation` method, handling GET requests.\n*   **`String generation(String userInput)`**: This method takes the user's input as a `String`.\n*   **`this.chatClient.prompt().user(userInput).call().content();`**: This is the core of the RAG interaction:\n    *   `this.chatClient.prompt()`: Starts a new prompt.\n    *   `.user(userInput)`: Sets the user's input as the message for the AI model.\n    *   `.call()`: Sends the prompt to the AI model and retrieves the response.\n    *   `.content()`: Extracts the text content of the AI model's response as a `String`, which is then returned by the method.\n\nThis example demonstrates the simplest use case where Spring AI's autoconfiguration creates a `ChatClient.Builder` bean that you can inject and use to interact with an AI model.  The user input is directly sent to the AI model, and the response is returned.  \n\nFor a more comprehensive RAG example with MongoDB, refer to the detailed tutorial: [https://www.mongodb.com/developer/languages/java/retrieval-augmented-generation-spring-ai/](https://www.mongodb.com/developer/languages/java/retrieval-augmented-generation-spring-ai/)\n",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 36441,
+    "input": "What classes should I use to search documents based on similarity to a query?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [1, 2, 3, 4, 5, 6],
+        "source_id": "d8cd482d-c215-4d8e-955c-00cd78c9c152",
+        "similarity_score": 0.6617007,
+        "source_name": "cu::VectorStoreDocumentRetriever.java"
+      },
+      {
+        "embedding_ids": [353, 354, 355, 356, 357],
+        "source_id": "646a1e82-5384-4808-9369-af5572b46e3e",
+        "similarity_score": 0.613038,
+        "source_name": "cu::SearchRequestTests.java"
+      },
+      {
+        "embedding_ids": [1174],
+        "source_id": "5702b640-4795-4c58-9e41-99afddd6b17a",
+        "similarity_score": 0.60549283,
+        "source_name": "asciidoc::vectordbs.adoc::Example Usage::Reading from a Vector Store::0"
+      },
+      {
+        "embedding_ids": [1002, 1003],
+        "source_id": "0fdfd453-3fa8-4683-87c7-76df5d2cf73b",
+        "similarity_score": 0.5898212,
+        "source_name": "asciidoc::azure.adoc::Sample Code::0"
+      },
+      {
+        "embedding_ids": [158, 159, 160, 161],
+        "source_id": "ba9e70ff-33cf-427f-a51a-403f3dc1ece3",
+        "similarity_score": 0.5779818,
+        "source_name": "cu::VectorStoreRetriever.java"
+      }
+    ],
+    "response": "Based on the provided context, you should use the following classes to search documents based on similarity to a query:\n\n*   **`VectorStoreRetriever`**: This interface provides read-only access to vector store retrieval operations. It's designed specifically for querying and retrieving documents.\n*   **`SearchRequest`**:  This class is used to encapsulate the search parameters, such as the query text, `topK` (number of results), and `similarityThreshold`. You use its builder to construct a request object.\n*   **`VectorStore`**: While `VectorStoreRetriever` is preferred for read-only access, you can also use the `VectorStore` interface directly.\n*   **`Document`**: Represents the documents that are retrieved as a result of the similarity search.\n\nYou would typically use `VectorStoreRetriever.similaritySearch(SearchRequest request)` or `VectorStoreRetriever.similaritySearch(String query)` to perform the search.  The `SearchRequest` allows for more control over the search process.\n",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 25664,
+    "input": "What classes should I use to search documents based on similarity to a query?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [4, 5, 6],
+        "source_id": "d8cd482d-c215-4d8e-955c-00cd78c9c152",
+        "similarity_score": 0.6617007,
+        "source_name": "cu::VectorStoreDocumentRetriever.java"
+      },
+      {
+        "embedding_ids": [357],
+        "source_id": "646a1e82-5384-4808-9369-af5572b46e3e",
+        "similarity_score": 0.613038,
+        "source_name": "cu::SearchRequestTests.java"
+      },
+      {
+        "embedding_ids": [1174],
+        "source_id": "5702b640-4795-4c58-9e41-99afddd6b17a",
+        "similarity_score": 0.60549283,
+        "source_name": "asciidoc::vectordbs.adoc::Example Usage::Reading from a Vector Store::0"
+      },
+      {
+        "embedding_ids": [1003],
+        "source_id": "0fdfd453-3fa8-4683-87c7-76df5d2cf73b",
+        "similarity_score": 0.5898212,
+        "source_name": "asciidoc::azure.adoc::Sample Code::0"
+      },
+      {
+        "embedding_ids": [160],
+        "source_id": "ba9e70ff-33cf-427f-a51a-403f3dc1ece3",
+        "similarity_score": 0.5779818,
+        "source_name": "cu::VectorStoreRetriever.java"
+      }
+    ],
+    "response": "Based on the provided context, you should use the following classes to search documents based on similarity to a query:\n\n*   **`VectorStoreRetriever`**: This interface provides read-only access to vector store retrieval operations. It's designed for scenarios where you only need to retrieve documents and don't want to expose write operations.\n*   **`SearchRequest`**:  This class is used to encapsulate the search parameters, such as the query text, `topK` (number of results), `similarityThreshold`, and metadata filter expressions. You can build a `SearchRequest` using its builder (`SearchRequest.builder()`).\n*   **`VectorStore`**: While `VectorStoreRetriever` is preferred for read-only access, you can also directly use the `VectorStore` interface.\n\nYou would typically use `VectorStoreRetriever.similaritySearch(SearchRequest request)` to perform the search.  You can also use the default method `VectorStoreRetriever.similaritySearch(String query)` if you want to use the default search criteria.\n\nAdditionally, the `VectorStoreDocumentRetriever` class implements the `VectorStoreRetriever` interface and provides a concrete implementation for retrieving documents from a vector store. You can use its builder pattern to configure the retriever with a `VectorStore`, similarity threshold, top-k value, and filter expression.\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 21756,
+    "input": "What classes should I use to search documents based on similarity to a query?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [1174],
+        "source_id": "5702b640-4795-4c58-9e41-99afddd6b17a",
+        "similarity_score": 0.60549283,
+        "source_name": "asciidoc::vectordbs.adoc::Example Usage::Reading from a Vector Store::0"
+      },
+      {
+        "embedding_ids": [1002, 1003],
+        "source_id": "0fdfd453-3fa8-4683-87c7-76df5d2cf73b",
+        "similarity_score": 0.5898212,
+        "source_name": "asciidoc::azure.adoc::Sample Code::0"
+      },
+      {
+        "embedding_ids": [1272],
+        "source_id": "98d20d89-cd9c-4dd3-affc-b39cadad3e1c",
+        "similarity_score": 0.5766705,
+        "source_name": "asciidoc::mariadb.adoc::Similarity Scores::0"
+      },
+      {
+        "embedding_ids": [665],
+        "source_id": "c812b58a-30bc-42b6-9dda-26ef18250a16",
+        "similarity_score": 0.5653223,
+        "source_name": "asciidoc::mariadb.adoc::Similarity Scores::Accessing Scores::0"
+      },
+      {
+        "embedding_ids": [1351],
+        "source_id": "8fb01f5f-2903-477f-b243-c4837e4550ae",
+        "similarity_score": 0.5646348,
+        "source_name": "asciidoc::mariadb.adoc::Similarity Scores::Similarity Threshold::0"
+      }
+    ],
+    "response": "Based on the provided context, you should use the following classes to search documents based on similarity to a query:\n\n*   **`VectorStore`**: This interface provides the basic functionality for similarity search.\n*   **`VectorStoreRetriever`**: This interface is a more focused option for read-only operations, specifically for retrieving similar documents.\n*   **`SearchRequest`**: This builder class allows you to define specific search parameters like the query, the number of results to return (`topK`), and a similarity threshold.\n*   **`Document`**: This class represents the documents you are searching through and contains the retrieved results, including the similarity `score`.\n\nYou would typically use these classes as follows:\n\n1.  Inject either `VectorStoreRetriever` or `VectorStore`.\n2.  Create a `SearchRequest` with your query and desired parameters.\n3.  Call the `similaritySearch` method on the injected `VectorStoreRetriever` or `VectorStore`, passing in the `SearchRequest`.\n4.  Iterate through the returned `List<Document>` to access the similar documents and their similarity scores using `doc.getScore()`.",
+    "group": "adaptive_plain"
+  },
+  {
+    "duration": 41555,
+    "input": "How builder pattern is used in Spring AI?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [78, 79],
+        "source_id": "a1d7976b-90a5-4edf-81c1-1c4933c50630",
+        "similarity_score": 0.6579828,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "embedding_ids": [895],
+        "source_id": "6f8dc6aa-b826-4031-8bff-5ffcbb3490ed",
+        "similarity_score": 0.63988435,
+        "source_name": "asciidoc::effective-agents.adoc::Agentic Systems::0"
+      },
+      {
+        "embedding_ids": [975],
+        "source_id": "b056945a-d0b0-4b35-9d97-6fcd23d7fdad",
+        "similarity_score": 0.62963504,
+        "source_name": "asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0"
+      },
+      {
+        "embedding_ids": [1194],
+        "source_id": "47558f10-ca9b-43d1-a30c-a1217436589b",
+        "similarity_score": 0.6230742,
+        "source_name": "asciidoc::tools.adoc::Functions as Tools::0"
+      },
+      {
+        "embedding_ids": [1277],
+        "source_id": "929d0b1e-77d0-4d91-87d0-b45c5b90b8a0",
+        "similarity_score": 0.6228647,
+        "source_name": "asciidoc::index.adoc::Introduction::Tool Calling API::0"
+      }
+    ],
+    "response": "The provided context shows the Builder pattern is used in Spring AI in a couple of ways:\n\n1.  **`SimpleVectorStoreBuilder`**: This class extends `AbstractVectorStoreBuilder` and is specifically designed to build `SimpleVectorStore` objects. It follows the classic Builder pattern where you configure the builder (in this case, with an `EmbeddingModel`) and then call `build()` to create the final object.\n\n2.  **`ChatClient.Builder`**: Spring AI provides autoconfiguration that creates a `ChatClient.Builder` bean. This builder is then used to construct a `ChatClient` instance, allowing for configuration before building the final client object. The example shows injecting the `ChatClient.Builder` and then calling `build()` on it.\n",
+    "group": "adaptive_full"
+  },
+  {
+    "duration": 24056,
+    "input": "How builder pattern is used in Spring AI?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [79],
+        "source_id": "a1d7976b-90a5-4edf-81c1-1c4933c50630",
+        "similarity_score": 0.6579828,
+        "source_name": "cu::SimpleVectorStore.java"
+      },
+      {
+        "embedding_ids": [895],
+        "source_id": "6f8dc6aa-b826-4031-8bff-5ffcbb3490ed",
+        "similarity_score": 0.63988435,
+        "source_name": "asciidoc::effective-agents.adoc::Agentic Systems::0"
+      },
+      {
+        "embedding_ids": [975],
+        "source_id": "b056945a-d0b0-4b35-9d97-6fcd23d7fdad",
+        "similarity_score": 0.62963504,
+        "source_name": "asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0"
+      },
+      {
+        "embedding_ids": [1194],
+        "source_id": "47558f10-ca9b-43d1-a30c-a1217436589b",
+        "similarity_score": 0.6230742,
+        "source_name": "asciidoc::tools.adoc::Functions as Tools::0"
+      },
+      {
+        "embedding_ids": [1277],
+        "source_id": "929d0b1e-77d0-4d91-87d0-b45c5b90b8a0",
+        "similarity_score": 0.6228647,
+        "source_name": "asciidoc::index.adoc::Introduction::Tool Calling API::0"
+      }
+    ],
+    "response": "The provided context shows the Builder pattern is used in Spring AI in a couple of ways:\n\n1.  **`SimpleVectorStoreBuilder`**: This class extends `AbstractVectorStoreBuilder` and is used to build `SimpleVectorStore` objects. It follows the classic Builder pattern where you configure the builder (in this case, with an `EmbeddingModel`) and then call `build()` to create the final object.\n\n2.  **`ChatClient.Builder`**: Spring AI provides a `ChatClient.Builder` through Spring Boot autoconfiguration. This allows you to inject the builder into your class and then use it to create a `ChatClient` instance. The example shows `chatClientBuilder.build()` being used to instantiate the `ChatClient`.\n",
+    "group": "simple_full"
+  },
+  {
+    "duration": 22301,
+    "input": "How builder pattern is used in Spring AI?",
+    "task": "query_answer",
+    "documents": [
+      {
+        "embedding_ids": [895],
+        "source_id": "6f8dc6aa-b826-4031-8bff-5ffcbb3490ed",
+        "similarity_score": 0.63988435,
+        "source_name": "asciidoc::effective-agents.adoc::Agentic Systems::0"
+      },
+      {
+        "embedding_ids": [975],
+        "source_id": "b056945a-d0b0-4b35-9d97-6fcd23d7fdad",
+        "similarity_score": 0.62963504,
+        "source_name": "asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0"
+      },
+      {
+        "embedding_ids": [1194],
+        "source_id": "47558f10-ca9b-43d1-a30c-a1217436589b",
+        "similarity_score": 0.6230742,
+        "source_name": "asciidoc::tools.adoc::Functions as Tools::0"
+      },
+      {
+        "embedding_ids": [1277],
+        "source_id": "929d0b1e-77d0-4d91-87d0-b45c5b90b8a0",
+        "similarity_score": 0.6228647,
+        "source_name": "asciidoc::index.adoc::Introduction::Tool Calling API::0"
+      },
+      {
+        "embedding_ids": [1056],
+        "source_id": "b917de0e-ea00-4a95-ba10-7fb0940ea246",
+        "similarity_score": 0.6193689,
+        "source_name": "asciidoc::chatmodel.adoc::Chat Model API::0"
+      }
+    ],
+    "response": "According to the provided context, Spring AI uses the builder pattern through the `ChatClient.Builder` class. Spring Boot autoconfiguration creates a prototype `ChatClient.Builder` bean which can be injected into a class and then used to build a `ChatClient` instance. \n\nHere's how it's used in the example:\n\n```java\npublic MyController(ChatClient.Builder chatClientBuilder) {\n    this.chatClient = chatClientBuilder.build();\n}\n```\n\nThe `chatClientBuilder.build()` method constructs the `ChatClient` object.\n",
+    "group": "adaptive_plain"
+  }
+]
