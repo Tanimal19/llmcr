@@ -1,0 +1,31 @@
+
+================================================================================
+Log Parser Report: temp.log
+================================================================================
+
+Operation: FaissVectorStore:Similarity search
+  Count:    12
+  Min:      105 ms
+  Max:      164 ms
+  Average:  124.67 ms
+  Median:   122.50 ms
+  Std Dev:  17.37 ms
+
+Operation: RAGService:Generation
+  Count:    12
+  Min:      610 ms
+  Max:      13,139 ms
+  Average:  4,021.00 ms
+  Median:   3,326.00 ms
+  Std Dev:  3,582.29 ms
+
+Operation: RAGService:Retrieval
+  Count:    12
+  Min:      105 ms
+  Max:      164 ms
+  Average:  124.92 ms
+  Median:   123.00 ms
+  Std Dev:  17.36 ms
+
+================================================================================
+

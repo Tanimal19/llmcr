@@ -181,13 +181,4 @@ public class DataStore {
             LOGGER.warn("Index: " + indexName + " not found. Cannot add embeddings.");
         }
     }
-
-    // Getters for direct access if needed
-    public ClassNodeRepository getNodeRepo() {
-        return nodeRepo;
-    }
-
-    public DocumentParagraphRepository getDocumentRepo() {
-        return documentRepo;
-    }
 }

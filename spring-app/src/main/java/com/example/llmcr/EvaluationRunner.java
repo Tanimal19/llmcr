@@ -83,7 +83,8 @@ public class EvaluationRunner implements CommandLineRunner {
             this.name = name;
 
             this.ragService = new RAGService(chatModel, FaissVectorStoreFactory.create(indexName));
-            this.ragService.setStrategy(retrievalSupplier.get(), fusionSupplier.get());
+            this.ragService.setRetrievalStrategy(retrievalSupplier.get());
+            this.ragService.setFusionStrategy(fusionSupplier.get());
             this.ragService.setTopK(topK);
         }
 

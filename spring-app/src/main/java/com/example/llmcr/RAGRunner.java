@@ -29,7 +29,8 @@ public class RAGRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         FaissVectorStore defaultFaiss = FaissVectorStoreFactory.create("plain");
         RAGService r = new RAGService(defaultChatModel, defaultFaiss);
-        r.setStrategy(new AdaptiveKStrategy(), new RankFusionStrategy());
+        r.setRetrievalStrategy(new AdaptiveKStrategy());
+        r.setFusionStrategy(new RankFusionStrategy());
         r.setRAGTemplate(new AnswerQueryTemplate());
         r.setTopK(10);
 

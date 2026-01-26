@@ -35,12 +35,12 @@ public class ETLRunner implements CommandLineRunner {
         String javaDocPathString = javaProjectRootPathString +
                 "/spring-ai-docs/src/main/antora/modules/ROOT/pages/";
 
-        // ExtractService e = new ExtractService(defaultDataStore);
-        // e.extract(
-        // DataSourceFactoryService.createFromJavaProject(javaProjectRootPathString),
-        // 3000);
-        // e.extract(
-        // DataSourceFactoryService.createFromPath(javaDocPathString), 3000);
+        ExtractService e = new ExtractService(defaultDataStore);
+        e.extract(
+                DataSourceFactoryService.createFromJavaProject(javaProjectRootPathString),
+                3000);
+        e.extract(
+                DataSourceFactoryService.createFromPath(javaDocPathString), 3000);
 
         TransformService t = new TransformService(defaultDataStore,
                 defaultChatModel);

@@ -35,13 +35,12 @@ public class RAGService {
         this.vectorStore = vectorStore;
     }
 
-    public void setStrategy(RetrievalStrategy retrievalStrategy, FusionStrategy fusionStrategy) {
+    public void setRetrievalStrategy(RetrievalStrategy retrievalStrategy) {
         this.retrievalStrategy = retrievalStrategy;
+    }
+
+    public void setFusionStrategy(FusionStrategy fusionStrategy) {
         this.fusionStrategy = fusionStrategy;
-        LOGGER.info("Using retrieval strategy: "
-                + retrievalStrategy.getClass().getSimpleName()
-                + " and fusion strategy: "
-                + fusionStrategy.getClass().getSimpleName());
     }
 
     public void setRAGTemplate(RAGTemplate ragTemplate) {
