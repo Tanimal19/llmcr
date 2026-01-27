@@ -10,19 +10,15 @@ import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
 import com.example.llmcr.extractor.ClassNodeExtractor;
 import com.example.llmcr.extractor.DocumentParagraphExtractor;
-import com.example.llmcr.repository.DataStore;
 
 public class ExtractService {
 
-    private final DataStore dataStore;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtractService.class);
 
-    public ExtractService(DataStore dataStore) {
-        this.dataStore = dataStore;
+    private ExtractService() {
     }
 
-    public void extract(List<DataSource> rawDataSources, int maxParagraphLength) {
+    public static void extract(DataStore dataStore, List<DataSource> rawDataSources, int maxParagraphLength) {
         long startTime = System.currentTimeMillis();
         LOGGER.info("Start data extraction");
 

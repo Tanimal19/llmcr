@@ -4,7 +4,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.example.llmcr.repository.DataStore;
+import com.example.llmcr.service.etl.DataStore;
 
 @Component
 public class FaissVectorStoreFactory {

@@ -23,7 +23,7 @@ import com.example.llmcr.service.rag.augmentation.RAGTemplate;
 import com.example.llmcr.service.rag.augmentation.BasePullRequestTemplate.PullRequest;
 import com.example.llmcr.service.rag.retrieval.AdaptiveKStrategy;
 import com.example.llmcr.service.rag.retrieval.RetrievalStrategy;
-import com.example.llmcr.service.rag.retrieval.SimpleRetrievalStrategy;
+import com.example.llmcr.service.rag.retrieval.FixedKStrategy;
 import com.example.llmcr.service.rag.retrieval.fusion.FusionStrategy;
 import com.example.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
 import com.example.llmcr.utils.JsonBackupUtils;
@@ -109,7 +109,7 @@ public class EvaluationRunner implements CommandLineRunner {
 
         this.groups = List.of(
                 new GroupType("adaptive_full", AdaptiveKStrategy::new, RankFusionStrategy::new, 20, "full"),
-                new GroupType("simple_full", SimpleRetrievalStrategy::new, RankFusionStrategy::new, 20, "full"),
+                new GroupType("simple_full", FixedKStrategy::new, RankFusionStrategy::new, 20, "full"),
                 new GroupType("adaptive_plain", AdaptiveKStrategy::new, RankFusionStrategy::new, 20, "plain"));
 
         for (TaskType task : tasks) {

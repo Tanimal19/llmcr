@@ -8,14 +8,12 @@ import java.util.Set;
 import org.springframework.ai.document.Document;
 
 /**
- * Represents an embedding in a (FAISS) IndexSet.
  * content: the text used for generating vector embedding
  * source: the real source should be retrieved
- * index_sets: the index sets this embedding belongs to
  */
 @Entity
-@Table(name = "embeddings")
-public class Embedding {
+@Table(name = "chunks")
+public class Chunk {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,34 +25,34 @@ public class Embedding {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 32, nullable = false)
-    private EmbeddingContentType contentType;
+    private ChunkContentType contentType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id", nullable = false)
     private Source source;
 
-    @ManyToMany(mappedBy = "embeddings", fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "chunks", fetch = FetchType.LAZY)
     private Set<IndexSet> indexSets = new HashSet<>();
 
-    public Embedding() {
+    public Chunk() {
     }
 
-    public Embedding(String content, EmbeddingContentType type, Source source) {
+    public Chunk(String content, ChunkContentType type, Source source) {
         this.content = content;
         this.contentType = type;
         this.source = source;
     }
 
-    public Embedding(Document doc) {
+    public Chunk(Document doc) {
         this.content = doc.getText();
 
         Object typeObj = doc.getMetadata().get("content_type");
-        if (typeObj instanceof EmbeddingContentType) {
-            this.contentType = (EmbeddingContentType) typeObj;
+        if (typeObj instanceof ChunkContentType) {
+            this.contentType = (ChunkContentType) typeObj;
         } else if (typeObj instanceof String) {
-            this.contentType = EmbeddingContentType.valueOf((String) typeObj);
+            this.contentType = ChunkContentType.valueOf((String) typeObj);
         } else {
-            this.contentType = EmbeddingContentType.UNDEFINED;
+            this.contentType = ChunkContentType.UNDEFINED;
         }
 
         Object sourceObj = doc.getMetadata().get("source");
@@ -81,11 +79,11 @@ public class Embedding {
         this.content = content;
     }
 
-    public EmbeddingContentType getContentType() {
+    public ChunkContentType getContentType() {
         return contentType;
     }
 
-    public void setContentType(EmbeddingContentType contentType) {
+    public void setContentType(ChunkContentType contentType) {
         this.contentType = contentType;
     }
 
@@ -109,9 +107,9 @@ public class Embedding {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof Embedding))
+        if (!(o instanceof Chunk))
             return false;
-        Embedding other = (Embedding) o;
+        Chunk other = (Chunk) o;
         return id != null && id.equals(other.id);
     }
 
@@ -122,13 +120,13 @@ public class Embedding {
 
     public Document toDocument() {
         Document doc = new Document(this.content);
-        doc.getMetadata().put("embedding_id", this.id);
+        doc.getMetadata().put("chunk_id", this.id);
         doc.getMetadata().put("content_type", this.contentType);
         doc.getMetadata().put("source", this.source);
         return doc;
     }
 
-    public enum EmbeddingContentType {
+    public enum ChunkContentType {
         CODE,
         ENRICHMENT,
         DOCUMENT,

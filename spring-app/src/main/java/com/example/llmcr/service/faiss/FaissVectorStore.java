@@ -15,7 +15,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 
 import com.example.llmcr.entity.Source;
-import com.example.llmcr.repository.DataStore;
+import com.example.llmcr.service.etl.DataStore;
 import com.example.llmcr.service.faiss.FaissService.AddVectorsRequest;
 import com.example.llmcr.service.faiss.FaissService.AddVectorsResponse;
 import com.example.llmcr.service.faiss.FaissService.SearchVectorsRequest;
@@ -50,9 +50,9 @@ public class FaissVectorStore implements VectorStore {
 
         // update index file record
         List<Long> ids = documents.stream()
-                .map(d -> (Long) d.getMetadata().get("embedding_id"))
+                .map(d -> (Long) d.getMetadata().get("chunk_id"))
                 .collect(Collectors.toList());
-        dataStore.addAllEmbeddingsToIndexSetByIds(indexName, ids);
+        dataStore.addAllChunksToIndexSetByIds(indexName, ids);
 
         // generate embeddings
         List<float[]> embeddings = documents.stream()
@@ -63,7 +63,7 @@ public class FaissVectorStore implements VectorStore {
         AddVectorsRequest req = new AddVectorsRequest(indexName, ids, embeddings);
 
         AddVectorsResponse res = faissService.addVectors(req);
-        LOGGER.info("Added " + res.added_count() + " embeddings to index:" +
+        LOGGER.info("Added " + res.added_count() + " chunks to index:" +
                 indexName);
     }
 
@@ -88,30 +88,30 @@ public class FaissVectorStore implements VectorStore {
         SearchVectorsRequest req = new SearchVectorsRequest(indexName, queryVector, request.getTopK());
         SearchVectorsResponse res = faissService.searchVectors(req);
 
-        List<Long> embeddingIds = res.ids();
-        List<Float> embeddingScores = res.scores();
+        List<Long> chunkIds = res.ids();
+        List<Float> chunkScores = res.scores();
         Map<Long, Float> idToScore = new HashMap<>();
-        for (int i = 0; i < embeddingIds.size(); i++) {
-            idToScore.put(embeddingIds.get(i), embeddingScores.get(i));
+        for (int i = 0; i < chunkIds.size(); i++) {
+            idToScore.put(chunkIds.get(i), chunkScores.get(i));
         }
 
-        // retrieve source documents using embeddings
+        // retrieve source documents using chunks
         class SourceHolder {
-            List<Long> embeddingIds = new ArrayList<>();
+            List<Long> chunkIds = new ArrayList<>();
             float score = 0f;
         }
         Map<Source, SourceHolder> sourceMap = new HashMap<>();
 
-        LOGGER.info("Retrieved embeddings from datastore:");
-        dataStore.findAllEmbeddingsByIds(embeddingIds).stream().forEach(e -> {
+        LOGGER.info("Retrieved chunks from datastore:");
+        dataStore.findAllChunksByIds(chunkIds).stream().forEach(e -> {
             Source source = e.getSource();
-            LOGGER.info("Embedding id:" + e.getId() +
+            LOGGER.info("Chunk id:" + e.getId() +
                     ", score:" + idToScore.get(e.getId()) +
                     ", type:" + e.getContentType() +
                     ", source:" + source.getId());
 
             SourceHolder holder = sourceMap.computeIfAbsent(source, k -> new SourceHolder());
-            holder.embeddingIds.add(e.getId());
+            holder.chunkIds.add(e.getId());
             holder.score = Math.max(holder.score, idToScore.get(e.getId()));
         });
 
@@ -121,7 +121,7 @@ public class FaissVectorStore implements VectorStore {
                     Document doc = new Document(s.getContent());
                     doc.getMetadata().put("source_id", s.getId());
                     doc.getMetadata().put("source_name", s.getSourceName());
-                    doc.getMetadata().put("embedding_ids", sourceMap.get(s).embeddingIds);
+                    doc.getMetadata().put("chunk_ids", sourceMap.get(s).chunkIds);
                     doc.getMetadata().put("similarity_score", sourceMap.get(s).score);
                     return doc;
                 })

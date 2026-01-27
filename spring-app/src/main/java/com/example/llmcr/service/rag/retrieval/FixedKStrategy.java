@@ -6,7 +6,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
-public class SimpleRetrievalStrategy implements RetrievalStrategy {
+public class FixedKStrategy implements RetrievalStrategy {
     public List<Document> retrieve(String query, int topK, VectorStore vectorStore) {
         SearchRequest request = SearchRequest.builder()
                 .query(query)

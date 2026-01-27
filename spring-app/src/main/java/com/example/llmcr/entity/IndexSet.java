@@ -11,9 +11,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
-/**
- * Represents a set of embeddings grouped under a specific index name in FAISS.
- */
 @Entity
 @Table(name = "index_sets")
 public class IndexSet {
@@ -23,8 +20,8 @@ public class IndexSet {
     private String name;
 
     @ManyToMany
-    @JoinTable(name = "index_sets_embeddings", joinColumns = @JoinColumn(name = "index_set_name"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
-    private Set<Embedding> embeddings = new HashSet<>();
+    @JoinTable(name = "index_sets_chunks", joinColumns = @JoinColumn(name = "index_set_name"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
+    private Set<Chunk> chunks = new HashSet<>();
 
     public IndexSet() {
     }
@@ -42,12 +39,12 @@ public class IndexSet {
         this.name = name;
     }
 
-    public Set<Embedding> getEmbeddings() {
-        return embeddings;
+    public Set<Chunk> getChunks() {
+        return chunks;
     }
 
-    public void setChunks(Set<Embedding> embeddings) {
-        this.embeddings = embeddings;
+    public void setChunks(Set<Chunk> chunks) {
+        this.chunks = chunks;
     }
 
     @Override

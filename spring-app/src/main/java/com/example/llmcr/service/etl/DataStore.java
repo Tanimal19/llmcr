@@ -1,10 +1,14 @@
-package com.example.llmcr.repository;
+package com.example.llmcr.service.etl;
 
 import com.example.llmcr.entity.ClassNode;
 import com.example.llmcr.entity.DocumentParagraph;
-import com.example.llmcr.entity.Embedding;
+import com.example.llmcr.entity.Chunk;
 import com.example.llmcr.entity.IndexSet;
-import com.example.llmcr.entity.Embedding.EmbeddingContentType;
+import com.example.llmcr.entity.Chunk.ChunkContentType;
+import com.example.llmcr.repository.ChunkRepository;
+import com.example.llmcr.repository.ClassNodeRepository;
+import com.example.llmcr.repository.DocumentParagraphRepository;
+import com.example.llmcr.repository.IndexSetRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,17 +29,17 @@ public class DataStore {
 
     private final ClassNodeRepository nodeRepo;
     private final DocumentParagraphRepository documentRepo;
-    private final EmbeddingRepository embeddingRepo;
+    private final ChunkRepository chunkRepo;
     private final IndexSetRepository indexSetRepo;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStore.class);
 
     @Autowired
     public DataStore(ClassNodeRepository nodeRepo, DocumentParagraphRepository documentRepo,
-            EmbeddingRepository embeddingRepo, IndexSetRepository indexSetRepo) {
+            ChunkRepository chunkRepo, IndexSetRepository indexSetRepo) {
         this.nodeRepo = nodeRepo;
         this.documentRepo = documentRepo;
-        this.embeddingRepo = embeddingRepo;
+        this.chunkRepo = chunkRepo;
         this.indexSetRepo = indexSetRepo;
     }
 
@@ -123,36 +127,36 @@ public class DataStore {
         return documentRepo.findAll();
     }
 
-    // Embedding operations
-    public void save(Embedding embedding) {
-        embeddingRepo.save(embedding);
+    // Chunk operations
+    public void save(Chunk chunk) {
+        chunkRepo.save(chunk);
     }
 
-    public void saveAllEmbeddings(List<Embedding> embeddings) {
-        embeddingRepo.saveAll(embeddings);
+    public void saveAllChunks(List<Chunk> chunks) {
+        chunkRepo.saveAll(chunks);
     }
 
-    public void saveAllEmbeddingsByDocuments(List<Document> documents) {
-        List<Embedding> embeddings = documents.stream()
-                .map(d -> new Embedding(d))
+    public void saveAllChunksByDocuments(List<Document> documents) {
+        List<Chunk> chunks = documents.stream()
+                .map(d -> new Chunk(d))
                 .collect(Collectors.toList());
-        embeddingRepo.saveAll(embeddings);
+        chunkRepo.saveAll(chunks);
     }
 
-    public Embedding findEmbeddingById(Long id) {
-        return embeddingRepo.findById(id).orElse(null);
+    public Chunk findChunkById(Long id) {
+        return chunkRepo.findById(id).orElse(null);
     }
 
-    public List<Embedding> findAllEmbeddings() {
-        return embeddingRepo.findAll();
+    public List<Chunk> findAllChunks() {
+        return chunkRepo.findAll();
     }
 
-    public List<Embedding> findAllEmbeddingsByIds(List<Long> ids) {
-        return embeddingRepo.findByIdIn(ids);
+    public List<Chunk> findAllChunksByIds(List<Long> ids) {
+        return chunkRepo.findByIdIn(ids);
     }
 
-    public List<Embedding> findAllEmbeddingsByContentType(EmbeddingContentType contentType) {
-        return embeddingRepo.findByContentType(contentType);
+    public List<Chunk> findAllChunksByContentType(ChunkContentType contentType) {
+        return chunkRepo.findByContentType(contentType);
     }
 
     // IndexSet operations
@@ -166,19 +170,19 @@ public class DataStore {
     }
 
     @Transactional
-    public void addAllEmbeddingsToIndexSetByIds(String indexName, List<Long> embeddingIds) {
+    public void addAllChunksToIndexSetByIds(String indexName, List<Long> chunkIds) {
         IndexSet indexSet = indexSetRepo.findByName(indexName);
         if (indexSet != null) {
-            List<Embedding> embeddings = embeddingRepo.findByIdIn(embeddingIds);
-            indexSet.getEmbeddings().addAll(embeddings);
+            List<Chunk> chunks = chunkRepo.findByIdIn(chunkIds);
+            indexSet.getChunks().addAll(chunks);
             indexSetRepo.save(indexSet);
 
             // Also update non-owning side for bidirectional consistency
-            for (Embedding embedding : embeddings) {
-                embedding.getIndexSets().add(indexSet);
+            for (Chunk chunk : chunks) {
+                chunk.getIndexSets().add(indexSet);
             }
         } else {
-            LOGGER.warn("Index: " + indexName + " not found. Cannot add embeddings.");
+            LOGGER.warn("Index: " + indexName + " not found. Cannot add chunks.");
         }
     }
 }

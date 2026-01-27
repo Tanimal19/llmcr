@@ -7,14 +7,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.llmcr.entity.Embedding;
-import com.example.llmcr.entity.Embedding.EmbeddingContentType;
+import com.example.llmcr.entity.Chunk;
+import com.example.llmcr.entity.Chunk.ChunkContentType;
 
 @Repository
-public interface EmbeddingRepository extends JpaRepository<Embedding, Long> {
+public interface ChunkRepository extends JpaRepository<Chunk, Long> {
 
     @Query("SELECT e FROM Embedding e JOIN FETCH e.source WHERE e.id IN :ids")
-    List<Embedding> findByIdIn(@Param("ids") List<Long> ids);
+    List<Chunk> findByIdIn(@Param("ids") List<Long> ids);
 
-    List<Embedding> findByContentType(EmbeddingContentType contentType);
+    List<Chunk> findByContentType(ChunkContentType contentType);
 }

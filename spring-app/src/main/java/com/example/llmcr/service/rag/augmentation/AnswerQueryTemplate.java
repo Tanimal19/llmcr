@@ -64,7 +64,6 @@ public class AnswerQueryTemplate extends RAGTemplate {
                 contextBuilder.append((i + 1)).append(". ").append(documents.get(i).getText()).append("\n");
             }
             this.variables.put("context", contextBuilder.toString());
-            this.isContextAugmented = true;
         }
     }
 }
