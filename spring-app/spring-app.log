@@ -1,0 +1,610 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.example:llmcr >--------------------------
+[INFO] Building llmcr 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.7:run (default-cli) > test-compile @ llmcr >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ llmcr ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ llmcr ---
+[INFO] skip non existing resourceDirectory /Users/bobch/Desktop/軟工專題/llmcr/spring-app/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.7:run (default-cli) < test-compile @ llmcr <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.7:run (default-cli) @ llmcr ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.7)
+
+[2026-03-10 11:07:02] [INFO] LlmcrApplication: Starting LlmcrApplication using Java 21.0.8 with PID 89760 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+[2026-03-10 11:07:02] [INFO] LlmcrApplication: No active profile set, falling back to 1 default profile: "default"
+[2026-03-10 11:07:02] [INFO] RepositoryConfigurationDelegate: Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+[2026-03-10 11:07:02] [INFO] RepositoryConfigurationDelegate: Finished Spring Data repository scanning in 53 ms. Found 4 JPA repository interfaces.
+[2026-03-10 11:07:02] [INFO] LogHelper: HHH000204: Processing PersistenceUnitInfo [name: default]
+[2026-03-10 11:07:02] [INFO] Version: HHH000412: Hibernate ORM core version 6.6.33.Final
+[2026-03-10 11:07:02] [INFO] RegionFactoryInitiator: HHH000026: Second-level cache disabled
+[2026-03-10 11:07:02] [INFO] SpringPersistenceUnitInfo: No LoadTimeWeaver setup: ignoring JPA class transformer
+[2026-03-10 11:07:02] [INFO] HikariDataSource: HikariPool-1 - Starting...
+[2026-03-10 11:07:02] [INFO] HikariPool: HikariPool-1 - Added connection org.mariadb.jdbc.Connection@17c4dc5b
+[2026-03-10 11:07:02] [INFO] HikariDataSource: HikariPool-1 - Start completed.
+[2026-03-10 11:07:02] [WARN] deprecation: HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+[2026-03-10 11:07:02] [INFO] pooling: HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 11.8.5
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+[2026-03-10 11:07:03] [INFO] JtaPlatformInitiator: HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+[2026-03-10 11:07:03] [INFO] LocalContainerEntityManagerFactoryBean: Initialized JPA EntityManagerFactory for persistence unit 'default'
+[2026-03-10 11:07:03] [INFO] QueryEnhancerFactory: Hibernate is in classpath; If applicable, HQL parser will be used.
+[2026-03-10 11:07:03] [ERROR] DnsServerAddressStreamProviders: Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+[2026-03-10 11:07:03] [INFO] LlmcrApplication: Started LlmcrApplication in 1.648 seconds (process running for 1.76)
+[2026-03-10 11:07:03] [INFO] DataStore: Index: full already exists. Skipping creation.
+[2026-03-10 11:07:03] [INFO] RAGService: Using RAG template: AnswerQueryTemplate
+Enter your query (or 'exit' to quit): What is the purpose of PromptBuilder?
+[2026-03-10 11:07:19] [INFO] RAGService: Single query retrieval: What is the purpose of PromptBuilder?
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Retrieved chunks from datastore:
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:3, score:0.33134013, type:ENRICHMENT, source:d8cd482d-c215-4d8e-955c-00cd78c9c152
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:7, score:0.38527256, type:ENRICHMENT, source:c0998010-3804-4cad-9e47-0170c2a7b9c4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:9, score:0.38950586, type:ENRICHMENT, source:c0998010-3804-4cad-9e47-0170c2a7b9c4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:14, score:0.36169162, type:ENRICHMENT, source:4b086d9a-936e-4cb6-b75d-03d154ac4b42
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:41, score:0.4331767, type:ENRICHMENT, source:5cb7c6db-68fc-4d5e-8ed8-119672ea2f53
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:42, score:0.3403623, type:ENRICHMENT, source:5cb7c6db-68fc-4d5e-8ed8-119672ea2f53
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:44, score:0.41730645, type:ENRICHMENT, source:e592adc7-bc45-4af8-9aeb-1293e78d0dcb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:45, score:0.3676411, type:ENRICHMENT, source:e592adc7-bc45-4af8-9aeb-1293e78d0dcb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:46, score:0.41599244, type:ENRICHMENT, source:e592adc7-bc45-4af8-9aeb-1293e78d0dcb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:52, score:0.3602823, type:ENRICHMENT, source:5cece3bd-31da-4e6c-8df5-1586f72e3482
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:54, score:0.43426436, type:ENRICHMENT, source:3b5863d2-0df1-4aab-8d64-1919bfa0cc5d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:55, score:0.3708069, type:ENRICHMENT, source:3b5863d2-0df1-4aab-8d64-1919bfa0cc5d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:66, score:0.3825565, type:ENRICHMENT, source:5df8b30c-81b8-46ef-873d-19c9e3465977
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:68, score:0.46850157, type:ENRICHMENT, source:5df8b30c-81b8-46ef-873d-19c9e3465977
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:69, score:0.36400855, type:ENRICHMENT, source:5df8b30c-81b8-46ef-873d-19c9e3465977
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:71, score:0.36658877, type:ENRICHMENT, source:a1d7976b-90a5-4edf-81c1-1c4933c50630
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:72, score:0.36760247, type:ENRICHMENT, source:a1d7976b-90a5-4edf-81c1-1c4933c50630
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:73, score:0.43318954, type:ENRICHMENT, source:a1d7976b-90a5-4edf-81c1-1c4933c50630
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:77, score:0.32762507, type:ENRICHMENT, source:fbef158c-ce02-4e88-b420-1e6825f863d0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:78, score:0.34230727, type:ENRICHMENT, source:fbef158c-ce02-4e88-b420-1e6825f863d0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:88, score:0.34253925, type:ENRICHMENT, source:a2906bd2-0ec2-4e6b-9667-215e55e628d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:90, score:0.33494705, type:ENRICHMENT, source:a2906bd2-0ec2-4e6b-9667-215e55e628d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:104, score:0.3275607, type:CODE, source:75dd425f-451c-4510-a8d9-2c5e17702bc8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:105, score:0.49971047, type:ENRICHMENT, source:75dd425f-451c-4510-a8d9-2c5e17702bc8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:106, score:0.3939497, type:ENRICHMENT, source:75dd425f-451c-4510-a8d9-2c5e17702bc8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:107, score:0.41299027, type:ENRICHMENT, source:75dd425f-451c-4510-a8d9-2c5e17702bc8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:108, score:0.4112507, type:CODE, source:43ab228f-ea35-449e-8e43-306efb032fb3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:109, score:0.41070282, type:CODE, source:43ab228f-ea35-449e-8e43-306efb032fb3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:110, score:0.3981017, type:ENRICHMENT, source:43ab228f-ea35-449e-8e43-306efb032fb3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:111, score:0.45500875, type:ENRICHMENT, source:43ab228f-ea35-449e-8e43-306efb032fb3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:112, score:0.4127332, type:ENRICHMENT, source:43ab228f-ea35-449e-8e43-306efb032fb3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:115, score:0.4364506, type:ENRICHMENT, source:f17d8383-4f4c-42cf-a6a5-325157f8c57e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:116, score:0.4178106, type:ENRICHMENT, source:f17d8383-4f4c-42cf-a6a5-325157f8c57e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:117, score:0.34696698, type:ENRICHMENT, source:f17d8383-4f4c-42cf-a6a5-325157f8c57e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:120, score:0.39133146, type:ENRICHMENT, source:fb8e01a6-c17d-4d27-aa3f-3556b87b33ed
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:121, score:0.35512614, type:ENRICHMENT, source:fb8e01a6-c17d-4d27-aa3f-3556b87b33ed
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:138, score:0.34981513, type:ENRICHMENT, source:0b1bab2d-0bd7-4063-b6fe-3cbb54e28cea
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:140, score:0.3541556, type:ENRICHMENT, source:0b1bab2d-0bd7-4063-b6fe-3cbb54e28cea
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:171, score:0.37208635, type:CODE, source:b39eb02e-9044-41c3-87fb-468f11c84975
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:174, score:0.42501676, type:ENRICHMENT, source:b39eb02e-9044-41c3-87fb-468f11c84975
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:182, score:0.3556357, type:ENRICHMENT, source:c7130cd7-d240-4f52-8d06-4d2412bc88de
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:189, score:0.34033167, type:ENRICHMENT, source:401e3f84-478f-4f24-8299-548ba7c99031
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:197, score:0.42637992, type:CODE, source:088e28b3-7570-4836-9c4b-59ff2a248875
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:198, score:0.55179155, type:ENRICHMENT, source:088e28b3-7570-4836-9c4b-59ff2a248875
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:199, score:0.48921773, type:ENRICHMENT, source:088e28b3-7570-4836-9c4b-59ff2a248875
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:200, score:0.3894269, type:ENRICHMENT, source:088e28b3-7570-4836-9c4b-59ff2a248875
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:205, score:0.36371496, type:CODE, source:8c72f1f5-82b9-4d76-ae77-5ff19fc82b35
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:207, score:0.37892377, type:ENRICHMENT, source:8c72f1f5-82b9-4d76-ae77-5ff19fc82b35
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:208, score:0.36722276, type:ENRICHMENT, source:8c72f1f5-82b9-4d76-ae77-5ff19fc82b35
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:221, score:0.42573717, type:CODE, source:a71736e4-398c-4421-8472-7719e37d6f17
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:222, score:0.34547818, type:ENRICHMENT, source:a71736e4-398c-4421-8472-7719e37d6f17
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:223, score:0.45897514, type:ENRICHMENT, source:a71736e4-398c-4421-8472-7719e37d6f17
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:224, score:0.53466105, type:ENRICHMENT, source:a71736e4-398c-4421-8472-7719e37d6f17
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:234, score:0.35764745, type:ENRICHMENT, source:72ec582d-a218-4168-8e65-7dd4704c678c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:235, score:0.41787902, type:ENRICHMENT, source:72ec582d-a218-4168-8e65-7dd4704c678c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:238, score:0.3283618, type:ENRICHMENT, source:cb4c04d0-8c56-437c-93a4-8119db6408e7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:256, score:0.35420245, type:ENRICHMENT, source:5a9b6fe8-df4e-4c06-9225-8672037289a3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:265, score:0.33317217, type:ENRICHMENT, source:aee117cc-dcee-42a6-90d5-8947e219f9cc
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:267, score:0.33482984, type:ENRICHMENT, source:aee117cc-dcee-42a6-90d5-8947e219f9cc
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:272, score:0.33715615, type:ENRICHMENT, source:ae306bbf-de24-45cb-bb53-8e5c8d53c145
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:277, score:0.40447417, type:ENRICHMENT, source:754843cd-0b73-4d1d-9cb5-92bef05c2b27
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:278, score:0.36888462, type:ENRICHMENT, source:754843cd-0b73-4d1d-9cb5-92bef05c2b27
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:303, score:0.33943033, type:ENRICHMENT, source:d811928d-9507-43c8-a8a7-9fe1402bd67c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:310, score:0.34113356, type:ENRICHMENT, source:eecc997c-32d6-4fd4-8fb2-a3766920f904
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:316, score:0.34892532, type:ENRICHMENT, source:94539dd5-16bd-4254-b2ae-a4a485e81dd6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:320, score:0.3332519, type:ENRICHMENT, source:44a6506e-5335-4e46-a9aa-a6d702ecad21
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:322, score:0.43586442, type:CODE, source:eb5efd16-82a6-4250-b35a-a8c3eafcf22e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:323, score:0.46872646, type:ENRICHMENT, source:eb5efd16-82a6-4250-b35a-a8c3eafcf22e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:324, score:0.4461164, type:ENRICHMENT, source:eb5efd16-82a6-4250-b35a-a8c3eafcf22e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:325, score:0.48962364, type:ENRICHMENT, source:eb5efd16-82a6-4250-b35a-a8c3eafcf22e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:326, score:0.42659694, type:CODE, source:4e7b6b14-fd77-4a38-9fe8-aa6f7b7be7d0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:327, score:0.49045044, type:ENRICHMENT, source:4e7b6b14-fd77-4a38-9fe8-aa6f7b7be7d0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:328, score:0.44198638, type:ENRICHMENT, source:4e7b6b14-fd77-4a38-9fe8-aa6f7b7be7d0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:329, score:0.5100895, type:ENRICHMENT, source:4e7b6b14-fd77-4a38-9fe8-aa6f7b7be7d0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:340, score:0.4208311, type:CODE, source:fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:341, score:0.5525718, type:ENRICHMENT, source:fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:342, score:0.45447606, type:ENRICHMENT, source:fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:343, score:0.37537605, type:ENRICHMENT, source:fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:347, score:0.37442264, type:ENRICHMENT, source:e00e1e00-13b2-4a80-a88b-b6492db4c578
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:348, score:0.4203943, type:CODE, source:764ca213-62dd-4762-b7df-b8d2a9df527a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:349, score:0.3708753, type:ENRICHMENT, source:764ca213-62dd-4762-b7df-b8d2a9df527a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:350, score:0.5248456, type:ENRICHMENT, source:764ca213-62dd-4762-b7df-b8d2a9df527a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:351, score:0.43645245, type:ENRICHMENT, source:764ca213-62dd-4762-b7df-b8d2a9df527a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:388, score:0.39988708, type:CODE, source:94d4865d-073e-46eb-bb82-c1e0f7436a2a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:390, score:0.37731022, type:ENRICHMENT, source:94d4865d-073e-46eb-bb82-c1e0f7436a2a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:406, score:0.34604955, type:ENRICHMENT, source:1c63079a-1158-4fd8-8a0d-cc3167638019
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:412, score:0.3758311, type:ENRICHMENT, source:50568edb-49cf-4557-89b0-d282e3d12b80
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:413, score:0.3688137, type:ENRICHMENT, source:50568edb-49cf-4557-89b0-d282e3d12b80
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:414, score:0.3544511, type:ENRICHMENT, source:50568edb-49cf-4557-89b0-d282e3d12b80
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:420, score:0.4041719, type:CODE, source:f65d7866-7541-4aae-a476-d6c839537099
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:421, score:0.40585375, type:CODE, source:f65d7866-7541-4aae-a476-d6c839537099
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:422, score:0.3412328, type:ENRICHMENT, source:f65d7866-7541-4aae-a476-d6c839537099
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:423, score:0.3760559, type:ENRICHMENT, source:f65d7866-7541-4aae-a476-d6c839537099
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:424, score:0.32817388, type:ENRICHMENT, source:f65d7866-7541-4aae-a476-d6c839537099
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:425, score:0.33810863, type:CODE, source:22af6666-4521-4144-b6f0-d9dd34d1b913
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:426, score:0.33185032, type:CODE, source:22af6666-4521-4144-b6f0-d9dd34d1b913
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:429, score:0.40988103, type:ENRICHMENT, source:22af6666-4521-4144-b6f0-d9dd34d1b913
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:430, score:0.3615238, type:ENRICHMENT, source:22af6666-4521-4144-b6f0-d9dd34d1b913
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:434, score:0.3440243, type:ENRICHMENT, source:7a0cd27c-6102-4c65-8a84-da038432b439
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:440, score:0.4094271, type:ENRICHMENT, source:c5ede087-a28b-44a4-aabe-db10c32514af
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:441, score:0.3381977, type:ENRICHMENT, source:c5ede087-a28b-44a4-aabe-db10c32514af
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:442, score:0.35762018, type:ENRICHMENT, source:c5ede087-a28b-44a4-aabe-db10c32514af
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:459, score:0.34392273, type:ENRICHMENT, source:0032ab23-2d0d-492b-882f-e8a25c81d321
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:460, score:0.37293705, type:ENRICHMENT, source:0032ab23-2d0d-492b-882f-e8a25c81d321
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:461, score:0.37904108, type:ENRICHMENT, source:0032ab23-2d0d-492b-882f-e8a25c81d321
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:472, score:0.43337637, type:ENRICHMENT, source:bb093490-a93b-46a5-a517-f7daaee423c7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:473, score:0.3785411, type:ENRICHMENT, source:bb093490-a93b-46a5-a517-f7daaee423c7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:474, score:0.44852996, type:ENRICHMENT, source:bb093490-a93b-46a5-a517-f7daaee423c7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:482, score:0.33507094, type:ENRICHMENT, source:f6cc481d-3545-41c1-af13-fe6ad8f73a1d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:490, score:0.34430385, type:DOCUMENT, source:49f774a4-34b2-4858-9ffb-00d8607a3ce8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:491, score:0.4078097, type:DOCUMENT, source:49f774a4-34b2-4858-9ffb-00d8607a3ce8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:493, score:0.3886767, type:DOCUMENT, source:534ed923-facc-4182-8d21-01091fb2bf52
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:495, score:0.37587714, type:DOCUMENT, source:3b11d6ee-5786-4c99-9655-0171ba3153ae
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:499, score:0.40483424, type:DOCUMENT, source:21ffd714-124e-40f1-9ead-026a8d44f95b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:502, score:0.3704017, type:DOCUMENT, source:ce1a0def-45ac-4296-abd8-039fc200bb6e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:506, score:0.40483424, type:DOCUMENT, source:ca43a8eb-29d7-4c5e-a1bd-05d628dd81b8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:509, score:0.38090643, type:DOCUMENT, source:49e57f4d-7e42-4c32-9ef1-06e83ba15cee
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:511, score:0.38796067, type:DOCUMENT, source:062c05df-ecd3-49ed-aa8d-07165ebcc3b3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:514, score:0.3652763, type:DOCUMENT, source:15dfface-226b-4fd2-9d35-0731cbce184c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:515, score:0.33929902, type:DOCUMENT, source:15dfface-226b-4fd2-9d35-0731cbce184c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:516, score:0.32711273, type:DOCUMENT, source:b96d4535-bbfa-46eb-9186-087d1c170ac7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:517, score:0.36321312, type:DOCUMENT, source:b96d4535-bbfa-46eb-9186-087d1c170ac7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:523, score:0.34695348, type:DOCUMENT, source:d3e26ac6-7159-49c1-a85e-09a7b3c6f87e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:529, score:0.34618458, type:DOCUMENT, source:89a27e03-ae45-46c0-8a85-0ac7e4640c5e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:532, score:0.40483424, type:DOCUMENT, source:a24b8801-71f4-48fc-b9b4-0b408186159a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:533, score:0.3710386, type:DOCUMENT, source:a5fea162-0e3c-45c3-a536-0bdcd8e3df25
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:534, score:0.3616598, type:DOCUMENT, source:947e9c8a-a1ad-451e-b478-0c89d18fb4fb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:536, score:0.39819795, type:DOCUMENT, source:6978876a-d696-4691-8777-0d2249aefb35
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:539, score:0.40483424, type:DOCUMENT, source:ebe7f59c-8537-4ecc-9f73-0d4f6359aa05
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:541, score:0.39432505, type:DOCUMENT, source:f482bbc0-00bc-4fe6-b505-0d8cd74679d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:543, score:0.3302561, type:DOCUMENT, source:30f038b1-08f9-4294-a89d-0deee8321ed5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:545, score:0.40483424, type:DOCUMENT, source:4ce3c5ad-2455-4cd7-8797-0e9ac30c1669
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:546, score:0.38552204, type:DOCUMENT, source:721c581d-706c-4296-ac82-0eab43c88f48
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:549, score:0.40483424, type:DOCUMENT, source:93aab8ec-75d3-4105-9d32-0edc89df6f8a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:552, score:0.40483424, type:DOCUMENT, source:717a1f9b-48bb-486a-90b1-0f372737b4e1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:556, score:0.36044407, type:DOCUMENT, source:c7e92462-ba9c-4253-b034-0ff3e204cbc7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:558, score:0.40483424, type:DOCUMENT, source:c8531bef-032b-4b69-9870-101ac9d85bd2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:570, score:0.34053183, type:DOCUMENT, source:146a7aee-943c-4fe5-a600-11fb75c11b63
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:571, score:0.35441026, type:DOCUMENT, source:c793b9c3-7283-40e4-9675-12397e317525
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:572, score:0.3568462, type:DOCUMENT, source:7e54907b-8c31-4467-9487-12768ea9ac44
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:580, score:0.40483424, type:DOCUMENT, source:f45db730-bc32-4721-b225-1488a26a4534
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:582, score:0.3299755, type:DOCUMENT, source:1b3db859-ae7d-4592-9f45-15002e9709ae
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:585, score:0.40483424, type:DOCUMENT, source:1f52977a-e861-46cb-ad9a-15d2fb2e7898
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:591, score:0.33585092, type:DOCUMENT, source:ccb17a77-3e33-4a3d-992c-18b18070156f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:592, score:0.44546533, type:DOCUMENT, source:ccb17a77-3e33-4a3d-992c-18b18070156f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:594, score:0.33062452, type:DOCUMENT, source:13e21535-f299-4d1a-a687-191b8528e284
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:598, score:0.40483424, type:DOCUMENT, source:5b9003ca-acd2-40fd-9aa5-19b24eb8712f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:599, score:0.38082397, type:DOCUMENT, source:507d23f5-0fc8-4e02-b186-19b4078e43df
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:602, score:0.32795092, type:DOCUMENT, source:156592a9-da14-4093-92f4-1afc181946ba
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:604, score:0.36340976, type:DOCUMENT, source:bdcc1f83-c681-416a-8fb1-1b8486805954
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:613, score:0.36115348, type:DOCUMENT, source:ffaff434-c70e-4e82-8865-1e29759fd7ee
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:618, score:0.39123917, type:DOCUMENT, source:90b239ff-d8fc-4029-89e0-1eb00197b846
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:620, score:0.3361171, type:DOCUMENT, source:37a74789-b169-4344-9f08-1f907bd8e6c1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:621, score:0.33816534, type:DOCUMENT, source:ee7560b5-a0b5-4a37-92e3-2025d6eb0109
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:627, score:0.3569973, type:DOCUMENT, source:33c1882b-59ad-4f83-a946-206c7338e9fe
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:628, score:0.40483424, type:DOCUMENT, source:33c1882b-59ad-4f83-a946-206c7338e9fe
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:636, score:0.33442104, type:DOCUMENT, source:23134bf1-35a5-445c-9718-2387f41ab4d2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:642, score:0.38316417, type:DOCUMENT, source:1de75c43-5777-4c3d-a96b-249ef3a434c5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:644, score:0.40483424, type:DOCUMENT, source:748d0a8d-ffbe-4299-8271-2529c8f959b6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:647, score:0.40483424, type:DOCUMENT, source:7ec6b91c-9257-4d26-845c-257dcccd7c06
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:654, score:0.46327925, type:DOCUMENT, source:81cb7420-0b08-44a4-88c7-264bc69985e8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:663, score:0.35221228, type:DOCUMENT, source:9e09c634-1765-401e-97ea-27949d9fa991
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:667, score:0.36760992, type:DOCUMENT, source:8e6d2021-000b-4e4b-bd06-2898a7132731
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:670, score:0.48826346, type:DOCUMENT, source:159371d9-6d67-44d6-acc5-28e208e1b552
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:678, score:0.40483424, type:DOCUMENT, source:615d8f78-bb3a-4bf8-b3cb-2af16717b9ef
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:682, score:0.3777777, type:DOCUMENT, source:8e013905-8778-45bd-ba6a-2bc4fd24903c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:683, score:0.38796067, type:DOCUMENT, source:8e013905-8778-45bd-ba6a-2bc4fd24903c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:685, score:0.46920896, type:DOCUMENT, source:e5ad8314-0ea8-4f0f-90cf-2bfea416f415
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:686, score:0.36431414, type:DOCUMENT, source:76cf9c79-4283-4b67-83ee-2c323fecf7d5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:690, score:0.40483424, type:DOCUMENT, source:b4ea07c8-849e-4cd9-a80b-2c741ae151a5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:694, score:0.4073804, type:DOCUMENT, source:6b29f8f4-866c-4da7-9b71-2ce687768ade
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:696, score:0.434171, type:DOCUMENT, source:0deaa78d-f62a-4dbf-a166-2d6b65a3657e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:700, score:0.40483424, type:DOCUMENT, source:f0042458-8f5b-411a-9b70-2d9b43e6b380
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:704, score:0.36199617, type:DOCUMENT, source:d7883716-2faa-484c-897e-2ee0de06d618
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:710, score:0.44546533, type:DOCUMENT, source:433f5886-7b5f-4f07-9c13-2f72f06b82d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:712, score:0.40483424, type:DOCUMENT, source:bbd95676-945d-477b-8e94-2f84997beee8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:714, score:0.40483424, type:DOCUMENT, source:e1ecd2b7-e9f8-4456-90d3-3016f55f4f03
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:715, score:0.36694705, type:DOCUMENT, source:aa50cc58-4b82-4b12-8d26-301ca1178cb6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:718, score:0.41308862, type:DOCUMENT, source:e8c3aab3-c576-495e-be70-30bf84314cf6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:723, score:0.41211757, type:DOCUMENT, source:458d1548-2f27-41ec-bed7-318881541ac2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:730, score:0.40108955, type:DOCUMENT, source:d7bfb0a3-1183-4a2e-a30a-33a162fd4c88
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:734, score:0.3714903, type:DOCUMENT, source:31f9f5d0-fb41-48fe-a637-34497a478ed5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:736, score:0.34286344, type:DOCUMENT, source:271d76d0-ff32-4bab-bf73-3588bb975b85
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:737, score:0.37596363, type:DOCUMENT, source:4f74c6c4-b5cb-4bdd-b777-359067ea4848
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:742, score:0.327141, type:DOCUMENT, source:3d535451-e969-4b81-a38b-36643d07c832
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:747, score:0.50426185, type:DOCUMENT, source:0a55973c-b43c-4df6-ad6d-37e9066688e0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:752, score:0.359114, type:DOCUMENT, source:1c45ef14-7bcd-4a07-bd0e-395cb2b98350
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:753, score:0.3897648, type:DOCUMENT, source:1c45ef14-7bcd-4a07-bd0e-395cb2b98350
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:759, score:0.35585248, type:DOCUMENT, source:934f200a-2747-46ed-b40e-3b24a2371af8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:762, score:0.3512863, type:DOCUMENT, source:eae28312-a542-40c5-91ae-3ba6aa819daa
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:765, score:0.34434593, type:DOCUMENT, source:cae68c4c-6e58-49c7-94f2-3bf35c4b19b1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:767, score:0.39548534, type:DOCUMENT, source:9c52858b-8936-4121-944e-3c64a933c234
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:771, score:0.40483424, type:DOCUMENT, source:f64a189a-7e1a-42d3-889d-3d636baaa0fb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:773, score:0.46276617, type:DOCUMENT, source:df19b719-db40-4ce8-bd34-3ddc9d5abfe7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:774, score:0.40483424, type:DOCUMENT, source:df19b719-db40-4ce8-bd34-3ddc9d5abfe7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:776, score:0.40483424, type:DOCUMENT, source:93c38df2-89c7-48fc-b65f-3de236872ee2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:777, score:0.35806543, type:DOCUMENT, source:621bb6aa-bb17-4cef-b2dd-3e10b9fd5cff
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:782, score:0.40483424, type:DOCUMENT, source:3f9177ac-d68d-4f6c-97ba-3eefee4784ed
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:784, score:0.37130463, type:DOCUMENT, source:ff98f8b8-d141-480d-a99b-3f0ce934a2cb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:785, score:0.40483424, type:DOCUMENT, source:ff98f8b8-d141-480d-a99b-3f0ce934a2cb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:787, score:0.37380058, type:DOCUMENT, source:2a1d30ab-bf05-4edb-b3af-3f72e7fc3d57
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:789, score:0.3558554, type:DOCUMENT, source:7b4423f3-13f7-4d98-92e9-3fe20599b869
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:790, score:0.36649975, type:DOCUMENT, source:fa5c0749-afbf-47db-a2de-403eaa39c20b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:792, score:0.3694886, type:DOCUMENT, source:3fe46025-54ad-4a5b-bd74-40ee493d4839
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:799, score:0.45978975, type:DOCUMENT, source:b330514f-c07b-43d5-a474-4216abfaacb3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:804, score:0.38217962, type:DOCUMENT, source:dd1cf8fa-e48d-48a2-abfe-43fb411c8b90
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:805, score:0.33929902, type:DOCUMENT, source:dd1cf8fa-e48d-48a2-abfe-43fb411c8b90
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:807, score:0.36707523, type:DOCUMENT, source:14cf0055-85d0-4823-a7ac-44d7d152e8b4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:808, score:0.38796067, type:DOCUMENT, source:14cf0055-85d0-4823-a7ac-44d7d152e8b4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:809, score:0.3868795, type:DOCUMENT, source:cb6136d5-17c9-47a8-8ee4-44d94618444c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:811, score:0.3482712, type:DOCUMENT, source:4175e8f2-ae89-4aca-aa08-463b75896cf0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:815, score:0.40483424, type:DOCUMENT, source:b2c46b2c-e4ae-45cd-8551-4731eb156492
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:820, score:0.40483424, type:DOCUMENT, source:3d68cbbe-4c3a-48e6-9bbe-47ffebc72314
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:822, score:0.32915342, type:DOCUMENT, source:0ea8c9b7-59cb-4f94-9c89-492d2c1b3e43
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:823, score:0.4190334, type:DOCUMENT, source:e1c739a3-fdfd-480b-bfce-498c46608c1a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:824, score:0.40483424, type:DOCUMENT, source:e1c739a3-fdfd-480b-bfce-498c46608c1a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:825, score:0.3638848, type:DOCUMENT, source:59ea1ed4-0af9-4d78-8120-49c58343d8f9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:833, score:0.45483792, type:DOCUMENT, source:38f9eb83-e73f-49b9-b561-4b7f4b654db0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:836, score:0.34691864, type:DOCUMENT, source:0adc4a88-5281-4ea6-a3a3-4be1e99d6cc1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:840, score:0.41211757, type:DOCUMENT, source:05ca7c6b-46e0-47a1-920b-4d2fda1421f8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:842, score:0.40483424, type:DOCUMENT, source:d7bd3872-e591-4661-96db-4d67fde079c6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:851, score:0.40483424, type:DOCUMENT, source:f53e65e0-1553-4554-bbcb-500b39e5962e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:855, score:0.39504796, type:DOCUMENT, source:031e6d15-cad2-48fe-9436-506dcc06a207
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:856, score:0.37072742, type:DOCUMENT, source:b710c50f-0092-4fa8-a7b9-50e1da8fa5e3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:857, score:0.40483424, type:DOCUMENT, source:b710c50f-0092-4fa8-a7b9-50e1da8fa5e3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:858, score:0.34460384, type:DOCUMENT, source:fa1150c4-7677-4200-9bf9-50e6592696a1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:864, score:0.33992562, type:DOCUMENT, source:579005a2-043a-467b-ae71-52567f2d769c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:867, score:0.41757286, type:DOCUMENT, source:b6a69233-6c23-4b72-886c-5295823057e0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:881, score:0.46614492, type:DOCUMENT, source:ba550d2a-71c5-4f9b-8e46-55f67f65cc2d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:890, score:0.40483424, type:DOCUMENT, source:1908cb95-c874-4412-98df-57f6fd4fb53a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:895, score:0.40483424, type:DOCUMENT, source:0cdc3170-a5ec-47d9-b107-58bca4b87f61
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:901, score:0.40483424, type:DOCUMENT, source:4cacac2f-a685-4afb-a4e5-59a7ceaf1490
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:911, score:0.44546533, type:DOCUMENT, source:0f4e99a0-e839-4253-9b9b-5c4104100216
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:914, score:0.33481306, type:DOCUMENT, source:82921046-8390-4014-9639-5d5649a02201
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:915, score:0.52259505, type:DOCUMENT, source:f8974c29-a3ce-45d9-8c18-5e0880bd9b92
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:917, score:0.40483424, type:DOCUMENT, source:bbda2d68-4951-42ee-a202-5e4d69c2acbe
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:921, score:0.4106558, type:DOCUMENT, source:3385347a-12e4-4a1c-a36a-5f4086c722ce
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:930, score:0.34317368, type:DOCUMENT, source:0227316e-1034-4fd2-aa7e-60bd12245335
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:931, score:0.3816753, type:DOCUMENT, source:8533bfaa-1b00-4672-85a8-60ffd7cbbec9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:940, score:0.34468657, type:DOCUMENT, source:cce7b846-900c-4412-a019-633faf079b92
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:944, score:0.40483424, type:DOCUMENT, source:c982d1c1-b581-4dec-956f-63aabd5fe9f5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:950, score:0.35786313, type:DOCUMENT, source:5961b303-3499-473b-ac85-64dc8de342fb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:952, score:0.33207417, type:DOCUMENT, source:7cea3dbf-5876-4fd5-8529-65227577019a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:957, score:0.40483424, type:DOCUMENT, source:594f2fc7-b646-49c0-b5ba-65c7d5e5ba26
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:967, score:0.37214446, type:DOCUMENT, source:9bcfea32-fce0-4e46-b2ab-67bcaf556fcb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:972, score:0.40483424, type:DOCUMENT, source:dee795f0-a1b3-47a0-ba92-68ae13a6d9d9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:974, score:0.40483424, type:DOCUMENT, source:d7df6c1f-ff89-47a3-9342-68e6bf059f31
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:976, score:0.3378206, type:DOCUMENT, source:cbdcdcd3-f19b-4968-b9fc-6a29fb8550af
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:977, score:0.33929902, type:DOCUMENT, source:cbdcdcd3-f19b-4968-b9fc-6a29fb8550af
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:979, score:0.35577756, type:DOCUMENT, source:da4fcd88-6dd9-4153-8c8b-6a6ef44a32d4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:981, score:0.406569, type:DOCUMENT, source:c8d796d0-9057-4d9c-9e68-6a9758f5fff9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:984, score:0.40483424, type:DOCUMENT, source:e42c2f03-3acd-41c7-840f-6b41e24a05dd
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:986, score:0.44546533, type:DOCUMENT, source:11241587-258a-409a-b3a1-6b41fcb36fe3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:992, score:0.41211757, type:DOCUMENT, source:dfe2c978-0a33-48b9-878d-6c2300b1d3be
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1001, score:0.40483424, type:DOCUMENT, source:08fa3db2-12cc-4c0f-9683-6d21bfae4b21
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1003, score:0.40483424, type:DOCUMENT, source:6f58008a-561a-4cd0-81f8-6d39a5c689f9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1006, score:0.34544897, type:DOCUMENT, source:57d97910-ec7a-40d1-a371-6d6dd8f7c936
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1009, score:0.33566672, type:DOCUMENT, source:fa904a6b-a70e-4d7b-987e-6e0dd6756745
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1011, score:0.33066207, type:DOCUMENT, source:3936e17f-918a-484f-b785-6ee8a6928a95
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1013, score:0.40483424, type:DOCUMENT, source:3593a6ee-a018-4c77-9a8f-6f094614d69d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1014, score:0.3310067, type:DOCUMENT, source:99665095-3113-498a-a60f-6f13059a8eee
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1015, score:0.44546533, type:DOCUMENT, source:99665095-3113-498a-a60f-6f13059a8eee
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1017, score:0.4529041, type:DOCUMENT, source:ea822a0d-1156-483d-8866-6f523c783a36
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1018, score:0.6458945, type:DOCUMENT, source:ea822a0d-1156-483d-8866-6f523c783a36
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1022, score:0.39138812, type:DOCUMENT, source:b056945a-d0b0-4b35-9d97-6fcd23d7fdad
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1024, score:0.35901862, type:DOCUMENT, source:a8b08a9b-6155-43bb-8782-6ff12621bbec
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1025, score:0.35485706, type:DOCUMENT, source:70305297-678b-476c-9c4e-70281ab80e9f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1026, score:0.34448165, type:DOCUMENT, source:89c68e8b-beba-486b-a157-7047dd4be5e4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1029, score:0.3321854, type:DOCUMENT, source:1c18685d-8b40-46cc-8501-70b40429266a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1030, score:0.33226871, type:DOCUMENT, source:1c18685d-8b40-46cc-8501-70b40429266a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1038, score:0.40955466, type:DOCUMENT, source:0e23e63d-25a4-4fe0-b0f2-71ae5e3119b7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1039, score:0.40483424, type:DOCUMENT, source:0e23e63d-25a4-4fe0-b0f2-71ae5e3119b7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1047, score:0.3405769, type:DOCUMENT, source:6c7011f0-eb2e-4a5b-b04e-75a756b6b64c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1048, score:0.40483424, type:DOCUMENT, source:6c7011f0-eb2e-4a5b-b04e-75a756b6b64c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1051, score:0.36072713, type:DOCUMENT, source:f56d58b1-815f-43a4-9b97-76042ee981d2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1059, score:0.40483424, type:DOCUMENT, source:de2e76ef-2122-4fef-bd81-776751e7f8cf
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1062, score:0.32764465, type:DOCUMENT, source:d3f8d929-272b-4dd0-adb8-77cc06910dcd
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1067, score:0.33908668, type:DOCUMENT, source:c08387a5-c58c-48dc-8b5e-789c2cf4dc53
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1069, score:0.348006, type:DOCUMENT, source:e27a479a-c5df-4d32-b2f7-794c5bc0091d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1070, score:0.40483424, type:DOCUMENT, source:e27a479a-c5df-4d32-b2f7-794c5bc0091d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1076, score:0.37396708, type:DOCUMENT, source:8bcfcda6-0b81-411d-b471-7a07716c0091
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1078, score:0.40483424, type:DOCUMENT, source:c07557ff-a51f-4a5d-8b4e-7a0f2590a1e2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1082, score:0.41211757, type:DOCUMENT, source:457e890e-999b-4fb8-a6fb-7ac9bc101c26
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1083, score:0.34416163, type:DOCUMENT, source:71611456-1468-4f9c-8988-7ad147d7bc1b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1085, score:0.39432505, type:DOCUMENT, source:68f30740-95df-4732-b9fb-7ae18daea1da
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1086, score:0.3462125, type:DOCUMENT, source:74b4ad2e-a5c7-4112-96c4-7b1b3709c04e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1091, score:0.40483424, type:DOCUMENT, source:87e9088f-dfff-498b-8c83-7b9709c8de6e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1093, score:0.41485578, type:DOCUMENT, source:aa4452f7-ffe1-4de7-a275-7bcda64174ce
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1097, score:0.3636296, type:DOCUMENT, source:2a747ebb-d91e-48b2-869f-7da8a5dde062
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1100, score:0.33164707, type:DOCUMENT, source:2eb467ca-e331-4578-a756-7dc66821463c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1101, score:0.43203846, type:DOCUMENT, source:7fea8235-6e97-4034-96ac-7e1c6f8628d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1105, score:0.41211757, type:DOCUMENT, source:ab94985c-c259-4df4-b8f9-7e5ee138a7a4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1108, score:0.41211757, type:DOCUMENT, source:47310005-3fcf-450a-9a20-7eaff179dba9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1110, score:0.33076662, type:DOCUMENT, source:a5732ccb-3acd-42ec-9b72-7efbc2e533f0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1111, score:0.40483424, type:DOCUMENT, source:a5732ccb-3acd-42ec-9b72-7efbc2e533f0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1113, score:0.40483424, type:DOCUMENT, source:2e82bd96-99a0-4e2b-9083-7f43d6f864d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1116, score:0.40483424, type:DOCUMENT, source:37a5cd9c-aaa7-42c5-98b4-7f5611bc7340
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1118, score:0.34333426, type:DOCUMENT, source:04097702-e542-42c6-b219-7f7effd9df88
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1119, score:0.48013702, type:DOCUMENT, source:04097702-e542-42c6-b219-7f7effd9df88
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1126, score:0.40483424, type:DOCUMENT, source:2bf34c1f-3b15-4f8b-8305-8056b5659377
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1128, score:0.40483424, type:DOCUMENT, source:5e93ef58-6031-4594-a641-8069f9eefc91
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1130, score:0.4027969, type:DOCUMENT, source:85f73130-8640-417a-8ac7-814938a5828b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1132, score:0.39023545, type:DOCUMENT, source:aa069513-fcbc-4cfe-85c0-819f7031c820
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1134, score:0.34010667, type:DOCUMENT, source:217fd2b0-32f7-4d2b-a521-82192c70a37d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1136, score:0.3526331, type:DOCUMENT, source:925ae138-8c23-436f-aa72-8226cc900a79
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1138, score:0.38265038, type:DOCUMENT, source:b34af861-ff00-45e3-9356-8239510ec4c0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1142, score:0.3598172, type:DOCUMENT, source:bccf9d23-5141-451a-9243-8335ab9994ce
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1146, score:0.32933843, type:DOCUMENT, source:33458d5f-e64b-4c4e-9a34-83e066c5593b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1147, score:0.3700317, type:DOCUMENT, source:2506d377-4c4b-4e86-b21f-840d37a26cd4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1149, score:0.38316417, type:DOCUMENT, source:7775b424-3519-4ac8-9263-841f506f0ea1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1152, score:0.44546533, type:DOCUMENT, source:aefeca5b-5a83-4529-8abb-84950d1eb8e3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1153, score:0.4439904, type:DOCUMENT, source:b937e3e2-8fca-4d23-93b5-8496bf7ab495
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1154, score:0.3490144, type:DOCUMENT, source:a2bfc5ac-5840-44a0-a8d2-851be9a132e2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1157, score:0.46794623, type:DOCUMENT, source:e039cd26-524c-419d-b522-86436e2cde09
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1158, score:0.32758653, type:DOCUMENT, source:beb67203-8aa0-40f1-ad07-8680e2b576d1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1162, score:0.36834428, type:DOCUMENT, source:e1a7dd34-2c01-483f-9a01-86c587df890a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1164, score:0.40604132, type:DOCUMENT, source:2e3d3677-737b-4129-b3ab-86d2fc9bc050
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1168, score:0.40483424, type:DOCUMENT, source:da5ad77f-2ac1-47fa-8330-8825e40ec87d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1170, score:0.40483424, type:DOCUMENT, source:83033cbd-ccea-4178-a0ff-8873ee97074c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1172, score:0.34742904, type:DOCUMENT, source:1c702d1f-16a8-4f62-b958-890e9dcf5f49
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1175, score:0.38796067, type:DOCUMENT, source:ffaceb90-3f59-493f-8410-896843b5e85c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1178, score:0.34659493, type:DOCUMENT, source:6a506e62-fe52-4a3d-9800-89e938814f3a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1180, score:0.41211757, type:DOCUMENT, source:30537618-3861-4d4a-b003-8a39532d4220
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1184, score:0.40483424, type:DOCUMENT, source:36dadd3c-0c12-405d-9069-8b7201840f15
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1186, score:0.32917672, type:DOCUMENT, source:cba7af0c-251d-4332-b539-8b88cece9e7a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1192, score:0.40483424, type:DOCUMENT, source:33baed18-ba6a-4c0e-aeba-8c9f556bd1cc
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1194, score:0.37989473, type:DOCUMENT, source:ba894ae6-23db-4fe2-bca4-8cbe39afb9f6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1195, score:0.34469584, type:DOCUMENT, source:34f666f0-aac9-433a-b230-8d2b910f8dea
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1198, score:0.33601516, type:DOCUMENT, source:c1c3ac8d-cde0-4d24-a0c2-8d62f70868bf
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1199, score:0.35421032, type:DOCUMENT, source:a1a59d20-76fe-4fd6-bbf6-8e173e87eea9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1201, score:0.406569, type:DOCUMENT, source:5ce12e99-421a-457a-9a4c-8eaf28b53b11
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1205, score:0.33712268, type:DOCUMENT, source:79d4f399-f332-422b-b417-8f0679a900be
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1206, score:0.32809785, type:DOCUMENT, source:cc75a339-ec3f-4684-b7de-8f12e052ce7f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1207, score:0.33929902, type:DOCUMENT, source:cc75a339-ec3f-4684-b7de-8f12e052ce7f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1208, score:0.3512911, type:DOCUMENT, source:4da35430-6db0-4d82-a220-8f2ccd92a6be
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1210, score:0.34349954, type:DOCUMENT, source:a4b6dd03-6a39-4690-82e2-8f9a1e488637
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1211, score:0.38796067, type:DOCUMENT, source:a4b6dd03-6a39-4690-82e2-8f9a1e488637
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1214, score:0.37284446, type:DOCUMENT, source:f6a87c47-da33-41d4-9c76-905998a4029f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1215, score:0.33755046, type:DOCUMENT, source:f6a87c47-da33-41d4-9c76-905998a4029f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1220, score:0.40483424, type:DOCUMENT, source:b00d590c-e32c-40b6-a934-9255341f4d48
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1224, score:0.41211757, type:DOCUMENT, source:c973c93b-fcf2-40cf-96b8-932f43cbb946
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1229, score:0.38668403, type:DOCUMENT, source:ed66b724-6e01-4ae1-a381-93b341f01ce8
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1237, score:0.38390025, type:DOCUMENT, source:09eb87a1-628b-41f4-bd11-95a08de3bce5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1240, score:0.36340976, type:DOCUMENT, source:76d43a8d-b440-4a27-aaff-96b13cb09a8f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1247, score:0.38796067, type:DOCUMENT, source:ebf5da00-4a18-449c-b455-9780d3a60b84
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1250, score:0.35690707, type:DOCUMENT, source:645efbde-2592-4e82-942f-97c41b733e49
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1252, score:0.3768801, type:DOCUMENT, source:db2b0685-32b8-4bfe-9ecb-97d90168e902
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1256, score:0.41754806, type:DOCUMENT, source:3e406072-cbf0-4ae0-a6d7-980c444deaae
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1260, score:0.41232944, type:DOCUMENT, source:5e2c5af1-3749-4e5c-95c1-989d09bb9364
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1264, score:0.34687918, type:DOCUMENT, source:5702b640-4795-4c58-9e41-99afddd6b17a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1265, score:0.3512911, type:DOCUMENT, source:a040e05e-cf42-458c-9bbf-99ed47c9a312
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1267, score:0.36641586, type:DOCUMENT, source:28fba84e-4f11-415f-ae18-99fcfab47143
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1272, score:0.3808611, type:DOCUMENT, source:1be73caa-1685-4d00-94e8-9c0a0c11ca59
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1273, score:0.40483424, type:DOCUMENT, source:1be73caa-1685-4d00-94e8-9c0a0c11ca59
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1276, score:0.40483424, type:DOCUMENT, source:7a72b5ea-3439-4606-862a-9cb2d0b196a5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1279, score:0.41211757, type:DOCUMENT, source:37279cf7-f8cc-45f3-be26-9dba94a9ba59
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1285, score:0.49996173, type:DOCUMENT, source:ae9841d7-d34f-4c8c-9200-9f38230c718a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1288, score:0.3577955, type:DOCUMENT, source:47558f10-ca9b-43d1-a30c-a1217436589b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1298, score:0.40483424, type:DOCUMENT, source:89a2bf65-1d67-4cde-9cd5-a2e2d878a5d9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1300, score:0.40483424, type:DOCUMENT, source:e5373400-5b14-4f5c-b271-a329a2724cfa
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1303, score:0.41211757, type:DOCUMENT, source:54d6cd70-c990-4fcb-9523-a38b53e1c067
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1310, score:0.35742474, type:DOCUMENT, source:bf3f064a-566a-49f0-ba2c-a5a67be25b3c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1311, score:0.34413183, type:DOCUMENT, source:bf3f064a-566a-49f0-ba2c-a5a67be25b3c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1312, score:0.45788604, type:DOCUMENT, source:4f4cc312-cd8a-44df-8f15-a5d5483ea2e6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1313, score:0.34005475, type:DOCUMENT, source:4f4cc312-cd8a-44df-8f15-a5d5483ea2e6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1315, score:0.40483424, type:DOCUMENT, source:b47bb714-5f3e-4acf-bc6c-a61853c83263
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1317, score:0.40483424, type:DOCUMENT, source:a904f12e-1fd1-4b40-940b-a62473a19bca
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1333, score:0.43278068, type:DOCUMENT, source:89d66b6d-9ac4-420d-8200-a820c3ecde8c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1336, score:0.41211757, type:DOCUMENT, source:aac7d589-4a6b-4cb6-9b39-a90f75c4e422
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1338, score:0.40483424, type:DOCUMENT, source:eaf66aca-43ff-483c-89e9-a92eb0dc814a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1340, score:0.36483386, type:DOCUMENT, source:6d1fc5e2-079e-4da7-a061-a98bb5555aea
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1343, score:0.38796067, type:DOCUMENT, source:3ac169cf-e1b9-4818-b399-aa003d50b81b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1346, score:0.40483424, type:DOCUMENT, source:5e3ddc56-2c02-4127-a438-aaa2a1cad4e4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1347, score:0.35475844, type:DOCUMENT, source:dfd726de-dfd0-4c53-80ab-aabc9d93c7fa
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1350, score:0.40483424, type:DOCUMENT, source:60e8079e-6378-4040-8f6d-aac3785bfe1c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1352, score:0.3522911, type:DOCUMENT, source:0eb879df-ab13-4a90-b343-abb944238055
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1360, score:0.3735118, type:DOCUMENT, source:95dfbe97-e713-4de1-ae1c-aed4d0d620d3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1369, score:0.34967965, type:DOCUMENT, source:9f0cc746-d4cd-4cf6-9d82-b0d5322d38b9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1370, score:0.48040468, type:DOCUMENT, source:a9a578a3-1ae9-4eb4-9bd5-b0ead934897b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1372, score:0.3565162, type:DOCUMENT, source:02f1021d-64e2-4d56-95e8-b0f07e58fa1b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1376, score:0.33567876, type:DOCUMENT, source:cd6a8d3e-338f-4da5-8fb2-b1efca9d156a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1380, score:0.42596498, type:DOCUMENT, source:a02cc721-dfe7-4c52-a0a4-b20dec8cdb8a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1382, score:0.33310178, type:DOCUMENT, source:d6918ddd-beb4-4be3-a4d2-b2ce06aefaae
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1387, score:0.3491519, type:DOCUMENT, source:8eb5644d-510b-4851-9c76-b408fdb90018
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1390, score:0.3372144, type:DOCUMENT, source:929d0b1e-77d0-4d91-87d0-b45c5b90b8a0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1395, score:0.40483424, type:DOCUMENT, source:61cefe21-aa7f-4819-bd0a-b5267f9b6c43
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1397, score:0.40622047, type:DOCUMENT, source:f997a6d7-1978-454b-8d12-b5510eec4f37
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1400, score:0.3700317, type:DOCUMENT, source:ea35a447-11fc-4483-a82e-b5fc876dfdb7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1409, score:0.3485941, type:DOCUMENT, source:71eea02b-6b1b-4ca3-a5b4-b7a252186103
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1410, score:0.35599247, type:DOCUMENT, source:71eea02b-6b1b-4ca3-a5b4-b7a252186103
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1421, score:0.44546533, type:DOCUMENT, source:0c4bbf4d-b798-4b9d-a029-b930eafe2c99
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1423, score:0.406569, type:DOCUMENT, source:edd1a0d5-56a9-4d48-965c-b9948d24e38b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1425, score:0.4161244, type:DOCUMENT, source:128df7c2-b98d-480d-8b0e-ba007a60fffc
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1430, score:0.32774115, type:DOCUMENT, source:087b56b4-942f-4030-a5d5-baa2c22b9f34
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1432, score:0.37396708, type:DOCUMENT, source:17cd980d-fe5c-499c-9553-bab155f0e185
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1434, score:0.40483424, type:DOCUMENT, source:1194e370-9b51-48a2-aa46-bab1bd58ba14
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1437, score:0.47182262, type:DOCUMENT, source:9f0bde7b-11f8-47b3-95ae-baef42e773b9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1439, score:0.34416163, type:DOCUMENT, source:9aa2588e-756f-447e-bfe9-bb82366216a1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1445, score:0.3545059, type:DOCUMENT, source:724b5f44-efad-408d-b204-bdb1e38dd2e2
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1449, score:0.40483424, type:DOCUMENT, source:67ca828d-4137-42b6-8a5f-be01d2ee227b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1452, score:0.34468657, type:DOCUMENT, source:36f9501e-dda4-43e6-b0ff-bea0e25319cf
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1457, score:0.36210516, type:DOCUMENT, source:290b3925-351c-4b71-b392-bfe4c5a10cb4
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1467, score:0.39302677, type:DOCUMENT, source:49fae5d5-d94e-4c0f-8f95-c1307a45eb35
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1471, score:0.32673103, type:DOCUMENT, source:0d3359fd-883b-4986-87c2-c1fdb72c2c70
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1473, score:0.33381504, type:DOCUMENT, source:c5dcbfc3-9efc-443d-8dd3-c2e3f2c500ae
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1474, score:0.35022628, type:DOCUMENT, source:0fbffa92-1ed1-4e66-9f2a-c323de6dc6e0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1478, score:0.3512911, type:DOCUMENT, source:b2ea9277-5112-4c13-95a5-c3adbbca0c4b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1485, score:0.3666857, type:DOCUMENT, source:7707d9a7-5912-4ff7-bd82-c4d47470888e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1486, score:0.35627818, type:DOCUMENT, source:7707d9a7-5912-4ff7-bd82-c4d47470888e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1489, score:0.34614223, type:DOCUMENT, source:e0fec18b-a959-4621-b166-c557d6e7a928
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1493, score:0.40483424, type:DOCUMENT, source:3fdf8597-62f6-42b7-b082-c64f3f80e026
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1497, score:0.3670261, type:DOCUMENT, source:3a6da14a-fdce-4f56-a2a9-c795a747bb21
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1498, score:0.40865263, type:DOCUMENT, source:d863888c-20d6-45de-8850-c7d590fc78af
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1502, score:0.33620054, type:DOCUMENT, source:75bafe5c-3040-44eb-ae80-c923fb5a21fa
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1503, score:0.54014313, type:DOCUMENT, source:75bafe5c-3040-44eb-ae80-c923fb5a21fa
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1509, score:0.40483424, type:DOCUMENT, source:964eac9c-55f6-4932-aadc-c9a7c1b08d80
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1516, score:0.32915342, type:DOCUMENT, source:b1d53065-46d7-4239-b137-cb19ece74c0d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1517, score:0.36012703, type:DOCUMENT, source:d2405451-1fbe-4ebf-867a-cb272e76cbab
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1518, score:0.42968556, type:DOCUMENT, source:0c1efbdf-5d04-41df-98cb-cb44f92fb7b7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1519, score:0.47994936, type:DOCUMENT, source:0c1efbdf-5d04-41df-98cb-cb44f92fb7b7
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1522, score:0.40483424, type:DOCUMENT, source:3c1c9815-d7b2-43b0-9d26-cb8b54ad4fbc
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1525, score:0.40483424, type:DOCUMENT, source:392be120-6b9f-4e6d-8a19-cbb3be8f53cc
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1531, score:0.40308756, type:DOCUMENT, source:db2dbe56-794c-4b95-8d2a-cd1002d3b2e0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1535, score:0.41211757, type:DOCUMENT, source:339db426-95bb-411a-b974-cd98f5ef9a09
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1540, score:0.41102958, type:DOCUMENT, source:5237f2eb-32d8-4a94-a7c4-ce7e958e9728
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1546, score:0.40632343, type:DOCUMENT, source:41fccc48-c048-4b3b-bbae-cf249342f705
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1549, score:0.36323413, type:DOCUMENT, source:085f64a5-860a-4e02-a24e-d07e83e6683c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1553, score:0.34090918, type:DOCUMENT, source:678b3435-ac5c-400f-991e-d1efe2ff0e83
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1563, score:0.40483424, type:DOCUMENT, source:50dc9aa7-3a2d-43f9-9e8c-d4fc2852db99
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1564, score:0.49547923, type:DOCUMENT, source:a34afcbc-2761-4161-9430-d500a27b7c06
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1569, score:0.40483424, type:DOCUMENT, source:a6ae0d1b-1f7d-408d-aa8f-d619e8b33fd9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1571, score:0.32719862, type:DOCUMENT, source:c338ff93-2d63-4bc0-898f-d64ffa5042bb
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1578, score:0.38796067, type:DOCUMENT, source:7784198b-c559-4b90-8b8c-d75edcf6c4b3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1579, score:0.3463903, type:DOCUMENT, source:e2ae9c96-e1c0-460c-bbb4-d774b8740fc3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1581, score:0.330837, type:DOCUMENT, source:a710a5d1-6919-4948-bc73-d8a19cd114f3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1582, score:0.38796067, type:DOCUMENT, source:a710a5d1-6919-4948-bc73-d8a19cd114f3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1586, score:0.43192428, type:DOCUMENT, source:bec21ff2-8af4-4119-a353-d9905b88b913
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1587, score:0.3878253, type:DOCUMENT, source:90fa096b-0ece-4773-a3f7-da374d29ed30
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1591, score:0.40483424, type:DOCUMENT, source:41832a92-5619-4e10-b579-da8418f8cab6
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1598, score:0.3344132, type:DOCUMENT, source:c32085b4-93b3-4ccf-af9d-db068d8e97a3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1600, score:0.33145288, type:DOCUMENT, source:6d619c65-fe6c-474e-b06e-db18f1a9c4c3
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1603, score:0.3389186, type:DOCUMENT, source:a343327f-9bab-4d6a-a3e2-dbcd7ee30a09
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1604, score:0.37633616, type:DOCUMENT, source:a343327f-9bab-4d6a-a3e2-dbcd7ee30a09
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1606, score:0.40483424, type:DOCUMENT, source:3e2a6a2b-f3ae-41a7-baee-dbd664dd4f74
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1611, score:0.36563325, type:DOCUMENT, source:6cf12371-e460-4773-879b-ddbe810c5814
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1612, score:0.33756584, type:DOCUMENT, source:e26af74e-bec9-498e-aec8-de1eedf68684
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1617, score:0.33929902, type:DOCUMENT, source:e7b22962-db1f-4859-a889-dea7a55129df
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1621, score:0.41211757, type:DOCUMENT, source:3096a173-e417-420f-be3f-df3f780ae9e0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1629, score:0.41211757, type:DOCUMENT, source:3f2aab43-2874-4704-bfda-e06102d95b2a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1630, score:0.36176488, type:DOCUMENT, source:a63734b7-f29f-46fa-b534-e06ec9356c5f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1633, score:0.34238452, type:DOCUMENT, source:44fcebd3-1c33-4e2c-bcda-e1126fc73b24
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1636, score:0.34841642, type:DOCUMENT, source:138d6dff-3305-42fd-b056-e1cc444fb035
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1638, score:0.41211757, type:DOCUMENT, source:bfb5d96c-2007-400f-b167-e1d450d950a1
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1639, score:0.33391595, type:DOCUMENT, source:3452731f-7423-4a89-81ab-e21343b8013b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1640, score:0.37061113, type:DOCUMENT, source:3452731f-7423-4a89-81ab-e21343b8013b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1644, score:0.357701, type:DOCUMENT, source:0494fa5a-99f2-45c6-905f-e2668287f314
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1645, score:0.34280252, type:DOCUMENT, source:4b25d25e-2878-4da9-a739-e2890e766583
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1646, score:0.35024595, type:DOCUMENT, source:c5d51e2c-1ab5-4693-ad5d-e29d8ad0b85c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1647, score:0.40483424, type:DOCUMENT, source:c5d51e2c-1ab5-4693-ad5d-e29d8ad0b85c
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1649, score:0.36314294, type:DOCUMENT, source:8451de26-87c5-4bdf-9d50-e39380642049
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1650, score:0.55197203, type:DOCUMENT, source:8451de26-87c5-4bdf-9d50-e39380642049
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1660, score:0.41211757, type:DOCUMENT, source:6a64ac93-ca40-412a-bc86-e4edc177196b
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1666, score:0.40483424, type:DOCUMENT, source:df0e94fd-698f-46fd-b466-e5e683190a10
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1672, score:0.33947557, type:DOCUMENT, source:535937d5-5a04-4895-90af-e80564ccb871
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1676, score:0.35606533, type:DOCUMENT, source:befdd282-248c-4666-9162-e94062c65bb9
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1678, score:0.40483424, type:DOCUMENT, source:ab388d50-c3ee-420b-a8a4-e96fab6ea8f0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1680, score:0.34355205, type:DOCUMENT, source:aaecde97-2dc0-4c37-b229-e9a506cb1047
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1681, score:0.37904838, type:DOCUMENT, source:aaecde97-2dc0-4c37-b229-e9a506cb1047
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1686, score:0.40483424, type:DOCUMENT, source:5c35adbf-6451-4805-b51e-ead7b779b5ab
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1691, score:0.32959488, type:DOCUMENT, source:1cb73f1a-e0bb-4c94-b344-ec10fb41a9fe
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1697, score:0.44546533, type:DOCUMENT, source:7e7797c4-772f-4c0e-88f6-ed08a7f0bbfd
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1699, score:0.41211757, type:DOCUMENT, source:eae9b6ad-e778-48c0-b7be-ed7b6bc21cac
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1702, score:0.40483424, type:DOCUMENT, source:eab14262-4029-46f0-8c3f-ede3574b6c6e
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1712, score:0.40483424, type:DOCUMENT, source:c6bf6b74-2e6b-4910-93a6-f135ffb87f6a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1715, score:0.35363585, type:DOCUMENT, source:b2af1de7-5824-4ee6-a76a-f24311ad92db
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1716, score:0.40483424, type:DOCUMENT, source:b2af1de7-5824-4ee6-a76a-f24311ad92db
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1717, score:0.48190415, type:DOCUMENT, source:bd5caf98-baee-4853-9522-f25143c76366
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1724, score:0.34312382, type:DOCUMENT, source:fa790456-1993-4dcc-a0d7-f3bbe5cacc5f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1725, score:0.38796067, type:DOCUMENT, source:fa790456-1993-4dcc-a0d7-f3bbe5cacc5f
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1730, score:0.331047, type:DOCUMENT, source:d912045a-6c17-45fa-8108-f4ae445bce1d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1731, score:0.4926194, type:DOCUMENT, source:524bee58-95f0-4af8-8dd8-f4ba70969709
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1734, score:0.35740942, type:DOCUMENT, source:d4852f13-eed4-49ed-97a0-f596f3ce5e07
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1740, score:0.3700598, type:DOCUMENT, source:598ffa18-e1cf-44d4-ae9f-f68d68a08d17
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1741, score:0.32751787, type:DOCUMENT, source:29667e07-1bcb-4562-b1f0-f6fe43ba083d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1746, score:0.44546533, type:DOCUMENT, source:8434fdca-6e42-49b6-a529-f7b5962c3bec
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1750, score:0.35191572, type:DOCUMENT, source:8f037a83-3f68-45a7-85fe-f857da2cc9bd
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1753, score:0.32729837, type:DOCUMENT, source:df9fa46b-f930-42b4-9d62-f8775ce11d74
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1756, score:0.46033216, type:DOCUMENT, source:f4bcf76a-185f-4473-8ae8-f93714bc0082
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1757, score:0.34410167, type:DOCUMENT, source:83b1e1b1-70f2-4c76-affc-f98ac8cb338a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1761, score:0.34738362, type:DOCUMENT, source:ae0d6f21-d49c-4b44-9973-f9c388f101b5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1763, score:0.3735118, type:DOCUMENT, source:63e7afd9-0c09-4dc9-9e88-f9c63992194d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1764, score:0.36898494, type:DOCUMENT, source:fa50ea46-7467-4c18-932d-f9d3705505a5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1767, score:0.3462125, type:DOCUMENT, source:736b276f-3dc5-40ef-877b-face4c382387
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1769, score:0.40483424, type:DOCUMENT, source:2911d1a9-2e25-4dd7-a972-fae9afe6898d
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1778, score:0.37795836, type:DOCUMENT, source:6ccde04a-ae3d-4ece-8f4d-fd08d45a3da5
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1786, score:0.46611, type:DOCUMENT, source:67575066-5f1e-449d-bc0e-fdec15efb604
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1787, score:0.3328322, type:DOCUMENT, source:801e4a09-0960-4a97-9ac3-fe3d5d3f1df0
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1790, score:0.40483424, type:DOCUMENT, source:8ca5925e-2ef5-41a5-932a-feb55a623054
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1791, score:0.34247303, type:DOCUMENT, source:bb8f22b9-6b99-499c-a243-fec7c7b4210a
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Chunk id:1794, score:0.36400443, type:DOCUMENT, source:145fba06-fb31-46cd-b92d-ffab5eba1015
+[2026-03-10 11:07:20] [INFO] FaissVectorStore: Similarity search completed in 1199ms
+Adaptive K: Find optimalK = 8 with max gap = 0.012505531)
+[2026-03-10 11:07:20] [INFO] RAGService: Retrieved documents:
+ea822a0d-1156-483d-8866-6f523c783a36::asciidoc::prompt-engineering-patterns.adoc::2. Prompt Engineering Techniques::2.3 System, contextual and role prompting::0::0.6458945
+fcd2b7a5-0460-4a19-aec3-b0cbb40dba6d::cu::RewriteQueryTransformer.java::0.5525718
+8451de26-87c5-4bdf-9d50-e39380642049::asciidoc::openai-sdk-chat.adoc::Structured Outputs::Configuration::0::0.55197203
+088e28b3-7570-4836-9c4b-59ff2a248875::cu::TranslationQueryTransformer.java::0.55179155
+75bafe5c-3040-44eb-ae80-c923fb5a21fa::asciidoc::prompt-engineering-patterns.adoc::References::0::0.54014313
+a71736e4-398c-4421-8472-7719e37d6f17::cu::MultiQueryExpander.java::0.53466105
+764ca213-62dd-4762-b7df-b8d2a9df527a::cu::ContextualQueryAugmenter.java::0.5248456
+f8974c29-a3ce-45d9-8c18-5e0880bd9b92::asciidoc::prompt.adoc::API Overview::PromptTemplate::0::0.52259505
+4e7b6b14-fd77-4a38-9fe8-aa6f7b7be7d0::cu::PromptAssert.java::0.5100895
+0a55973c-b43c-4df6-ad6d-37e9066688e0::asciidoc::prompt.adoc::Prompt Engineering::Creating effective prompts::0::0.50426185
+[2026-03-10 11:07:20] [INFO] RAGService: Retrieval completed in 1203ms
+[2026-03-10 11:07:27] [INFO] RAGService: Generation completed in 6167ms
+Response: The term `PromptBuilder` as a distinct class name is not explicitly mentioned or defined in the provided context.
+
+However, the code examples in the "System Prompting" section (Context 1) demonstrate a builder-like pattern initiated by `chatClient.prompt()`:
+
+```java
+chatClient
+    .prompt()
+    .system("...")
+    .user("...")
+    .options(...)
+    .call()
+```
+
+Based on this usage, the **purpose of the `prompt()` method (which acts as the entry point to a prompt builder-like fluent API)** is to:
+
+1.  **Initiate the creation of a `Prompt` object** for the `ChatClient`.
+2.  **Allow for the structured and fluent assembly of various prompt components**, such as system messages, user messages, and chat options, before sending the complete prompt to the language model.
+Enter your query (or 'exit' to quit): exit
+Exiting...
+[2026-03-10 11:08:16] [INFO] LocalContainerEntityManagerFactoryBean: Closing JPA EntityManagerFactory for persistence unit 'default'
+[2026-03-10 11:08:16] [INFO] HikariDataSource: HikariPool-1 - Shutdown initiated...
+[2026-03-10 11:08:16] [INFO] HikariDataSource: HikariPool-1 - Shutdown completed.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:15 min
+[INFO] Finished at: 2026-03-10T11:08:16+08:00
+[INFO] ------------------------------------------------------------------------

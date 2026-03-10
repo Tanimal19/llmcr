@@ -60,6 +60,9 @@ public class LoadService {
     }
 
     private static String textFilter(String text) {
+        if (text == null) {
+            return "";
+        }
         return text
                 // remove control characters except newlines nd tabs
                 .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")

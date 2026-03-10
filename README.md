@@ -1,21 +1,67 @@
+# Intelligent Code Review RAG Application
 
-## Container Services
-This application depends on two services: FAISS for vector search, and mariadb for data storage. You can see the configuration in `docker-compose.yml`.
+Project for Software Engineering Lab.  
+Detail: https://drive.google.com/file/d/1ROs21oOD5hAumyx3W9JTEB31CfwmOUw5/view?usp=share_link
 
+
+## Run
+To run the application, follow these steps:
+- Make sure Ollama is installed and running on your machine, and models are pulled.
+- Start the FAISS and MariaDB services using `docker-compose up -d`.
+- Run the application using `./run.sh` in the `spring-app` directory. (`cd spring-app` first)
+
+### ETL Pipeline
+To run the ETL pipeline, set the `--app.mode=etl` in `run.sh`.  
+You need to set the paths of Java project and documentation in `run.sh` as well.
 ```sh
-docker-compose up -d    # start the service in background
-docker-compose stop     # pause the service
-docker-compose restart  # resume the service
-docker-compose down -v  # delete the service and volume
+SPRING_ARGUMENTS="--app.mode=etl \
+    --etl.input.javaproject.path=\"../_datasets/spring-ai-main simple\" \
+    --etl.input.document.paths=\"../_datasets/spring-ai-docs/src/main/antora/modules/ROOT/pages/,../_datasets/Effective Java (2017, Addison-Wesley).pdf\""
 ```
 
-The index file of FAISS is stored in `./faiss_service/data`.
-The database data is stored in docker volume, you can backup it via:
+The ETL process consists of three main steps, which are implemented in the following classes:
+- `service/etl/ExtractService.java`: Extract class node from `.java` and paragraphs from docs.
+- `service/etl/TransformService.java`: Enrich each class node with paragraphs and generate summary via LLM.
+- `service/etl/LoadService.java`: Chunk and Load the enriched class nodes and paragraphs into FAISS vector store and MariaDB.
+
+
+### RAG
+To run the RAG application, set the `--app.mode=rag` in `run.sh`.  
+This will start a CLI interface for you to ask questions about the Java project and documentation.
+
+> [!NOTE]
+> You can use the extracted data at `_backups/` to run the RAG application without running the ETL pipeline.
+> Place index file under `./faiss_service/data` and import SQL file to MariaDB.
+
+
+## Configuration
+- Set FAISS and MariaDB configurations in `docker-compose.yml`.
+  - The index file of FAISS is stored in `./faiss_service/data`.
+  - The database data is stored in docker volume, you can backup it via:
 ```sh
-docker exec mariadb \ 
-  mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
+docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
+```
+- Set spring app properties at `application.properties`.
+- Set environment variables at `.env` file.
+```sh
+export DB_USERNAME="user"
+export DB_PASSWORD="123"
+export GOOGLE_GEMINI_API_KEY="???"
 ```
 
-## ETL Process
-The ETL (Extract, Transform, Load) process is implemented in the `ETLRunner.java` file.
-To run the ETL process, execute `spring-app/run.sh`.
+## Structure
+- `_datasets/`: Datasets for ETL. (you need to prepare it by yourself)
+- `faiss_service/`: FAISS vector store service implemented in Python Flask.
+- `spring-app/`: Spring Boot application for ETL and RAG.
+- `evaluation/`: Evaluation scripts and data.
+
+### Java classes
+- `datasource/`: Represents different type of data sources.
+- `entity/`: Database schema entities.
+- `extractor/`: Extractor that extract specific data from data sources.
+- `repository/`: Repository for database operations.
+- `service/etl/`: Classes for ETL pipeline.
+- `service/faiss/`: Encapsulate FAISS operations as Spring AI's Vector Store.
+- `service/rag/`: Classes for RAG application.
+  - `RAGTemplate.java`: Base class for RAG template, indicate the use case of RAG.
+  - `RetrievalStrategy.java`: Base class for retrieval strategy.

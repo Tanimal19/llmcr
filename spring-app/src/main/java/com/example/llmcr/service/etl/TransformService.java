@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -29,9 +30,9 @@ public class TransformService {
                     """
                             You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and related documentation contents.
                             You should generate below information:
-                            - **description**: what does this class do?
-                            - **exampleUsage**: best practices of this class, only include the most important examples.
-                            - **relationship**: how does this class relate to other classes or components in the project?
+                            - **description**: What does this class do?
+                            - **exampleUsage**: Best practices of this class, only include the one most important examples. Illustrate the example with natural language explanation, not code.
+                            - **relationship**: How does this class relate to other classes or components in the project?
 
                             Raw code at below.
                             -----------------
@@ -49,7 +50,7 @@ public class TransformService {
     private static final BeanOutputConverter<ClassNodeSummary> outputConverter = new BeanOutputConverter<>(
             ClassNodeSummary.class);
 
-    private static final RateLimiter rateLimiter = RateLimiter.create(2.0 / 60.0);
+    private static final RateLimiter rateLimiter = RateLimiter.create(30.0 / 60.0);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TransformService.class);
 
@@ -82,12 +83,16 @@ public class TransformService {
 
             // enrich node with llm generated summary
             // build prompt
-            String formatInstruction = outputConverter.getFormat();
-            Map<String, Object> variables = Map.of(
-                    "code", classNode.getContent(),
-                    "doc", classNode.getDocumentParagraphs().stream()
+            String code = Objects.toString(classNode.getContent(), "");
+            List<DocumentParagraph> paragraphs = classNode.getDocumentParagraphs();
+            String doc = paragraphs == null ? ""
+                    : paragraphs.stream()
                             .map(DocumentParagraph::getContent)
-                            .collect(Collectors.joining("\n")),
+                            .collect(Collectors.joining("\n"));
+            String formatInstruction = Objects.toString(outputConverter.getFormat(), "");
+            Map<String, Object> variables = Map.of(
+                    "code", code,
+                    "doc", doc,
                     "format", formatInstruction);
             Prompt prompt = promptTemplate.create(variables);
 
@@ -133,10 +138,10 @@ public class TransformService {
             try {
                 Map<String, Object> entry = Map.of(
                         "timestamp", java.time.Instant.now().toString(),
-                        "prompt", prompt.toString(),
-                        "description", nodeSummary.description(),
-                        "exampleUsage", nodeSummary.usage(),
-                        "relationship", nodeSummary.relationship());
+                        "prompt", Objects.toString(prompt, ""),
+                        "description", Objects.toString(nodeSummary.description(), ""),
+                        "exampleUsage", Objects.toString(nodeSummary.usage(), ""),
+                        "relationship", Objects.toString(nodeSummary.relationship(), ""));
                 JsonBackupUtils.appendJsonBackup(transformChatHistoryFile, entry);
             } catch (IOException e) {
                 LOGGER.warn("Failed to save transform history for ClassNode: "

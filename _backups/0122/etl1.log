@@ -1,0 +1,764 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.example:llmcr >--------------------------
+[INFO] Building llmcr 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.7:run (default-cli) > test-compile @ llmcr >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ llmcr ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ llmcr ---
+[INFO] skip non existing resourceDirectory /Users/bobch/Desktop/軟工專題/llmcr/spring-app/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ llmcr ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.7:run (default-cli) < test-compile @ llmcr <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.7:run (default-cli) @ llmcr ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.7)
+
+[2026-01-21 23:45:25] [INFO] LlmcrApplication: Starting LlmcrApplication using Java 21.0.8 with PID 16575 (/Users/bobch/Desktop/軟工專題/llmcr/spring-app/target/classes started by bobch in /Users/bobch/Desktop/軟工專題/llmcr/spring-app)
+[2026-01-21 23:45:25] [INFO] LlmcrApplication: No active profile set, falling back to 1 default profile: "default"
+[2026-01-21 23:45:25] [INFO] RepositoryConfigurationDelegate: Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+[2026-01-21 23:45:25] [INFO] RepositoryConfigurationDelegate: Finished Spring Data repository scanning in 47 ms. Found 4 JPA repository interfaces.
+[2026-01-21 23:45:25] [INFO] LogHelper: HHH000204: Processing PersistenceUnitInfo [name: default]
+[2026-01-21 23:45:25] [INFO] Version: HHH000412: Hibernate ORM core version 6.6.33.Final
+[2026-01-21 23:45:25] [INFO] RegionFactoryInitiator: HHH000026: Second-level cache disabled
+[2026-01-21 23:45:25] [INFO] SpringPersistenceUnitInfo: No LoadTimeWeaver setup: ignoring JPA class transformer
+[2026-01-21 23:45:25] [INFO] HikariDataSource: HikariPool-1 - Starting...
+[2026-01-21 23:45:26] [INFO] HikariPool: HikariPool-1 - Added connection org.mariadb.jdbc.Connection@10b8b900
+[2026-01-21 23:45:26] [INFO] HikariDataSource: HikariPool-1 - Start completed.
+[2026-01-21 23:45:26] [WARN] deprecation: HHH90000025: MariaDBDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+[2026-01-21 23:45:26] [INFO] pooling: HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 11.8.5
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+[2026-01-21 23:45:26] [INFO] JtaPlatformInitiator: HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+[2026-01-21 23:45:26] [INFO] LocalContainerEntityManagerFactoryBean: Initialized JPA EntityManagerFactory for persistence unit 'default'
+[2026-01-21 23:45:26] [ERROR] DnsServerAddressStreamProviders: Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+[2026-01-21 23:45:26] [INFO] LlmcrApplication: Started LlmcrApplication in 1.437 seconds (process running for 1.546)
+[2026-01-21 23:45:27] [INFO] DataSourceFactoryService: Parsed 59 Java sources from project path: ../_datasets/spring-ai-main simple
+[2026-01-21 23:45:27] [INFO] ExtractService: Start data extraction
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::RetrievalAugmentationAdvisor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::RetrievalAugmentationAdvisor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::CompressionQueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::CompressionQueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::TranslationQueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::TranslationQueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::RewriteQueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::RewriteQueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::QueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::QueryTransformer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::MultiQueryExpander.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::MultiQueryExpander.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::QueryExpander.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::QueryExpander.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::PromptAssert.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::PromptAssert.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::ConcatenationDocumentJoiner.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::ConcatenationDocumentJoiner.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::DocumentJoiner.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::DocumentJoiner.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::VectorStoreDocumentRetriever.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreDocumentRetriever.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::DocumentRetriever.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::DocumentRetriever.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::DocumentPostProcessor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::DocumentPostProcessor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::Query.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::Query.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::ContextualQueryAugmenter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::ContextualQueryAugmenter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::QueryAugmenter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::QueryAugmenter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SimpleVectorStoreTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStoreTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SimpleVectorStoreWithFilterTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStoreWithFilterTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::FilterHelperTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterHelperTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::PineconeFilterExpressionConverterTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::PineconeFilterExpressionConverterTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SimpleVectorStoreFilterExpressionConverterTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStoreFilterExpressionConverterTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FilterExpressionBuilderTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterExpressionBuilderTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FilterExpressionTextParserTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterExpressionTextParserTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SearchRequestTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SearchRequestTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreRuntimeHintsTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreRuntimeHintsTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreQueryResponseObservationHandlerTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreQueryResponseObservationHandlerTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::DefaultVectorStoreObservationConventionTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::DefaultVectorStoreObservationConventionTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreObservationContextTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreObservationContextTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SimpleVectorStoreSimilarityTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStoreSimilarityTests.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::VectorStore.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStore.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 3 class nodes from source: cu::SimpleVectorStore.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStore.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SpringAIVectorStoreTypes.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SpringAIVectorStoreTypes.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SimpleVectorStoreContent.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStoreContent.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreRetriever.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreRetriever.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::CommonVectorStoreProperties.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::CommonVectorStoreProperties.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::PineconeFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::PineconeFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::SimpleVectorStoreFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SimpleVectorStoreFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::AbstractFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::AbstractFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::PrintFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::PrintFilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::FilterExpressionBuilder.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterExpressionBuilder.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FilterHelper.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterHelper.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FiltersListener.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FiltersListener.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FiltersLexer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FiltersLexer.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FiltersBaseVisitor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FiltersBaseVisitor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 19 class nodes from source: cu::FiltersParser.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FiltersParser.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FiltersVisitor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FiltersVisitor.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FiltersBaseListener.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FiltersBaseListener.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::FilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterExpressionConverter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 4 class nodes from source: cu::FilterExpressionTextParser.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::FilterExpressionTextParser.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 7 class nodes from source: cu::Filter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::Filter.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::AbstractVectorStoreBuilder.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::AbstractVectorStoreBuilder.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 2 class nodes from source: cu::SearchRequest.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::SearchRequest.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreRuntimeHints.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreRuntimeHints.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::AbstractObservationVectorStore.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::AbstractObservationVectorStore.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreObservationConvention.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreObservationConvention.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::DefaultVectorStoreObservationConvention.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::DefaultVectorStoreObservationConvention.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 3 class nodes from source: cu::VectorStoreObservationDocumentation.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreObservationDocumentation.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 1 class nodes from source: cu::VectorStoreQueryResponseObservationHandler.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreQueryResponseObservationHandler.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 3 class nodes from source: cu::VectorStoreObservationContext.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 document paragraphs from source: cu::VectorStoreObservationContext.java
+[2026-01-21 23:45:27] [INFO] ExtractService: Data extraction completed in 341ms
+[2026-01-21 23:45:27] [INFO] DataSourceFactoryService: Parsed 87 document sources from directory: ../_datasets/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages
+[2026-01-21 23:45:27] [INFO] ExtractService: Start data extraction
+[2026-01-21 23:45:27] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::upgrade-notes.adoc
+2026-01-21T23:45:28.183+08:00 [main] WARN FilenoUtil : Native subprocess control requires open access to the JDK IO subsystem
+Pass '--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED' to enable.
+[2026-01-21 23:45:28] [INFO] ExtractService: Extracted 47 document paragraphs from source: asciidoc::upgrade-notes.adoc
+[2026-01-21 23:45:28] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::getting-started.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::getting-started.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::concepts.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 11 document paragraphs from source: asciidoc::concepts.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::contribution-guidelines.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 2 document paragraphs from source: asciidoc::contribution-guidelines.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::index.adoc
+[2026-01-21 23:45:29] [INFO] asciidoctor: possible invalid reference: _prompt_content
+[2026-01-21 23:45:29] [INFO] asciidoctor: possible invalid reference: _prompt_content
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 20 document paragraphs from source: asciidoc::index.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::glossary.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 0 document paragraphs from source: asciidoc::glossary.adoc
+[2026-01-21 23:45:29] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::elasticsearch.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::elasticsearch.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::mongodb.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 9 document paragraphs from source: asciidoc::mongodb.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::couchbase.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::couchbase.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::gemfire.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::gemfire.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::hana.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::hana.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::pinecone.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::pinecone.adoc
+[2026-01-21 23:45:30] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::apache-cassandra.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 13 document paragraphs from source: asciidoc::apache-cassandra.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::understand-vectordbs.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 3 document paragraphs from source: asciidoc::understand-vectordbs.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::oracle.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::oracle.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::typesense.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::typesense.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::hanadb-provision-a-trial-account.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 2 document paragraphs from source: asciidoc::hanadb-provision-a-trial-account.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::weaviate.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::weaviate.adoc
+[2026-01-21 23:45:31] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::opensearch.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::opensearch.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::neo4j.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::neo4j.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::azure-cosmos-db.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::azure-cosmos-db.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::chroma.adoc
+[2026-01-21 23:45:32] [INFO] asciidoctor: possible invalid reference: run Chroma Locally
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::chroma.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::milvus.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::milvus.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::coherence.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 1 document paragraphs from source: asciidoc::coherence.adoc
+[2026-01-21 23:45:32] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::azure.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::azure.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::mariadb.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 13 document paragraphs from source: asciidoc::mariadb.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::qdrant.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::qdrant.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::redis.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::redis.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::pgvector.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 9 document paragraphs from source: asciidoc::pgvector.adoc
+[2026-01-21 23:45:33] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::embeddings.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 5 document paragraphs from source: asciidoc::embeddings.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::azure-openai-embeddings.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 11 document paragraphs from source: asciidoc::azure-openai-embeddings.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::ollama-embeddings.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::ollama-embeddings.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::vertexai-embeddings-multimodal.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 6 document paragraphs from source: asciidoc::vertexai-embeddings-multimodal.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::onnx.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 6 document paragraphs from source: asciidoc::onnx.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::bedrock-titan-embedding.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::bedrock-titan-embedding.adoc
+[2026-01-21 23:45:34] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::zhipuai-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::zhipuai-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::openai-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::openai-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::mistralai-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 9 document paragraphs from source: asciidoc::mistralai-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::minimax-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::minimax-embeddings.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::bedrock-cohere-embedding.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::bedrock-cohere-embedding.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::google-genai-embeddings-text.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 18 document paragraphs from source: asciidoc::google-genai-embeddings-text.adoc
+[2026-01-21 23:45:35] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::qianfan-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 1 document paragraphs from source: asciidoc::qianfan-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::oci-genai-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::oci-genai-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::openai-sdk-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 15 document paragraphs from source: asciidoc::openai-sdk-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::vertexai-embeddings-text.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::vertexai-embeddings-text.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::postgresml-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::postgresml-embeddings.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::cohere-chat.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::cohere-chat.adoc
+[2026-01-21 23:45:36] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::google-genai-chat.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 21 document paragraphs from source: asciidoc::google-genai-chat.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::minimax-chat.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::minimax-chat.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::azure-openai-chat.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 15 document paragraphs from source: asciidoc::azure-openai-chat.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::bedrock-converse.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 24 document paragraphs from source: asciidoc::bedrock-converse.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::huggingface.adoc
+[2026-01-21 23:45:37] [INFO] asciidoctor: possible invalid reference: low-level-api
+[2026-01-21 23:45:37] [INFO] asciidoctor: possible invalid reference: low-level-api
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::huggingface.adoc
+[2026-01-21 23:45:37] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::ollama-chat.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 22 document paragraphs from source: asciidoc::ollama-chat.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::comparison.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 1 document paragraphs from source: asciidoc::comparison.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::prompt-engineering-patterns.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 23 document paragraphs from source: asciidoc::prompt-engineering-patterns.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::openai-sdk-chat.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 26 document paragraphs from source: asciidoc::openai-sdk-chat.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::zhipuai-chat.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 9 document paragraphs from source: asciidoc::zhipuai-chat.adoc
+[2026-01-21 23:45:38] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::anthropic-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 45 document paragraphs from source: asciidoc::anthropic-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::dmr-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::dmr-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::openai-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 33 document paragraphs from source: asciidoc::openai-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::nvidia-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 8 document paragraphs from source: asciidoc::nvidia-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::perplexity-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 11 document paragraphs from source: asciidoc::perplexity-chat.adoc
+[2026-01-21 23:45:39] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::mistralai-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 17 document paragraphs from source: asciidoc::mistralai-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::google-vertexai.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 1 document paragraphs from source: asciidoc::google-vertexai.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::groq-chat.adoc
+[2026-01-21 23:45:40] [INFO] asciidoctor: possible invalid reference: low-level-api
+[2026-01-21 23:45:40] [INFO] asciidoctor: possible invalid reference: low-level-api
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 11 document paragraphs from source: asciidoc::groq-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::moonshot-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 1 document paragraphs from source: asciidoc::moonshot-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::vertexai-gemini-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::vertexai-gemini-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::deepseek-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::deepseek-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::qianfan-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 1 document paragraphs from source: asciidoc::qianfan-chat.adoc
+[2026-01-21 23:45:40] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::tools.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 39 document paragraphs from source: asciidoc::tools.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::prompt.adoc
+[2026-01-21 23:45:41] [INFO] asciidoctor: possible invalid reference: StringTemplate
+[2026-01-21 23:45:41] [INFO] asciidoctor: possible invalid reference: StringTemplate
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::prompt.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::chat-memory.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 17 document paragraphs from source: asciidoc::chat-memory.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::aimetadata.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 4 document paragraphs from source: asciidoc::aimetadata.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::tools-migration.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 14 document paragraphs from source: asciidoc::tools-migration.adoc
+[2026-01-21 23:45:41] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::advisors-recursive.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 4 document paragraphs from source: asciidoc::advisors-recursive.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::etl-pipeline.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 26 document paragraphs from source: asciidoc::etl-pipeline.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::effective-agents.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 14 document paragraphs from source: asciidoc::effective-agents.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::multimodality.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 3 document paragraphs from source: asciidoc::multimodality.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::structured-output-converter.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::structured-output-converter.adoc
+[2026-01-21 23:45:42] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::vectordbs.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 35 document paragraphs from source: asciidoc::vectordbs.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::usage-handling.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 6 document paragraphs from source: asciidoc::usage-handling.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::chatmodel.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 10 document paragraphs from source: asciidoc::chatmodel.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::advisors.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 11 document paragraphs from source: asciidoc::advisors.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::index.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 7 document paragraphs from source: asciidoc::index.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::retrieval-augmented-generation.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 12 document paragraphs from source: asciidoc::retrieval-augmented-generation.adoc
+[2026-01-21 23:45:43] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::chatclient.adoc
+[2026-01-21 23:45:44] [INFO] ExtractService: Extracted 30 document paragraphs from source: asciidoc::chatclient.adoc
+[2026-01-21 23:45:44] [INFO] ExtractService: Extracted 0 class nodes from source: asciidoc::index.adoc
+[2026-01-21 23:45:44] [INFO] ExtractService: Extracted 2 document paragraphs from source: asciidoc::index.adoc
+[2026-01-21 23:45:44] [INFO] ExtractService: Data extraction completed in 16744ms
+[2026-01-21 23:45:44] [INFO] TransformService: Start data enrichment
+[2026-01-21 23:45:44] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever using keywords: [VectorStoreDocumentRetriever, search]
+[2026-01-21 23:45:58] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-21 23:45:58] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-21 23:45:58] [WARN] TransformService: Retry: attempt #1
+[2026-01-21 23:47:02] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever
+[2026-01-21 23:47:02] [INFO] TransformService: Bound 6 paragraphs to ClassNode: org.springframework.ai.rag.generation.augmentation.QueryAugmenter using keywords: [QueryAugmenter, augmentation]
+[2026-01-21 23:47:59] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.generation.augmentation.QueryAugmenter
+[2026-01-21 23:47:59] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter using keywords: [AbstractFilterExpressionConverter, converter]
+[2026-01-21 23:48:58] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter
+[2026-01-21 23:48:58] [INFO] TransformService: Bound 7 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.join.DocumentJoiner using keywords: [DocumentJoiner, join]
+[2026-01-21 23:49:56] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.retrieval.join.DocumentJoiner
+[2026-01-21 23:49:56] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.observation.Operation using keywords: [Operation, observation]
+[2026-01-21 23:50:59] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.observation.Operation
+[2026-01-21 23:50:59] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention using keywords: [DefaultVectorStoreObservationConvention, observation]
+[2026-01-21 23:51:44] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-21 23:51:44] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-21 23:51:44] [WARN] TransformService: Retry: attempt #1
+[2026-01-21 23:53:00] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-21 23:53:00] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-21 23:53:00] [WARN] TransformService: Retry: attempt #2
+[2026-01-21 23:54:03] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention
+[2026-01-21 23:54:03] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.observation.HighCardinalityKeyNames using keywords: [HighCardinalityKeyNames, observation]
+[2026-01-21 23:54:59] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.observation.HighCardinalityKeyNames
+[2026-01-21 23:54:59] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.CompareContext using keywords: [CompareContext, antlr4]
+[2026-01-21 23:56:11] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.CompareContext
+[2026-01-21 23:56:11] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.SearchRequest using keywords: [SearchRequest, vectorstore]
+[2026-01-21 23:57:04] [ERROR] BeanOutputConverter: Could not parse the given text to the desired target type: "{
+  "description": "The `SearchRequest` class represents a request for similarity search operations. It encapsulates the query text, the desired number of results (`topK`), a similarity threshold, and an optional filter expression for metadata filtering.",
+  "relationship": "This class is a core component for interacting with vector stores (like PgVector, OracleVectorStore, CosmosDBVectorStore, Milvus, Pinecone, CassandraVectorStore, ChromaVector store) within the Spring AI framework. It's used as input to the `similaritySearch` method of `VectorStoreRetriever` and `VectorStore` interfaces. It also relates to `Filter.Expression`, `FilterExpressionBuilder`, and `FilterExpressionTextParser` for defining metadata filters.",
+  "usage": "1. **Basic Search:** Create a `SearchRequest` using the builder to specify the query and desired number of results:\n\n   ```java\n   List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query(\"Spring AI\").topK(5).build());\n   ```\n\n2. **Filtering:** Add metadata filters using `filterExpression` with either a text expression or a `Filter.Expression` object:\n\n   ```java\n   List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query(\"The World\").topK(TOP_K).filterExpression(\"author in ['john', 'jill'] && article_type == 'blog'").build());\n   ```\n\n3. **Similarity Threshold:** Control the minimum similarity score for returned results:\n\n   ```java\n   List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query(\"Spring AI\").topK(5).similarityThreshold(0.8).build());\n   ```"
+}" into class com.example.llmcr.service.etl.TransformService$ClassNodeSummary
+[2026-01-21 23:57:04] [WARN] TransformService: Output conversion failed for ClassNode: org.springframework.ai.vectorstore.SearchRequest. Error: com.fasterxml.jackson.core.JsonParseException: Unexpected character (')' (code 41)): was expecting comma to separate Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 4, column: 603]
+[2026-01-21 23:57:04] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.SearchRequest
+[2026-01-21 23:57:04] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.Builder using keywords: [Builder, vectorstore]
+[2026-01-21 23:58:01] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.Builder
+[2026-01-21 23:58:01] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.FilterHelper using keywords: [FilterHelper, filter]
+[2026-01-21 23:59:03] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.FilterHelper
+[2026-01-21 23:59:03] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.search.Builder using keywords: [Builder, search]
+[2026-01-21 23:59:57] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.retrieval.search.Builder
+[2026-01-21 23:59:57] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverterTests using keywords: [PineconeFilterExpressionConverterTests, converter]
+[2026-01-22 00:00:44] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-22 00:00:44] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-22 00:00:44] [WARN] TransformService: Retry: attempt #1
+[2026-01-22 00:02:02] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverterTests
+[2026-01-22 00:02:02] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.FilterExpressionBuilder using keywords: [FilterExpressionBuilder, filter]
+[2026-01-22 00:03:02] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.FilterExpressionBuilder
+[2026-01-22 00:03:02] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.SimpleVectorStoreBuilder using keywords: [SimpleVectorStoreBuilder, vectorstore]
+[2026-01-22 00:04:18] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.SimpleVectorStoreBuilder
+[2026-01-22 00:04:18] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.observation.VectorStoreObservationContext using keywords: [VectorStoreObservationContext, observation]
+[2026-01-22 00:04:51] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-22 00:04:51] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-22 00:04:51] [WARN] TransformService: Retry: attempt #1
+[2026-01-22 00:06:14] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.observation.VectorStoreObservationContext
+[2026-01-22 00:06:14] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.CompareExpressionContext using keywords: [CompareExpressionContext, antlr4]
+[2026-01-22 00:07:03] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.CompareExpressionContext
+[2026-01-22 00:07:03] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.LongConstantContext using keywords: [LongConstantContext, antlr4]
+[2026-01-22 00:08:06] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.LongConstantContext
+[2026-01-22 00:08:06] [INFO] TransformService: Bound 4 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer using keywords: [QueryTransformer, transformation]
+[2026-01-22 00:09:11] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer
+[2026-01-22 00:09:11] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConventionTests using keywords: [DefaultVectorStoreObservationConventionTests, observation]
+[2026-01-22 00:10:05] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConventionTests
+[2026-01-22 00:10:05] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.FilterExpressionParseException using keywords: [FilterExpressionParseException, filter]
+[2026-01-22 00:11:10] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.FilterExpressionParseException
+[2026-01-22 00:11:10] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.AndExpressionContext using keywords: [AndExpressionContext, antlr4]
+[2026-01-22 00:11:51] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-22 00:11:51] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-22 00:11:51] [WARN] TransformService: Retry: attempt #1
+[2026-01-22 00:13:04] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.AndExpressionContext
+[2026-01-22 00:13:04] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.Builder using keywords: [Builder, rag]
+[2026-01-22 00:25:48] [WARN] HikariPool: HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=12m45s389ms).
+[2026-01-22 00:26:21] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.Builder
+[2026-01-22 00:26:21] [INFO] TransformService: Bound 6 paragraphs to ClassNode: org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter using keywords: [ContextualQueryAugmenter, augmentation]
+[2026-01-22 00:27:19] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter
+[2026-01-22 00:27:19] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.Builder using keywords: [Builder, vectorstore]
+[2026-01-22 00:28:21] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.Builder
+[2026-01-22 00:28:21] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.Query using keywords: [Query, rag]
+[2026-01-22 00:29:19] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.Query
+[2026-01-22 00:29:19] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.SimpleVectorStoreWithFilterTests using keywords: [SimpleVectorStoreWithFilterTests, vectorstore]
+[2026-01-22 00:30:28] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.SimpleVectorStoreWithFilterTests
+[2026-01-22 00:30:28] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.OrExpressionContext using keywords: [OrExpressionContext, antlr4]
+[2026-01-22 00:31:19] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.OrExpressionContext
+[2026-01-22 00:31:19] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.InExpressionContext using keywords: [InExpressionContext, antlr4]
+[2026-01-22 00:32:17] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.InExpressionContext
+[2026-01-22 00:32:17] [INFO] TransformService: Bound 2 paragraphs to ClassNode: org.springframework.ai.vectorstore.aot.VectorStoreRuntimeHints using keywords: [VectorStoreRuntimeHints, aot]
+[2026-01-22 00:33:19] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.aot.VectorStoreRuntimeHints
+[2026-01-22 00:33:19] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.NinExpressionContext using keywords: [NinExpressionContext, antlr4]
+[2026-01-22 00:34:18] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.NinExpressionContext
+[2026-01-22 00:34:19] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.Op using keywords: [Op, filter]
+[2026-01-22 00:35:20] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.Op
+[2026-01-22 00:35:20] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.VectorStoreRetriever using keywords: [VectorStoreRetriever, vectorstore]
+[2026-01-22 00:36:06] [WARN] SpringAiRetryAutoConfiguration: Retry error. Retry count: 1, Exception: Failed to generate content
+java.lang.RuntimeException: Failed to generate content
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:845)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$4(GoogleGenAiChatModel.java:411)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:357)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:230)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.lambda$internalCall$5(GoogleGenAiChatModel.java:407)
+	at io.micrometer.observation.Observation.observe(Observation.java:564)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.internalCall(GoogleGenAiChatModel.java:407)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.call(GoogleGenAiChatModel.java:394)
+	at com.example.llmcr.service.etl.TransformService.enrichNodeWithSummary(TransformService.java:120)
+	at com.example.llmcr.service.etl.TransformService.lambda$0(TransformService.java:80)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+	at com.example.llmcr.service.etl.TransformService.enrich(TransformService.java:78)
+	at com.example.llmcr.ETLRunner.run(ETLRunner.java:47)
+	at org.springframework.boot.SpringApplication.lambda$callRunner$5(SpringApplication.java:788)
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82)
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60)
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:796)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787)
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:772)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:772)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:325)
+	at com.example.llmcr.LlmcrApplication.main(LlmcrApplication.java:12)
+Caused by: com.google.genai.errors.ServerException: 503 . The model is overloaded. Please try again later.
+	at com.google.genai.errors.ApiException.throwFromResponse(ApiException.java:96)
+	at com.google.genai.HttpApiResponse.getBody(HttpApiResponse.java:37)
+	at com.google.genai.Models.privateGenerateContent(Models.java:6603)
+	at com.google.genai.Models.generateContent(Models.java:7758)
+	at org.springframework.ai.google.genai.GoogleGenAiChatModel.getContentResponse(GoogleGenAiChatModel.java:842)
+	... 31 common frames omitted
+[2026-01-22 00:36:06] [WARN] TransformService: Chat model call failed: Failed to generate content
+[2026-01-22 00:36:06] [WARN] TransformService: Retry: attempt #1
+[2026-01-22 00:37:21] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.VectorStoreRetriever
+[2026-01-22 00:37:21] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation using keywords: [VectorStoreObservationDocumentation, observation]
+[2026-01-22 00:38:22] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation
+[2026-01-22 00:38:22] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.DecimalConstantContext using keywords: [DecimalConstantContext, antlr4]
+[2026-01-22 00:39:27] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.DecimalConstantContext
+[2026-01-22 00:39:27] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.TextConstantContext using keywords: [TextConstantContext, antlr4]
+[2026-01-22 00:40:22] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.TextConstantContext
+[2026-01-22 00:40:22] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.VectorStore using keywords: [VectorStore, vectorstore]
+[2026-01-22 00:41:27] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.VectorStore
+[2026-01-22 00:41:27] [INFO] TransformService: Bound 2 paragraphs to ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer using keywords: [CompressionQueryTransformer, transformation]
+[2026-01-22 00:42:16] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer
+[2026-01-22 00:42:16] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.rag.retrieval.search.DocumentRetriever using keywords: [DocumentRetriever, search]
+[2026-01-22 00:43:14] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.rag.retrieval.search.DocumentRetriever
+[2026-01-22 00:43:15] [INFO] TransformService: Bound 10 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.Operand using keywords: [Operand, filter]
+[2026-01-22 00:44:19] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.Operand
+[2026-01-22 00:44:19] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer using keywords: [FiltersLexer, antlr4]
+[2026-01-22 00:45:20] [INFO] TransformService: Enriched ClassNode: org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer
+[2026-01-22 00:45:20] [INFO] TransformService: Bound 1 paragraphs to ClassNode: org.springframework.ai.vectorstore.filter.antlr4.GroupExpressionContext using keywords: [GroupExpressionContext, antlr4]
+[2026-01-22 01:00:45] [WARN] HikariPool: HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=14m57s630ms).

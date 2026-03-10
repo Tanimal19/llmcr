@@ -1,0 +1,837 @@
+
+================================================================================
+PER-ITEM DOCUMENT ANALYSIS - COMPARING GROUPS
+================================================================================
+
+================================================================================
+Task: interpretation
+================================================================================
+
+--------------------------------------------------------------------------------
+Pull Request ID: 2749021458
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6511
+      Min: 0.6262
+      Max: 0.6828
+
+    Document details:
+      [1] asciidoc::pgvector.adoc::Auto-Configuration::Configuration properties::0
+          Similarity: 0.6742
+          Embedding IDs: [1424]
+      [2] asciidoc::pgvector.adoc::Auto-Configuration::0
+          Similarity: 0.6265
+          Embedding IDs: [1226, 1227]
+      [3] asciidoc::pgvector.adoc::Manual Configuration::0
+          Similarity: 0.6828
+          Embedding IDs: [1431]
+      [4] asciidoc::apache-cassandra.adoc::Advanced Example: Vector Store on top of Wikipedia Dataset::0
+          Similarity: 0.6262
+          Embedding IDs: [1380]
+      [5] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0
+          Similarity: 0.6457
+          Embedding IDs: [1177]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6511
+      Min: 0.6262
+      Max: 0.6828
+
+    Document details:
+      [1] asciidoc::pgvector.adoc::Auto-Configuration::Configuration properties::0
+          Similarity: 0.6742
+          Embedding IDs: [1424]
+      [2] asciidoc::pgvector.adoc::Manual Configuration::0
+          Similarity: 0.6828
+          Embedding IDs: [1431]
+      [3] asciidoc::apache-cassandra.adoc::Advanced Example: Vector Store on top of Wikipedia Dataset::0
+          Similarity: 0.6262
+          Embedding IDs: [1380]
+      [4] asciidoc::pgvector.adoc::Auto-Configuration::0
+          Similarity: 0.6265
+          Embedding IDs: [1226, 1227]
+      [5] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0
+          Similarity: 0.6457
+          Embedding IDs: [1177]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6511
+      Min: 0.6262
+      Max: 0.6828
+
+    Document details:
+      [1] asciidoc::pgvector.adoc::Auto-Configuration::Configuration properties::0
+          Similarity: 0.6742
+          Embedding IDs: [1424]
+      [2] asciidoc::pgvector.adoc::Auto-Configuration::0
+          Similarity: 0.6265
+          Embedding IDs: [1226]
+      [3] asciidoc::pgvector.adoc::Manual Configuration::0
+          Similarity: 0.6828
+          Embedding IDs: [1431]
+      [4] asciidoc::apache-cassandra.adoc::Advanced Example: Vector Store on top of Wikipedia Dataset::0
+          Similarity: 0.6262
+          Embedding IDs: [1380]
+      [5] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0
+          Similarity: 0.6457
+          Embedding IDs: [1177]
+
+
+--------------------------------------------------------------------------------
+Pull Request ID: 2780291623
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6803
+      Min: 0.5628
+      Max: 0.8100
+
+    Document details:
+      [1] cu::RewriteQueryTransformer.java
+          Similarity: 0.8100
+          Embedding IDs: [359, 360, 361]
+      [2] cu::RewriteQueryTransformer.java
+          Similarity: 0.7647
+          Embedding IDs: [219, 220, 221]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0
+          Similarity: 0.6916
+          Embedding IDs: [890, 891]
+      [4] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0
+          Similarity: 0.5723
+          Embedding IDs: [1009, 1010, 1011]
+      [5] asciidoc::upgrade-notes.adoc::Common Changes Across Versions::Package Name Changes::0
+          Similarity: 0.5628
+          Embedding IDs: [1577]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6981
+      Min: 0.5628
+      Max: 0.8614
+
+    Document details:
+      [1] cu::RewriteQueryTransformer.java
+          Similarity: 0.8614
+          Embedding IDs: [217, 218]
+      [2] cu::CompressionQueryTransformer.java
+          Similarity: 0.7172
+          Embedding IDs: [180, 181]
+      [3] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0
+          Similarity: 0.5723
+          Embedding IDs: [1009, 1010, 1011]
+      [4] cu::RewriteQueryTransformer.java
+          Similarity: 0.7770
+          Embedding IDs: [358]
+      [5] asciidoc::upgrade-notes.adoc::Common Changes Across Versions::Package Name Changes::0
+          Similarity: 0.5628
+          Embedding IDs: [1577]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6803
+      Min: 0.5628
+      Max: 0.8100
+
+    Document details:
+      [1] cu::RewriteQueryTransformer.java
+          Similarity: 0.8100
+          Embedding IDs: [359, 360, 361]
+      [2] cu::RewriteQueryTransformer.java
+          Similarity: 0.7647
+          Embedding IDs: [220]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0
+          Similarity: 0.6916
+          Embedding IDs: [890]
+      [4] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0-M8::Removed Implementations and APIs::0
+          Similarity: 0.5723
+          Embedding IDs: [1010]
+      [5] asciidoc::upgrade-notes.adoc::Common Changes Across Versions::Package Name Changes::0
+          Similarity: 0.5628
+          Embedding IDs: [1577]
+
+
+--------------------------------------------------------------------------------
+Pull Request ID: 2903282044
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6680
+      Min: 0.6487
+      Max: 0.7065
+
+    Document details:
+      [1] asciidoc::elasticsearch.adoc::Auto-configuration::1
+          Similarity: 0.7065
+          Embedding IDs: [1100]
+      [2] asciidoc::elasticsearch.adoc::Manual Configuration::0
+          Similarity: 0.6781
+          Embedding IDs: [760]
+      [3] asciidoc::elasticsearch.adoc::Auto-configuration::Configuration Properties::0
+          Similarity: 0.6549
+          Embedding IDs: [1407]
+      [4] asciidoc::opensearch.adoc::Auto-configuration::Configuration Properties::0
+          Similarity: 0.6521
+          Embedding IDs: [532, 533]
+      [5] asciidoc::azure.adoc::Sample Code::0
+          Similarity: 0.6487
+          Embedding IDs: [1002, 1003]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6757
+      Min: 0.6549
+      Max: 0.7065
+
+    Document details:
+      [1] asciidoc::elasticsearch.adoc::Auto-configuration::1
+          Similarity: 0.7065
+          Embedding IDs: [1100]
+      [2] cu::SimpleVectorStore.java
+          Similarity: 0.6832
+          Embedding IDs: [430, 431, 432]
+      [3] asciidoc::elasticsearch.adoc::Manual Configuration::0
+          Similarity: 0.6781
+          Embedding IDs: [760]
+      [4] cu::VectorStore.java
+          Similarity: 0.6556
+          Embedding IDs: [175, 176]
+      [5] asciidoc::elasticsearch.adoc::Auto-configuration::Configuration Properties::0
+          Similarity: 0.6549
+          Embedding IDs: [1407]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6680
+      Min: 0.6487
+      Max: 0.7065
+
+    Document details:
+      [1] asciidoc::elasticsearch.adoc::Auto-configuration::1
+          Similarity: 0.7065
+          Embedding IDs: [1100]
+      [2] asciidoc::elasticsearch.adoc::Manual Configuration::0
+          Similarity: 0.6781
+          Embedding IDs: [760]
+      [3] asciidoc::elasticsearch.adoc::Auto-configuration::Configuration Properties::0
+          Similarity: 0.6549
+          Embedding IDs: [1407]
+      [4] asciidoc::opensearch.adoc::Auto-configuration::Configuration Properties::0
+          Similarity: 0.6521
+          Embedding IDs: [532]
+      [5] asciidoc::azure.adoc::Sample Code::0
+          Similarity: 0.6487
+          Embedding IDs: [1002]
+
+
+================================================================================
+Task: query-answer
+================================================================================
+
+--------------------------------------------------------------------------------
+Query: Give me an example of using document joiner.
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5532
+      Min: 0.4488
+      Max: 0.6807
+
+    Document details:
+      [1] cu::DocumentJoiner.java
+          Similarity: 0.6807
+          Embedding IDs: [18, 19, 20]
+      [2] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.5924
+          Embedding IDs: [259, 260, 261]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5577
+          Embedding IDs: [720, 721]
+      [4] asciidoc::etl-pipeline.adoc::Transformers::TokenTextSplitter::0
+          Similarity: 0.4865
+          Embedding IDs: [670, 671]
+      [5] asciidoc::etl-pipeline.adoc::Transformers::SummaryMetadataEnricher::1
+          Similarity: 0.4488
+          Embedding IDs: [792]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.4887
+      Min: 0.4488
+      Max: 0.5577
+
+    Document details:
+      [1] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5577
+          Embedding IDs: [720, 721]
+      [2] cu::DocumentJoiner.java
+          Similarity: 0.4926
+          Embedding IDs: [17]
+      [3] asciidoc::etl-pipeline.adoc::Transformers::TokenTextSplitter::0
+          Similarity: 0.4865
+          Embedding IDs: [670, 671]
+      [4] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.4580
+          Embedding IDs: [258]
+      [5] asciidoc::etl-pipeline.adoc::Transformers::SummaryMetadataEnricher::1
+          Similarity: 0.4488
+          Embedding IDs: [792]
+
+  [simple-enriched]
+    Documents retrieved: 3
+    Similarity scores:
+      Average: 0.6103
+      Min: 0.5577
+      Max: 0.6807
+
+    Document details:
+      [1] cu::DocumentJoiner.java
+          Similarity: 0.6807
+          Embedding IDs: [18, 19]
+      [2] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.5924
+          Embedding IDs: [260, 261]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5577
+          Embedding IDs: [721]
+
+
+--------------------------------------------------------------------------------
+Query: How builder pattern is used in Spring AI?
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6347
+      Min: 0.6229
+      Max: 0.6580
+
+    Document details:
+      [1] cu::SimpleVectorStore.java
+          Similarity: 0.6580
+          Embedding IDs: [78, 79]
+      [2] asciidoc::effective-agents.adoc::Agentic Systems::0
+          Similarity: 0.6399
+          Embedding IDs: [895]
+      [3] asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0
+          Similarity: 0.6296
+          Embedding IDs: [975]
+      [4] asciidoc::tools.adoc::Functions as Tools::0
+          Similarity: 0.6231
+          Embedding IDs: [1194]
+      [5] asciidoc::index.adoc::Introduction::Tool Calling API::0
+          Similarity: 0.6229
+          Embedding IDs: [1277]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6270
+      Min: 0.6194
+      Max: 0.6399
+
+    Document details:
+      [1] asciidoc::effective-agents.adoc::Agentic Systems::0
+          Similarity: 0.6399
+          Embedding IDs: [895]
+      [2] asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0
+          Similarity: 0.6296
+          Embedding IDs: [975]
+      [3] asciidoc::tools.adoc::Functions as Tools::0
+          Similarity: 0.6231
+          Embedding IDs: [1194]
+      [4] asciidoc::index.adoc::Introduction::Tool Calling API::0
+          Similarity: 0.6229
+          Embedding IDs: [1277]
+      [5] asciidoc::chatmodel.adoc::Chat Model API::0
+          Similarity: 0.6194
+          Embedding IDs: [1056]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6347
+      Min: 0.6229
+      Max: 0.6580
+
+    Document details:
+      [1] cu::SimpleVectorStore.java
+          Similarity: 0.6580
+          Embedding IDs: [79]
+      [2] asciidoc::effective-agents.adoc::Agentic Systems::0
+          Similarity: 0.6399
+          Embedding IDs: [895]
+      [3] asciidoc::chatclient.adoc::Creating a ChatClient::Using an autoconfigured ChatClient.Builder::0
+          Similarity: 0.6296
+          Embedding IDs: [975]
+      [4] asciidoc::tools.adoc::Functions as Tools::0
+          Similarity: 0.6231
+          Embedding IDs: [1194]
+      [5] asciidoc::index.adoc::Introduction::Tool Calling API::0
+          Similarity: 0.6229
+          Embedding IDs: [1277]
+
+
+--------------------------------------------------------------------------------
+Query: What is the purpose of document joiner?
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5490
+      Min: 0.4537
+      Max: 0.6591
+
+    Document details:
+      [1] cu::DocumentJoiner.java
+          Similarity: 0.6591
+          Embedding IDs: [18, 19, 20]
+      [2] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.5928
+          Embedding IDs: [259, 260, 261]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5692
+          Embedding IDs: [720, 721]
+      [4] cu::DocumentPostProcessor.java
+          Similarity: 0.4700
+          Embedding IDs: [386, 387, 388]
+      [5] asciidoc::etl-pipeline.adoc::Transformers::TextSplitter::0
+          Similarity: 0.4537
+          Embedding IDs: [1547]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.4899
+      Min: 0.4371
+      Max: 0.5692
+
+    Document details:
+      [1] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5692
+          Embedding IDs: [720, 721]
+      [2] cu::DocumentJoiner.java
+          Similarity: 0.5270
+          Embedding IDs: [17]
+      [3] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.4626
+          Embedding IDs: [258]
+      [4] asciidoc::etl-pipeline.adoc::Transformers::TextSplitter::0
+          Similarity: 0.4537
+          Embedding IDs: [1547]
+      [5] asciidoc::etl-pipeline.adoc::DocumentReaders::HTML (JSoup)::1
+          Similarity: 0.4371
+          Embedding IDs: [1371, 1372]
+
+  [simple-enriched]
+    Documents retrieved: 3
+    Similarity scores:
+      Average: 0.6070
+      Min: 0.5692
+      Max: 0.6591
+
+    Document details:
+      [1] cu::DocumentJoiner.java
+          Similarity: 0.6591
+          Embedding IDs: [18, 19]
+      [2] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.5928
+          Embedding IDs: [260, 261]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5692
+          Embedding IDs: [721]
+
+
+--------------------------------------------------------------------------------
+Query: Which class is responsible for combining multiple documents into one?
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5335
+      Min: 0.4644
+      Max: 0.6022
+
+    Document details:
+      [1] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.6022
+          Embedding IDs: [259, 260, 261]
+      [2] cu::DocumentJoiner.java
+          Similarity: 0.5747
+          Embedding IDs: [18, 19, 20]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5477
+          Embedding IDs: [720, 721]
+      [4] asciidoc::etl-pipeline.adoc::ETL Interfaces::DocumentWriter::0
+          Similarity: 0.4787
+          Embedding IDs: [893]
+      [5] asciidoc::etl-pipeline.adoc::API Overview::0
+          Similarity: 0.4644
+          Embedding IDs: [1591]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.4948
+      Min: 0.4644
+      Max: 0.5477
+
+    Document details:
+      [1] asciidoc::retrieval-augmented-generation.adoc::Modules::Retrieval::0
+          Similarity: 0.5477
+          Embedding IDs: [720, 721]
+      [2] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.4951
+          Embedding IDs: [258]
+      [3] cu::DocumentJoiner.java
+          Similarity: 0.4883
+          Embedding IDs: [17]
+      [4] asciidoc::etl-pipeline.adoc::ETL Interfaces::DocumentWriter::0
+          Similarity: 0.4787
+          Embedding IDs: [893]
+      [5] asciidoc::etl-pipeline.adoc::API Overview::0
+          Similarity: 0.4644
+          Embedding IDs: [1591]
+
+  [simple-enriched]
+    Documents retrieved: 2
+    Similarity scores:
+      Average: 0.5885
+      Min: 0.5747
+      Max: 0.6022
+
+    Document details:
+      [1] cu::ConcatenationDocumentJoiner.java
+          Similarity: 0.6022
+          Embedding IDs: [259, 260]
+      [2] cu::DocumentJoiner.java
+          Similarity: 0.5747
+          Embedding IDs: [18, 19, 20]
+
+
+================================================================================
+Task: review
+================================================================================
+
+--------------------------------------------------------------------------------
+Pull Request ID: 2749021458
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5999
+      Min: 0.5570
+      Max: 0.6500
+
+    Document details:
+      [1] asciidoc::pgvector.adoc::Auto-Configuration::Configuration properties::0
+          Similarity: 0.6500
+          Embedding IDs: [1424]
+      [2] asciidoc::pgvector.adoc::Manual Configuration::0
+          Similarity: 0.5655
+          Embedding IDs: [1431]
+      [3] asciidoc::pgvector.adoc::Prerequisites::0
+          Similarity: 0.6097
+          Embedding IDs: [682]
+      [4] asciidoc::apache-cassandra.adoc::Advanced Example: Vector Store on top of Wikipedia Dataset::0
+          Similarity: 0.6172
+          Embedding IDs: [1380]
+      [5] asciidoc::pgvector.adoc::Auto-Configuration::0
+          Similarity: 0.5570
+          Embedding IDs: [1226, 1227]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.6035
+      Min: 0.5570
+      Max: 0.6500
+
+    Document details:
+      [1] asciidoc::pgvector.adoc::Manual Configuration::0
+          Similarity: 0.5655
+          Embedding IDs: [1431]
+      [2] asciidoc::pgvector.adoc::Auto-Configuration::Configuration properties::0
+          Similarity: 0.6500
+          Embedding IDs: [1424]
+      [3] asciidoc::pgvector.adoc::Prerequisites::0
+          Similarity: 0.6097
+          Embedding IDs: [682]
+      [4] asciidoc::pgvector.adoc::Auto-Configuration::0
+          Similarity: 0.5570
+          Embedding IDs: [1226, 1227]
+      [5] cu::SimpleVectorStoreWithFilterTests.java
+          Similarity: 0.6350
+          Embedding IDs: [129, 130, 131, 132, 133, 134]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5999
+      Min: 0.5570
+      Max: 0.6500
+
+    Document details:
+      [1] asciidoc::pgvector.adoc::Auto-Configuration::Configuration properties::0
+          Similarity: 0.6500
+          Embedding IDs: [1424]
+      [2] asciidoc::pgvector.adoc::Manual Configuration::0
+          Similarity: 0.5655
+          Embedding IDs: [1431]
+      [3] asciidoc::pgvector.adoc::Prerequisites::0
+          Similarity: 0.6097
+          Embedding IDs: [682]
+      [4] asciidoc::apache-cassandra.adoc::Advanced Example: Vector Store on top of Wikipedia Dataset::0
+          Similarity: 0.6172
+          Embedding IDs: [1380]
+      [5] asciidoc::pgvector.adoc::Auto-Configuration::0
+          Similarity: 0.5570
+          Embedding IDs: [1227]
+
+
+--------------------------------------------------------------------------------
+Pull Request ID: 2780291623
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5156
+      Min: 0.4642
+      Max: 0.5646
+
+    Document details:
+      [1] cu::RewriteQueryTransformer.java
+          Similarity: 0.5087
+          Embedding IDs: [359, 360, 361]
+      [2] cu::RewriteQueryTransformer.java
+          Similarity: 0.4976
+          Embedding IDs: [219, 220, 221]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0
+          Similarity: 0.4642
+          Embedding IDs: [890, 891]
+      [4] cu::QueryTransformer.java
+          Similarity: 0.5428
+          Embedding IDs: [94, 95, 96]
+      [5] asciidoc::upgrade-notes.adoc::Common Changes Across Versions::Package Name Changes::0
+          Similarity: 0.5646
+          Embedding IDs: [1577]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5455
+      Min: 0.4642
+      Max: 0.7189
+
+    Document details:
+      [1] cu::RewriteQueryTransformer.java
+          Similarity: 0.5090
+          Embedding IDs: [217, 218]
+      [2] cu::RewriteQueryTransformer.java
+          Similarity: 0.4709
+          Embedding IDs: [358]
+      [3] cu::CompressionQueryTransformer.java
+          Similarity: 0.7189
+          Embedding IDs: [180, 181]
+      [4] asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0
+          Similarity: 0.4642
+          Embedding IDs: [890, 891]
+      [5] asciidoc::upgrade-notes.adoc::Common Changes Across Versions::Package Name Changes::0
+          Similarity: 0.5646
+          Embedding IDs: [1577]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5613
+      Min: 0.4976
+      Max: 0.6928
+
+    Document details:
+      [1] cu::RewriteQueryTransformer.java
+          Similarity: 0.5087
+          Embedding IDs: [360, 361]
+      [2] cu::RewriteQueryTransformer.java
+          Similarity: 0.4976
+          Embedding IDs: [219, 220]
+      [3] asciidoc::retrieval-augmented-generation.adoc::Modules::Pre-Retrieval::0
+          Similarity: 0.6928
+          Embedding IDs: [890]
+      [4] asciidoc::upgrade-notes.adoc::Common Changes Across Versions::Package Name Changes::0
+          Similarity: 0.5646
+          Embedding IDs: [1577]
+      [5] cu::QueryTransformer.java
+          Similarity: 0.5428
+          Embedding IDs: [94]
+
+
+--------------------------------------------------------------------------------
+Pull Request ID: 2903282044
+--------------------------------------------------------------------------------
+
+  [adaptive-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5607
+      Min: 0.4807
+      Max: 0.6671
+
+    Document details:
+      [1] asciidoc::elasticsearch.adoc::Accessing the Native Client::0
+          Similarity: 0.5069
+          Embedding IDs: [1512]
+      [2] asciidoc::elasticsearch.adoc::Auto-configuration::1
+          Similarity: 0.6671
+          Embedding IDs: [1100]
+      [3] asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 27, 2023 Update::0
+          Similarity: 0.4981
+          Embedding IDs: [1421]
+      [4] asciidoc::elasticsearch.adoc::Manual Configuration::0
+          Similarity: 0.6506
+          Embedding IDs: [760]
+      [5] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0
+          Similarity: 0.4807
+          Embedding IDs: [1177]
+
+  [adaptive-plain]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5651
+      Min: 0.4807
+      Max: 0.6727
+
+    Document details:
+      [1] asciidoc::elasticsearch.adoc::Accessing the Native Client::0
+          Similarity: 0.5069
+          Embedding IDs: [1512]
+      [2] cu::SimpleVectorStore.java
+          Similarity: 0.6727
+          Embedding IDs: [430, 431, 432, 433]
+      [3] asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 27, 2023 Update::0
+          Similarity: 0.4981
+          Embedding IDs: [1421]
+      [4] asciidoc::elasticsearch.adoc::Auto-configuration::1
+          Similarity: 0.6671
+          Embedding IDs: [1100]
+      [5] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0
+          Similarity: 0.4807
+          Embedding IDs: [1177]
+
+  [simple-enriched]
+    Documents retrieved: 5
+    Similarity scores:
+      Average: 0.5607
+      Min: 0.4807
+      Max: 0.6671
+
+    Document details:
+      [1] asciidoc::elasticsearch.adoc::Accessing the Native Client::0
+          Similarity: 0.5069
+          Embedding IDs: [1512]
+      [2] asciidoc::elasticsearch.adoc::Auto-configuration::1
+          Similarity: 0.6671
+          Embedding IDs: [1100]
+      [3] asciidoc::upgrade-notes.adoc::Upgrading to 0.8.0::December 27, 2023 Update::0
+          Similarity: 0.4981
+          Embedding IDs: [1421]
+      [4] asciidoc::elasticsearch.adoc::Manual Configuration::0
+          Similarity: 0.6506
+          Embedding IDs: [760]
+      [5] asciidoc::upgrade-notes.adoc::Upgrading to 1.0.0.M5::0
+          Similarity: 0.4807
+          Embedding IDs: [1177]
+
+
+================================================================================
+SUMMARY STATISTICS - COMPARING GROUPS WITHIN EACH TASK
+================================================================================
+
+================================================================================
+Task: interpretation
+================================================================================
+
+Group Comparison:
+Metric                                 adaptive-enriched            adaptive-plain           simple-enriched
+--------------------------------------------------------------------------------
+Total items                                            3                         3                         3
+      Max: 0.6671
+Total doc retrievals                                  15                        15                        15
+      Max: 0.6671
+Avg docs per item                                   5.00                      5.00                      5.00
+      Max: 0.6671
+Unique documents                                      14                        14                        14
+      Max: 0.6671
+Avg similarity                                    0.6665                    0.6750                    0.6665
+      Max: 0.6671
+Min similarity                                    0.5628                    0.5628                    0.5628
+      Max: 0.6671
+Max similarity                                    0.8100                    0.8614                    0.8100
+      Max: 0.6671
+
+================================================================================
+Task: query-answer
+================================================================================
+
+Group Comparison:
+Metric                                 adaptive-enriched            adaptive-plain           simple-enriched
+--------------------------------------------------------------------------------
+Total items                                            4                         4                         4
+      Max: 0.6671
+Total doc retrievals                                  20                        20                        13
+      Max: 0.6671
+Avg docs per item                                   5.00                      5.00                      3.25
+      Max: 0.6671
+Unique documents                                      14                        14                         8
+      Max: 0.6671
+Avg similarity                                    0.5676                    0.5251                    0.6156
+      Max: 0.6671
+Min similarity                                    0.4488                    0.4371                    0.5577
+      Max: 0.6671
+Max similarity                                    0.6807                    0.6399                    0.6807
+      Max: 0.6671
+
+================================================================================
+Task: review
+================================================================================
+
+Group Comparison:
+Metric                                 adaptive-enriched            adaptive-plain           simple-enriched
+--------------------------------------------------------------------------------
+Total items                                            3                         3                         3
+      Max: 0.6671
+Total doc retrievals                                  15                        15                        15
+      Max: 0.6671
+Avg docs per item                                   5.00                      5.00                      5.00
+      Max: 0.6671
+Unique documents                                      14                        14                        14
+      Max: 0.6671
+Avg similarity                                    0.5587                    0.5714                    0.5740
+      Max: 0.6671
+Min similarity                                    0.4642                    0.4642                    0.4807
+      Max: 0.6671
+Max similarity                                    0.6671                    0.7189                    0.6928
+      Max: 0.6671
+
+================================================================================

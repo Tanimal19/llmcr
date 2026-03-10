@@ -13,7 +13,7 @@ import com.example.llmcr.entity.Chunk.ChunkContentType;
 @Repository
 public interface ChunkRepository extends JpaRepository<Chunk, Long> {
 
-    @Query("SELECT e FROM Embedding e JOIN FETCH e.source WHERE e.id IN :ids")
+    @Query("SELECT e FROM Chunk e JOIN FETCH e.source WHERE e.id IN :ids")
     List<Chunk> findByIdIn(@Param("ids") List<Long> ids);
 
     List<Chunk> findByContentType(ChunkContentType contentType);
