@@ -38,16 +38,16 @@ This will start a CLI interface for you to ask questions about the Java project 
 - Set FAISS and MariaDB configurations in `docker-compose.yml`.
   - The index file of FAISS is stored in `./faiss_service/data`.
   - The database data is stored in docker volume, you can backup it via:
-```sh
-docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
-```
+    ```sh
+    docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
+    ```
 - Set spring app properties at `application.properties`.
 - Set environment variables at `.env` file.
-```sh
-export DB_USERNAME="user"
-export DB_PASSWORD="123"
-export GOOGLE_GEMINI_API_KEY="???"
-```
+  ```sh
+  export DB_USERNAME="user"
+  export DB_PASSWORD="123"
+  export GOOGLE_GEMINI_API_KEY="???"
+  ```
 
 ## Structure
 - `_datasets/`: Datasets for ETL. (you need to prepare it by yourself)
