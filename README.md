@@ -31,12 +31,15 @@ This will start a CLI interface for you to ask questions about the Java project 
 
 > [!NOTE]
 > You can use the extracted data at `_backups/` to run the RAG application without running the ETL pipeline.  
-> Place `.index` file under `./faiss_service/app/data` and import `.sql` file to MariaDB.
-
+> Place `.index` file under `./faiss_service/app/data` and import `.sql` file to MariaDB.  
+> For example, run the following to import DB.  
+> ```sh
+> docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql
+> ```
 
 ## Configuration
 - Set FAISS and MariaDB configurations in `docker-compose.yml`.
-  - The index file of FAISS is stored in `./faiss_service/data`.
+  - The index file of FAISS is stored in `./faiss_service/app/data`.
   - The database data is stored in docker volume, you can backup it via:
     ```sh
     docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
@@ -48,6 +51,12 @@ This will start a CLI interface for you to ask questions about the Java project 
   export DB_PASSWORD="123"
   export GOOGLE_GEMINI_API_KEY="???"
   ```
+
+### Common Problems on Windows
+
+#### Can not find JAVA_HOME
+1. Set `JAVA_HOME` in System Environment Variables, e.g. `C:\Program Files\Java\jdk-xx `
+2. Please use git bash instead of WSL bash/sh in powershell (WSL bash cannot find your JAVA_HOME)，add git bash in `PATH` System Environment Variables, e.g. `C:\Program Files\Git\bin`
 
 ## Structure
 - `_datasets/`: Datasets for ETL. (you need to prepare it by yourself)
