@@ -31,7 +31,7 @@ This will start a CLI interface for you to ask questions about the Java project 
 
 > [!NOTE]
 > You can use the extracted data at `_backups/` to run the RAG application without running the ETL pipeline.
-> Place index file under `./faiss_service/data` and import SQL file to MariaDB.
+> Place index file under `./faiss_service/app/data` and import SQL file to MariaDB.
 
 
 ## Configuration
