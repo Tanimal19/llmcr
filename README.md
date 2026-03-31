@@ -30,8 +30,8 @@ To run the RAG application, set the `--app.mode=rag` in `run.sh`.
 This will start a CLI interface for you to ask questions about the Java project and documentation.
 
 > [!NOTE]
-> You can use the extracted data at `_backups/` to run the RAG application without running the ETL pipeline.
-> Place index file under `./faiss_service/app/data` and import SQL file to MariaDB.
+> You can use the extracted data at `_backups/` to run the RAG application without running the ETL pipeline.  
+> Place `.index` file under `./faiss_service/app/data` and import `.sql` file to MariaDB.
 
 
 ## Configuration
