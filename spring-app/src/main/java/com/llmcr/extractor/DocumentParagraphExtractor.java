@@ -1,0 +1,169 @@
+package com.llmcr.extractor;
+
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.asciidoctor.Asciidoctor;
+import org.asciidoctor.ast.*;
+import org.asciidoctor.jruby.ast.impl.ListItemImpl;
+
+import com.llmcr.datasource.*;
+import com.llmcr.entity.DocumentParagraph;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+public class DocumentParagraphExtractor
+        implements VoidDataSourceExtractor<List<DocumentParagraph>> {
+
+    private final int maxParagraphLength;
+
+    public DocumentParagraphExtractor(int maxParagraphLength) {
+        this.maxParagraphLength = maxParagraphLength;
+    }
+
+    @Override
+    public List<DocumentParagraph> visit(CompilationUnitSource source) {
+        // comments in java source code is already parsed into ClassNode
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<DocumentParagraph> visit(PdfSource source) {
+        List<DocumentParagraph> result = new ArrayList<>();
+        Path path = source.getPath();
+
+        try (PDDocument doc = Loader.loadPDF(path.toFile())) {
+            String ctx = source.getSourceName();
+            String text = new PDFTextStripper().getText(doc);
+            StringBuilder chunk = new StringBuilder();
+            AtomicInteger count = new AtomicInteger(0);
+
+            for (String line : text.split("\n")) {
+                if (chunk.length() + line.length() > maxParagraphLength && chunk.length() > 0) {
+                    result.add(new DocumentParagraph(
+                            ctx + "::" + count.getAndIncrement(),
+                            chunk.toString().trim()));
+                    chunk.setLength(0);
+                }
+                chunk.append(line).append(" ");
+            }
+
+            if (chunk.length() > 0) {
+                result.add(new DocumentParagraph(
+                        ctx + "::" + count.getAndIncrement(),
+                        chunk.toString().trim()));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    @Override
+    public List<DocumentParagraph> visit(MarkdownSource source) {
+        List<DocumentParagraph> result = new ArrayList<>();
+        // TODO: implement Markdown parsing and extraction
+        return result;
+    }
+
+    @Override
+    public List<DocumentParagraph> visit(AsciiDocSource source) {
+        List<DocumentParagraph> result = new ArrayList<>();
+        Path path = source.getPath();
+
+        try {
+            String content = java.nio.file.Files.readString(path);
+            Asciidoctor asciidoctor = Asciidoctor.Factory.create();
+            org.asciidoctor.ast.Document document = asciidoctor.load(content,
+                    org.asciidoctor.Options.builder().build());
+            String ctx = source.getSourceName();
+
+            processAsciiDocNode(document, ctx, result, 0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private void processAsciiDocNode(StructuralNode node, String ctx, List<DocumentParagraph> result, int depth) {
+        // System.out.println("Processing ctx: " + ctx);
+
+        if (depth < 2) {
+            // only process header levels up to 2
+            List<StructuralNode> subSections = node.getBlocks().stream()
+                    .filter(b -> b instanceof Section)
+                    .toList();
+            for (StructuralNode subSection : subSections) {
+                processAsciiDocNode(subSection, ctx + "::" + subSection.getTitle(), result, depth + 1);
+            }
+        }
+
+        Stream<StructuralNode> contentBlocks;
+        if (depth < 2) {
+            // collect only direct contents under this node
+            contentBlocks = node.getBlocks().stream()
+                    .filter(b -> !(b instanceof Section));
+        } else {
+            // collect all contents recursively
+            contentBlocks = flatten(node);
+        }
+
+        // chunk contents
+        AtomicInteger count = new AtomicInteger(0);
+        StringBuilder chunk = new StringBuilder();
+
+        contentBlocks.forEach(block -> {
+            String content;
+            if (block instanceof Section) {
+                content = ((Section) block).getTitle();
+            } else if (block instanceof org.asciidoctor.ast.List list) {
+                // for list, we merge all list items into one block
+                List<StructuralNode> items = list.getItems();
+                StringBuilder listContent = new StringBuilder();
+                for (StructuralNode item : items) {
+                    listContent.append(((ListItemImpl) item).getText()).append("\n");
+                }
+                content = listContent.toString();
+            } else {
+                if (block.getContent() == null) {
+                    return; // skip empty content
+                }
+                content = block.getContent().toString();
+            }
+
+            if (chunk.length() + content.length() > maxParagraphLength
+                    && chunk.length() > 0) {
+
+                result.add(new DocumentParagraph(
+                        ctx + "::" + count.getAndIncrement(),
+                        chunk.toString().trim()));
+                chunk.setLength(0);
+            }
+
+            chunk.append(content).append("\n\n");
+        });
+
+        // flush remaining chunk
+        if (chunk.length() > 0) {
+            result.add(new DocumentParagraph(
+                    ctx + "::" + count.getAndIncrement(),
+                    chunk.toString().trim()));
+        }
+    }
+
+    private Stream<StructuralNode> flatten(StructuralNode node) {
+        if (!(node instanceof Section) || node.getBlocks().isEmpty() || node.getBlocks() == null) {
+            return Stream.empty();
+        }
+
+        return node.getBlocks().stream()
+                .flatMap(child -> Stream.concat(
+                        Stream.of(child),
+                        flatten(child)));
+    }
+}
