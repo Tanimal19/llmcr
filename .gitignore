@@ -6,4 +6,4 @@
 
 *.gguf
 
-embeddinggemma-300m
+.log
