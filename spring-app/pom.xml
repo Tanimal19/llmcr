@@ -119,6 +119,11 @@
 			<version>2.5.7</version>
 		</dependency>
 		<dependency>
+			<groupId>org.commonmark</groupId>
+			<artifactId>commonmark</artifactId>
+			<version>0.24.0</version>
+		</dependency>
+		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 		</dependency>

@@ -1,106 +1,82 @@
 package com.llmcr.entity;
 
-import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.util.HashSet;
-import java.util.Set;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 
-import org.springframework.ai.document.Document;
-
-/**
- * content: the text used for generating vector embedding
- * source: the real source should be retrieved
- */
 @Entity
-@Table(name = "chunks")
+@Table(name = "chunk")
 public class Chunk {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(columnDefinition = "BIGINT UNSIGNED")
-    private Long id;
-
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String content;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 32, nullable = false)
-    private ChunkContentType contentType;
+    @Column(name = "chunk_id", nullable = false)
+    private Long chunkId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id", nullable = false)
-    private Source source;
+    @JoinColumn(name = "context_id", nullable = false)
+    private Context context;
 
-    @ManyToMany(mappedBy = "chunks", fetch = FetchType.LAZY)
-    private Set<IndexSet> indexSets = new HashSet<>();
+    @Column(name = "chunk_index", nullable = false)
+    private Integer chunkIndex;
+
+    @Column(name = "token_count", nullable = false)
+    private Integer tokenCount;
+
+    @ManyToMany(mappedBy = "chunks")
+    private List<VectorStore> vectorStores = new ArrayList<>();
 
     public Chunk() {
     }
 
-    public Chunk(String content, ChunkContentType type, Source source) {
-        this.content = content;
-        this.contentType = type;
-        this.source = source;
+    public Long getChunkId() {
+        return chunkId;
     }
 
-    public Chunk(Document doc) {
-        this.content = doc.getText();
-
-        Object typeObj = doc.getMetadata().get("content_type");
-        if (typeObj instanceof ChunkContentType) {
-            this.contentType = (ChunkContentType) typeObj;
-        } else if (typeObj instanceof String) {
-            this.contentType = ChunkContentType.valueOf((String) typeObj);
-        } else {
-            this.contentType = ChunkContentType.UNDEFINED;
-        }
-
-        Object sourceObj = doc.getMetadata().get("source");
-        if (sourceObj instanceof Source) {
-            this.source = (Source) sourceObj;
-        } else {
-            this.source = null;
-        }
+    public void setChunkId(Long chunkId) {
+        this.chunkId = chunkId;
     }
 
-    public Long getId() {
-        return id;
+    public Context getContext() {
+        return context;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setContext(Context context) {
+        this.context = context;
     }
 
-    public String getContent() {
-        return content;
+    public Integer getChunkIndex() {
+        return chunkIndex;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setChunkIndex(Integer chunkIndex) {
+        this.chunkIndex = chunkIndex;
     }
 
-    public ChunkContentType getContentType() {
-        return contentType;
+    public Integer getTokenCount() {
+        return tokenCount;
     }
 
-    public void setContentType(ChunkContentType contentType) {
-        this.contentType = contentType;
+    public void setTokenCount(Integer tokenCount) {
+        this.tokenCount = tokenCount;
     }
 
-    public Source getSource() {
-        return source;
+    public List<VectorStore> getVectorStores() {
+        return vectorStores;
     }
 
-    public void setSource(Source source) {
-        this.source = source;
-    }
-
-    public Set<IndexSet> getIndexSets() {
-        return indexSets;
-    }
-
-    public void setIndexFiles(Set<IndexSet> indexSets) {
-        this.indexSets = indexSets;
+    public void setVectorStores(List<VectorStore> vectorStores) {
+        this.vectorStores = vectorStores;
     }
 
     @Override
@@ -110,26 +86,11 @@ public class Chunk {
         if (!(o instanceof Chunk))
             return false;
         Chunk other = (Chunk) o;
-        return id != null && id.equals(other.id);
+        return chunkId != null && chunkId.equals(other.chunkId);
     }
 
     @Override
     public int hashCode() {
         return getClass().hashCode();
-    }
-
-    public Document toDocument() {
-        Document doc = new Document(this.content);
-        doc.getMetadata().put("chunk_id", this.id);
-        doc.getMetadata().put("content_type", this.contentType);
-        doc.getMetadata().put("source", this.source);
-        return doc;
-    }
-
-    public enum ChunkContentType {
-        CODE,
-        ENRICHMENT,
-        DOCUMENT,
-        UNDEFINED
     }
 }

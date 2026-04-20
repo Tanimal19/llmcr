@@ -1,79 +1,49 @@
 package com.llmcr.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Represents an extracted class or code unit (e.g., for RAG indexing).
- */
 @Entity
-@Table(name = "class_nodes")
-public class ClassNode extends Source {
-    @Column(name = "signature", nullable = false)
-    private String signature;
+@Table(name = "class_node")
+public class ClassNode extends Context {
 
-    @Column(name = "description_text", columnDefinition = "TEXT")
-    private String descriptionText;
+    @Column(name = "functional_enrich", columnDefinition = "LONGTEXT")
+    private String functionalEnrich;
 
-    @Column(name = "usage_text", columnDefinition = "TEXT")
-    private String usageText;
+    @Column(name = "relationship_enrich", columnDefinition = "LONGTEXT")
+    private String relationshipEnrich;
 
-    @Column(name = "relationship_text", columnDefinition = "TEXT")
-    private String relationshipText;
+    @Column(name = "usage_enrich", columnDefinition = "LONGTEXT")
+    private String usageEnrich;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "class_node_related_document_paragraph", joinColumns = @JoinColumn(name = "class_node_id"), inverseJoinColumns = @JoinColumn(name = "document_paragraph_id"))
-    private List<DocumentParagraph> documentParagraphs = new ArrayList<>();
-
-    public ClassNode() {
+    public ClassNode(Source source, String classSignature, String classCode) {
+        this.setSource(source);
+        this.setContextName(classSignature);
+        this.setContent(classCode);
     }
 
-    public ClassNode(String sourceName, String content, String signature) {
-        this.sourceName = sourceName;
-        this.content = content;
-        this.signature = signature;
-        this.processed = false;
+    public String getFunctionalEnrich() {
+        return functionalEnrich;
     }
 
-    public String getSignature() {
-        return signature;
+    public void setFunctionalEnrich(String functionalEnrich) {
+        this.functionalEnrich = functionalEnrich;
     }
 
-    public void setSignature(String signature) {
-        this.signature = signature;
+    public String getRelationshipEnrich() {
+        return relationshipEnrich;
     }
 
-    public String getDescriptionText() {
-        return descriptionText;
+    public void setRelationshipEnrich(String relationshipEnrich) {
+        this.relationshipEnrich = relationshipEnrich;
     }
 
-    public void setDescriptionText(String descriptionText) {
-        this.descriptionText = descriptionText;
+    public String getUsageEnrich() {
+        return usageEnrich;
     }
 
-    public String getUsageText() {
-        return usageText;
-    }
-
-    public void setUsageText(String usageText) {
-        this.usageText = usageText;
-    }
-
-    public String getRelationshipText() {
-        return relationshipText;
-    }
-
-    public void setRelationshipText(String relationshipText) {
-        this.relationshipText = relationshipText;
-    }
-
-    public List<DocumentParagraph> getDocumentParagraphs() {
-        return documentParagraphs;
-    }
-
-    public void setDocumentParagraphs(List<DocumentParagraph> documentParagraphs) {
-        this.documentParagraphs = documentParagraphs;
+    public void setUsageEnrich(String usageEnrich) {
+        this.usageEnrich = usageEnrich;
     }
 }
