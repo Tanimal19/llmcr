@@ -6,10 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.llmcr.datasource.DataSource;
-import com.llmcr.entity.ClassNode;
-import com.llmcr.entity.DocumentParagraph;
-import com.llmcr.extractor.ClassNodeExtractor;
-import com.llmcr.extractor.DocumentParagraphExtractor;
+import com.llmcr.entity.contextImpl.ClassNode;
+import com.llmcr.entity.contextImpl.DocumentParagraph;
+import com.llmcr.extraction.ClassNodeExtractor;
+import com.llmcr.extraction.DocumentParagraphExtractor;
 
 public class ExtractService {
 

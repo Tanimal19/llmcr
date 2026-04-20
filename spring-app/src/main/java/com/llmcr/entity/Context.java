@@ -33,9 +33,16 @@ public abstract class Context {
     @JoinColumn(name = "source_id", nullable = false)
     private Source source;
 
+    /**
+     * A human-readable name for the context, which should be unique across all
+     * contexts. Used when displaying in the UI.
+     */
     @Column(name = "context_name", columnDefinition = "TEXT", nullable = false, unique = true)
     private String contextName;
 
+    /**
+     * The content that actually pass to LLM.
+     */
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 

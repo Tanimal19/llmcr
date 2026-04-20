@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.entity.Chunk;
-import com.llmcr.entity.ClassNode;
-import com.llmcr.entity.DocumentParagraph;
 import com.llmcr.entity.IndexSet;
 import com.llmcr.entity.Chunk.ChunkContentType;
+import com.llmcr.entity.contextImpl.ClassNode;
+import com.llmcr.entity.contextImpl.DocumentParagraph;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ClassNodeRepository;
 import com.llmcr.repository.DocumentParagraphRepository;

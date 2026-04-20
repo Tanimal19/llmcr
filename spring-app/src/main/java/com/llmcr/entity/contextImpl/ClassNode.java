@@ -1,4 +1,7 @@
-package com.llmcr.entity;
+package com.llmcr.entity.contextImpl;
+
+import com.llmcr.entity.Context;
+import com.llmcr.entity.Source;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,6 +10,9 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "class_node")
 public class ClassNode extends Context {
+
+    @Column(name = "class_signature", nullable = false, length = 512)
+    private String classSignature;
 
     @Column(name = "functional_enrich", columnDefinition = "LONGTEXT")
     private String functionalEnrich;
@@ -17,10 +23,22 @@ public class ClassNode extends Context {
     @Column(name = "usage_enrich", columnDefinition = "LONGTEXT")
     private String usageEnrich;
 
-    public ClassNode(Source source, String classSignature, String classCode) {
+    public ClassNode() {
+    }
+
+    public ClassNode(Source source, String className, String classSignature, String classCode) {
         this.setSource(source);
-        this.setContextName(classSignature);
+        this.setContextName("Class::" + className);
         this.setContent(classCode);
+        this.setClassSignature(classSignature);
+    }
+
+    public String getClassSignature() {
+        return classSignature;
+    }
+
+    public void setClassSignature(String classSignature) {
+        this.classSignature = classSignature;
     }
 
     public String getFunctionalEnrich() {

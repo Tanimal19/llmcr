@@ -1,4 +1,4 @@
-package com.llmcr.extractor;
+package com.llmcr.extraction;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
@@ -6,9 +6,9 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
-import com.llmcr.entity.ClassNode;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.Source.SourceType;
+import com.llmcr.entity.contextImpl.ClassNode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +34,12 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNode> {
         this.parser = new JavaParser();
     }
 
+    @Override
     public boolean supports(Source source) {
         return source.getSourceType() == SourceType.JAVACODE;
     }
 
+    @Override
     public List<ClassNode> extract(Source source) {
 
         if (source.getSourcePath().equals("package-info.java")) {

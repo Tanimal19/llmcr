@@ -47,9 +47,9 @@ public class LoadService {
 
                 // chunk all document paragraphs
                 dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
-                        Document doc = new Document(textFilter(paragraph.getContent()),
+                        DocumentParagraph doc = new DocumentParagraph(textFilter(paragraph.getContent()),
                                         Map.of("content_type", ChunkContentType.DOCUMENT, "source", paragraph));
-                        List<Document> splitDocs = splitter.split(doc);
+                        List<DocumentParagraph> splitDocs = splitter.split(doc);
                         dataStore.saveAllChunksByDocuments(splitDocs);
                         LOGGER.info("Created " + splitDocs.size() + " chunks for DocumentParagraph: "
                                         + paragraph.getId());

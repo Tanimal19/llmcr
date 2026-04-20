@@ -54,6 +54,7 @@ public class Source {
         PDF,
         MARKDOWN,
         ASCIIDOC,
+        XML,
         UNDEFINED
     }
 

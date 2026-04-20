@@ -52,16 +52,52 @@ This will start a CLI interface for you to ask questions about the Java project 
   export GOOGLE_GEMINI_API_KEY="???"
   ```
 
+## File Syntax
+### Documents
+Documents are unstructured files that provide additional information about the codebase, such as design documents, API documentation ...  
+No syntax, accept `.pdf`, `.md`, `.asciidoc` files for now.
+
+### Guideline
+Guideline is a special type of context that describe code review guidelines.
+
+```xml
+<guidelines>
+    <guideline>
+        <content>Content of guideline</content>
+    </guideline>
+    <guideline>
+        <content>Content of guideline</content>
+    </guideline>
+</guidelines>
+```
+
+### ToolAction
+ToolAction is a special type of context that describe the usage of a specific action, where each action maps to a java method.
+All avaliable actions are pre-defined in `ToolActionRegistry.java`.
+
+### Usecase
+Usecase is an example on how to perform specific code review check.  
+
+```xml
+<usecases>
+    <usecase>
+        <description>Use case description</description>
+        <input>Input of the use case, e.g. code snippet, question ...</input>
+        <output>Expected output of the use case, e.g. potential issue in the code snippet, answer to the question ...</output>
+    </usecase>
+    <!-- more usecases -->
+</usecases>
+```
 
 
 
-## Structure
+# Structure
 - `_datasets/`: Datasets for ETL. (you need to prepare it by yourself)
 - `faiss_service/`: FAISS vector store service implemented in Python Flask.
 - `spring-app/`: Spring Boot application for ETL and RAG.
 - `evaluation/`: Evaluation scripts and data.
 
-### Java classes
+## Java classes
 - `datasource/`: Represents different type of data sources.
 - `entity/`: Database schema entities.
 - `extractor/`: Extractor that extract specific data from data sources.
@@ -72,86 +108,7 @@ This will start a CLI interface for you to ask questions about the Java project 
   - `RAGTemplate.java`: Base class for RAG template, indicate the use case of RAG.
   - `RetrievalStrategy.java`: Base class for retrieval strategy.
 
-### database schema
-#### Source
-A Source is a local file reference, used to track sync status.
-A Source can be split into multiple Context. The splitting strategy depends on the source type.
-
-| Field        | Type | Nullable | Unique | Description                                                   |
-| ------------ | ---- | -------- | ------ | ------------------------------------------------------------- |
-| sourceID     | Int  | N        | Y      | (PK) ID of the source                                         |
-| sourcePath   | Text | N        | Y      | Local filepath of the source                                  |
-| contentHash  | Text | N        | N      | Hash value of source content                                  |
-| sourceType   | Text | N        | N      | Type of source [JAVACODE, PDF, MARKDOWN, ASCIIDOC, UNDEFINED] |
-| lastSyncTime | Date | Y        | N      | Last time the source being synced                             |
-
-#### Context (abstract)
-A Context is a paragraph of meaningful text that is given to LLM as reference.
-It can be an entire Java class, a paragraph in a document, or a tool API spec.
-The retrieval result of RAG is a list of Context.
-A Context might be chunk into multiple Chunk when storing into a vector database. The chunking strategy depends on the context type.
-
-| Field       | Type     | Nullable | Unique | Description                                                                   |
-| ----------- | -------- | -------- | ------ | ----------------------------------------------------------------------------- |
-| contextID   | Int      | N        | Y      | (PK) ID of the context                                                        |
-| sourceID    | Int      | N        | Y      | (FK) The source where the context come from                                   |
-| contextName | Text     | N        | Y      | Name of context                                                               |
-| content     | LongText | Y        | N      | Content of context                                                            |
-| contextType | Text     | N        | N      | Type of context [CLASSNODE, DOCUMENT, GUIDELINE, USECASE, TOOLAPI, UNDEFINED] |
-
-#### ContextRelation
-A ContextRelation represents a relationship between two Context.
-A ClassNode might be RELATED to some TextParagraph.
-A TextParagraph might MENTION some other TextParagraph.
-
-| Field           | Type | Nullable | Unique | Description                                    |
-| --------------- | ---- | -------- | ------ | ---------------------------------------------- |
-| relationID      | Int  | N        | Y      | (PK) ID of the relation                        |
-| sourceContextID | Int  | N        | N      | (FK) ID of the source context                  |
-| targetContextID | Int  | N        | N      | (FK) ID of the target context                  |
-| relationType    | Text | N        | N      | Type of relation [RELATED, MENTION, UNDEFINED] |
-
-
-#### ClassNode
-A ClassNode is an implementation of Context that represents a Java class.
-It has additional fields to store the enrichments.
-
-| Field              | Type     | Nullable | Unique | Description                 |
-| ------------------ | -------- | -------- | ------ | --------------------------- |
-| functionalEnrich   | LongText | Y        | N      | Enrichment generated by LLM |
-| relationshipEnrich | LongText | Y        | N      | Enrichment generated by LLM |
-| usageEnrich        | LongText | Y        | N      | Enrichment generated by LLM |
-
-#### TextParagraph
-A TextParagraph is an implementation of Context that represents a paragraph of text documents.
-
-| Field          | Type | Nullable | Unique | Description                                 |
-| -------------- | ---- | -------- | ------ | ------------------------------------------- |
-| paragraphIndex | Int  | N        | N      | Index of the paragraph in its parent source |
-
-#### Chunk
-A Chunk is a paragraph of text that is embedded into a vector database.
-The similarity search result is a list of Chunk.
-
-| Field        | Type              | Nullable | Unique | Description                                 |
-| ------------ | ----------------- | -------- | ------ | ------------------------------------------- |
-| chunkID      | Int               | N        | Y      | (PK) ID of the chunk                        |
-| contextID    | Int               | N        | Y      | (FK) The context where the chunk come from  |
-| chunkIndex   | Int               | N        | N      | Index of the chunk in its parent context    |
-| tokenCount   | Int               | N        | N      | Token count of the embedded content         |
-| vectorStores | List<VectorStore> | N        | N      | The vector stores where the chunk is stored |
-
-#### VectorStore
-A VectorStore is a vector database instance that stores a specific collection of Chunk.
-A Chunk can also exist in multiple VectorStore.
-
-| Field           | Type        | Nullable | Unique | Description                           |
-| --------------- | ----------- | -------- | ------ | ------------------------------------- |
-| vectorStoreID   | Int         | N        | Y      | (PK) ID of the vector store           |
-| vectorStoreName | Text        | N        | Y      | Name of the vector store              |
-| chunks          | List<Chunk> | N        | N      | The chunks stored in the vector store |
-
-
+## Database Schema
 
 
 # Common Problems
