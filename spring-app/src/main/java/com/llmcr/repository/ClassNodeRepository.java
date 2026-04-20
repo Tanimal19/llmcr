@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.stereotype.Repository;
 
-import com.llmcr.entity.contextImpl.ClassNode;
+import com.llmcr.entity.contextImpl.ClassNodeContext;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,15 +13,15 @@ import java.util.UUID;
  * Repository interface for managing ClassNode entities.
  */
 @Repository
-public interface ClassNodeRepository extends JpaRepository<ClassNode, UUID> {
+public interface ClassNodeRepository extends JpaRepository<ClassNodeContext, UUID> {
 
     /**
      * Find all ClassNodes that haven't been processed yet.
      */
-    List<ClassNode> findByProcessedFalse();
+    List<ClassNodeContext> findByProcessedFalse();
 
     /**
      * Find all ClassNodes that have been processed.
      */
-    List<ClassNode> findByProcessedTrue();
+    List<ClassNodeContext> findByProcessedTrue();
 }

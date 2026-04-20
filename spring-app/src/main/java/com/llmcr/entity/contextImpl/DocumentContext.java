@@ -8,16 +8,16 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "document_paragraph")
-public class DocumentParagraph extends Context {
+@Table(name = "document")
+public class DocumentContext extends Context {
 
     @Column(name = "paragraph_index", nullable = false)
     private Integer paragraphIndex;
 
-    public DocumentParagraph() {
+    public DocumentContext() {
     }
 
-    public DocumentParagraph(Source source, String docName, String content, Integer paragraphIndex) {
+    public DocumentContext(Source source, String docName, String content, Integer paragraphIndex) {
         this.setSource(source);
         this.setContextName("Doc::" + docName + "::" + paragraphIndex);
         this.setContent(content);

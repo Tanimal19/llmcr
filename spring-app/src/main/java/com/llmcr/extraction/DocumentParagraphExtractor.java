@@ -20,7 +20,7 @@ import org.commonmark.node.ThematicBreak;
 import org.commonmark.parser.Parser;
 
 import com.llmcr.entity.Source;
-import com.llmcr.entity.contextImpl.DocumentParagraph;
+import com.llmcr.entity.contextImpl.DocumentContext;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-public class DocumentParagraphExtractor implements ContextExtractor<DocumentParagraph> {
+public class DocumentParagraphExtractor implements ContextExtractor<DocumentContext> {
 
     private int maxParaLength;
 
@@ -45,7 +45,7 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
                 || source.getSourceType() == Source.SourceType.ASCIIDOC;
     }
 
-    public List<DocumentParagraph> extract(Source source) {
+    public List<DocumentContext> extract(Source source) {
         if (source.getSourceType() == Source.SourceType.PDF) {
             return extractFromPdf(Path.of(source.getSourcePath()), source);
         } else if (source.getSourceType() == Source.SourceType.ASCIIDOC) {
@@ -62,8 +62,8 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
      * Extract text paragraphs from a PDF document, chunking by maxParaLength.
      * TODO: implement section-based extraction
      */
-    public List<DocumentParagraph> extractFromPdf(Path path, Source source) {
-        List<DocumentParagraph> result = new ArrayList<>();
+    public List<DocumentContext> extractFromPdf(Path path, Source source) {
+        List<DocumentContext> result = new ArrayList<>();
 
         try (PDDocument doc = Loader.loadPDF(path.toFile())) {
             String ctx = source.getSourceName();
@@ -73,12 +73,12 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
 
             for (String line : text.split("\n")) {
                 if (paragraph.length() + line.length() > maxParaLength && paragraph.length() > 0) {
-                    result.add(new DocumentParagraph(
+                    result.add(new DocumentContext(
                             source,
                             ctx + "::" + index.get(),
                             paragraph.toString().trim(),
                             index.get(),
-                            DocumentParagraph.ParagraphType.DOCUMENT));
+                            DocumentParagraph.DocumentContext.DOCUMENT));
                     paragraph.setLength(0);
                     index.incrementAndGet();
                 }
@@ -86,12 +86,12 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
             }
 
             if (paragraph.length() > 0) {
-                result.add(new DocumentParagraph(
+                result.add(new DocumentContext(
                         source,
                         ctx + "::" + index.get(),
                         paragraph.toString().trim(),
                         index.get(),
-                        DocumentParagraph.ParagraphType.DOCUMENT));
+                        DocumentParagraph.DocumentContext.DOCUMENT));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -103,8 +103,8 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
      * Extract text paragraphs from a Markdown document, using section titles as
      * context.
      */
-    public List<DocumentParagraph> extractFromMarkdown(Path path, Source source) {
-        List<DocumentParagraph> result = new ArrayList<>();
+    public List<DocumentContext> extractFromMarkdown(Path path, Source source) {
+        List<DocumentContext> result = new ArrayList<>();
 
         try {
             String content = java.nio.file.Files.readString(path);
@@ -124,8 +124,8 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
      * Extract text paragraphs from an AsciiDoc document, using section titles as
      * context.
      */
-    public List<DocumentParagraph> extractFromAsciiDoc(Path path, Source source) {
-        List<DocumentParagraph> result = new ArrayList<>();
+    public List<DocumentContext> extractFromAsciiDoc(Path path, Source source) {
+        List<DocumentContext> result = new ArrayList<>();
 
         try {
             String content = java.nio.file.Files.readString(path);
@@ -141,7 +141,7 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
         return result;
     }
 
-    private void processAsciiDocNode(Source source, StructuralNode node, String ctx, List<DocumentParagraph> result,
+    private void processAsciiDocNode(Source source, StructuralNode node, String ctx, List<DocumentContext> result,
             int depth) {
         processSubSections(source, node, ctx, result, depth);
 
@@ -165,7 +165,7 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
         }
     }
 
-    private void processSubSections(Source source, StructuralNode node, String ctx, List<DocumentParagraph> result,
+    private void processSubSections(Source source, StructuralNode node, String ctx, List<DocumentContext> result,
             int depth) {
         if (depth >= 2) {
             return;
@@ -213,7 +213,7 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
         return listContent.toString();
     }
 
-    private void flushParagraphIfNeeded(Source source, String ctx, List<DocumentParagraph> result,
+    private void flushParagraphIfNeeded(Source source, String ctx, List<DocumentContext> result,
             StringBuilder paragraph,
             AtomicInteger index, String content) {
         if (paragraph.length() + content.length() > maxParaLength
@@ -224,14 +224,14 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
         }
     }
 
-    private void addParagraph(Source source, String ctx, List<DocumentParagraph> result, StringBuilder paragraph,
+    private void addParagraph(Source source, String ctx, List<DocumentContext> result, StringBuilder paragraph,
             AtomicInteger index) {
-        result.add(new DocumentParagraph(
+        result.add(new DocumentContext(
                 source,
                 ctx + "::" + index.get(),
                 paragraph.toString().trim(),
                 index.get(),
-                DocumentParagraph.ParagraphType.DOCUMENT));
+                DocumentParagraph.DocumentContext.DOCUMENT));
     }
 
     private MarkdownSection buildMarkdownSectionTree(Node document) {
@@ -260,7 +260,7 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
     }
 
     private void processMarkdownSection(Source source, MarkdownSection section, String ctx,
-            List<DocumentParagraph> result,
+            List<DocumentContext> result,
             int depth) {
         processMarkdownSubSections(source, section, ctx, result, depth);
 
@@ -283,7 +283,7 @@ public class DocumentParagraphExtractor implements ContextExtractor<DocumentPara
     }
 
     private void processMarkdownSubSections(Source source, MarkdownSection section, String ctx,
-            List<DocumentParagraph> result, int depth) {
+            List<DocumentContext> result, int depth) {
         if (depth >= 2) {
             return;
         }

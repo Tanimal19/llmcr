@@ -8,8 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "tool_action")
-public class ToolAction extends Context {
+@Table(name = "action")
+public class ActionContext extends Context {
 
     @Column(name = "action_key", nullable = false)
     private String actionKey;
@@ -17,12 +17,12 @@ public class ToolAction extends Context {
     @Column(name = "description", nullable = true, columnDefinition = "TEXT")
     private String description;
 
-    public ToolAction() {
+    public ActionContext() {
     }
 
-    public ToolAction(Source source, String actionKey, String description) {
+    public ActionContext(Source source, String actionKey, String description) {
         this.setSource(source);
-        this.setContextName("Act::" + actionKey);
+        this.setContextName("Tool::" + actionKey);
         this.setActionKey(actionKey);
         this.setDescription(description);
     }

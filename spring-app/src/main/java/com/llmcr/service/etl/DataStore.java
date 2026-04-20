@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.IndexSet;
 import com.llmcr.entity.Chunk.ChunkContentType;
-import com.llmcr.entity.contextImpl.ClassNode;
-import com.llmcr.entity.contextImpl.DocumentParagraph;
+import com.llmcr.entity.contextImpl.ClassNodeContext;
+import com.llmcr.entity.contextImpl.DocumentContext;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ClassNodeRepository;
 import com.llmcr.repository.DocumentParagraphRepository;
@@ -44,45 +44,45 @@ public class DataStore {
     }
 
     // ClassNode operations
-    public void save(ClassNode classNode) {
+    public void save(ClassNodeContext classNode) {
         nodeRepo.save(classNode);
     }
 
-    public void saveAllClassNodes(List<ClassNode> classNodes) {
+    public void saveAllClassNodes(List<ClassNodeContext> classNodes) {
         nodeRepo.saveAll(classNodes);
     }
 
-    public List<ClassNode> findAllClassNodes() {
+    public List<ClassNodeContext> findAllClassNodes() {
         return nodeRepo.findAll();
     }
 
-    public List<ClassNode> findUnprocessedClassNodes() {
+    public List<ClassNodeContext> findUnprocessedClassNodes() {
         return nodeRepo.findByProcessedFalse();
     }
 
-    public List<ClassNode> findProcessedClassNodes() {
+    public List<ClassNodeContext> findProcessedClassNodes() {
         return nodeRepo.findByProcessedTrue();
     }
 
     // DocumentParagraph operations
-    public void save(DocumentParagraph paragraph) {
+    public void save(DocumentContext paragraph) {
         documentRepo.save(paragraph);
     }
 
-    public void saveAllDocumentParagraphs(List<DocumentParagraph> paragraphs) {
+    public void saveAllDocumentParagraphs(List<DocumentContext> paragraphs) {
         documentRepo.saveAll(paragraphs);
     }
 
-    public List<DocumentParagraph> findAllDocumentParagraphsByKeywords(List<String> keywords, int limit) {
-        List<DocumentParagraph> unionList = new ArrayList<>();
-        List<DocumentParagraph> intersectionList = new ArrayList<>();
+    public List<DocumentContext> findAllDocumentParagraphsByKeywords(List<String> keywords, int limit) {
+        List<DocumentContext> unionList = new ArrayList<>();
+        List<DocumentContext> intersectionList = new ArrayList<>();
 
         // Pre-lowercase keywords once for performance
         List<String> lowerKeywords = keywords.stream()
                 .map(String::toLowerCase)
                 .toList();
 
-        for (DocumentParagraph paragraph : documentRepo.findAll()) {
+        for (DocumentContext paragraph : documentRepo.findAll()) {
             String contentLower = paragraph.getContent().toLowerCase();
 
             // Check matchesAll first since it's a subset condition
@@ -118,12 +118,12 @@ public class DataStore {
 
         // if intersection results <= limit, return all intersection +
         // enough union to fill the limit
-        List<DocumentParagraph> result = new ArrayList<>(intersectionList);
+        List<DocumentContext> result = new ArrayList<>(intersectionList);
         result.addAll(unionList.subList(0, limit - intersectionList.size()));
         return result;
     }
 
-    public List<DocumentParagraph> findAllDocumentParagraphs() {
+    public List<DocumentContext> findAllDocumentParagraphs() {
         return documentRepo.findAll();
     }
 

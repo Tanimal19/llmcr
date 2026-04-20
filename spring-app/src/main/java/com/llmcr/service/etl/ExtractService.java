@@ -6,8 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.llmcr.datasource.DataSource;
-import com.llmcr.entity.contextImpl.ClassNode;
-import com.llmcr.entity.contextImpl.DocumentParagraph;
+import com.llmcr.entity.contextImpl.ClassNodeContext;
+import com.llmcr.entity.contextImpl.DocumentContext;
 import com.llmcr.extraction.ClassNodeExtractor;
 import com.llmcr.extraction.DocumentParagraphExtractor;
 
@@ -27,11 +27,11 @@ public class ExtractService {
 
         // Iterate over all raw data sources and extract data
         rawDataSources.stream().forEach(source -> {
-            List<ClassNode> classNodes = source.accept(classNodeExtractor);
+            List<ClassNodeContext> classNodes = source.accept(classNodeExtractor);
             dataStore.saveAllClassNodes(classNodes);
             LOGGER.info("Extracted " + classNodes.size() + " class nodes from source: " + source.getSourceName());
 
-            List<DocumentParagraph> paragraphs = source.accept(documentParagraphExtractor);
+            List<DocumentContext> paragraphs = source.accept(documentParagraphExtractor);
             dataStore.saveAllDocumentParagraphs(paragraphs);
             LOGGER.info(
                     "Extracted " + paragraphs.size() + " document paragraphs from source: " + source.getSourceName());

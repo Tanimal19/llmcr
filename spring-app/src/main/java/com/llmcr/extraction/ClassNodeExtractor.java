@@ -8,7 +8,7 @@ import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.Source.SourceType;
-import com.llmcr.entity.contextImpl.ClassNode;
+import com.llmcr.entity.contextImpl.ClassNodeContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Extracts ClassNode objects from given Java project root
+ * Extracts ClassNodeContext from given Java project root
  */
-public class ClassNodeExtractor implements ContextExtractor<ClassNode> {
+public class ClassNodeExtractor implements ContextExtractor<ClassNodeContext> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClassNodeExtractor.class);
     private final JavaParser parser;
@@ -40,7 +40,7 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNode> {
     }
 
     @Override
-    public List<ClassNode> extract(Source source) {
+    public List<ClassNodeContext> extract(Source source) {
 
         if (source.getSourcePath().equals("package-info.java")) {
             LOGGER.info("Skipping non-class java source: " + source.getSourcePath());
@@ -53,7 +53,7 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNode> {
             return List.of();
         }
 
-        List<ClassNode> classNodes = new ArrayList<>();
+        List<ClassNodeContext> classNodes = new ArrayList<>();
         try {
             ParseResult<CompilationUnit> result = parser.parse(javaPath);
             result.getResult().ifPresent(cu -> {
@@ -68,9 +68,10 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNode> {
                                 cu.findAll(RecordDeclaration.class))
                                 .flatMap(List::stream)
                                 .map(typeDecl -> {
-                                    String signature = packageName + "." + typeDecl.getNameAsString();
+                                    String name = typeDecl.getNameAsString();
+                                    String signature = packageName + "." + name;
                                     String code = typeDecl.toString();
-                                    return new ClassNode(source, signature, code);
+                                    return new ClassNodeContext(source, name, signature, code);
                                 })
                                 .collect(Collectors.toList()));
             });

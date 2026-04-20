@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "class_node")
-public class ClassNode extends Context {
+public class ClassNodeContext extends Context {
 
     @Column(name = "class_signature", nullable = false, length = 512)
     private String classSignature;
@@ -23,10 +23,10 @@ public class ClassNode extends Context {
     @Column(name = "usage_enrich", columnDefinition = "LONGTEXT")
     private String usageEnrich;
 
-    public ClassNode() {
+    public ClassNodeContext() {
     }
 
-    public ClassNode(Source source, String className, String classSignature, String classCode) {
+    public ClassNodeContext(Source source, String className, String classSignature, String classCode) {
         this.setSource(source);
         this.setContextName("Class::" + className);
         this.setContent(classCode);

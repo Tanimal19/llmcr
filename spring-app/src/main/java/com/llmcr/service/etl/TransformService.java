@@ -74,7 +74,7 @@ public class TransformService {
                         keywords.add(parts[parts.length - 1]); // class name
                         keywords.add(parts[parts.length - 2]); // package name
 
-                        List<DocumentParagraph> relevantParagraphs = dataStore
+                        List<DocumentContext> relevantParagraphs = dataStore
                                         .findAllDocumentParagraphsByKeywords(keywords, maxParagraphsPerNode);
                         classNode.setDocumentParagraphs(relevantParagraphs);
                         LOGGER.info("Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: "
@@ -84,10 +84,10 @@ public class TransformService {
                         // enrich node with llm generated summary
                         // build prompt
                         String code = Objects.toString(classNode.getContent(), "");
-                        List<DocumentParagraph> paragraphs = classNode.getDocumentParagraphs();
+                        List<DocumentContext> paragraphs = classNode.getDocumentParagraphs();
                         String doc = paragraphs == null ? ""
                                         : paragraphs.stream()
-                                                        .map(DocumentParagraph::getContent)
+                                                        .map(DocumentContext::getContent)
                                                         .collect(Collectors.joining("\n"));
                         String formatInstruction = Objects.toString(outputConverter.getFormat(), "");
                         Map<String, Object> variables = Map.of(

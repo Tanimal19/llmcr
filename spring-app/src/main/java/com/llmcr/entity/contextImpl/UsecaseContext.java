@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "usecase")
-public class Usecase extends Context {
+public class UsecaseContext extends Context {
 
     @Column(name = "usecase_index", nullable = false)
     private Integer usecaseIndex;
@@ -17,10 +17,10 @@ public class Usecase extends Context {
     @Column(name = "description", nullable = true, columnDefinition = "TEXT")
     private String description;
 
-    public Usecase() {
+    public UsecaseContext() {
     }
 
-    public Usecase(Source source, String usecaseCtx, String content, Integer usecaseIndex, String description) {
+    public UsecaseContext(Source source, String usecaseCtx, String content, Integer usecaseIndex, String description) {
         this.setSource(source);
         this.setContextName("Ucase::" + usecaseCtx + "::" + usecaseIndex);
         this.setContent(content);

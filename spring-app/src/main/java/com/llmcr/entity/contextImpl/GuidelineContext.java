@@ -9,15 +9,15 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "guideline")
-public class Guideline extends Context {
+public class GuidelineContext extends Context {
 
     @Column(name = "guideline_index", nullable = false)
     private Integer guidelineIndex;
 
-    public Guideline() {
+    public GuidelineContext() {
     }
 
-    public Guideline(Source source, String guidelineCtx, String content, Integer guidelineIndex) {
+    public GuidelineContext(Source source, String guidelineCtx, String content, Integer guidelineIndex) {
         this.setSource(source);
         this.setContextName("Guide::" + guidelineCtx + "::" + guidelineIndex);
         this.setContent(content);

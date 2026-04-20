@@ -12,5 +12,5 @@ import java.util.UUID;
  * Repository interface for managing DocumentParagraph entities.
  */
 @Repository
-public interface DocumentParagraphRepository extends JpaRepository<DocumentParagraph, UUID> {
+public interface DocumentParagraphRepository extends JpaRepository<DocumentContext, UUID> {
 }
