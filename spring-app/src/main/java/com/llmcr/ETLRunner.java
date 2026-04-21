@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk.ChunkContentType;
 import com.llmcr.etl.step.ExtractStep;
+import com.llmcr.service.LoadService;
 import com.llmcr.service.TransformService;
 import com.llmcr.service.etl.DataSourceFactoryService;
-import com.llmcr.service.etl.LoadService;
 import com.llmcr.service.faiss.FaissVectorStoreFactory;
 import com.llmcr.storage.DataStore;
 

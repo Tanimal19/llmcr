@@ -15,37 +15,37 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "vector_store", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "vector_store_name")
+@Table(name = "chunk_collection", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "chunk_collection_name")
 })
-public class VectorStore {
+public class ChunkCollection {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "vector_store_id", nullable = false)
-    private Long vectorStoreId;
+    @Column(name = "chunk_collection_id", nullable = false)
+    private Long chunkCollectionId;
 
-    @Column(name = "vector_store_name", columnDefinition = "TEXT", nullable = false, unique = true)
-    private String vectorStoreName;
+    @Column(name = "chunk_collection_name", columnDefinition = "TEXT", nullable = false, unique = true)
+    private String chunkCollectionName;
 
     @ManyToMany
-    @JoinTable(name = "`index`", joinColumns = @JoinColumn(name = "vector_store_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
+    @JoinTable(name = "chunk_index", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
     private List<Chunk> chunks = new ArrayList<>();
 
-    public Long getVectorStoreId() {
-        return vectorStoreId;
+    public Long getChunkCollectionId() {
+        return chunkCollectionId;
     }
 
-    public void setVectorStoreId(Long vectorStoreId) {
-        this.vectorStoreId = vectorStoreId;
+    public void setChunkCollectionId(Long chunkCollectionId) {
+        this.chunkCollectionId = chunkCollectionId;
     }
 
-    public String getVectorStoreName() {
-        return vectorStoreName;
+    public String getChunkCollectionName() {
+        return chunkCollectionName;
     }
 
-    public void setVectorStoreName(String vectorStoreName) {
-        this.vectorStoreName = vectorStoreName;
+    public void setChunkCollectionName(String chunkCollectionName) {
+        this.chunkCollectionName = chunkCollectionName;
     }
 
     public List<Chunk> getChunks() {
@@ -72,8 +72,8 @@ public class VectorStore {
             return;
         }
         chunks.add(chunk);
-        if (!chunk.getVectorStores().contains(this)) {
-            chunk.getVectorStores().add(this);
+        if (!chunk.getChunkCollections().contains(this)) {
+            chunk.getChunkCollections().add(this);
         }
     }
 
@@ -81,17 +81,17 @@ public class VectorStore {
         if (chunk == null || !chunks.remove(chunk)) {
             return;
         }
-        chunk.getVectorStores().remove(this);
+        chunk.getChunkCollections().remove(this);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof VectorStore))
+        if (!(o instanceof ChunkCollection))
             return false;
-        VectorStore other = (VectorStore) o;
-        return vectorStoreId != null && vectorStoreId.equals(other.vectorStoreId);
+        ChunkCollection other = (ChunkCollection) o;
+        return chunkCollectionId != null && chunkCollectionId.equals(other.chunkCollectionId);
     }
 
     @Override

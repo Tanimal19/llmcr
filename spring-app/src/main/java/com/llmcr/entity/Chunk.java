@@ -34,7 +34,7 @@ public class Chunk {
     private Integer tokenCount;
 
     @ManyToMany(mappedBy = "chunks")
-    private List<VectorStore> vectorStores = new ArrayList<>();
+    private List<ChunkCollection> chunkCollections = new ArrayList<>();
 
     public Chunk() {
     }
@@ -84,40 +84,40 @@ public class Chunk {
         this.tokenCount = tokenCount;
     }
 
-    public List<VectorStore> getVectorStores() {
-        return vectorStores;
+    public List<ChunkCollection> getChunkCollections() {
+        return chunkCollections;
     }
 
-    public void setVectorStores(List<VectorStore> vectorStores) {
-        List<VectorStore> currentVectorStores = new ArrayList<>(this.vectorStores);
-        for (VectorStore vectorStore : currentVectorStores) {
-            removeVectorStore(vectorStore);
+    public void setChunkCollections(List<ChunkCollection> chunkCollections) {
+        List<ChunkCollection> currentChunkCollections = new ArrayList<>(this.chunkCollections);
+        for (ChunkCollection chunkCollection : currentChunkCollections) {
+            removeChunkCollection(chunkCollection);
         }
 
-        if (vectorStores == null) {
+        if (chunkCollections == null) {
             return;
         }
 
-        for (VectorStore vectorStore : vectorStores) {
-            addVectorStore(vectorStore);
+        for (ChunkCollection chunkCollection : chunkCollections) {
+            addChunkCollection(chunkCollection);
         }
     }
 
-    public void addVectorStore(VectorStore vectorStore) {
-        if (vectorStore == null || vectorStores.contains(vectorStore)) {
+    public void addChunkCollection(ChunkCollection chunkCollection) {
+        if (chunkCollection == null || chunkCollections.contains(chunkCollection)) {
             return;
         }
-        vectorStores.add(vectorStore);
-        if (!vectorStore.getChunks().contains(this)) {
-            vectorStore.getChunks().add(this);
+        chunkCollections.add(chunkCollection);
+        if (!chunkCollection.getChunks().contains(this)) {
+            chunkCollection.getChunks().add(this);
         }
     }
 
-    public void removeVectorStore(VectorStore vectorStore) {
-        if (vectorStore == null || !vectorStores.remove(vectorStore)) {
+    public void removeChunkCollection(ChunkCollection chunkCollection) {
+        if (chunkCollection == null || !chunkCollections.remove(chunkCollection)) {
             return;
         }
-        vectorStore.getChunks().remove(this);
+        chunkCollection.getChunks().remove(this);
     }
 
     @Override

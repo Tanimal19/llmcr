@@ -1,4 +1,4 @@
-package com.llmcr.service.etl;
+package com.llmcr.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +12,6 @@ import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import com.llmcr.entity.Chunk;
-import com.llmcr.entity.Chunk.ChunkContentType;
-import com.llmcr.storage.DataStore;
 
 public class LoadService {
 

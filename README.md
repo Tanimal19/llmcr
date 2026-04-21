@@ -71,10 +71,6 @@ Guideline is a special type of context that describe code review guidelines.
 </guidelines>
 ```
 
-### ToolAction
-ToolAction is a special type of context that describe the usage of a specific action, where each action maps to a java method.
-All avaliable actions are pre-defined in `ToolActionRegistry.java`.
-
 ### Usecase
 Usecase is an example on how to perform specific code review check.  
 
@@ -89,6 +85,10 @@ Usecase is an example on how to perform specific code review check.
 </usecases>
 ```
 
+
+### ToolAction
+ToolAction is a special type of context that describe the usage of a specific action, where each action maps to a java method.
+All avaliable actions are pre-defined in `ToolActionRegistry.java`.
 
 
 # Structure

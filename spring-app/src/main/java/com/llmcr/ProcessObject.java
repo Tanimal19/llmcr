@@ -1,10 +1,5 @@
 package com.llmcr;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.github.javaparser.ast.CompilationUnit;
-
 /**
  * A singleton class that holds the current processing state of the application,
  * and caches intermediate results during the process.

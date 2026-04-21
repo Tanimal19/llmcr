@@ -15,31 +15,33 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 
 import com.llmcr.entity.Source;
+import com.llmcr.repository.ContextRepository;
+import com.llmcr.repository.VectorStoreRepository;
 import com.llmcr.service.faiss.FaissService.AddVectorsRequest;
 import com.llmcr.service.faiss.FaissService.AddVectorsResponse;
 import com.llmcr.service.faiss.FaissService.SearchVectorsRequest;
 import com.llmcr.service.faiss.FaissService.SearchVectorsResponse;
-import com.llmcr.storage.DataStore;
 
 public class FaissVectorStore implements VectorStore {
 
-    private static final int MAX_QUERY_LENGTH = 8000; // characters
+    private static final int MAX_QUERY_LENGTH = 8000;
 
-    private final DataStore dataStore;
+    private final ContextRepository contextRepository;
+    private final VectorStoreRepository vectorStoreRepository;
+
     private final FaissService faissService;
     private final EmbeddingModel embeddingModel;
     private final String indexName;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FaissVectorStore.class);
 
-    public FaissVectorStore(DataStore dataStore, FaissService faissService, EmbeddingModel embeddingModel,
+    public FaissVectorStore(
+            FaissService faissService, EmbeddingModel embeddingModel,
             String indexName) {
-        this.dataStore = dataStore;
         this.faissService = faissService;
         this.embeddingModel = embeddingModel;
         this.indexName = indexName;
 
-        dataStore.createIndexIfNotExist(indexName);
     }
 
     @Override
