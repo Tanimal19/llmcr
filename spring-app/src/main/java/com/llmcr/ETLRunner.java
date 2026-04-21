@@ -13,11 +13,11 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk.ChunkContentType;
 import com.llmcr.service.etl.DataSourceFactoryService;
-import com.llmcr.service.etl.DataStore;
 import com.llmcr.service.etl.ExtractService;
 import com.llmcr.service.etl.LoadService;
 import com.llmcr.service.etl.TransformService;
 import com.llmcr.service.faiss.FaissVectorStoreFactory;
+import com.llmcr.storage.DataStore;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "etl")

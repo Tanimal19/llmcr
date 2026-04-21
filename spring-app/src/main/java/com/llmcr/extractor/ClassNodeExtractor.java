@@ -1,4 +1,4 @@
-package com.llmcr.extraction;
+package com.llmcr.extractor;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
@@ -43,7 +43,7 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNodeContext> {
     public List<ClassNodeContext> extract(Source source) {
 
         if (source.getSourcePath().equals("package-info.java")) {
-            LOGGER.info("Skipping non-class java source: " + source.getSourcePath());
+            LOGGER.warn("Skipping non-class java source: " + source.getSourcePath());
             return List.of();
         }
 

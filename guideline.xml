@@ -1,0 +1,17 @@
+<guidelines>
+    <guideline>
+        <content>Prefer clear, descriptive names for classes, methods, and variables to improve readability and maintainability.</content>
+    </guideline>
+    <guideline>
+        <content>Avoid duplicated logic; extract shared behavior into reusable methods or components.</content>
+    </guideline>
+    <guideline>
+        <content>Validate external input and handle null or error cases explicitly to prevent runtime failures.</content>
+    </guideline>
+    <guideline>
+        <content>Write unit tests for core business logic and include edge cases that are likely to break.</content>
+    </guideline>
+    <guideline>
+        <content>Keep methods focused on a single responsibility and limit method length when possible.</content>
+    </guideline>
+</guidelines>

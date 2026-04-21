@@ -12,8 +12,6 @@ import com.github.javaparser.ast.CompilationUnit;
 public class ProcessObject {
     private static ProcessObject instance;
 
-    private Map<String, CompilationUnit> cuCache = new HashMap<>();
-
     private ProcessObject() {
         // Private constructor to prevent instantiation
     }
@@ -23,10 +21,6 @@ public class ProcessObject {
             instance = new ProcessObject();
         }
         return instance;
-    }
-
-    private Map<String, CompilationUnit> getCu(String signature) {
-        return cuCache.get(signature);
     }
 
 }

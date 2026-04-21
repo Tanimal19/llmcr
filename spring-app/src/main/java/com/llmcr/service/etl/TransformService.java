@@ -18,6 +18,7 @@ import org.springframework.ai.template.st.StTemplateRenderer;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.llmcr.entity.DocumentParagraph;
+import com.llmcr.storage.DataStore;
 import com.llmcr.utils.JsonBackupUtils;
 
 public class TransformService {

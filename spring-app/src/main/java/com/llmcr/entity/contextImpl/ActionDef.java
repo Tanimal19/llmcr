@@ -9,30 +9,30 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "action")
-public class ActionContext extends Context {
+public class ActionDef extends Context {
 
-    @Column(name = "action_key", nullable = false)
-    private String actionKey;
+    @Column(name = "action_name", nullable = false)
+    private String actionName;
 
     @Column(name = "description", nullable = true, columnDefinition = "TEXT")
     private String description;
 
-    public ActionContext() {
+    public ActionDef() {
     }
 
-    public ActionContext(Source source, String actionKey, String description) {
+    public ActionDef(Source source, String actionName, String description) {
         this.setSource(source);
-        this.setContextName("Tool::" + actionKey);
-        this.setActionKey(actionKey);
+        this.setContextName("Act::" + actionName);
+        this.setActionName(actionName);
         this.setDescription(description);
     }
 
-    public String getActionKey() {
-        return actionKey;
+    public String getActionName() {
+        return actionName;
     }
 
-    public void setActionKey(String actionKey) {
-        this.actionKey = actionKey;
+    public void setActionName(String actionName) {
+        this.actionName = actionName;
     }
 
     public String getDescription() {

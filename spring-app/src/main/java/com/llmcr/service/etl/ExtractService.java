@@ -5,11 +5,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.llmcr.datasource.DataSource;
-import com.llmcr.entity.contextImpl.ClassNodeContext;
-import com.llmcr.entity.contextImpl.DocumentContext;
-import com.llmcr.extraction.ClassNodeExtractor;
-import com.llmcr.extraction.DocumentParagraphExtractor;
+import com.llmcr.entity.Source;
+import com.llmcr.entity.contextImpl.*;
+import com.llmcr.extractor.*;
 
 public class ExtractService {
 
@@ -18,7 +16,7 @@ public class ExtractService {
     private ExtractService() {
     }
 
-    public static void extract(DataStore dataStore, List<DataSource> rawDataSources, int maxParagraphLength) {
+    public static void extract(List<Source> source, int maxParagraphLength) {
         long startTime = System.currentTimeMillis();
         LOGGER.info("Start data extraction");
 

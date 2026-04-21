@@ -15,11 +15,11 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 
 import com.llmcr.entity.Source;
-import com.llmcr.service.etl.DataStore;
 import com.llmcr.service.faiss.FaissService.AddVectorsRequest;
 import com.llmcr.service.faiss.FaissService.AddVectorsResponse;
 import com.llmcr.service.faiss.FaissService.SearchVectorsRequest;
 import com.llmcr.service.faiss.FaissService.SearchVectorsResponse;
+import com.llmcr.storage.DataStore;
 
 public class FaissVectorStore implements VectorStore {
 

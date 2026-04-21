@@ -1,0 +1,22 @@
+<usecases>
+    <usecase>
+        <description>Detect potential null dereference in service logic</description>
+        <input>Review a method that calls user.getProfile().getName() without checking if user or profile can be null.</input>
+        <output>Potential issue: NullPointerException risk. Suggest adding null checks or Optional handling before dereferencing nested objects.</output>
+    </usecase>
+    <usecase>
+        <description>Identify inefficient database access pattern</description>
+        <input>Review code that fetches a list of orders and then queries customer data inside a loop for each order.</input>
+        <output>Potential issue: N+1 query pattern. Suggest using join fetch, batch query, or preloading related entities.</output>
+    </usecase>
+    <usecase>
+        <description>Check for missing exception handling around external API calls</description>
+        <input>Review code that invokes an HTTP client in a transaction method without timeout or retry strategy.</input>
+        <output>Potential issue: Unhandled network failures can break transaction flow. Suggest adding timeout, retry/backoff, and fallback handling.</output>
+    </usecase>
+    <usecase>
+        <description>Verify logging quality for failure scenarios</description>
+        <input>Review catch blocks that only print stack traces or log generic messages without context identifiers.</input>
+        <output>Potential issue: Poor observability. Suggest structured logging with request IDs, key parameters, and actionable error messages.</output>
+    </usecase>
+</usecases>

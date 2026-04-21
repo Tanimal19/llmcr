@@ -1,4 +1,4 @@
-package com.llmcr.extraction;
+package com.llmcr.extractor;
 
 import java.util.List;
 

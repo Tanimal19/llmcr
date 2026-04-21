@@ -13,6 +13,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Chunk.ChunkContentType;
+import com.llmcr.storage.DataStore;
 
 public class LoadService {
 
