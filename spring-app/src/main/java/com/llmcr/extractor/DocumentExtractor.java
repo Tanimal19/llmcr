@@ -46,19 +46,19 @@ public class DocumentExtractor implements ContextExtractor<DocumentContext> {
 
     @Override
     public boolean supports(Source source) {
-        return source.getSourceType() == Source.SourceType.PDF
-                || source.getSourceType() == Source.SourceType.MARKDOWN
-                || source.getSourceType() == Source.SourceType.ASCIIDOC;
+        return source.getType() == Source.SourceType.PDF
+                || source.getType() == Source.SourceType.MARKDOWN
+                || source.getType() == Source.SourceType.ASCIIDOC;
     }
 
     @Override
     public List<DocumentContext> apply(Source source) {
-        if (source.getSourceType() == Source.SourceType.PDF) {
-            return extractFromPdf(Path.of(source.getSourcePath()), source);
-        } else if (source.getSourceType() == Source.SourceType.ASCIIDOC) {
-            return extractFromAsciiDoc(Path.of(source.getSourcePath()), source);
-        } else if (source.getSourceType() == Source.SourceType.MARKDOWN) {
-            return extractFromMarkdown(Path.of(source.getSourcePath()), source);
+        if (source.getType() == Source.SourceType.PDF) {
+            return extractFromPdf(Path.of(source.getPath()), source);
+        } else if (source.getType() == Source.SourceType.ASCIIDOC) {
+            return extractFromAsciiDoc(Path.of(source.getPath()), source);
+        } else if (source.getType() == Source.SourceType.MARKDOWN) {
+            return extractFromMarkdown(Path.of(source.getPath()), source);
         } else {
             return List.of();
         }

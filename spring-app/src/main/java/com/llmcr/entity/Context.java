@@ -19,15 +19,15 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "context", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "context_name")
+        @UniqueConstraint(columnNames = "name")
 })
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Context {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "context_id", nullable = false)
-    private Long contextId;
+    @Column(name = "id", nullable = false)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id", nullable = false)
@@ -37,8 +37,8 @@ public abstract class Context {
      * A human-readable name for the context, which should be unique across all
      * contexts. Used when displaying in the UI.
      */
-    @Column(name = "context_name", columnDefinition = "TEXT", nullable = false, unique = true)
-    private String contextName;
+    @Column(name = "name", columnDefinition = "TEXT", nullable = false, unique = true)
+    private String name;
 
     /**
      * The content that actually pass to LLM.
@@ -55,12 +55,12 @@ public abstract class Context {
     @OneToMany(mappedBy = "context")
     private List<Chunk> chunks = new ArrayList<>();
 
-    public Long getContextId() {
-        return contextId;
+    public Long getId() {
+        return id;
     }
 
-    public void setContextId(Long contextId) {
-        this.contextId = contextId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Source getSource() {
@@ -84,12 +84,12 @@ public abstract class Context {
         }
     }
 
-    public String getContextName() {
-        return contextName;
+    public String getName() {
+        return name;
     }
 
-    public void setContextName(String contextName) {
-        this.contextName = contextName;
+    public void setName(String contextName) {
+        this.name = contextName;
     }
 
     public String getContent() {
@@ -221,7 +221,7 @@ public abstract class Context {
         if (!(o instanceof Context))
             return false;
         Context other = (Context) o;
-        return contextId != null && contextId.equals(other.contextId);
+        return id != null && id.equals(other.id);
     }
 
     @Override

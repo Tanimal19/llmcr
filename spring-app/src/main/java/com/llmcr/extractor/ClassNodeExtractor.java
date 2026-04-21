@@ -36,18 +36,18 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNodeContext> {
 
     @Override
     public boolean supports(Source source) {
-        return source.getSourceType() == SourceType.JAVACODE;
+        return source.getType() == SourceType.JAVACODE;
     }
 
     @Override
     public List<ClassNodeContext> apply(Source source) {
 
-        if (source.getSourcePath().equals("package-info.java")) {
-            LOGGER.warn("Skipping non-class java source: " + source.getSourcePath());
+        if (source.getPath().equals("package-info.java")) {
+            LOGGER.warn("Skipping non-class java source: " + source.getPath());
             return List.of();
         }
 
-        Path javaPath = Paths.get(source.getSourcePath());
+        Path javaPath = Paths.get(source.getPath());
         if (!Files.exists(javaPath) || !Files.isRegularFile(javaPath)) {
             LOGGER.warn("Source path does not exist or is not a regular file: " + javaPath);
             return List.of();

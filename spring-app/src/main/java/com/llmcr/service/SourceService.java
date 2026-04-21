@@ -59,25 +59,25 @@ public class SourceService {
 
         List<Source> localSources = loadSources(trackRoot);
         for (Source localSource : localSources) {
-            localSource.setParentTrackRoot(trackRoot);
-            Source duplicated = localSourcesByPath.putIfAbsent(localSource.getSourcePath(), localSource);
+            localSource.setTrackRoot(trackRoot);
+            Source duplicated = localSourcesByPath.putIfAbsent(localSource.getPath(), localSource);
             if (duplicated != null) {
                 LOGGER.warn("Duplicated source path found under track root, keeping first one: "
-                        + localSource.getSourcePath());
+                        + localSource.getPath());
             }
         }
 
         List<Source> dbSources = sourceRepository.findAll().stream()
-                .filter(source -> Objects.equals(source.getParentTrackRoot(), trackRoot))
+                .filter(source -> Objects.equals(source.getTrackRoot(), trackRoot))
                 .toList();
 
         Map<String, Source> dbSourcesByPath = new LinkedHashMap<>();
         for (Source dbSource : dbSources) {
-            dbSourcesByPath.put(dbSource.getSourcePath(), dbSource);
+            dbSourcesByPath.put(dbSource.getPath(), dbSource);
         }
 
         for (Source dbSource : dbSources) {
-            if (!localSourcesByPath.containsKey(dbSource.getSourcePath())) {
+            if (!localSourcesByPath.containsKey(dbSource.getPath())) {
                 sourceRepository.delete(dbSource);
             }
         }
@@ -92,13 +92,13 @@ public class SourceService {
 
             boolean updated = false;
 
-            if (!Objects.equals(existing.getParentTrackRoot(), localSource.getParentTrackRoot())) {
-                existing.setParentTrackRoot(localSource.getParentTrackRoot());
+            if (!Objects.equals(existing.getTrackRoot(), localSource.getTrackRoot())) {
+                existing.setTrackRoot(localSource.getTrackRoot());
                 updated = true;
             }
 
-            if (existing.getSourceType() != localSource.getSourceType()) {
-                existing.setSourceType(localSource.getSourceType());
+            if (existing.getType() != localSource.getType()) {
+                existing.setType(localSource.getType());
                 updated = true;
             }
 
@@ -111,7 +111,7 @@ public class SourceService {
     private void syncAllSources() {
         LocalDateTime syncTime = LocalDateTime.now();
         sourceRepository.findAll().forEach(source -> {
-            Path sourcePath = Path.of(source.getSourcePath());
+            Path sourcePath = Path.of(source.getPath());
             if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
                 LOGGER.warn("Source path does not exist or is not a regular file, skip sync: " + sourcePath);
                 return;
@@ -174,8 +174,8 @@ public class SourceService {
         }
 
         Source source = new Source();
-        source.setSourcePath(path.toAbsolutePath().normalize().toString());
-        source.setSourceType(sType);
+        source.setPath(path.toAbsolutePath().normalize().toString());
+        source.setType(sType);
         source.setContentHash(computeContentHash(path));
         return source;
     }

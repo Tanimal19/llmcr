@@ -20,8 +20,8 @@ public class Chunk {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "chunk_id", nullable = false)
-    private Long chunkId;
+    @Column(name = "id", nullable = false)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "context_id", nullable = false)
@@ -39,12 +39,12 @@ public class Chunk {
     public Chunk() {
     }
 
-    public Long getChunkId() {
-        return chunkId;
+    public Long getId() {
+        return id;
     }
 
-    public void setChunkId(Long chunkId) {
-        this.chunkId = chunkId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Context getContext() {
@@ -127,7 +127,7 @@ public class Chunk {
         if (!(o instanceof Chunk))
             return false;
         Chunk other = (Chunk) o;
-        return chunkId != null && chunkId.equals(other.chunkId);
+        return id != null && id.equals(other.id);
     }
 
     @Override

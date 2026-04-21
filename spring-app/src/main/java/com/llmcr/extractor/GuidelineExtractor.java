@@ -25,12 +25,12 @@ public class GuidelineExtractor implements ContextExtractor<GuidelineContext> {
 
     @Override
     public boolean supports(Source source) {
-        return source.getSourceType() == Source.SourceType.XML;
+        return source.getType() == Source.SourceType.XML;
     }
 
     @Override
     public List<GuidelineContext> apply(Source source) {
-        Path path = Path.of(source.getSourcePath());
+        Path path = Path.of(source.getPath());
         if (!Files.exists(path) || !Files.isRegularFile(path)) {
             LOGGER.warn("Guideline source path does not exist or is not a file: {}", path);
             return List.of();

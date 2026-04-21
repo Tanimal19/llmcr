@@ -19,7 +19,7 @@ public class GuidelineContext extends Context {
 
     public GuidelineContext(Source source, String guidelineCtx, String content, Integer guidelineIndex) {
         this.setSource(source);
-        this.setContextName("Guide::" + guidelineCtx + "::" + guidelineIndex);
+        this.setName("Guide::" + guidelineCtx + "::" + guidelineIndex);
         this.setContent(content);
         this.setGuidelineIndex(guidelineIndex);
     }

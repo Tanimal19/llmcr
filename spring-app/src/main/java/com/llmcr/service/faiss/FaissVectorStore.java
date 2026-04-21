@@ -16,7 +16,8 @@ import org.springframework.ai.vectorstore.filter.Filter;
 
 import com.llmcr.entity.Source;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.repository.VectorStoreRepository;
+import com.llmcr.repository.ChunkRepository;
+import com.llmcr.repository.ChunkCollectionRepository;
 import com.llmcr.service.faiss.FaissService.AddVectorsRequest;
 import com.llmcr.service.faiss.FaissService.AddVectorsResponse;
 import com.llmcr.service.faiss.FaissService.SearchVectorsRequest;
@@ -24,23 +25,33 @@ import com.llmcr.service.faiss.FaissService.SearchVectorsResponse;
 
 public class FaissVectorStore implements VectorStore {
 
-    private static final int MAX_QUERY_LENGTH = 8000;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FaissVectorStore.class);
 
-    private final ContextRepository contextRepository;
-    private final VectorStoreRepository vectorStoreRepository;
+    private static final int MAX_QUERY_LENGTH = 8000;
+    private final String collectionName;
 
     private final FaissService faissService;
     private final EmbeddingModel embeddingModel;
-    private final String indexName;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FaissVectorStore.class);
+    private final ContextRepository contextRepository;
+    private final ChunkRepository chunkRepository;
+    private final ChunkCollectionRepository chunkCollectionRepository;
 
     public FaissVectorStore(
-            FaissService faissService, EmbeddingModel embeddingModel,
-            String indexName) {
+            FaissService faissService,
+            EmbeddingModel embeddingModel,
+            ContextRepository contextRepository,
+            ChunkRepository chunkRepository,
+            ChunkCollectionRepository chunkCollectionRepository,
+            String collectionName) {
         this.faissService = faissService;
         this.embeddingModel = embeddingModel;
-        this.indexName = indexName;
+        this.contextRepository = contextRepository;
+        this.chunkRepository = chunkRepository;
+        this.chunkCollectionRepository = chunkCollectionRepository;
+
+        if (chunkCollectionRepository.findByNa)
+
+            this.collectionName = collectionName;
 
     }
 

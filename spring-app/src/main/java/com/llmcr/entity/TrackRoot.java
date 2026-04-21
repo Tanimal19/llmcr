@@ -23,7 +23,7 @@ public class TrackRoot {
     @Column(nullable = false, unique = true, length = 1024)
     private String path;
 
-    @OneToMany(mappedBy = "parentTrackRoot", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "trackRoot", fetch = FetchType.LAZY)
     private List<Source> sources = new ArrayList<>();
 
     public TrackRoot() {
@@ -69,8 +69,8 @@ public class TrackRoot {
             return;
         }
         sources.add(source);
-        if (source.getParentTrackRoot() != this) {
-            source.setParentTrackRoot(this);
+        if (source.getTrackRoot() != this) {
+            source.setTrackRoot(this);
         }
     }
 
@@ -78,8 +78,8 @@ public class TrackRoot {
         if (source == null || !sources.remove(source)) {
             return;
         }
-        if (source.getParentTrackRoot() == this) {
-            source.setParentTrackRoot(null);
+        if (source.getTrackRoot() == this) {
+            source.setTrackRoot(null);
         }
     }
 }

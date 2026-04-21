@@ -18,8 +18,8 @@ public class ContextRelation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "relation_id", nullable = false)
-    private Long relationId;
+    @Column(name = "id", nullable = false)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_context_id", nullable = false)
@@ -39,12 +39,12 @@ public class ContextRelation {
         UNDEFINED
     }
 
-    public Long getRelationId() {
-        return relationId;
+    public Long getId() {
+        return id;
     }
 
-    public void setRelationId(Long relationId) {
-        this.relationId = relationId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Context getSourceContext() {

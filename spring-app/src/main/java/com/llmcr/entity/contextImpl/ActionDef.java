@@ -22,7 +22,7 @@ public class ActionDef extends Context {
 
     public ActionDef(Source source, String actionName, String description) {
         this.setSource(source);
-        this.setContextName("Act::" + actionName);
+        this.setName("Act::" + actionName);
         this.setActionName(actionName);
         this.setDescription(description);
     }

@@ -22,7 +22,7 @@ public class UsecaseContext extends Context {
 
     public UsecaseContext(Source source, String usecaseCtx, String content, Integer usecaseIndex, String description) {
         this.setSource(source);
-        this.setContextName("Ucase::" + usecaseCtx + "::" + usecaseIndex);
+        this.setName("Ucase::" + usecaseCtx + "::" + usecaseIndex);
         this.setContent(content);
         this.setUsecaseIndex(usecaseIndex);
         this.setDescription(description);

@@ -16,36 +16,36 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "chunk_collection", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "chunk_collection_name")
+        @UniqueConstraint(columnNames = "name")
 })
 public class ChunkCollection {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "chunk_collection_id", nullable = false)
-    private Long chunkCollectionId;
+    @Column(name = "id", nullable = false)
+    private Long id;
 
-    @Column(name = "chunk_collection_name", columnDefinition = "TEXT", nullable = false, unique = true)
-    private String chunkCollectionName;
+    @Column(name = "name", columnDefinition = "TEXT", nullable = false, unique = true)
+    private String name;
 
     @ManyToMany
     @JoinTable(name = "chunk_index", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
     private List<Chunk> chunks = new ArrayList<>();
 
-    public Long getChunkCollectionId() {
-        return chunkCollectionId;
+    public Long getId() {
+        return id;
     }
 
-    public void setChunkCollectionId(Long chunkCollectionId) {
-        this.chunkCollectionId = chunkCollectionId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public String getChunkCollectionName() {
-        return chunkCollectionName;
+    public String getName() {
+        return name;
     }
 
-    public void setChunkCollectionName(String chunkCollectionName) {
-        this.chunkCollectionName = chunkCollectionName;
+    public void setName(String chunkCollectionName) {
+        this.name = chunkCollectionName;
     }
 
     public List<Chunk> getChunks() {
@@ -91,7 +91,7 @@ public class ChunkCollection {
         if (!(o instanceof ChunkCollection))
             return false;
         ChunkCollection other = (ChunkCollection) o;
-        return chunkCollectionId != null && chunkCollectionId.equals(other.chunkCollectionId);
+        return id != null && id.equals(other.id);
     }
 
     @Override

@@ -19,7 +19,7 @@ public class DocumentContext extends Context {
 
     public DocumentContext(Source source, String docName, String content, Integer paragraphIndex) {
         this.setSource(source);
-        this.setContextName("Doc::" + docName + "::" + paragraphIndex);
+        this.setName("Doc::" + docName + "::" + paragraphIndex);
         this.setContent(content);
         this.setParagraphIndex(paragraphIndex);
     }

@@ -20,24 +20,24 @@ import jakarta.persistence.Enumerated;
 
 @Entity
 @Table(name = "source", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "source_path")
+        @UniqueConstraint(columnNames = "path")
 })
 public class Source {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "source_id", nullable = false)
-    private Long sourceId;
+    @Column(name = "id", nullable = false)
+    private Long id;
 
-    @Column(name = "source_path", columnDefinition = "TEXT", nullable = false, unique = true)
-    private String sourcePath;
+    @Column(name = "path", columnDefinition = "TEXT", nullable = false, unique = true)
+    private String path;
 
     @Column(name = "content_hash", columnDefinition = "TEXT", nullable = false)
     private String contentHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "source_type", nullable = false, length = 32)
-    private SourceType sourceType = SourceType.UNDEFINED;
+    @Column(name = "type", nullable = false, length = 32)
+    private SourceType type = SourceType.UNDEFINED;
 
     @Column(name = "last_sync_time")
     private LocalDateTime lastSyncTime;
@@ -47,7 +47,7 @@ public class Source {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "track_root_id")
-    private TrackRoot parentTrackRoot;
+    private TrackRoot trackRoot;
 
     public enum SourceType {
         JAVACODE,
@@ -58,28 +58,28 @@ public class Source {
         UNDEFINED
     }
 
-    public Long getSourceId() {
-        return sourceId;
+    public Long getId() {
+        return id;
     }
 
-    public void setSourceId(Long sourceId) {
-        this.sourceId = sourceId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public String getSourcePath() {
-        return sourcePath;
+    public String getPath() {
+        return path;
     }
 
     public String getSourceName() {
-        if (sourcePath == null || sourcePath.isEmpty()) {
+        if (path == null || path.isEmpty()) {
             return "unknown_source";
         }
-        String[] parts = sourcePath.replace("\\", "/").split("/");
+        String[] parts = path.replace("\\", "/").split("/");
         return parts[parts.length - 1];
     }
 
-    public void setSourcePath(String sourcePath) {
-        this.sourcePath = sourcePath;
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public String getContentHash() {
@@ -90,12 +90,12 @@ public class Source {
         this.contentHash = contentHash;
     }
 
-    public SourceType getSourceType() {
-        return sourceType;
+    public SourceType getType() {
+        return type;
     }
 
-    public void setSourceType(SourceType sourceType) {
-        this.sourceType = sourceType;
+    public void setType(SourceType type) {
+        this.type = type;
     }
 
     public LocalDateTime getLastSyncTime() {
@@ -125,24 +125,24 @@ public class Source {
         }
     }
 
-    public TrackRoot getParentTrackRoot() {
-        return parentTrackRoot;
+    public TrackRoot getTrackRoot() {
+        return trackRoot;
     }
 
-    public void setParentTrackRoot(TrackRoot parentTrackRoot) {
-        if (this.parentTrackRoot == parentTrackRoot) {
+    public void setTrackRoot(TrackRoot trackRoot) {
+        if (this.trackRoot == trackRoot) {
             return;
         }
 
-        TrackRoot oldParentTrackRoot = this.parentTrackRoot;
-        this.parentTrackRoot = null;
-        if (oldParentTrackRoot != null) {
-            oldParentTrackRoot.removeSource(this);
+        TrackRoot oldTrackRoot = this.trackRoot;
+        this.trackRoot = null;
+        if (oldTrackRoot != null) {
+            oldTrackRoot.removeSource(this);
         }
 
-        this.parentTrackRoot = parentTrackRoot;
-        if (parentTrackRoot != null && !parentTrackRoot.getSources().contains(this)) {
-            parentTrackRoot.getSources().add(this);
+        this.trackRoot = trackRoot;
+        if (trackRoot != null && !trackRoot.getSources().contains(this)) {
+            trackRoot.getSources().add(this);
         }
     }
 
@@ -172,7 +172,7 @@ public class Source {
         if (!(o instanceof Source))
             return false;
         Source other = (Source) o;
-        return sourceId != null && sourceId.equals(other.sourceId);
+        return id != null && id.equals(other.id);
     }
 
     @Override

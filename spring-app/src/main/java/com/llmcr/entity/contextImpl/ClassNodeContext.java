@@ -28,7 +28,7 @@ public class ClassNodeContext extends Context {
 
     public ClassNodeContext(Source source, String className, String classSignature, String classCode) {
         this.setSource(source);
-        this.setContextName("Class::" + className);
+        this.setName("Class::" + className);
         this.setContent(classCode);
         this.setClassSignature(classSignature);
     }
