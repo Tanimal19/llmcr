@@ -111,7 +111,18 @@ public class Source {
     }
 
     public void setContexts(List<Context> contexts) {
-        this.contexts = contexts;
+        List<Context> currentContexts = new ArrayList<>(this.contexts);
+        for (Context context : currentContexts) {
+            removeContext(context);
+        }
+
+        if (contexts == null) {
+            return;
+        }
+
+        for (Context context : contexts) {
+            addContext(context);
+        }
     }
 
     public TrackRoot getParentTrackRoot() {
@@ -119,7 +130,39 @@ public class Source {
     }
 
     public void setParentTrackRoot(TrackRoot parentTrackRoot) {
+        if (this.parentTrackRoot == parentTrackRoot) {
+            return;
+        }
+
+        TrackRoot oldParentTrackRoot = this.parentTrackRoot;
+        this.parentTrackRoot = null;
+        if (oldParentTrackRoot != null) {
+            oldParentTrackRoot.removeSource(this);
+        }
+
         this.parentTrackRoot = parentTrackRoot;
+        if (parentTrackRoot != null && !parentTrackRoot.getSources().contains(this)) {
+            parentTrackRoot.getSources().add(this);
+        }
+    }
+
+    public void addContext(Context context) {
+        if (context == null || contexts.contains(context)) {
+            return;
+        }
+        contexts.add(context);
+        if (context.getSource() != this) {
+            context.setSource(this);
+        }
+    }
+
+    public void removeContext(Context context) {
+        if (context == null || !contexts.remove(context)) {
+            return;
+        }
+        if (context.getSource() == this) {
+            context.setSource(null);
+        }
     }
 
     @Override

@@ -12,10 +12,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk.ChunkContentType;
+import com.llmcr.etl.step.ExtractStep;
+import com.llmcr.service.TransformService;
 import com.llmcr.service.etl.DataSourceFactoryService;
-import com.llmcr.service.etl.ExtractService;
 import com.llmcr.service.etl.LoadService;
-import com.llmcr.service.etl.TransformService;
 import com.llmcr.service.faiss.FaissVectorStoreFactory;
 import com.llmcr.storage.DataStore;
 
@@ -39,12 +39,12 @@ public class ETLRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		ExtractService.extract(
+		ExtractStep.extract(
 				defaultDataStore,
 				DataSourceFactoryService.createFromJavaProject(javaProjectRootPathString),
 				3000);
 		for (String javaDocPathString : javaDocPathStrings) {
-			ExtractService.extract(
+			ExtractStep.extract(
 					defaultDataStore,
 					DataSourceFactoryService.createFromPath(javaDocPathString), 3000);
 		}

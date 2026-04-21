@@ -68,7 +68,20 @@ public abstract class Context {
     }
 
     public void setSource(Source source) {
+        if (this.source == source) {
+            return;
+        }
+
+        Source oldSource = this.source;
+        this.source = null;
+        if (oldSource != null) {
+            oldSource.removeContext(this);
+        }
+
         this.source = source;
+        if (source != null && !source.getContexts().contains(this)) {
+            source.getContexts().add(this);
+        }
     }
 
     public String getContextName() {
@@ -92,7 +105,18 @@ public abstract class Context {
     }
 
     public void setOutgoingRelations(List<ContextRelation> outgoingRelations) {
-        this.outgoingRelations = outgoingRelations;
+        List<ContextRelation> currentRelations = new ArrayList<>(this.outgoingRelations);
+        for (ContextRelation relation : currentRelations) {
+            removeOutgoingRelation(relation);
+        }
+
+        if (outgoingRelations == null) {
+            return;
+        }
+
+        for (ContextRelation relation : outgoingRelations) {
+            addOutgoingRelation(relation);
+        }
     }
 
     public List<ContextRelation> getIncomingRelations() {
@@ -100,7 +124,18 @@ public abstract class Context {
     }
 
     public void setIncomingRelations(List<ContextRelation> incomingRelations) {
-        this.incomingRelations = incomingRelations;
+        List<ContextRelation> currentRelations = new ArrayList<>(this.incomingRelations);
+        for (ContextRelation relation : currentRelations) {
+            removeIncomingRelation(relation);
+        }
+
+        if (incomingRelations == null) {
+            return;
+        }
+
+        for (ContextRelation relation : incomingRelations) {
+            addIncomingRelation(relation);
+        }
     }
 
     public List<Chunk> getChunks() {
@@ -108,7 +143,75 @@ public abstract class Context {
     }
 
     public void setChunks(List<Chunk> chunks) {
-        this.chunks = chunks;
+        List<Chunk> currentChunks = new ArrayList<>(this.chunks);
+        for (Chunk chunk : currentChunks) {
+            removeChunk(chunk);
+        }
+
+        if (chunks == null) {
+            return;
+        }
+
+        for (Chunk chunk : chunks) {
+            addChunk(chunk);
+        }
+    }
+
+    public void addOutgoingRelation(ContextRelation relation) {
+        if (relation == null || outgoingRelations.contains(relation)) {
+            return;
+        }
+        outgoingRelations.add(relation);
+        if (relation.getSourceContext() != this) {
+            relation.setSourceContext(this);
+        }
+    }
+
+    public void removeOutgoingRelation(ContextRelation relation) {
+        if (relation == null || !outgoingRelations.remove(relation)) {
+            return;
+        }
+        if (relation.getSourceContext() == this) {
+            relation.setSourceContext(null);
+        }
+    }
+
+    public void addIncomingRelation(ContextRelation relation) {
+        if (relation == null || incomingRelations.contains(relation)) {
+            return;
+        }
+        incomingRelations.add(relation);
+        if (relation.getTargetContext() != this) {
+            relation.setTargetContext(this);
+        }
+    }
+
+    public void removeIncomingRelation(ContextRelation relation) {
+        if (relation == null || !incomingRelations.remove(relation)) {
+            return;
+        }
+        if (relation.getTargetContext() == this) {
+            relation.setTargetContext(null);
+        }
+    }
+
+    public void addChunk(Chunk chunk) {
+        if (chunk == null || chunks.contains(chunk)) {
+            return;
+        }
+        chunks.add(chunk);
+        if (chunk.getContext() != this) {
+            chunk.setContext(this);
+        }
+    }
+
+    public void removeChunk(Chunk chunk) {
+        if (chunk == null || !chunks.remove(chunk)) {
+            return;
+        }
+        if (chunk.getContext() == this) {
+            chunk.setContext(null);
+        }
     }
 
     @Override

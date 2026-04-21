@@ -40,7 +40,7 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNodeContext> {
     }
 
     @Override
-    public List<ClassNodeContext> extract(Source source) {
+    public List<ClassNodeContext> apply(Source source) {
 
         if (source.getSourcePath().equals("package-info.java")) {
             LOGGER.warn("Skipping non-class java source: " + source.getSourcePath());

@@ -24,12 +24,12 @@ public class GuidelineExtractor implements ContextExtractor<GuidelineContext> {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuidelineExtractor.class);
 
     @Override
-    public boolean supports(com.llmcr.entity.Source source) {
+    public boolean supports(Source source) {
         return source.getSourceType() == Source.SourceType.XML;
     }
 
     @Override
-    public List<GuidelineContext> extract(Source source) {
+    public List<GuidelineContext> apply(Source source) {
         Path path = Path.of(source.getSourcePath());
         if (!Files.exists(path) || !Files.isRegularFile(path)) {
             LOGGER.warn("Guideline source path does not exist or is not a file: {}", path);

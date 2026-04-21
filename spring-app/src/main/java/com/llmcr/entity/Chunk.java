@@ -52,7 +52,20 @@ public class Chunk {
     }
 
     public void setContext(Context context) {
+        if (this.context == context) {
+            return;
+        }
+
+        Context oldContext = this.context;
+        this.context = null;
+        if (oldContext != null) {
+            oldContext.removeChunk(this);
+        }
+
         this.context = context;
+        if (context != null && !context.getChunks().contains(this)) {
+            context.getChunks().add(this);
+        }
     }
 
     public Integer getChunkIndex() {
@@ -76,7 +89,35 @@ public class Chunk {
     }
 
     public void setVectorStores(List<VectorStore> vectorStores) {
-        this.vectorStores = vectorStores;
+        List<VectorStore> currentVectorStores = new ArrayList<>(this.vectorStores);
+        for (VectorStore vectorStore : currentVectorStores) {
+            removeVectorStore(vectorStore);
+        }
+
+        if (vectorStores == null) {
+            return;
+        }
+
+        for (VectorStore vectorStore : vectorStores) {
+            addVectorStore(vectorStore);
+        }
+    }
+
+    public void addVectorStore(VectorStore vectorStore) {
+        if (vectorStore == null || vectorStores.contains(vectorStore)) {
+            return;
+        }
+        vectorStores.add(vectorStore);
+        if (!vectorStore.getChunks().contains(this)) {
+            vectorStore.getChunks().add(this);
+        }
+    }
+
+    public void removeVectorStore(VectorStore vectorStore) {
+        if (vectorStore == null || !vectorStores.remove(vectorStore)) {
+            return;
+        }
+        vectorStore.getChunks().remove(this);
     }
 
     @Override

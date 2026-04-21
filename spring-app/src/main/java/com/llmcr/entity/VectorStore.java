@@ -53,7 +53,35 @@ public class VectorStore {
     }
 
     public void setChunks(List<Chunk> chunks) {
-        this.chunks = chunks;
+        List<Chunk> currentChunks = new ArrayList<>(this.chunks);
+        for (Chunk chunk : currentChunks) {
+            removeChunk(chunk);
+        }
+
+        if (chunks == null) {
+            return;
+        }
+
+        for (Chunk chunk : chunks) {
+            addChunk(chunk);
+        }
+    }
+
+    public void addChunk(Chunk chunk) {
+        if (chunk == null || chunks.contains(chunk)) {
+            return;
+        }
+        chunks.add(chunk);
+        if (!chunk.getVectorStores().contains(this)) {
+            chunk.getVectorStores().add(this);
+        }
+    }
+
+    public void removeChunk(Chunk chunk) {
+        if (chunk == null || !chunks.remove(chunk)) {
+            return;
+        }
+        chunk.getVectorStores().remove(this);
     }
 
     @Override

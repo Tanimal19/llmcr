@@ -44,13 +44,15 @@ public class DocumentExtractor implements ContextExtractor<DocumentContext> {
         this.maxParaLength = maxParaLength;
     }
 
+    @Override
     public boolean supports(Source source) {
         return source.getSourceType() == Source.SourceType.PDF
                 || source.getSourceType() == Source.SourceType.MARKDOWN
                 || source.getSourceType() == Source.SourceType.ASCIIDOC;
     }
 
-    public List<DocumentContext> extract(Source source) {
+    @Override
+    public List<DocumentContext> apply(Source source) {
         if (source.getSourceType() == Source.SourceType.PDF) {
             return extractFromPdf(Path.of(source.getSourcePath()), source);
         } else if (source.getSourceType() == Source.SourceType.ASCIIDOC) {

@@ -50,6 +50,36 @@ public class TrackRoot {
     }
 
     public void setSources(List<Source> sources) {
-        this.sources = sources;
+        List<Source> currentSources = new ArrayList<>(this.sources);
+        for (Source source : currentSources) {
+            removeSource(source);
+        }
+
+        if (sources == null) {
+            return;
+        }
+
+        for (Source source : sources) {
+            addSource(source);
+        }
+    }
+
+    public void addSource(Source source) {
+        if (source == null || sources.contains(source)) {
+            return;
+        }
+        sources.add(source);
+        if (source.getParentTrackRoot() != this) {
+            source.setParentTrackRoot(this);
+        }
+    }
+
+    public void removeSource(Source source) {
+        if (source == null || !sources.remove(source)) {
+            return;
+        }
+        if (source.getParentTrackRoot() == this) {
+            source.setParentTrackRoot(null);
+        }
     }
 }

@@ -52,7 +52,20 @@ public class ContextRelation {
     }
 
     public void setSourceContext(Context sourceContext) {
+        if (this.sourceContext == sourceContext) {
+            return;
+        }
+
+        Context oldSourceContext = this.sourceContext;
+        this.sourceContext = null;
+        if (oldSourceContext != null) {
+            oldSourceContext.removeOutgoingRelation(this);
+        }
+
         this.sourceContext = sourceContext;
+        if (sourceContext != null && !sourceContext.getOutgoingRelations().contains(this)) {
+            sourceContext.getOutgoingRelations().add(this);
+        }
     }
 
     public Context getTargetContext() {
@@ -60,7 +73,20 @@ public class ContextRelation {
     }
 
     public void setTargetContext(Context targetContext) {
+        if (this.targetContext == targetContext) {
+            return;
+        }
+
+        Context oldTargetContext = this.targetContext;
+        this.targetContext = null;
+        if (oldTargetContext != null) {
+            oldTargetContext.removeIncomingRelation(this);
+        }
+
         this.targetContext = targetContext;
+        if (targetContext != null && !targetContext.getIncomingRelations().contains(this)) {
+            targetContext.getIncomingRelations().add(this);
+        }
     }
 
     public RelationType getRelationType() {

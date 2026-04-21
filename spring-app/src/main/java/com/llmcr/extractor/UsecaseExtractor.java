@@ -29,7 +29,7 @@ public class UsecaseExtractor implements ContextExtractor<UsecaseContext> {
     }
 
     @Override
-    public List<UsecaseContext> extract(Source source) {
+    public List<UsecaseContext> apply(Source source) {
         Path path = Path.of(source.getSourcePath());
         if (!Files.exists(path) || !Files.isRegularFile(path)) {
             LOGGER.warn("Usecase source path does not exist or is not a file: {}", path);
