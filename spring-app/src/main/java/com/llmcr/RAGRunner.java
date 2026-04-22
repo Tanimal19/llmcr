@@ -9,12 +9,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.service.faiss.FaissVectorStore;
-import com.llmcr.service.faiss.FaissVectorStoreFactory;
 import com.llmcr.service.rag.RAGService;
 import com.llmcr.service.rag.augmentation.AnswerQueryTemplate;
 import com.llmcr.service.rag.retrieval.AdaptiveKStrategy;
 import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
+import com.llmcr.service.vectorstore.faiss.FaissVectorStore;
+import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "rag")

@@ -77,9 +77,12 @@ Usecase is an example on how to perform specific code review check.
 [
     {
         "id": 1,
-        "usecase": "Usecase description",
+        "description": "Usecase description",
+        "usecase": {
+            "input": "some check list item",
+            "output": "expected answer",
+        }
     },
-    // more usecases
 ]
 ```
 

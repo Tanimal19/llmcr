@@ -1,4 +1,4 @@
-package com.llmcr.extractor;
+package com.llmcr.service.etl.extractor;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -6,13 +6,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Context;
-import com.llmcr.entity.Context.ContextDocument;
 import com.llmcr.entity.Context.ContextType;
 import com.llmcr.entity.Source;
 
-public class GuidelineExtractor implements ContextExtractor {
+@Component
+public class GuidelineExtractor implements SourceExtractor {
 
     @Override
     public boolean supports(Source source) {
@@ -20,7 +21,7 @@ public class GuidelineExtractor implements ContextExtractor {
     }
 
     @Override
-    public List<ContextDocument> extract(Source source) {
+    public List<Context> apply(Source source) {
         JsonReader reader = new JsonReader(
                 new FileSystemResource(source.getPath()),
                 "guideline");
@@ -28,14 +29,12 @@ public class GuidelineExtractor implements ContextExtractor {
         List<Document> docs = reader.read();
         AtomicInteger contextIndex = new AtomicInteger(0);
         return docs.stream()
-                .map(doc -> new ContextDocument(
-                        doc,
-                        new Context(
-                                source,
-                                contextIndex.getAndIncrement(),
-                                "Guideline::" + source.getSourceName() + "::" + contextIndex.get(),
-                                doc.getText(),
-                                ContextType.GUIDELINE)))
+                .map(doc -> new Context(
+                        source,
+                        contextIndex.getAndIncrement(),
+                        "Guideline::" + source.getSourceName() + "::" + contextIndex.get(),
+                        doc.getText(),
+                        ContextType.GUIDELINE))
                 .toList();
     }
 }

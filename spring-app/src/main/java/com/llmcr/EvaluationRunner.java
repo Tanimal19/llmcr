@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.llmcr.service.faiss.FaissVectorStoreFactory;
 import com.llmcr.service.rag.RAGService;
 import com.llmcr.service.rag.augmentation.AnswerQueryTemplate;
 import com.llmcr.service.rag.augmentation.CodeInterpretationTemplate;
@@ -29,6 +28,7 @@ import com.llmcr.service.rag.retrieval.FixedKStrategy;
 import com.llmcr.service.rag.retrieval.RetrievalStrategy;
 import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
 import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
+import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 import com.llmcr.utils.JsonBackupUtils;
 
 @Component

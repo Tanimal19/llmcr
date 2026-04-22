@@ -1,4 +1,4 @@
-package com.llmcr.extractor;
+package com.llmcr.service.etl.extractor;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
@@ -7,10 +7,9 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.Source.SourceType;
 import com.llmcr.entity.Context;
-import com.llmcr.entity.Context.ContextDocument;
 import com.llmcr.entity.Context.ContextType;
 
-import org.springframework.ai.document.Document;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -23,7 +22,8 @@ import java.nio.file.Path;
 /**
  * Extracts class nodes from given Java file
  */
-public class ClassNodeExtractor implements ContextExtractor {
+@Component
+public class ClassNodeExtractor implements SourceExtractor {
 
     private final JavaParser parser;
 
@@ -37,7 +37,7 @@ public class ClassNodeExtractor implements ContextExtractor {
     }
 
     @Override
-    public List<ContextDocument> extract(Source source) {
+    public List<Context> apply(Source source) {
 
         if (source.getPath().equals("package-info.java")) {
             return List.of();
@@ -48,7 +48,7 @@ public class ClassNodeExtractor implements ContextExtractor {
             return List.of();
         }
 
-        List<ContextDocument> classNodes = new ArrayList<>();
+        List<Context> classNodes = new ArrayList<>();
         try {
             ParseResult<CompilationUnit> result = parser.parse(javaPath);
             result.getResult().ifPresent(cu -> {
@@ -59,15 +59,12 @@ public class ClassNodeExtractor implements ContextExtractor {
 
                 classNodes.addAll(
                         cu.findAll(TypeDeclaration.class).stream()
-                                .map(typeDecl -> new ContextDocument(
-                                        new Document(typeDecl.toString()),
-                                        new Context(
-                                                source,
-                                                nodeIndex.getAndIncrement(),
-                                                "ClassNode::" + packageName + "." + typeDecl.getNameAsString(),
-                                                typeDecl.toString(),
-                                                ContextType.CODE)))
-
+                                .map(typeDecl -> new Context(
+                                        source,
+                                        nodeIndex.getAndIncrement(),
+                                        "ClassNode::" + packageName + "." + typeDecl.getNameAsString(),
+                                        typeDecl.toString(),
+                                        ContextType.CLASSNODE))
                                 .toList());
             });
         } catch (IOException e) {

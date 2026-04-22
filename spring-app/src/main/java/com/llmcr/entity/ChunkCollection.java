@@ -32,6 +32,9 @@ public class ChunkCollection {
     @JoinTable(name = "chunk_index", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
     private List<Chunk> chunks = new ArrayList<>();
 
+    protected ChunkCollection() {
+    }
+
     public ChunkCollection(String name) {
         this.name = name;
     }

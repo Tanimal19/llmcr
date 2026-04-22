@@ -1,34 +1,24 @@
-package com.llmcr.service;
+package com.llmcr.service.etl.transformer;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import com.google.api.client.util.store.DataStore;
-import com.google.common.util.concurrent.RateLimiter;
-import com.llmcr.entity.contextImpl.DocumentContext;
-import com.llmcr.repository.ClassNodeContextRepository;
+import com.llmcr.entity.Chunk;
+import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.repository.DocumentContextRepository;
+import com.llmcr.service.faiss.FaissVectorStore;
+import com.llmcr.service.faiss.FaissVectorStore.ContextHolder;
 
-@Service
-public class TransformService {
-
-    private static final Logger logger = LoggerFactory.getLogger(TransformService.class);
+public class ClassNodeEnricher implements ContextTransformer {
 
     private static final PromptTemplate enrichmentPromptTemplate = PromptTemplate.builder()
             .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
@@ -53,40 +43,30 @@ public class TransformService {
                             <format>
                                 """)
             .build();
-
     private static final BeanOutputConverter<ClassNodeEnrichment> outputConverter = new BeanOutputConverter<>(
             ClassNodeEnrichment.class);
 
     private record ClassNodeEnrichment(String functional, String relationship, String usage) {
     }
 
-    private final ClassNodeContextRepository classNodeContextRepository;
-    private final DocumentContextRepository documentContextRepository;
+    private final FaissVectorStore faissVectorStore;
 
-    @Autowired
-    public TransformService(ClassNodeContextRepository classNodeContextRepository,
-            DocumentContextRepository documentContextRepository) {
-        this.classNodeContextRepository = classNodeContextRepository;
-        this.documentContextRepository = documentContextRepository;
+    public ClassNodeEnricher(FaissVectorStore faissVectorStore) {
+        this.faissVectorStore = faissVectorStore;
     }
 
-    public static void transform(int maxParagraphsPerNode) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Start data enrichment");
+    @Override
+    public boolean supports(Context context) {
+        return context.getType() == Context.ContextType.CLASSNODE;
+    }
 
-        dataStore.findUnprocessedClassNodes().stream().forEach(classNode -> {
-            // bind node with related paragraphs
-            List<String> keywords = new ArrayList<>();
-            String[] parts = classNode.getSignature().split("\\.");
-            keywords.add(parts[parts.length - 1]); // class name
-            keywords.add(parts[parts.length - 2]); // package name
+    @Override
+    public List<Chunk> apply(Context context) {
+        assert context.getType() == Context.ContextType.CLASSNODE;
 
-            List<DocumentContext> relevantParagraphs = dataStore
-                    .findAllDocumentParagraphsByKeywords(keywords, maxParagraphsPerNode);
-            classNode.setDocumentParagraphs(relevantParagraphs);
-            logger.info("Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: "
-                    + classNode.getSignature()
-                    + " using keywords: " + keywords);
+        
+
+        List<ContextHolder> contextHolders = faissVectorStore.similaritySearch(new SearchRequest(), "PROJECT_CONTEXT");
 
             // enrich node with llm generated summary
             // build prompt
@@ -162,7 +142,5 @@ public class TransformService {
             dataStore.save(classNode);
         });
 
-        long endTime = System.currentTimeMillis();
-        logger.info("Data enrichment completed in " + (endTime - startTime) + "ms");
-    }
-}
+    long endTime = System.currentTimeMillis();logger.info("Data enrichment completed in "+(endTime-startTime)+"ms");
+}}

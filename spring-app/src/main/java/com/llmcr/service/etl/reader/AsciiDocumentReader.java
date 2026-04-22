@@ -1,4 +1,4 @@
-package com.llmcr.reader;
+package com.llmcr.service.etl.reader;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class AsciiDocumentReader implements DocumentReader {
 
-    private static final int DEFAULT_MAX_PARA_LENGTH = 2000;
+    private static final int MAX_PARA_LENGTH = 2000;
 
     private final Resource asciiResource;
 
@@ -70,7 +70,7 @@ public class AsciiDocumentReader implements DocumentReader {
     private void appendOrFlush(List<Document> output, String ctx, StringBuilder paragraph, String content) {
         if (content == null || content.isBlank())
             return;
-        if (paragraph.length() + content.length() > DEFAULT_MAX_PARA_LENGTH && paragraph.length() > 0) {
+        if (paragraph.length() + content.length() > MAX_PARA_LENGTH && paragraph.length() > 0) {
             flush(output, ctx, paragraph);
         }
         paragraph.append(content).append("\n\n");

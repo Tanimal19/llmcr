@@ -3,6 +3,7 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,7 +24,7 @@ public class TrackRoot {
     @Column(nullable = false, unique = true, length = 1024)
     private String path;
 
-    @OneToMany(mappedBy = "trackRoot", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "trackRoot", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Source> sources = new ArrayList<>();
 
     public TrackRoot() {

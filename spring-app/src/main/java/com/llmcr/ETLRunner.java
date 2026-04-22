@@ -16,7 +16,7 @@ import com.llmcr.etl.step.ExtractStep;
 import com.llmcr.service.ChunkService;
 import com.llmcr.service.TransformService;
 import com.llmcr.service.etl.DataSourceFactoryService;
-import com.llmcr.service.faiss.FaissVectorStoreFactory;
+import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 import com.llmcr.storage.DataStore;
 
 @Component
@@ -54,6 +54,6 @@ public class ETLRunner implements CommandLineRunner {
 		ChunkService.chunk(defaultDataStore,
 				new TokenTextSplitter());
 		ChunkService.load(defaultDataStore, FaissVectorStoreFactory.create("full"),
-				Set.of(ChunkContentType.CODE, ChunkContentType.ENRICHMENT, ChunkContentType.DOCUMENT));
+				Set.of(ChunkContentType.CLASSNODE, ChunkContentType.ENRICHMENT, ChunkContentType.DOCUMENT));
 	}
 }

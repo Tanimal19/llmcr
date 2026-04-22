@@ -3,8 +3,7 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.document.Document;
-
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -58,6 +57,12 @@ public class Context {
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
+    /**
+     * Whether the context has been fully chunked.
+     */
+    @Column(name = "chunked", nullable = false)
+    private boolean chunked = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
     private ContextType type;
@@ -66,7 +71,7 @@ public class Context {
      * A list of chunk that represent the context in vector store. This is used for
      * retrieval-augmented generation (RAG).
      */
-    @OneToMany(mappedBy = "context")
+    @OneToMany(mappedBy = "context", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Chunk> chunks = new ArrayList<>();
 
     public enum ContextType {
@@ -74,12 +79,15 @@ public class Context {
         USECASE,
         TOOLDEF,
         GUIDELINE,
-        CODE,
+        CLASSNODE,
+    }
+
+    protected Context() {
     }
 
     public Context(
             Source source, Integer contextIndex, String name, String content, ContextType type) {
-        this.source = source;
+        setSource(source);
         this.contextIndex = contextIndex;
         this.name = name;
         this.content = content;
@@ -129,6 +137,30 @@ public class Context {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public boolean isChunked() {
+        return chunked;
+    }
+
+    public void setChunked(boolean chunked) {
+        this.chunked = chunked;
+    }
+
+    public Integer getContextIndex() {
+        return contextIndex;
+    }
+
+    public void setContextIndex(Integer contextIndex) {
+        this.contextIndex = contextIndex;
+    }
+
+    public ContextType getType() {
+        return type;
+    }
+
+    public void setType(ContextType type) {
+        this.type = type;
     }
 
     public List<Chunk> getChunks() {
@@ -182,26 +214,5 @@ public class Context {
     @Override
     public int hashCode() {
         return getClass().hashCode();
-    }
-
-    /**
-     * Adapter for Spring AI Document class.
-     */
-    public record ContextDocument(
-            Document document,
-            Context context) {
-    }
-
-    public Document toDocument() {
-        Document doc = new Document.Builder()
-                .text(content)
-                .metadata("id", id)
-                .metadata("source", source)
-                .metadata("contextIndex", contextIndex)
-                .metadata("name", name)
-                .metadata("type", type)
-                .metadata("chunks", chunks)
-                .build();
-        return doc;
     }
 }

@@ -1,4 +1,4 @@
-package com.llmcr.service.faiss;
+package com.llmcr.service.vectorstore.faiss;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
