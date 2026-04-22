@@ -7,6 +7,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.Source.SourceType;
 import com.llmcr.entity.Context;
+import com.llmcr.entity.Context.ContextDocument;
 import com.llmcr.entity.Context.ContextType;
 
 import org.springframework.ai.document.Document;
@@ -36,7 +37,7 @@ public class ClassNodeExtractor implements ContextExtractor {
     }
 
     @Override
-    public List<Document> extract(Source source) {
+    public List<ContextDocument> extract(Source source) {
 
         if (source.getPath().equals("package-info.java")) {
             return List.of();
@@ -47,7 +48,7 @@ public class ClassNodeExtractor implements ContextExtractor {
             return List.of();
         }
 
-        List<Document> classNodes = new ArrayList<>();
+        List<ContextDocument> classNodes = new ArrayList<>();
         try {
             ParseResult<CompilationUnit> result = parser.parse(javaPath);
             result.getResult().ifPresent(cu -> {
@@ -58,35 +59,20 @@ public class ClassNodeExtractor implements ContextExtractor {
 
                 classNodes.addAll(
                         cu.findAll(TypeDeclaration.class).stream()
-                                .map(typeDecl -> new Document.Builder()
-                                        .text(typeDecl.toString())
-                                        .metadata("source", source)
-                                        .metadata("contextIndex", nodeIndex.getAndIncrement())
-                                        .metadata("signature", packageName + "." + typeDecl.getNameAsString())
-                                        .build())
+                                .map(typeDecl -> new ContextDocument(
+                                        new Document(typeDecl.toString()),
+                                        new Context(
+                                                source,
+                                                nodeIndex.getAndIncrement(),
+                                                "ClassNode::" + packageName + "." + typeDecl.getNameAsString(),
+                                                typeDecl.toString(),
+                                                ContextType.CODE)))
+
                                 .toList());
             });
         } catch (IOException e) {
         }
 
         return classNodes;
-    }
-
-    @Override
-    public Context toContext(Document doc) {
-        assert doc.getMetadata().containsKey("source") : "ClassNode metadata must contain 'source'";
-        assert doc.getMetadata().containsKey("contextIndex") : "ClassNode metadata must contain 'contextIndex'";
-        assert doc.getMetadata().containsKey("signature") : "ClassNode metadata must contain 'signature'";
-
-        Source source = (Source) doc.getMetadata().get("source");
-        Integer contextIndex = (Integer) doc.getMetadata().get("contextIndex");
-        String signature = (String) doc.getMetadata().get("signature");
-
-        return new Context(
-                source,
-                contextIndex,
-                "ClassNode::" + signature,
-                doc.getText(),
-                ContextType.CODE);
     }
 }

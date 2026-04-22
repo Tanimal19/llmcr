@@ -3,6 +3,8 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.document.Document;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -149,4 +151,13 @@ public class Chunk {
     public int hashCode() {
         return getClass().hashCode();
     }
+
+    /**
+     * Adapter for Spring AI Document class.
+     */
+    public record ChunkDocument(
+            Document document,
+            Chunk chunk) {
+    }
+
 }

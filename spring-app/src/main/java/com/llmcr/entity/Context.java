@@ -184,6 +184,14 @@ public class Context {
         return getClass().hashCode();
     }
 
+    /**
+     * Adapter for Spring AI Document class.
+     */
+    public record ContextDocument(
+            Document document,
+            Context context) {
+    }
+
     public Document toDocument() {
         Document doc = new Document.Builder()
                 .text(content)

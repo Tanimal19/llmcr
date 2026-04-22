@@ -11,6 +11,7 @@ import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import com.llmcr.entity.Source;
 import com.llmcr.reader.AsciiDocumentReader;
 import com.llmcr.entity.Context;
+import com.llmcr.entity.Context.ContextDocument;
 import com.llmcr.entity.Context.ContextType;
 
 import java.util.List;
@@ -26,32 +27,22 @@ public class DocumentParagraphExtractor implements ContextExtractor {
     }
 
     @Override
-    public List<Document> extract(Source source) {
+    public List<ContextDocument> extract(Source source) {
         DocumentReader reader = getReader(source);
         List<Document> docs = reader.read();
 
         AtomicInteger blockIndex = new AtomicInteger(0);
-        docs.forEach(doc -> {
-            doc.getMetadata().put("source", source);
-            doc.getMetadata().put("contextIndex", blockIndex.getAndIncrement());
-        });
 
-        return docs;
-    }
-
-    @Override
-    public Context toContext(Document doc) {
-        assert doc.getMetadata().containsKey("source") : "Document metadata must contain 'source'";
-        assert doc.getMetadata().containsKey("contextIndex") : "Document metadata must contain 'contextIndex'";
-
-        Source source = (Source) doc.getMetadata().get("source");
-        int contextIndex = (int) doc.getMetadata().get("contextIndex");
-        return new Context(
-                source,
-                contextIndex,
-                "Document::" + source.getSourceName() + "::" + contextIndex,
-                doc.getText(),
-                ContextType.DOCUMENT);
+        return docs.stream()
+                .map(doc -> new ContextDocument(
+                        doc,
+                        new Context(
+                                source,
+                                blockIndex.getAndIncrement(),
+                                "Paragraph::" + source.getSourceName() + "::" + blockIndex.get(),
+                                doc.getText(),
+                                ContextType.DOCUMENT)))
+                .toList();
     }
 
     private DocumentReader getReader(Source source) {
