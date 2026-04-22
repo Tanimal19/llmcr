@@ -34,7 +34,7 @@ import com.llmcr.utils.JsonBackupUtils;
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "evaluation")
 public class EvaluationRunner implements CommandLineRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(EvaluationRunner.class);
 
     @Autowired
     private ChatModel chatModel;
@@ -98,7 +98,7 @@ public class EvaluationRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        LOGGER.info("Start evaluation.");
+        logger.info("Start evaluation.");
         this.pullRequests = readPullRequest(inputPullRequestsPath);
 
         this.tasks = List.of(
@@ -118,17 +118,17 @@ public class EvaluationRunner implements CommandLineRunner {
     }
 
     private void runTask(TaskType task) {
-        LOGGER.info("Starting task: " + task.name);
+        logger.info("Starting task: " + task.name);
 
         int count = 0;
         for (Object input : task.inputs) {
             count++;
-            LOGGER.info("Running input #" + count);
-            LOGGER.info("input: " + input.toString().substring(0,
+            logger.info("Running input #" + count);
+            logger.info("input: " + input.toString().substring(0,
                     Math.min(200, input.toString().length())));
 
             for (GroupType group : groups) {
-                LOGGER.info("Using group: " + group.name);
+                logger.info("Using group: " + group.name);
                 long startTime = System.currentTimeMillis();
 
                 RAGService ragService = group.getRagService();
@@ -137,7 +137,7 @@ public class EvaluationRunner implements CommandLineRunner {
                 Map<String, Object> response = ragService.generation(input);
 
                 long duration = System.currentTimeMillis() - startTime;
-                LOGGER.info("response: " + response.get("response"));
+                logger.info("response: " + response.get("response"));
                 saveResult(task.name, input, group.name, response, duration);
             }
         }
@@ -158,7 +158,7 @@ public class EvaluationRunner implements CommandLineRunner {
         try {
             JsonBackupUtils.appendJsonBackup(outputPath, resultMap);
         } catch (Exception e) {
-            LOGGER.error("Failed to save result: {}", e.getMessage(), e);
+            logger.error("Failed to save result: {}", e.getMessage(), e);
         }
     }
 

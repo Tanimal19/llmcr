@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,9 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 
-import com.llmcr.entity.Source;
+import com.llmcr.entity.Chunk;
+import com.llmcr.entity.ChunkCollection;
+import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ChunkCollectionRepository;
@@ -23,11 +26,11 @@ import com.llmcr.service.faiss.FaissService.AddVectorsResponse;
 import com.llmcr.service.faiss.FaissService.SearchVectorsRequest;
 import com.llmcr.service.faiss.FaissService.SearchVectorsResponse;
 
-public class FaissVectorStore implements VectorStore {
+public class FaissVectorStore {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FaissVectorStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(FaissVectorStore.class);
 
-    private static final int MAX_QUERY_LENGTH = 8000;
+    private static final int MAX_QUERY_LENGTH = 8192;
     private final String collectionName;
 
     private final FaissService faissService;
@@ -48,24 +51,28 @@ public class FaissVectorStore implements VectorStore {
         this.contextRepository = contextRepository;
         this.chunkRepository = chunkRepository;
         this.chunkCollectionRepository = chunkCollectionRepository;
+        this.collectionName = collectionName;
 
-        if (chunkCollectionRepository.findByNa)
-
-            this.collectionName = collectionName;
-
+        if (chunkCollectionRepository.getByName(collectionName).isEmpty()) {
+            chunkCollectionRepository.save(new ChunkCollection(collectionName));
+            logger.info("Created new chunk collection: " + collectionName);
+        }
+        logger.info("Initialized FaissVectorStore with collection: " + collectionName);
     }
 
-    @Override
-    public void add(List<Document> documents) {
+    public void add(List<Chunk> documents) {
         if (documents.isEmpty()) {
             return;
         }
 
-        // update index file record
-        List<Long> ids = documents.stream()
-                .map(d -> (Long) d.getMetadata().get("chunk_id"))
-                .collect(Collectors.toList());
-        dataStore.addAllChunksToIndexSetByIds(indexName, ids);
+        ChunkCollection chunkCollection = chunkCollectionRepository.getByName(collectionName).get();
+
+        // convert documents to context
+
+
+        List<Long> ids = documents.stream().map(doc -> {
+            return doc.getMetadata("chunk_id")
+        }).collect(Collectors.toList());
 
         // generate embeddings
         List<float[]> embeddings = documents.stream()
@@ -73,11 +80,9 @@ public class FaissVectorStore implements VectorStore {
                 .collect(Collectors.toList());
 
         // generate FAISS index
-        AddVectorsRequest req = new AddVectorsRequest(indexName, ids, embeddings);
-
-        AddVectorsResponse res = faissService.addVectors(req);
-        LOGGER.info("Added " + res.added_count() + " chunks to index:" +
-                indexName);
+        AddVectorsResponse res = faissService.addVectors(
+                new AddVectorsRequest(collectionName, ids, embeddings));
+        logger.info("Added " + res.added_count() + " chunks to collection: " + collectionName);
     }
 
     @Override
@@ -98,8 +103,8 @@ public class FaissVectorStore implements VectorStore {
 
         String query = truncateQuery(request.getQuery());
         float[] queryVector = embeddingModel.embed(query);
-        SearchVectorsRequest req = new SearchVectorsRequest(indexName, queryVector, request.getTopK());
-        SearchVectorsResponse res = faissService.searchVectors(req);
+        SearchVectorsResponse res = faissService.searchVectors(
+                new SearchVectorsRequest(collectionName, queryVector, request.getTopK()));
 
         List<Long> chunkIds = res.ids();
         List<Float> chunkScores = res.scores();
@@ -108,40 +113,41 @@ public class FaissVectorStore implements VectorStore {
             idToScore.put(chunkIds.get(i), chunkScores.get(i));
         }
 
-        // retrieve source documents using chunks
-        class SourceHolder {
+        // retrieve context using chunks
+        class ContextHolder {
             List<Long> chunkIds = new ArrayList<>();
             float score = 0f;
         }
-        Map<Source, SourceHolder> sourceMap = new HashMap<>();
+        Map<Context, ContextHolder> contextMap = new HashMap<>();
 
-        LOGGER.info("Retrieved chunks from datastore:");
-        dataStore.findAllChunksByIds(chunkIds).stream().forEach(e -> {
-            Source source = e.getSource();
-            LOGGER.info("Chunk id:" + e.getId() +
-                    ", score:" + idToScore.get(e.getId()) +
-                    ", type:" + e.getContentType() +
-                    ", source:" + source.getId());
+        logger.info("Retrieved chunks from datastore:");
+        chunkIds.stream().forEach(id -> {
+            Chunk chunk = chunkRepository.findById(id).orElse(null);
+            Context context = chunk.getContext();
+            logger.info("Chunk id:" + chunk.getId() +
+                    ", score:" + idToScore.get(chunk.getId()) +
+                    ", source context:" + context.getName());
 
-            SourceHolder holder = sourceMap.computeIfAbsent(source, k -> new SourceHolder());
-            holder.chunkIds.add(e.getId());
-            holder.score = Math.max(holder.score, idToScore.get(e.getId()));
+            ContextHolder holder = contextMap.computeIfAbsent(context, k -> new ContextHolder());
+            holder.chunkIds.add(chunk.getId());
+            // if a context has multiple chunks in the search results, take the max score as
+            // the context score
+            holder.score = Math.max(holder.score, idToScore.get(chunk.getId()));
         });
 
         // convert to documents
-        List<Document> documents = sourceMap.keySet().stream()
-                .map(s -> {
-                    Document doc = new Document(s.getContent());
-                    doc.getMetadata().put("source_id", s.getId());
-                    doc.getMetadata().put("source_name", s.getSourceName());
-                    doc.getMetadata().put("chunk_ids", sourceMap.get(s).chunkIds);
-                    doc.getMetadata().put("similarity_score", sourceMap.get(s).score);
+        List<Document> documents = contextMap.keySet().stream()
+                .map(context -> {
+                    Document doc = Document.builder().text(context.getContent())
+                            .metadata("context", context)
+                            .score((double) contextMap.get(context).score)
+                            .build();
                     return doc;
                 })
                 .collect(Collectors.toList());
 
         long endTime = System.currentTimeMillis();
-        LOGGER.info("Similarity search completed in " + (endTime - startTime) + "ms");
+        logger.info("Similarity search completed in " + (endTime - startTime) + "ms");
 
         return documents;
     }
@@ -152,7 +158,7 @@ public class FaissVectorStore implements VectorStore {
         }
 
         String truncated = query.substring(0, MAX_QUERY_LENGTH);
-        LOGGER.warn("Query truncated from " + query.length() + " to " + MAX_QUERY_LENGTH + " characters");
+        logger.warn("Query truncated from " + query.length() + " to " + MAX_QUERY_LENGTH + " characters");
         return truncated;
     }
 }

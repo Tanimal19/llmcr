@@ -32,7 +32,7 @@ import com.llmcr.repository.SourceRepository;
 @Service
 public class SourceService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SourceService.class);
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
@@ -62,7 +62,7 @@ public class SourceService {
             localSource.setTrackRoot(trackRoot);
             Source duplicated = localSourcesByPath.putIfAbsent(localSource.getPath(), localSource);
             if (duplicated != null) {
-                LOGGER.warn("Duplicated source path found under track root, keeping first one: "
+                logger.warn("Duplicated source path found under track root, keeping first one: "
                         + localSource.getPath());
             }
         }
@@ -113,7 +113,7 @@ public class SourceService {
         sourceRepository.findAll().forEach(source -> {
             Path sourcePath = Path.of(source.getPath());
             if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
-                LOGGER.warn("Source path does not exist or is not a regular file, skip sync: " + sourcePath);
+                logger.warn("Source path does not exist or is not a regular file, skip sync: " + sourcePath);
                 return;
             }
 
@@ -128,13 +128,13 @@ public class SourceService {
 
     private List<Source> loadSources(TrackRoot trackRoot) {
         if (trackRoot == null || trackRoot.getPath() == null || trackRoot.getPath().isBlank()) {
-            LOGGER.warn("TrackRoot or its path is null/blank: " + trackRoot);
+            logger.warn("TrackRoot or its path is null/blank: " + trackRoot);
             return List.of();
         }
 
         Path rootPath = Path.of(trackRoot.getPath());
         if (!Files.exists(rootPath)) {
-            LOGGER.warn("TrackRoot path does not exist: " + rootPath);
+            logger.warn("TrackRoot path does not exist: " + rootPath);
             return List.of();
         }
 
@@ -148,7 +148,7 @@ public class SourceService {
         }
 
         if (!Files.isDirectory(rootPath)) {
-            LOGGER.warn("TrackRoot path is not a file or directory: " + rootPath);
+            logger.warn("TrackRoot path is not a file or directory: " + rootPath);
             return List.of();
         }
 
@@ -169,7 +169,7 @@ public class SourceService {
     private Source buildSource(Path path) {
         Source.SourceType sType = resolveSourceType(path);
         if (sType == null) {
-            LOGGER.warn("Unrecognized file type for source, Dropped: " + path);
+            logger.warn("Unrecognized file type for source, Dropped: " + path);
             return null;
         }
 
@@ -195,8 +195,8 @@ public class SourceService {
         if (fileName.endsWith(".adoc") || fileName.endsWith(".asciidoc")) {
             return Source.SourceType.ASCIIDOC;
         }
-        if (fileName.endsWith(".xml")) {
-            return Source.SourceType.XML;
+        if (fileName.endsWith(".json")) {
+            return Source.SourceType.JSON;
         }
 
         return null;

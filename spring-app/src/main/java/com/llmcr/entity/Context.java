@@ -3,8 +3,11 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.document.Document;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,13 +19,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.EnumType;
 
 @Entity
 @Table(name = "context", uniqueConstraints = {
         @UniqueConstraint(columnNames = "name")
 })
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class Context {
+public class Context {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +36,14 @@ public abstract class Context {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id", nullable = false)
     private Source source;
+
+    /**
+     * The index of the context in the source. This is used to distinguish different
+     * contexts from the same source, and also used to sort the contexts when
+     * retrieving from the database.
+     */
+    @Column(name = "context_index", nullable = false)
+    private Integer contextIndex;
 
     /**
      * A human-readable name for the context, which should be unique across all
@@ -46,14 +58,33 @@ public abstract class Context {
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
-    @OneToMany(mappedBy = "sourceContext")
-    private List<ContextRelation> outgoingRelations = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 32)
+    private ContextType type;
 
-    @OneToMany(mappedBy = "targetContext")
-    private List<ContextRelation> incomingRelations = new ArrayList<>();
-
+    /**
+     * A list of chunk that represent the context in vector store. This is used for
+     * retrieval-augmented generation (RAG).
+     */
     @OneToMany(mappedBy = "context")
     private List<Chunk> chunks = new ArrayList<>();
+
+    public enum ContextType {
+        DOCUMENT,
+        USECASE,
+        TOOLDEF,
+        GUIDELINE,
+        CODE,
+    }
+
+    public Context(
+            Source source, Integer contextIndex, String name, String content, ContextType type) {
+        this.source = source;
+        this.contextIndex = contextIndex;
+        this.name = name;
+        this.content = content;
+        this.type = type;
+    }
 
     public Long getId() {
         return id;
@@ -100,44 +131,6 @@ public abstract class Context {
         this.content = content;
     }
 
-    public List<ContextRelation> getOutgoingRelations() {
-        return outgoingRelations;
-    }
-
-    public void setOutgoingRelations(List<ContextRelation> outgoingRelations) {
-        List<ContextRelation> currentRelations = new ArrayList<>(this.outgoingRelations);
-        for (ContextRelation relation : currentRelations) {
-            removeOutgoingRelation(relation);
-        }
-
-        if (outgoingRelations == null) {
-            return;
-        }
-
-        for (ContextRelation relation : outgoingRelations) {
-            addOutgoingRelation(relation);
-        }
-    }
-
-    public List<ContextRelation> getIncomingRelations() {
-        return incomingRelations;
-    }
-
-    public void setIncomingRelations(List<ContextRelation> incomingRelations) {
-        List<ContextRelation> currentRelations = new ArrayList<>(this.incomingRelations);
-        for (ContextRelation relation : currentRelations) {
-            removeIncomingRelation(relation);
-        }
-
-        if (incomingRelations == null) {
-            return;
-        }
-
-        for (ContextRelation relation : incomingRelations) {
-            addIncomingRelation(relation);
-        }
-    }
-
     public List<Chunk> getChunks() {
         return chunks;
     }
@@ -154,44 +147,6 @@ public abstract class Context {
 
         for (Chunk chunk : chunks) {
             addChunk(chunk);
-        }
-    }
-
-    public void addOutgoingRelation(ContextRelation relation) {
-        if (relation == null || outgoingRelations.contains(relation)) {
-            return;
-        }
-        outgoingRelations.add(relation);
-        if (relation.getSourceContext() != this) {
-            relation.setSourceContext(this);
-        }
-    }
-
-    public void removeOutgoingRelation(ContextRelation relation) {
-        if (relation == null || !outgoingRelations.remove(relation)) {
-            return;
-        }
-        if (relation.getSourceContext() == this) {
-            relation.setSourceContext(null);
-        }
-    }
-
-    public void addIncomingRelation(ContextRelation relation) {
-        if (relation == null || incomingRelations.contains(relation)) {
-            return;
-        }
-        incomingRelations.add(relation);
-        if (relation.getTargetContext() != this) {
-            relation.setTargetContext(this);
-        }
-    }
-
-    public void removeIncomingRelation(ContextRelation relation) {
-        if (relation == null || !incomingRelations.remove(relation)) {
-            return;
-        }
-        if (relation.getTargetContext() == this) {
-            relation.setTargetContext(null);
         }
     }
 
@@ -227,5 +182,18 @@ public abstract class Context {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public Document toDocument() {
+        Document doc = new Document.Builder()
+                .text(content)
+                .metadata("id", id)
+                .metadata("source", source)
+                .metadata("contextIndex", contextIndex)
+                .metadata("name", name)
+                .metadata("type", type)
+                .metadata("chunks", chunks)
+                .build();
+        return doc;
     }
 }

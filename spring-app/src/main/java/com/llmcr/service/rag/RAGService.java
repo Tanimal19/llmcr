@@ -28,7 +28,7 @@ public class RAGService {
 
     private RateLimiter rateLimiter = RateLimiter.create(1.0 / 10.0);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RAGService.class);
+    private static final Logger logger = LoggerFactory.getLogger(RAGService.class);
 
     public RAGService(ChatModel chatModel, VectorStore vectorStore) {
         this.chatModel = chatModel;
@@ -45,7 +45,7 @@ public class RAGService {
 
     public void setRAGTemplate(RAGTemplate ragTemplate) {
         this.ragTemplate = ragTemplate;
-        LOGGER.info("Using RAG template: " + ragTemplate.getClass().getSimpleName());
+        logger.info("Using RAG template: " + ragTemplate.getClass().getSimpleName());
     }
 
     public void setTopK(int topK) {
@@ -64,11 +64,11 @@ public class RAGService {
         List<String> queries = ragTemplate.getQueries(input);
         List<Document> documents;
         if (queries.size() == 1) {
-            LOGGER.info(
+            logger.info(
                     "Single query retrieval: " + queries.get(0).substring(0, Math.min(200, queries.get(0).length())));
             documents = retrievalStrategy.retrieve(queries.get(0), topK, vectorStore);
         } else {
-            LOGGER.info(
+            logger.info(
                     "Multi query retrieval: " + queries.stream()
                             .map(q -> q.substring(0, Math.min(200, q.length())))
                             .reduce((q1, q2) -> q1 + "\n" + q2).orElse(""));
@@ -78,14 +78,14 @@ public class RAGService {
             documents = fusionStrategy.fuse(documentLists, topK);
         }
 
-        LOGGER.info("Retrieved documents:\n" + documents.stream()
+        logger.info("Retrieved documents:\n" + documents.stream()
                 .map(d -> d.getMetadata().get("source_id").toString() + "::"
                         + d.getMetadata().get("source_name") + "::"
                         + d.getMetadata().get("similarity_score").toString())
                 .reduce((s1, s2) -> s1 + "\n" + s2).orElse(""));
 
         long retrievalEndTime = System.currentTimeMillis();
-        LOGGER.info("Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
+        logger.info("Retrieval completed in " + (retrievalEndTime - startTime) + "ms");
 
         Prompt prompt = ragTemplate.getBuilder().augmentInput(input).augmentContext(documents).build();
 
@@ -98,18 +98,18 @@ public class RAGService {
                 response = chatModel.call(prompt);
                 break;
             } catch (Exception e) {
-                LOGGER.warn("Chat model call failed: " + e.getMessage());
+                logger.warn("Chat model call failed: " + e.getMessage());
             }
 
             count++;
-            LOGGER.warn("Retry: attempt #" + count);
+            logger.warn("Retry: attempt #" + count);
             if (count > 5) {
                 throw new RuntimeException("Failed to call chat model.");
             }
         }
 
         long generationEndTime = System.currentTimeMillis();
-        LOGGER.info("Generation completed in " + (generationEndTime - retrievalEndTime) + "ms");
+        logger.info("Generation completed in " + (generationEndTime - retrievalEndTime) + "ms");
 
         Map<String, Object> responseBody = Map.of(
                 "timestamp", java.time.Instant.now().toString(),

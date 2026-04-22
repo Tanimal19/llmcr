@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk.ChunkContentType;
 import com.llmcr.etl.step.ExtractStep;
-import com.llmcr.service.LoadService;
+import com.llmcr.service.ChunkService;
 import com.llmcr.service.TransformService;
 import com.llmcr.service.etl.DataSourceFactoryService;
 import com.llmcr.service.faiss.FaissVectorStoreFactory;
@@ -51,9 +51,9 @@ public class ETLRunner implements CommandLineRunner {
 
 		TransformService.enrich(defaultDataStore, defaultChatModel, 10);
 
-		LoadService.chunk(defaultDataStore,
+		ChunkService.chunk(defaultDataStore,
 				new TokenTextSplitter());
-		LoadService.load(defaultDataStore, FaissVectorStoreFactory.create("full"),
+		ChunkService.load(defaultDataStore, FaissVectorStoreFactory.create("full"),
 				Set.of(ChunkContentType.CODE, ChunkContentType.ENRICHMENT, ChunkContentType.DOCUMENT));
 	}
 }

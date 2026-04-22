@@ -1,16 +1,16 @@
 package com.llmcr.extractor;
 
 import java.util.List;
-import java.util.function.Function;
+
+import org.springframework.ai.document.Document;
 
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Source;
 
-/**
- * Interface for extracting Content from Sources.
- */
-public interface ContextExtractor<S extends Context> extends Function<Source, List<S>> {
+public interface ContextExtractor {
     boolean supports(Source source);
 
-    List<S> apply(Source source);
+    List<Document> extract(Source source);
+
+    Context toContext(Document doc);
 }

@@ -60,29 +60,27 @@ No syntax, accept `.pdf`, `.md`, `.asciidoc` files for now.
 ### Guideline
 Guideline is a special type of context that describe code review guidelines.
 
-```xml
-<guidelines>
-    <guideline>
-        <content>Content of guideline</content>
-    </guideline>
-    <guideline>
-        <content>Content of guideline</content>
-    </guideline>
-</guidelines>
+```json
+[
+    {
+        "id": 1,
+        "guideline": "Guideline description",
+    },
+    // more guidelines
+]
 ```
 
 ### Usecase
 Usecase is an example on how to perform specific code review check.  
 
-```xml
-<usecases>
-    <usecase>
-        <description>Use case description</description>
-        <input>Input of the use case, e.g. code snippet, question ...</input>
-        <output>Expected output of the use case, e.g. potential issue in the code snippet, answer to the question ...</output>
-    </usecase>
-    <!-- more usecases -->
-</usecases>
+```json
+[
+    {
+        "id": 1,
+        "usecase": "Usecase description",
+    },
+    // more usecases
+]
 ```
 
 

@@ -3,31 +3,27 @@ package com.llmcr.extractor;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.EnumDeclaration;
-import com.github.javaparser.ast.body.RecordDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.Source.SourceType;
-import com.llmcr.entity.contextImpl.ClassNodeContext;
+import com.llmcr.entity.Context;
+import com.llmcr.entity.Context.ContextType;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Extracts ClassNodeContext from given Java project root
+ * Extracts class nodes from given Java file
  */
-public class ClassNodeExtractor implements ContextExtractor<ClassNodeContext> {
+public class ClassNodeExtractor implements ContextExtractor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClassNodeExtractor.class);
     private final JavaParser parser;
 
     public ClassNodeExtractor() {
@@ -40,46 +36,57 @@ public class ClassNodeExtractor implements ContextExtractor<ClassNodeContext> {
     }
 
     @Override
-    public List<ClassNodeContext> apply(Source source) {
+    public List<Document> extract(Source source) {
 
         if (source.getPath().equals("package-info.java")) {
-            LOGGER.warn("Skipping non-class java source: " + source.getPath());
             return List.of();
         }
 
         Path javaPath = Paths.get(source.getPath());
         if (!Files.exists(javaPath) || !Files.isRegularFile(javaPath)) {
-            LOGGER.warn("Source path does not exist or is not a regular file: " + javaPath);
             return List.of();
         }
 
-        List<ClassNodeContext> classNodes = new ArrayList<>();
+        List<Document> classNodes = new ArrayList<>();
         try {
             ParseResult<CompilationUnit> result = parser.parse(javaPath);
             result.getResult().ifPresent(cu -> {
                 String packageName = cu.getPackageDeclaration().isPresent()
                         ? cu.getPackageDeclaration().get().getNameAsString()
                         : "";
+                AtomicInteger nodeIndex = new AtomicInteger(0);
 
                 classNodes.addAll(
-                        Stream.of(
-                                cu.findAll(ClassOrInterfaceDeclaration.class),
-                                cu.findAll(EnumDeclaration.class),
-                                cu.findAll(RecordDeclaration.class))
-                                .flatMap(List::stream)
-                                .map(typeDecl -> {
-                                    String name = typeDecl.getNameAsString();
-                                    String signature = packageName + "." + name;
-                                    String code = typeDecl.toString();
-                                    return new ClassNodeContext(source, name, signature, code);
-                                })
-                                .collect(Collectors.toList()));
+                        cu.findAll(TypeDeclaration.class).stream()
+                                .map(typeDecl -> new Document.Builder()
+                                        .text(typeDecl.toString())
+                                        .metadata("source", source)
+                                        .metadata("contextIndex", nodeIndex.getAndIncrement())
+                                        .metadata("signature", packageName + "." + typeDecl.getNameAsString())
+                                        .build())
+                                .toList());
             });
         } catch (IOException e) {
-            LOGGER.warn("Parse failed for " + javaPath + ": " + e.getMessage());
         }
 
         return classNodes;
     }
 
+    @Override
+    public Context toContext(Document doc) {
+        assert doc.getMetadata().containsKey("source") : "ClassNode metadata must contain 'source'";
+        assert doc.getMetadata().containsKey("contextIndex") : "ClassNode metadata must contain 'contextIndex'";
+        assert doc.getMetadata().containsKey("signature") : "ClassNode metadata must contain 'signature'";
+
+        Source source = (Source) doc.getMetadata().get("source");
+        Integer contextIndex = (Integer) doc.getMetadata().get("contextIndex");
+        String signature = (String) doc.getMetadata().get("signature");
+
+        return new Context(
+                source,
+                contextIndex,
+                "ClassNode::" + signature,
+                doc.getText(),
+                ContextType.CODE);
+    }
 }

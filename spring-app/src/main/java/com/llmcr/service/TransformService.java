@@ -28,7 +28,7 @@ import com.llmcr.repository.DocumentContextRepository;
 @Service
 public class TransformService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TransformService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TransformService.class);
 
     private static final PromptTemplate enrichmentPromptTemplate = PromptTemplate.builder()
             .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
@@ -72,7 +72,7 @@ public class TransformService {
 
     public static void transform(int maxParagraphsPerNode) {
         long startTime = System.currentTimeMillis();
-        LOGGER.info("Start data enrichment");
+        logger.info("Start data enrichment");
 
         dataStore.findUnprocessedClassNodes().stream().forEach(classNode -> {
             // bind node with related paragraphs
@@ -84,7 +84,7 @@ public class TransformService {
             List<DocumentContext> relevantParagraphs = dataStore
                     .findAllDocumentParagraphsByKeywords(keywords, maxParagraphsPerNode);
             classNode.setDocumentParagraphs(relevantParagraphs);
-            LOGGER.info("Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: "
+            logger.info("Bound " + relevantParagraphs.size() + " paragraphs to ClassNode: "
                     + classNode.getSignature()
                     + " using keywords: " + keywords);
 
@@ -112,11 +112,11 @@ public class TransformService {
                     response = chatModel.call(prompt);
                     break;
                 } catch (Exception e) {
-                    LOGGER.warn("Chat model call failed: " + e.getMessage());
+                    logger.warn("Chat model call failed: " + e.getMessage());
                 }
 
                 count++;
-                LOGGER.warn("Retry: attempt #" + count);
+                logger.warn("Retry: attempt #" + count);
                 if (count > 5) {
                     throw new RuntimeException("Failed to call chat model.");
                 }
@@ -127,7 +127,7 @@ public class TransformService {
             try {
                 nodeSummary = outputConverter.convert(rawResponse);
             } catch (Exception e) {
-                LOGGER.warn("Output conversion failed for ClassNode: "
+                logger.warn("Output conversion failed for ClassNode: "
                         + classNode.getSignature()
                         + ". Error: " + e.getMessage());
                 nodeSummary = new ClassNodeSummary(
@@ -151,18 +151,18 @@ public class TransformService {
                         "relationship", Objects.toString(nodeSummary.relationship(), ""));
                 JsonBackupUtils.appendJsonBackup(transformChatHistoryFile, entry);
             } catch (IOException e) {
-                LOGGER.warn("Failed to save transform history for ClassNode: "
+                logger.warn("Failed to save transform history for ClassNode: "
                         + classNode.getSignature()
                         + ". Error: " + e.getMessage());
             }
 
-            LOGGER.info("Enriched ClassNode: " + classNode.getSignature());
+            logger.info("Enriched ClassNode: " + classNode.getSignature());
 
             classNode.setProcessed(true);
             dataStore.save(classNode);
         });
 
         long endTime = System.currentTimeMillis();
-        LOGGER.info("Data enrichment completed in " + (endTime - startTime) + "ms");
+        logger.info("Data enrichment completed in " + (endTime - startTime) + "ms");
     }
 }

@@ -37,7 +37,7 @@ public class Source {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
-    private SourceType type = SourceType.UNDEFINED;
+    private SourceType type;
 
     @Column(name = "last_sync_time")
     private LocalDateTime lastSyncTime;
@@ -54,8 +54,7 @@ public class Source {
         PDF,
         MARKDOWN,
         ASCIIDOC,
-        XML,
-        UNDEFINED
+        JSON,
     }
 
     public Long getId() {

@@ -18,25 +18,40 @@ import jakarta.persistence.Table;
 @Table(name = "chunk")
 public class Chunk {
 
+    /**
+     * This id is also used in FAISS index file.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
+    /**
+     * The parent context of the chunk.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "context_id", nullable = false)
     private Context context;
 
+    /**
+     * The index of the chunk in the parent context. It's not ordered.
+     */
     @Column(name = "chunk_index", nullable = false)
     private Integer chunkIndex;
 
-    @Column(name = "token_count", nullable = false)
-    private Integer tokenCount;
+    /**
+     * The text used to generate embedding vector.
+     */
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
 
     @ManyToMany(mappedBy = "chunks")
     private List<ChunkCollection> chunkCollections = new ArrayList<>();
 
-    public Chunk() {
+    public Chunk(Context context, Integer chunkIndex, String content) {
+        this.context = context;
+        this.chunkIndex = chunkIndex;
+        this.content = content;
     }
 
     public Long getId() {
@@ -76,12 +91,12 @@ public class Chunk {
         this.chunkIndex = chunkIndex;
     }
 
-    public Integer getTokenCount() {
-        return tokenCount;
+    public String getContent() {
+        return content;
     }
 
-    public void setTokenCount(Integer tokenCount) {
-        this.tokenCount = tokenCount;
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public List<ChunkCollection> getChunkCollections() {
