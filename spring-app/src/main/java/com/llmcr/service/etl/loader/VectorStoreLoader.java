@@ -5,10 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Component;
+
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.service.vectorstore.MyVectorStore;
 
+@Component
 public class VectorStoreLoader implements ContextLoader {
 
     private final MyVectorStore vectorStore;

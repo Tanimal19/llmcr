@@ -8,10 +8,14 @@ import com.llmcr.entity.Chunk;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
 /**
  * Split the content of a Context into multiple Chunks
  */
+@Component
+@Order(1) // ensure this transformer runs before others
 public class ContextContentSplitter implements ContextTransformer {
 
     @Override

@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.faiss.FaissVectorStore;
-import com.llmcr.service.faiss.FaissVectorStore.ContextHolder;
 
 public class ClassNodeEnricher implements ContextTransformer {
 

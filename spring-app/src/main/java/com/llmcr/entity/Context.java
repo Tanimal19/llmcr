@@ -58,10 +58,10 @@ public class Context {
     private String content;
 
     /**
-     * Whether the context has been fully chunked.
+     * Whether the context has been fully transformed.
      */
-    @Column(name = "chunked", nullable = false)
-    private boolean chunked = false;
+    @Column(name = "transformed", nullable = false)
+    private boolean transformed = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
@@ -139,12 +139,12 @@ public class Context {
         this.content = content;
     }
 
-    public boolean isChunked() {
-        return chunked;
+    public boolean isTransformed() {
+        return transformed;
     }
 
-    public void setChunked(boolean chunked) {
-        this.chunked = chunked;
+    public void setTransformed(boolean transformed) {
+        this.transformed = transformed;
     }
 
     public Integer getContextIndex() {

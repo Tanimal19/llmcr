@@ -2,6 +2,8 @@ package com.llmcr.service.etl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.ai.document.Document;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
+import com.llmcr.entity.Context.ContextType;
 import com.llmcr.entity.Source;
 import com.llmcr.repository.*;
 import com.llmcr.service.etl.extractor.SourceExtractor;
@@ -25,7 +28,12 @@ public class ETLPipeline {
     private final List<SourceExtractor> extractors;
     private final List<ContextTransformer> transformers;
 
-    @Autowired
+    private final Map<String, Set<ContextType>> collectionConfigs = Map.of(
+            "PROJECT_CONTEXT", Set.of(ContextType.CLASSNODE, ContextType.DOCUMENT),
+            "USECASE", Set.of(ContextType.USECASE),
+            "GUIDELINE", Set.of(ContextType.GUIDELINE),
+            "TOOLDEF", Set.of(ContextType.TOOLDEF));
+
     public ETLPipeline(
             SourceRepository sourceRepository, ContextRepository contextRepository, ChunkRepository chunkRepository,
             List<SourceExtractor> extractors, List<ContextTransformer> transformers) {
@@ -53,5 +61,19 @@ public class ETLPipeline {
             }
         }
         return contexts;
+    }
+
+    private Context transform(Context context) {
+        Context transformed = context;
+        for (ContextTransformer transformer : transformers) {
+            if (transformer.supports(transformed)) {
+                try {
+                    transformed = transformer.apply(transformed);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error transforming context " + context.getName(), e);
+                }
+            }
+        }
+        return transformed;
     }
 }

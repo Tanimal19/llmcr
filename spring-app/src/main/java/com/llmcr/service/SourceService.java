@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.llmcr.entity.Source;
@@ -37,7 +36,6 @@ public class SourceService {
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
 
-    @Autowired
     public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;

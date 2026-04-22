@@ -10,21 +10,16 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.service.vectorstore.MyVectorStore;
-import com.llmcr.service.vectorstore.MyVectorStore.ContextHolder;
+import com.llmcr.service.vectorstore.MyVectorStore.ChunkWithScore;
 
 public class FixedKStrategy implements RetrievalStrategy {
-    public List<Context> retrieve(String query, int topK, MyVectorStore vectorStore) {
+    public List<Context> retrieve(SearchRequest request, MyVectorStore vectorStore) {
         SearchRequest request = SearchRequest.builder()
                 .query(query)
-                .topK(topK + 20) // Retrieve more to allow for later re-ranking
+                .topK(topK)
                 .build();
 
-        List<Long> chunkIds = res.ids();
-        List<Float> chunkScores = res.scores();
-        Map<Long, Float> idToScore = new HashMap<>();
-        for (int i = 0; i < chunkIds.size(); i++) {
-            idToScore.put(chunkIds.get(i), chunkScores.get(i));
-        }
+        List<ChunkWithScore> results = vectorStore.similaritySearch(request, collectionName);
 
         class ContextHolder {
             List<Long> chunkIds = new ArrayList<>();
@@ -33,7 +28,7 @@ public class FixedKStrategy implements RetrievalStrategy {
         Map<Context, ContextHolder> contextMap = new HashMap<>();
 
         // retrieve context using chunks
-        chunkIds.stream().forEach(id -> {
+        results.stream().forEach(r -> {
             Chunk chunk = chunkRepository.findById(id).orElse(null);
             Context context = chunk.getContext();
 
