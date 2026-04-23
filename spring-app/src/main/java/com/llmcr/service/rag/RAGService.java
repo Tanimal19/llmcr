@@ -13,8 +13,8 @@ import org.springframework.ai.vectorstore.VectorStore;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.llmcr.service.rag.augmentation.RAGTemplate;
-import com.llmcr.service.rag.retrieval.RetrievalStrategy;
 import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
+import com.llmcr.service.rag.retrieval.rerank.RetrievalStrategy;
 
 public class RAGService {
 

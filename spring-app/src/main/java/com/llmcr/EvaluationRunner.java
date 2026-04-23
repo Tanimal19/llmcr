@@ -23,11 +23,11 @@ import com.llmcr.service.rag.augmentation.CodeInterpretationTemplate;
 import com.llmcr.service.rag.augmentation.CodeReviewTemplate;
 import com.llmcr.service.rag.augmentation.RAGTemplate;
 import com.llmcr.service.rag.augmentation.BasePullRequestTemplate.PullRequest;
-import com.llmcr.service.rag.retrieval.AdaptiveKStrategy;
-import com.llmcr.service.rag.retrieval.FixedKStrategy;
-import com.llmcr.service.rag.retrieval.RetrievalStrategy;
 import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
 import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
+import com.llmcr.service.rag.retrieval.rerank.AdaptiveKStrategy;
+import com.llmcr.service.rag.retrieval.rerank.FixedKStrategy;
+import com.llmcr.service.rag.retrieval.rerank.RetrievalStrategy;
 import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 import com.llmcr.utils.JsonBackupUtils;
 

@@ -8,6 +8,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Repository;
 
 import com.llmcr.entity.Chunk;
+import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkScorePair;
 import com.llmcr.service.vectorstore.MyVectorStore;
 import com.llmcr.service.vectorstore.faiss.FaissService.AddVectorsRequest;
 import com.llmcr.service.vectorstore.faiss.FaissService.SearchVectorsRequest;
@@ -39,20 +40,19 @@ public class FaissVectorStore extends MyVectorStore {
         faissService.addVectors(new AddVectorsRequest(collectionName, ids, embeddings));
     }
 
-    public List<SearchResponse> doSimilaritySearch(SearchRequest request) {
-        String query = truncateQuery(request.query());
-        float[] queryVector = embeddingModel.embed(query);
+    protected List<ChunkScorePair> doSimilaritySearch(String query, int topK, String collectionName) {
+        float[] queryVector = embeddingModel.embed(truncateQuery(query));
         SearchVectorsResponse res = faissService.searchVectors(
-                new SearchVectorsRequest(request.collectionName(), queryVector, request.topK()));
+                new SearchVectorsRequest(collectionName, queryVector, topK));
 
         assert res.ids().size() == res.scores().size() : "FAISS response ids and scores size mismatch";
 
-        List<SearchResponse> results = new ArrayList<>(res.ids().size());
+        List<ChunkScorePair> chunks = new ArrayList<>(res.ids().size());
         for (int i = 0; i < res.ids().size(); i++) {
-            results.add(new SearchResponse(res.ids().get(i), res.scores().get(i)));
+            chunks.add(new ChunkScorePair(res.ids().get(i), res.scores().get(i)));
         }
 
-        return results;
+        return chunks;
     }
 
     private String truncateQuery(String query) {
