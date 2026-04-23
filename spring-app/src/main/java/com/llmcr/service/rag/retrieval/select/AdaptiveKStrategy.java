@@ -4,6 +4,12 @@ import java.util.List;
 
 import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
 
+/**
+ * AdaptiveKStrategy dynamically determines the optimal number of contexts to
+ * select based on the score distribution. It looks for the largest gap in
+ * scores to find a natural cutoff point, while also applying a buffer to
+ * include some additional contexts for robustness.
+ */
 public class AdaptiveKStrategy implements SelectStrategy {
 
     private final int buffer = 5;
@@ -30,6 +36,6 @@ public class AdaptiveKStrategy implements SelectStrategy {
             }
         }
 
-        return contexts.subList(0, Math.min(optimalK + buffer, contexts.size()));
+        return contexts.subList(0, Math.min(optimalK + buffer, topK));
     }
 }

@@ -71,6 +71,10 @@ public class ContextRetriever {
                     .toList();
         }
 
+        if (rankedContexts.size() <= config.topK()) {
+            return rankedContexts;
+        }
+
         return config.selectStrategy.select(rankedContexts, config.topK());
     }
 
