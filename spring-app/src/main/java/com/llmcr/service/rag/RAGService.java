@@ -14,14 +14,14 @@ import org.springframework.ai.vectorstore.VectorStore;
 import com.google.common.util.concurrent.RateLimiter;
 import com.llmcr.service.rag.augmentation.RAGTemplate;
 import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
-import com.llmcr.service.rag.retrieval.rerank.RetrievalStrategy;
+import com.llmcr.service.rag.retrieval.select.SelectStrategy;
 
 public class RAGService {
 
     private final ChatModel chatModel;
     private final VectorStore vectorStore;
 
-    private RetrievalStrategy retrievalStrategy;
+    private SelectStrategy retrievalStrategy;
     private FusionStrategy fusionStrategy;
     private RAGTemplate ragTemplate;
     private int topK;
@@ -35,7 +35,7 @@ public class RAGService {
         this.vectorStore = vectorStore;
     }
 
-    public void setRetrievalStrategy(RetrievalStrategy retrievalStrategy) {
+    public void setRetrievalStrategy(SelectStrategy retrievalStrategy) {
         this.retrievalStrategy = retrievalStrategy;
     }
 

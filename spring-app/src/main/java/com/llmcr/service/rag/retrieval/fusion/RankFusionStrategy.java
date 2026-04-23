@@ -5,41 +5,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.document.Document;
+import com.llmcr.entity.Context;
+import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
 
-// Reciprocal Rank Fusion (RRF)
+/**
+ * Use Reciprocal Rank Fusion (RRF) to fuse multiple lists of contexts.
+ */
 public class RankFusionStrategy implements FusionStrategy {
     final int RRF_K = 60;
 
-    public List<Document> fuse(List<List<Document>> documentsLists, int topK) {
+    public List<ContextScorePair> fuse(List<List<ContextScorePair>> contextLists, int topK) {
 
-        Map<String, Double> scores = new HashMap<>();
-        Map<String, Document> docMap = new HashMap<>();
+        Map<Context, Double> contextMap = new HashMap<>();
 
-        for (List<Document> docs : documentsLists) {
-            for (int rank = 0; rank < docs.size(); rank++) {
-                Document d = docs.get(rank);
-                String id = d.getMetadata().get("source_id").toString();
-
-                docMap.putIfAbsent(id, d);
-
+        for (List<ContextScorePair> contexts : contextLists) {
+            for (int rank = 0; rank < contexts.size(); rank++) {
+                Context c = contexts.get(rank).context();
                 double contribution = 1.0 / (RRF_K + rank + 1);
-                scores.merge(id, contribution, Double::sum);
+                contextMap.put(c, contextMap.getOrDefault(c, 0.0) + contribution);
             }
         }
 
-        List<Document> selectedDocs = scores.entrySet().stream()
-                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+        return contextMap.entrySet().stream()
+                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
                 .limit(topK)
-                .map(e -> docMap.get(e.getKey()))
+                .map(e -> new ContextScorePair(e.getKey(), e.getValue().floatValue()))
                 .collect(Collectors.toList());
-
-        // Annotate documents with their RRF scores
-        selectedDocs.forEach(doc -> {
-            String id = doc.getMetadata().get("source_id").toString();
-            doc.getMetadata().put("rrf_score", scores.get(id));
-        });
-
-        return selectedDocs;
     }
 }

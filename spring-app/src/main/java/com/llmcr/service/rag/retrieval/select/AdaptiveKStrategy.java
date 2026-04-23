@@ -1,20 +1,20 @@
-package com.llmcr.service.rag.retrieval.rerank;
+package com.llmcr.service.rag.retrieval.select;
 
 import java.util.List;
 
-import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkScorePair;
+import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
 
-public class AdaptiveKStrategy implements RerankStrategy {
+public class AdaptiveKStrategy implements SelectStrategy {
 
     private final int buffer = 5;
     private final float highConfidenceScore = 0.7f;
     private final float lowConfidenceScore = 0.3f;
 
-    public List<ChunkScorePair> rerank(List<ChunkScorePair> chunks, int topK) {
+    public List<ContextScorePair> select(List<ContextScorePair> contexts, int topK) {
         float maxGap = 0;
         int optimalK = 0;
-        for (int i = 0; i < chunks.size() - 1; i++) {
-            float score1 = chunks.get(i).score();
+        for (int i = 0; i < contexts.size() - 1; i++) {
+            float score1 = contexts.get(i).score();
             if (score1 >= highConfidenceScore) {
                 optimalK = i + 1;
                 continue; // always include high-confidence documents
@@ -22,7 +22,7 @@ public class AdaptiveKStrategy implements RerankStrategy {
                 break; // drop all low-confidence documents
             }
 
-            float score2 = chunks.get(i + 1).score();
+            float score2 = contexts.get(i + 1).score();
             float gap = score1 - score2;
             if (gap > maxGap) {
                 maxGap = gap;
@@ -30,6 +30,6 @@ public class AdaptiveKStrategy implements RerankStrategy {
             }
         }
 
-        return chunks.subList(0, Math.min(optimalK + buffer, chunks.size()));
+        return contexts.subList(0, Math.min(optimalK + buffer, contexts.size()));
     }
 }

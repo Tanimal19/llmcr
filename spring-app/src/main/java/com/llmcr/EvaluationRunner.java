@@ -25,9 +25,9 @@ import com.llmcr.service.rag.augmentation.RAGTemplate;
 import com.llmcr.service.rag.augmentation.BasePullRequestTemplate.PullRequest;
 import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
 import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
-import com.llmcr.service.rag.retrieval.rerank.AdaptiveKStrategy;
-import com.llmcr.service.rag.retrieval.rerank.FixedKStrategy;
-import com.llmcr.service.rag.retrieval.rerank.RetrievalStrategy;
+import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.service.rag.retrieval.select.FixedKStrategy;
+import com.llmcr.service.rag.retrieval.select.SelectStrategy;
 import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 import com.llmcr.utils.JsonBackupUtils;
 
@@ -78,7 +78,7 @@ public class EvaluationRunner implements CommandLineRunner {
         public final String name;
         private final RAGService ragService;
 
-        public GroupType(String name, Supplier<RetrievalStrategy> retrievalSupplier,
+        public GroupType(String name, Supplier<SelectStrategy> retrievalSupplier,
                 Supplier<FusionStrategy> fusionSupplier, int topK, String indexName) {
             this.name = name;
 

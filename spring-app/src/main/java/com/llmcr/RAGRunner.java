@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import com.llmcr.service.rag.RAGService;
 import com.llmcr.service.rag.augmentation.AnswerQueryTemplate;
 import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
-import com.llmcr.service.rag.retrieval.rerank.AdaptiveKStrategy;
+import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.service.vectorstore.faiss.FaissVectorStore;
 import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 
