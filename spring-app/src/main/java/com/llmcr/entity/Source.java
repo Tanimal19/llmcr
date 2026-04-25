@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Hibernate;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -141,25 +143,36 @@ public class Source {
         }
 
         this.trackRoot = trackRoot;
-        if (trackRoot != null && !trackRoot.getSources().contains(this)) {
+        if (trackRoot != null
+                && Hibernate.isInitialized(trackRoot.getSources())
+                && !trackRoot.getSources().contains(this)) {
             trackRoot.getSources().add(this);
         }
     }
 
     public void addContext(Context context) {
-        if (context == null || contexts.contains(context)) {
+        if (context == null) {
             return;
         }
-        contexts.add(context);
+
+        if (Hibernate.isInitialized(contexts) && !contexts.contains(context)) {
+            contexts.add(context);
+        }
+
         if (context.getSource() != this) {
             context.setSource(this);
         }
     }
 
     public void removeContext(Context context) {
-        if (context == null || !contexts.remove(context)) {
+        if (context == null) {
             return;
         }
+
+        if (Hibernate.isInitialized(contexts)) {
+            contexts.remove(context);
+        }
+
         if (context.getSource() == this) {
             context.setSource(null);
         }

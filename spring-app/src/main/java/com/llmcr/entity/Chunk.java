@@ -3,6 +3,8 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Hibernate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -88,7 +90,9 @@ public class Chunk {
         }
 
         this.context = context;
-        if (context != null && !context.getChunks().contains(this)) {
+        if (context != null
+                && Hibernate.isInitialized(context.getChunks())
+                && !context.getChunks().contains(this)) {
             context.getChunks().add(this);
         }
     }
@@ -129,20 +133,32 @@ public class Chunk {
     }
 
     public void addChunkCollection(ChunkCollection chunkCollection) {
-        if (chunkCollection == null || chunkCollections.contains(chunkCollection)) {
+        if (chunkCollection == null) {
             return;
         }
-        chunkCollections.add(chunkCollection);
-        if (!chunkCollection.getChunks().contains(this)) {
+
+        if (Hibernate.isInitialized(chunkCollections) && !chunkCollections.contains(chunkCollection)) {
+            chunkCollections.add(chunkCollection);
+        }
+
+        if (Hibernate.isInitialized(chunkCollection.getChunks())
+                && !chunkCollection.getChunks().contains(this)) {
             chunkCollection.getChunks().add(this);
         }
     }
 
     public void removeChunkCollection(ChunkCollection chunkCollection) {
-        if (chunkCollection == null || !chunkCollections.remove(chunkCollection)) {
+        if (chunkCollection == null) {
             return;
         }
-        chunkCollection.getChunks().remove(this);
+
+        if (Hibernate.isInitialized(chunkCollections)) {
+            chunkCollections.remove(chunkCollection);
+        }
+
+        if (Hibernate.isInitialized(chunkCollection.getChunks())) {
+            chunkCollection.getChunks().remove(this);
+        }
     }
 
     @Override

@@ -13,35 +13,29 @@ import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.jruby.ast.impl.ListItemImpl;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class AsciiDocumentReader implements DocumentReader {
 
     private static final int MAX_PARA_LENGTH = 2000;
 
-    private final Resource asciiResource;
+    private final Path asciiPath;
+    private final String sourceName;
 
     public AsciiDocumentReader(String asciiSource) {
-        try {
-            Resource[] resources = new PathMatchingResourcePatternResolver().getResources(asciiSource);
-            if (resources.length == 0) {
-                throw new IllegalArgumentException("No resource found for: " + asciiSource);
-            }
-            this.asciiResource = resources[0];
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        this.asciiPath = Path.of(asciiSource).toAbsolutePath().normalize();
+        if (!Files.exists(this.asciiPath) || !Files.isRegularFile(this.asciiPath)) {
+            throw new IllegalArgumentException("AsciiDoc source file not found: " + this.asciiPath);
         }
+        this.sourceName = this.asciiPath.getFileName() == null ? "unknown_source"
+                : this.asciiPath.getFileName().toString();
     }
 
     @Override
     public List<Document> get() {
         try {
-            Path path = Path.of(this.asciiResource.getURI());
-            String sourceName = this.asciiResource.getFilename();
             Asciidoctor asciidoctor = Asciidoctor.Factory.create();
             org.asciidoctor.ast.Document document = asciidoctor.load(
-                    Files.readString(path), org.asciidoctor.Options.builder().build());
+                    Files.readString(this.asciiPath), org.asciidoctor.Options.builder().build());
 
             List<Document> documents = new ArrayList<>();
             processNode(document, sourceName, 0, documents);

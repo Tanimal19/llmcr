@@ -3,6 +3,8 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Hibernate;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -122,7 +124,9 @@ public class Context {
         }
 
         this.source = source;
-        if (source != null && !source.getContexts().contains(this)) {
+        if (source != null
+                && Hibernate.isInitialized(source.getContexts())
+                && !source.getContexts().contains(this)) {
             source.getContexts().add(this);
         }
     }
@@ -187,19 +191,28 @@ public class Context {
     }
 
     public void addChunk(Chunk chunk) {
-        if (chunk == null || chunks.contains(chunk)) {
+        if (chunk == null) {
             return;
         }
-        chunks.add(chunk);
+
+        if (Hibernate.isInitialized(chunks) && !chunks.contains(chunk)) {
+            chunks.add(chunk);
+        }
+
         if (chunk.getContext() != this) {
             chunk.setContext(this);
         }
     }
 
     public void removeChunk(Chunk chunk) {
-        if (chunk == null || !chunks.remove(chunk)) {
+        if (chunk == null) {
             return;
         }
+
+        if (Hibernate.isInitialized(chunks)) {
+            chunks.remove(chunk);
+        }
+
         if (chunk.getContext() == this) {
             chunk.setContext(null);
         }

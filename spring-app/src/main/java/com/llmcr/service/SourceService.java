@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
@@ -47,6 +48,7 @@ public class SourceService {
      * - Add new local sources that are not in database.
      * 2. Recompute content hash and update last sync time.
      */
+    @Transactional
     public void refreshTrackRoots() {
         trackRootRepository.findAll().forEach(this::reconcileSource);
         syncAllSources();
@@ -136,9 +138,16 @@ public class SourceService {
             return List.of();
         }
 
+        List<Source.SourceType> configuredTypes = trackRoot.getAllowedSourceTypes();
+        if (configuredTypes == null || configuredTypes.isEmpty()) {
+            logger.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
+            configuredTypes = List.of(Source.SourceType.values());
+        }
+        final List<Source.SourceType> allowedTypes = configuredTypes;
+
         List<Source> sources = new ArrayList<>();
         if (Files.isRegularFile(rootPath)) {
-            Source source = buildSource(rootPath);
+            Source source = buildSource(rootPath, allowedTypes);
             if (source != null) {
                 sources.add(source);
             }
@@ -154,7 +163,7 @@ public class SourceService {
             pathStream
                     .filter(Files::isRegularFile)
                     .sorted(Comparator.comparing(Path::toString))
-                    .map(this::buildSource)
+                    .map(path -> buildSource(path, allowedTypes))
                     .filter(Objects::nonNull)
                     .forEach(sources::add);
         } catch (IOException e) {
@@ -164,10 +173,15 @@ public class SourceService {
         return sources;
     }
 
-    private Source buildSource(Path path) {
+    private Source buildSource(Path path, List<Source.SourceType> allowedTypes) {
         Source.SourceType sType = resolveSourceType(path);
         if (sType == null) {
             logger.warn("Unrecognized file type for source, Dropped: " + path);
+            return null;
+        }
+
+        if (!allowedTypes.contains(sType)) {
+            logger.info("Source type not allowed by track root config, Dropped: " + path);
             return null;
         }
 

@@ -7,6 +7,7 @@ import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.ai.reader.pdf.ParagraphPdfDocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Source;
@@ -53,7 +54,7 @@ public class DocumentParagraphExtractor implements SourceExtractor {
                             .build())
                     .withPagesPerDocument(1)
                     .build();
-            return new ParagraphPdfDocumentReader(source.getPath(), config);
+            return new ParagraphPdfDocumentReader(new FileSystemResource(source.getPath()), config);
 
         } else if (source.getType() == Source.SourceType.MARKDOWN) {
             MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
@@ -61,7 +62,7 @@ public class DocumentParagraphExtractor implements SourceExtractor {
                     .withIncludeCodeBlock(false)
                     .withIncludeBlockquote(false)
                     .build();
-            return new MarkdownDocumentReader(source.getPath(), config);
+            return new MarkdownDocumentReader(new FileSystemResource(source.getPath()), config);
 
         } else if (source.getType() == Source.SourceType.ASCIIDOC) {
             return new AsciiDocumentReader(source.getPath());

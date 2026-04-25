@@ -2,6 +2,7 @@ package com.llmcr.service.etl.extractor;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.llmcr.entity.Source;
@@ -9,6 +10,8 @@ import com.llmcr.entity.Source.SourceType;
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,6 +27,8 @@ import java.nio.file.Path;
  */
 @Component
 public class ClassNodeExtractor implements SourceExtractor {
+
+    private static final Logger log = LoggerFactory.getLogger(ClassNodeExtractor.class);
 
     private final JavaParser parser;
 
@@ -59,17 +64,40 @@ public class ClassNodeExtractor implements SourceExtractor {
 
                 classNodes.addAll(
                         cu.findAll(TypeDeclaration.class).stream()
-                                .map(typeDecl -> new Context(
-                                        source,
-                                        nodeIndex.getAndIncrement(),
-                                        "ClassNode::" + packageName + "." + typeDecl.getNameAsString(),
-                                        typeDecl.toString(),
-                                        ContextType.CLASSNODE))
+                                .map(typeDecl -> {
+                                    int currentIndex = nodeIndex.getAndIncrement();
+                                    String qualifiedTypeName = buildQualifiedTypeName(packageName, typeDecl);
+
+                                    log.info("[ClassNodeExtractor] source={} typeDecl={} contextIndex={}",
+                                            source.getPath(), qualifiedTypeName, currentIndex);
+
+                                    return new Context(
+                                            source,
+                                            currentIndex,
+                                            "ClassNode::" + qualifiedTypeName,
+                                            typeDecl.toString(),
+                                            ContextType.CLASSNODE);
+                                })
                                 .toList());
             });
         } catch (IOException e) {
         }
 
         return classNodes;
+    }
+
+    private String buildQualifiedTypeName(String packageName, TypeDeclaration<?> typeDecl) {
+        List<String> typeNameParts = new ArrayList<>();
+        Node currentNode = typeDecl;
+
+        while (currentNode != null) {
+            if (currentNode instanceof TypeDeclaration<?> currentType) {
+                typeNameParts.add(0, currentType.getNameAsString());
+            }
+            currentNode = currentNode.getParentNode().orElse(null);
+        }
+
+        String nestedTypePath = String.join(".", typeNameParts);
+        return packageName.isBlank() ? nestedTypePath : packageName + "." + nestedTypePath;
     }
 }

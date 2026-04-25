@@ -3,6 +3,8 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Hibernate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -75,20 +77,32 @@ public class ChunkCollection {
     }
 
     public void addChunk(Chunk chunk) {
-        if (chunk == null || chunks.contains(chunk)) {
+        if (chunk == null) {
             return;
         }
-        chunks.add(chunk);
-        if (!chunk.getChunkCollections().contains(this)) {
+
+        if (Hibernate.isInitialized(chunks) && !chunks.contains(chunk)) {
+            chunks.add(chunk);
+        }
+
+        if (Hibernate.isInitialized(chunk.getChunkCollections())
+                && !chunk.getChunkCollections().contains(this)) {
             chunk.getChunkCollections().add(this);
         }
     }
 
     public void removeChunk(Chunk chunk) {
-        if (chunk == null || !chunks.remove(chunk)) {
+        if (chunk == null) {
             return;
         }
-        chunk.getChunkCollections().remove(this);
+
+        if (Hibernate.isInitialized(chunks)) {
+            chunks.remove(chunk);
+        }
+
+        if (Hibernate.isInitialized(chunk.getChunkCollections())) {
+            chunk.getChunkCollections().remove(this);
+        }
     }
 
     @Override

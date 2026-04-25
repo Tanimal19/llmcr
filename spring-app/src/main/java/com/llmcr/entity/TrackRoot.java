@@ -3,6 +3,8 @@ package com.llmcr.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Hibernate;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,6 +26,9 @@ public class TrackRoot {
     @Column(nullable = false, unique = true, length = 1024)
     private String path;
 
+    @Column(length = 512)
+    private List<Source.SourceType> allowedSourceTypes;
+
     @OneToMany(mappedBy = "trackRoot", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Source> sources = new ArrayList<>();
 
@@ -32,6 +37,11 @@ public class TrackRoot {
 
     public TrackRoot(String path) {
         this.path = path;
+    }
+
+    public TrackRoot(String path, List<Source.SourceType> allowedSourceTypes) {
+        this.path = path;
+        this.allowedSourceTypes = allowedSourceTypes;
     }
 
     public Long getId() {
@@ -44,6 +54,14 @@ public class TrackRoot {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public List<Source.SourceType> getAllowedSourceTypes() {
+        return allowedSourceTypes;
+    }
+
+    public void setAllowedSourceTypes(List<Source.SourceType> allowedSourceTypes) {
+        this.allowedSourceTypes = allowedSourceTypes;
     }
 
     public List<Source> getSources() {
@@ -66,19 +84,28 @@ public class TrackRoot {
     }
 
     public void addSource(Source source) {
-        if (source == null || sources.contains(source)) {
+        if (source == null) {
             return;
         }
-        sources.add(source);
+
+        if (Hibernate.isInitialized(sources) && !sources.contains(source)) {
+            sources.add(source);
+        }
+
         if (source.getTrackRoot() != this) {
             source.setTrackRoot(this);
         }
     }
 
     public void removeSource(Source source) {
-        if (source == null || !sources.remove(source)) {
+        if (source == null) {
             return;
         }
+
+        if (Hibernate.isInitialized(sources)) {
+            sources.remove(source);
+        }
+
         if (source.getTrackRoot() == this) {
             source.setTrackRoot(null);
         }

@@ -28,35 +28,9 @@ llama-server \
 
 Start embedding, reranking and chat server:
 ```sh
-llama-server -m {chatmodel_name}.gguf --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
-llama-server -m {embedding_model_name}.gguf --embeddings --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
+llama-server -m {chatmodel_name}.gguf --ctx-size 4096 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
+llama-server -m {embedding_model_name}.gguf --embeddings --ctx-size 4096 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
 llama-server -m {reranking_model_name}.gguf --reranking --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
-```
-
-
-Sample request for embedding:
-```sh
-curl http://localhost:8080/v1/embeddings \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "harrier-oss-v1-0.6b.Q8_0",
-    "input": ["What is retrieval augmented generation?"]
-  }'
-```
-
-Sample request for reranking:
-```sh
-curl http://localhost:8080/v1/rerank \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "zerank-2.Q8_0",
-    "query": "What is retrieval augmented generation?",
-    "documents": [
-      "RAG combines retrieval and generation using LLMs.",
-      "Transformers are neural networks introduced in 2017.",
-      "Vector databases store embeddings for similarity search."
-    ]
-  }'
 ```
 
 
