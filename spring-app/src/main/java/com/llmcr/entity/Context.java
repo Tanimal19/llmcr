@@ -63,6 +63,10 @@ public class Context {
     @Column(name = "transformed", nullable = false)
     private boolean transformed = false;
 
+    /**
+     * The type of the context, which is used to determine which collection the
+     * context belongs to.
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
     private ContextType type;
@@ -75,11 +79,11 @@ public class Context {
     private List<Chunk> chunks = new ArrayList<>();
 
     public enum ContextType {
+        CLASSNODE,
         DOCUMENT,
         USECASE,
-        TOOLDEF,
         GUIDELINE,
-        CLASSNODE,
+        TOOLDEF,
     }
 
     protected Context() {

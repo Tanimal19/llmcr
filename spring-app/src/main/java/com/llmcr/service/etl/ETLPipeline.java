@@ -4,76 +4,126 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import com.llmcr.entity.Chunk;
-import com.llmcr.entity.Context;
+import com.llmcr.entity.*;
 import com.llmcr.entity.Context.ContextType;
-import com.llmcr.entity.Source;
 import com.llmcr.repository.*;
 import com.llmcr.service.etl.extractor.SourceExtractor;
 import com.llmcr.service.etl.transformer.ContextTransformer;
+import com.llmcr.vectorstore.MyVectorStore;
 
 @Service
 public class ETLPipeline {
 
     private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
-    private final ChunkRepository chunkRepository;
+    private final ChunkCollectionRepository chunkCollectionRepository;
+    private final MyVectorStore vectorStore;
 
     private final List<SourceExtractor> extractors;
-    private final List<ContextTransformer> transformers;
+    private final List<ContextTransformer> splitters;
+    private final List<ContextTransformer> enrichers;
 
-    private final Map<String, Set<ContextType>> collectionConfigs = Map.of(
-            "PROJECT_CONTEXT", Set.of(ContextType.CLASSNODE, ContextType.DOCUMENT),
-            "USECASE", Set.of(ContextType.USECASE),
-            "GUIDELINE", Set.of(ContextType.GUIDELINE),
-            "TOOLDEF", Set.of(ContextType.TOOLDEF));
+    private final Map<ContextType, Set<String>> contextTypeToCollectionNames = Map.of(
+            ContextType.CLASSNODE, Set.of("PROJECT_CONTEXT", "CLASSNODE"),
+            ContextType.DOCUMENT, Set.of("PROJECT_CONTEXT", "DOCUMENT"),
+            ContextType.USECASE, Set.of("USECASE"),
+            ContextType.GUIDELINE, Set.of("GUIDELINE"));
 
     public ETLPipeline(
-            SourceRepository sourceRepository, ContextRepository contextRepository, ChunkRepository chunkRepository,
-            List<SourceExtractor> extractors, List<ContextTransformer> transformers) {
+            SourceRepository sourceRepository, ContextRepository contextRepository,
+            ChunkCollectionRepository chunkCollectionRepository, MyVectorStore vectorStore,
+            List<SourceExtractor> extractors,
+            @Qualifier("splitterTransformer") List<ContextTransformer> splitters,
+            @Qualifier("enricherTransformer") List<ContextTransformer> enrichers) {
         this.sourceRepository = sourceRepository;
         this.contextRepository = contextRepository;
-        this.chunkRepository = chunkRepository;
+        this.chunkCollectionRepository = chunkCollectionRepository;
+        this.vectorStore = vectorStore;
         this.extractors = extractors;
-        this.transformers = transformers;
+        this.splitters = splitters;
+        this.enrichers = enrichers;
     }
 
     public void run() {
 
-    }
+        // init chunk collections
+        contextTypeToCollectionNames.values().stream().flatMap(Set::stream).collect(Collectors.toSet())
+                .forEach(name -> {
+                    if (chunkCollectionRepository.findByName(name).isEmpty()) {
+                        chunkCollectionRepository.save(new ChunkCollection(name));
+                    }
+                });
 
-    private List<Context> extract(Source source) {
-        List<Context> contexts = new ArrayList<>();
-
-        for (SourceExtractor extractor : extractors) {
-            if (extractor.supports(source)) {
-                try {
-                    contexts.addAll(extractor.apply(source));
-                } catch (Exception e) {
-                    throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);
+        // extract contexts from sources
+        sourceRepository.findAll().stream().forEach(source -> {
+            List<Context> contexts = new ArrayList<>();
+            for (SourceExtractor extractor : extractors) {
+                if (extractor.supports(source)) {
+                    try {
+                        contexts.addAll(extractor.apply(source));
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);
+                    }
                 }
             }
-        }
-        return contexts;
-    }
+            contextRepository.saveAll(contexts);
+        });
 
-    private Context transform(Context context) {
-        Context transformed = context;
-        for (ContextTransformer transformer : transformers) {
-            if (transformer.supports(transformed)) {
+        // split & load contexts
+        contextRepository.findAll().stream().forEach(context -> {
+            Context splitted = context;
+            for (ContextTransformer splitter : splitters) {
                 try {
-                    transformed = transformer.apply(transformed);
+                    splitted = splitter.apply(splitted);
+                    contextRepository.save(splitted);
                 } catch (Exception e) {
-                    throw new RuntimeException("Error transforming context " + context.getName(), e);
+                    throw new RuntimeException("Error splitting context " + splitted.getName(), e);
                 }
             }
-        }
-        return transformed;
+        });
+        loadAllContexts();
+
+        // enrich & load contexts
+        contextRepository.findAll().stream().forEach(context -> {
+            Context enriched = context;
+            for (ContextTransformer enricher : enrichers) {
+                try {
+                    enriched = enricher.apply(enriched);
+                    contextRepository.save(enriched);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error enriching context " + enriched.getName(), e);
+                }
+            }
+            contextRepository.save(enriched);
+        });
+        loadAllContexts();
+    }
+
+    private void loadAllContexts() {
+        contextRepository.findAll().stream().forEach(context -> {
+
+            List<String> collectionNames = contextTypeToCollectionNames.getOrDefault(context.getType(), Set.of())
+                    .stream().toList();
+
+            if (collectionNames.isEmpty()) {
+                return;
+            }
+
+            for (String collectionName : collectionNames) {
+                List<Chunk> chunks = context.getChunks();
+                vectorStore.add(chunks, collectionName);
+                ChunkCollection chunkCollection = chunkCollectionRepository.findByName(collectionName)
+                        .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
+                chunks.forEach(chunk -> {
+                    chunk.addChunkCollection(chunkCollection);
+                });
+                contextRepository.save(context);
+            }
+        });
     }
 }

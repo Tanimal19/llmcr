@@ -9,6 +9,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk;
@@ -23,6 +24,7 @@ import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
  * Enrich ClassNode context by generating a summary using LLM.
  */
 @Component
+@Qualifier("enricherTransformer")
 public class ClassNodeEnricher implements ContextTransformer {
 
     private static final PromptTemplate promptTemplate = PromptTemplate.builder()
@@ -66,12 +68,11 @@ public class ClassNodeEnricher implements ContextTransformer {
     }
 
     @Override
-    public boolean supports(Context context) {
-        return context.getType() == Context.ContextType.CLASSNODE;
-    }
-
-    @Override
     public Context apply(Context classNode) {
+        if (classNode.getType() != Context.ContextType.CLASSNODE) {
+            return classNode;
+        }
+
         // retrieve relevant document contexts for enrichment
         List<ContextScorePair> relevantDocuments = contextRetriever.retrieve(classNode.getContent(),
                 new RetrievalConfiguration(5, "DOCUMENT", true, new AdaptiveKStrategy()));

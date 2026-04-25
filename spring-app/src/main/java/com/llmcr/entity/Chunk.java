@@ -45,6 +45,13 @@ public class Chunk {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
+    /**
+     * Which collections the chunk belongs to. A chunk can belong to multiple
+     * collections, and a collection can have multiple chunks. The collection is
+     * determined by the context type, but it's not strictly one-to-one.
+     * The chunk will only be add to a collection after loading, so that we can
+     * track which chunks have been loaded.
+     */
     @ManyToMany(mappedBy = "chunks")
     private List<ChunkCollection> chunkCollections = new ArrayList<>();
 
