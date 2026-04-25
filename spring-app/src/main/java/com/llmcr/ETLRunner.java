@@ -16,8 +16,8 @@ import com.llmcr.etl.step.ExtractStep;
 import com.llmcr.service.ChunkService;
 import com.llmcr.service.TransformService;
 import com.llmcr.service.etl.DataSourceFactoryService;
-import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 import com.llmcr.storage.DataStore;
+import com.llmcr.vectorstore.FaissVectorStoreFactory;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "etl")

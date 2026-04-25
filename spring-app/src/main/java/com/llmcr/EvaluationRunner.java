@@ -28,8 +28,8 @@ import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.service.rag.retrieval.select.FixedKStrategy;
 import com.llmcr.service.rag.retrieval.select.SelectStrategy;
-import com.llmcr.service.vectorstore.faiss.FaissVectorStoreFactory;
 import com.llmcr.utils.JsonBackupUtils;
+import com.llmcr.vectorstore.faiss.FaissVectorStoreFactory;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "evaluation")

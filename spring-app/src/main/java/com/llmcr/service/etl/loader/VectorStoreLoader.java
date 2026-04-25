@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
-import com.llmcr.service.vectorstore.MyVectorStore;
+import com.llmcr.vectorstore.MyVectorStore;
 
 @Component
 public class VectorStoreLoader implements ContextLoader {

@@ -1,4 +1,4 @@
-package com.llmcr.service.vectorstore;
+package com.llmcr.vectorstore;
 
 import java.util.List;
 

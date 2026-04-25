@@ -20,5 +20,5 @@
   "java.import.projectSelection": "manual",
   "java.configuration.updateBuildConfiguration": "automatic",
   "maven.view": "flat",
-  "editor.tabSize": 4
+  "editor.tabSize": 4,
 }

@@ -1,4 +1,4 @@
-package com.llmcr.service.vectorstore.faiss;
+package com.llmcr.vectorstore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,11 +8,11 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Repository;
 
 import com.llmcr.entity.Chunk;
+import com.llmcr.service.FaissService;
+import com.llmcr.service.FaissService.AddVectorsRequest;
+import com.llmcr.service.FaissService.SearchVectorsRequest;
+import com.llmcr.service.FaissService.SearchVectorsResponse;
 import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkScorePair;
-import com.llmcr.service.vectorstore.MyVectorStore;
-import com.llmcr.service.vectorstore.faiss.FaissService.AddVectorsRequest;
-import com.llmcr.service.vectorstore.faiss.FaissService.SearchVectorsRequest;
-import com.llmcr.service.vectorstore.faiss.FaissService.SearchVectorsResponse;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {

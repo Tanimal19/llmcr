@@ -7,8 +7,63 @@ Detail: https://drive.google.com/file/d/1ROs21oOD5hAumyx3W9JTEB31CfwmOUw5/view?u
 # Run
 To run the application, follow these steps:
 - Make sure Ollama is installed and running on your machine, and models are pulled.
+- Start llamacpp server
+```sh
+llama-server \
+  --models-dir models/ \
+  --models-max 1 \
+  --ctx-size 8192 \
+  --batch-size 512 \
+  --ubatch-size 128 \
+  --parallel 1 \
+  --threads -1 \
+  --flash-attn on \
+  --host 0.0.0.0 \
+  --port 8080
+```
 - Start the FAISS and MariaDB services using `docker-compose up -d`.
 - Run the application using `./run.sh` in the `spring-app` directory. (`cd spring-app` first)
+
+## llama-server
+
+Start embedding, reranking and chat server:
+```sh
+llama-server \
+  -m {model}.gguf \
+  --ctx-size 8192 \
+  --batch-size 512 \
+  --ubatch-size 128 \
+  --parallel 1 \
+  --host 0.0.0.0 \
+  --port 8080
+```
+
+
+Sample request for embedding:
+```sh
+curl http://localhost:8080/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "harrier-oss-v1-0.6b.Q8_0",
+    "input": ["What is retrieval augmented generation?"]
+  }'
+```
+
+Sample request for reranking:
+```sh
+curl http://localhost:8080/v1/rerank \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "zerank-2.Q8_0",
+    "query": "What is retrieval augmented generation?",
+    "documents": [
+      "RAG combines retrieval and generation using LLMs.",
+      "Transformers are neural networks introduced in 2017.",
+      "Vector databases store embeddings for similarity search."
+    ]
+  }'
+```
+
 
 ## ETL Pipeline
 To run the ETL pipeline, set the `--app.mode=etl` in `run.sh`.  
