@@ -6,7 +6,7 @@ Detail: https://drive.google.com/file/d/1ROs21oOD5hAumyx3W9JTEB31CfwmOUw5/view?u
 
 # Run
 To run the application, follow these steps:
-- Make sure Ollama is installed and running on your machine, and models are pulled.
+- Make sure llama.cpp is installed.
 - Start llamacpp server
 ```sh
 llama-server \
@@ -28,14 +28,9 @@ llama-server \
 
 Start embedding, reranking and chat server:
 ```sh
-llama-server \
-  -m {model}.gguf \
-  --ctx-size 8192 \
-  --batch-size 512 \
-  --ubatch-size 128 \
-  --parallel 1 \
-  --host 0.0.0.0 \
-  --port 8080
+llama-server -m {chatmodel_name}.gguf --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
+llama-server -m {embedding_model_name}.gguf --embeddings --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
+llama-server -m {reranking_model_name}.gguf --reranking --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
 ```
 
 

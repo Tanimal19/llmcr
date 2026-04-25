@@ -52,7 +52,7 @@ public class RAGService {
         this.topK = topK;
     }
 
-    public Map<String, Object> generation(Object input) {
+    public Map<String, Object> runRag(Object input) {
         assert retrievalStrategy != null : "Retrieval Strategy is not set.";
         assert fusionStrategy != null : "Fusion Strategy is not set.";
         assert ragTemplate != null : "RAG Template is not set.";

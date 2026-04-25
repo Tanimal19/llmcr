@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
+import com.llmcr.model.LargeChatClient;
 import com.llmcr.service.rag.retrieval.ContextRetriever;
 import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
 import com.llmcr.service.rag.retrieval.ContextRetriever.RetrievalConfiguration;
@@ -57,10 +57,10 @@ public class ClassNodeEnricher implements ContextTransformer {
     private record ClassNodeEnrichment(String functional, String relationship, String usage) {
     }
 
-    private final ChatModel chatModel;
+    private final LargeChatClient chatModel;
     private final ContextRetriever contextRetriever;
 
-    public ClassNodeEnricher(ChatModel chatModel, ContextRetriever contextRetriever) {
+    public ClassNodeEnricher(LargeChatClient chatModel, ContextRetriever contextRetriever) {
         this.chatModel = chatModel;
         this.contextRetriever = contextRetriever;
     }
@@ -96,7 +96,9 @@ public class ClassNodeEnricher implements ContextTransformer {
             enrichment = outputConverter.convert(rawResponse);
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Failed to convert chat response to ClassNodeEnrichment. Response: " + rawResponse, e);
+                    "Failed to convert chat response to ClassNodeEnrichment. Response: "
+                            + rawResponse,
+                    e);
         }
 
         // update class node

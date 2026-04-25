@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Repository;
 
 import com.llmcr.entity.Chunk;
+import com.llmcr.model.EmbeddingClient;
 import com.llmcr.service.FaissService;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
@@ -20,9 +20,9 @@ public class FaissVectorStore extends MyVectorStore {
     private static final int MAX_QUERY_LENGTH = 8192;
 
     private final FaissService faissService;
-    private final EmbeddingModel embeddingModel;
+    private final EmbeddingClient embeddingModel;
 
-    public FaissVectorStore(FaissService faissService, EmbeddingModel embeddingModel) {
+    public FaissVectorStore(FaissService faissService, EmbeddingClient embeddingModel) {
         this.faissService = faissService;
         this.embeddingModel = embeddingModel;
     }
