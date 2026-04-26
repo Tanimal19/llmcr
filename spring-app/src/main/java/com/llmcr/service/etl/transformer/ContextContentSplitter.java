@@ -1,7 +1,6 @@
 package com.llmcr.service.etl.transformer;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Chunk;
@@ -21,11 +20,10 @@ public class ContextContentSplitter implements ContextTransformer {
     @Override
     public Context apply(Context context) {
         TokenTextSplitter splitter = new TokenTextSplitter();
-        AtomicInteger chunkIndex = new AtomicInteger(context.getChunks().size()); // start from existing chunk count
 
         // split the content into chunks
         List<Chunk> contentChunks = splitter.split(new Document(filter(context.getContent()))).stream()
-                .map(doc -> new Chunk(context, chunkIndex.getAndIncrement(), doc.getText()))
+                .map(doc -> new Chunk(doc.getText()))
                 .toList();
 
         // add chunks back to context

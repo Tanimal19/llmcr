@@ -80,6 +80,12 @@ public class Context {
     @OneToMany(mappedBy = "context", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Chunk> chunks = new ArrayList<>();
 
+    /**
+     * Current number of chunks attached to this context.
+     */
+    @Column(name = "chunk_count", nullable = false)
+    private Integer chunkCount = 0;
+
     public enum ContextType {
         CLASSNODE,
         DOCUMENT,
@@ -195,12 +201,16 @@ public class Context {
             return;
         }
 
-        if (Hibernate.isInitialized(chunks) && !chunks.contains(chunk)) {
+        if (!chunks.contains(chunk)) {
             chunks.add(chunk);
-        }
+            chunkCount++;
 
-        if (chunk.getContext() != this) {
-            chunk.setContext(this);
+            if (chunk.getChunkIndex() == null) {
+                chunk.setChunkIndex(chunkCount);
+            }
+            if (chunk.getContext() != this) {
+                chunk.setContext(this);
+            }
         }
     }
 
@@ -209,13 +219,22 @@ public class Context {
             return;
         }
 
-        if (Hibernate.isInitialized(chunks)) {
-            chunks.remove(chunk);
+        boolean removed = chunks.remove(chunk);
+        if (removed && chunkCount > 0) {
+            chunkCount--;
         }
 
         if (chunk.getContext() == this) {
             chunk.setContext(null);
         }
+    }
+
+    public Integer getChunkCount() {
+        return chunkCount;
+    }
+
+    public void setChunkCount(Integer chunkCount) {
+        this.chunkCount = chunkCount == null ? 0 : chunkCount;
     }
 
     @Override

@@ -10,8 +10,6 @@ import com.llmcr.entity.Source.SourceType;
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -27,8 +25,6 @@ import java.nio.file.Path;
  */
 @Component
 public class ClassNodeExtractor implements SourceExtractor {
-
-    private static final Logger log = LoggerFactory.getLogger(ClassNodeExtractor.class);
 
     private final JavaParser parser;
 
@@ -67,10 +63,6 @@ public class ClassNodeExtractor implements SourceExtractor {
                                 .map(typeDecl -> {
                                     int currentIndex = nodeIndex.getAndIncrement();
                                     String qualifiedTypeName = buildQualifiedTypeName(packageName, typeDecl);
-
-                                    log.info("[ClassNodeExtractor] source={} typeDecl={} contextIndex={}",
-                                            source.getPath(), qualifiedTypeName, currentIndex);
-
                                     return new Context(
                                             source,
                                             currentIndex,

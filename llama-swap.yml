@@ -1,0 +1,147 @@
+# add this modeline for validation in vscode
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
+#
+# llama-swap YAML configuration example
+# -------------------------------------
+#
+# 💡 Tip - Use an LLM with this file!
+# ====================================
+#  This example configuration is written to be LLM friendly. Try
+#  copying this file into an LLM and asking it to explain or generate
+#  sections for you.
+# ====================================
+
+# Usage notes:
+# - Below are all the available configuration options for llama-swap.
+# - Settings noted as "required" must be in your configuration file
+# - Settings noted as "optional" can be omitted
+
+# healthCheckTimeout: number of seconds to wait for a model to be ready to serve requests
+# - optional, default: 120
+# - minimum value is 15 seconds, anything less will be set to this value
+healthCheckTimeout: 500
+
+# logLevel: sets the logging value
+# - optional, default: info
+# - Valid log levels: debug, info, warn, error
+logLevel: info
+
+# logTimeFormat: enables and sets the logging timestamp format
+# - optional, default (disabled): ""
+# - Valid values: "", "ansic", "unixdate", "rubydate", "rfc822", "rfc822z",
+#   "rfc850", "rfc1123", "rfc1123z", "rfc3339", "rfc3339nano", "kitchen",
+#   "stamp", "stampmilli", "stampmicro", and "stampnano".
+# - For more info, read: https://pkg.go.dev/time#pkg-constants
+logTimeFormat: ""
+
+# metricsMaxInMemory: maximum number of metrics to keep in memory
+# - optional, default: 1000
+# - controls how many metrics are stored in memory before older ones are discarded
+# - useful for limiting memory usage when processing large volumes of metrics
+metricsMaxInMemory: 1000
+
+# startPort: sets the starting port number for the automatic ${PORT} macro.
+# - optional, default: 5800
+# - the ${PORT} macro can be used in model.cmd and model.proxy settings
+# - it is automatically incremented for every model that uses it
+startPort: 10001
+
+# sendLoadingState: inject loading status updates into the reasoning (thinking)
+# field
+# - optional, default: false
+# - when true, a stream of loading messages will be sent to the client in the
+#   reasoning field so chat UIs can show that loading is in progress.
+# - see #366 for more details
+sendLoadingState: true
+
+# includeAliasesInList: present aliases within the /v1/models OpenAI API listing
+# - optional, default: false
+# - when true, model aliases will be output to the API model listing duplicating
+#   all fields except for Id so chat UIs can use the alias equivalent to the original.
+includeAliasesInList: false
+
+# macros: a dictionary of string substitutions
+# - optional, default: empty dictionary
+# - macros are reusable snippets
+# - used in a model's cmd, cmdStop, proxy, checkEndpoint, filters.stripParams
+# - useful for reducing common configuration settings
+# - macro names are strings and must be less than 64 characters
+# - macro names must match the regex ^[a-zA-Z0-9_-]+$
+# - macro names must not be a reserved name: PORT or MODEL_ID
+# - macro values can be numbers, bools, or strings
+# - macros can contain other macros, but they must be defined before they are used
+macros:
+  "model_dir": /Users/bobch/models
+  "llama_server": /opt/homebrew/bin/llama-server
+
+# models: a dictionary of model configurations
+# - required
+# - each key is the model's ID, used in API requests
+# - model settings have default values that are used if they are not defined here
+# - the model's ID is available in the ${MODEL_ID} macro, also available in macros defined above
+# - below are examples of the all the settings a model can have
+models:
+  "LFM2.5-1.2b":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      --ctx-size 8192
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "LFM2.5-1.2b"
+
+  "SmolLM3-3b":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/SmolLM3-Q8_0.gguf
+      --ctx-size 8192
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "SmolLM3-3b"
+
+  "Llama3-8b":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
+      --ctx-size 8192
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Llama3-8b"
+
+  "Gemma3-12b":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/gemma-3-12b-it-Q4_K_M.gguf
+      --ctx-size 8192
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Gemma3-12b"
+
+  "Ministral3-14b":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/Ministral-3-14B-Instruct-2512-Q4_K_M.gguf
+      --ctx-size 8192
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Mistral3-14b"
+
+  "Harrier-0.6b":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/harrier-oss-v1-0.6b.Q8_0.gguf
+      --embeddings
+      --ctx-size 2048
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Harrier-0.6b"
+
+  "Zerank2":
+    cmd: >
+      ${llama_server}
+      -m ${model_dir}/zerank-2.Q8_0.gguf
+      --reranking
+      --ctx-size 16384
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Zerank2"

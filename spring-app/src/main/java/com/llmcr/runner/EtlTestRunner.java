@@ -40,21 +40,21 @@ public class EtlTestRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		resetEntityTables();
+		// resetEntityTables();
 
-		Map<String, List<SourceType>> trackRootConfig = Map.of(
-				"../_datasets/test/spring-ai-main/",
-				List.of(SourceType.JAVACODE),
-				"../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
-				List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
-				"../_datasets/test/docs/",
-				List.of(SourceType.PDF, SourceType.JSON));
+		// Map<String, List<SourceType>> trackRootConfig = Map.of(
+		// "../_datasets/test/spring-ai-main/",
+		// List.of(SourceType.JAVACODE),
+		// "../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
+		// List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
+		// "../_datasets/test/docs/",
+		// List.of(SourceType.PDF, SourceType.JSON));
 
-		trackRootConfig.forEach((path, sourceTypes) -> {
-			trackRootRepository.save(new TrackRoot(path, sourceTypes));
-		});
+		// trackRootConfig.forEach((path, sourceTypes) -> {
+		// trackRootRepository.save(new TrackRoot(path, sourceTypes));
+		// });
 
-		sourceService.refreshTrackRoots();
+		// sourceService.refreshTrackRoots();
 
 		etlPipeline.run();
 	}

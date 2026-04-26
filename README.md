@@ -17,7 +17,6 @@ llama-server \
   --ubatch-size 128 \
   --parallel 1 \
   --threads -1 \
-  --flash-attn on \
   --host 0.0.0.0 \
   --port 8080
 ```
@@ -28,9 +27,9 @@ llama-server \
 
 Start embedding, reranking and chat server:
 ```sh
-llama-server -m {chatmodel_name}.gguf --ctx-size 4096 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
-llama-server -m {embedding_model_name}.gguf --embeddings --ctx-size 4096 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
-llama-server -m {reranking_model_name}.gguf --reranking --ctx-size 16384 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
+llama-server -m {chatmodel_name}.gguf --ctx-size 8192 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
+llama-server -m models/harrier-oss-v1-0.6b.Q8_0.gguf --embeddings --ctx-size 2048 -ngl 0 --parallel 1 --host 0.0.0.0 --port 10002
+llama-server -m models/zerank-2.Q8_0.gguf --reranking --ctx-size 2048 --parallel 1 --host 0.0.0.0 --port 10003
 ```
 
 
@@ -38,15 +37,9 @@ llama-server -m {reranking_model_name}.gguf --reranking --ctx-size 16384 --batch
 To run the ETL pipeline, set the `--app.mode=etl` in `run.sh`.  
 You need to set the paths of Java project and documentation in `run.sh` as well.
 ```sh
-SPRING_ARGUMENTS="--app.mode=etl \
-    --etl.input.javaproject.path=\"../_datasets/spring-ai-main simple\" \
-    --etl.input.document.paths=\"../_datasets/spring-ai-docs/src/main/antora/modules/ROOT/pages/,../_datasets/Effective Java (2017, Addison-Wesley).pdf\""
+SPRING_ARGUMENTS="--app.mode=etl"
 ```
 
-The ETL process consists of three main steps, which are implemented in the following classes:
-- `service/etl/ExtractService.java`: Extract class node from `.java` and paragraphs from docs.
-- `service/etl/TransformService.java`: Enrich each class node with paragraphs and generate summary via LLM.
-- `service/etl/LoadService.java`: Chunk and Load the enriched class nodes and paragraphs into FAISS vector store and MariaDB.
 
 
 ## RAG
@@ -76,14 +69,13 @@ This will start a CLI interface for you to ask questions about the Java project 
   export GOOGLE_GEMINI_API_KEY="???"
   ```
 
-## File Syntax
+## File Format
 ### Documents
 Documents are unstructured files that provide additional information about the codebase, such as design documents, API documentation ...  
 No syntax, accept `.pdf`, `.md`, `.asciidoc` files for now.
 
 ### Guideline
 Guideline is a special type of context that describe code review guidelines.
-
 ```json
 [
     {
@@ -96,7 +88,6 @@ Guideline is a special type of context that describe code review guidelines.
 
 ### Usecase
 Usecase is an example on how to perform specific code review check.  
-
 ```json
 [
     {

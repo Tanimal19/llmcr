@@ -39,7 +39,7 @@ public class DocumentParagraphExtractor implements SourceExtractor {
                 .map(doc -> new Context(
                         source,
                         blockIndex.getAndIncrement(),
-                        "Paragraph::" + source.getSourceName() + "::" + blockIndex.get(),
+                        "Paragraph::" + source.getPath() + "::" + blockIndex.get(),
                         doc.getText(),
                         ContextType.DOCUMENT))
                 .toList();

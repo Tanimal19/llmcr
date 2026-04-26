@@ -80,7 +80,7 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
 
         running = true;
         if (!autoStartEnabled) {
-            logger.info("llama.cpp auto-start is disabled (llmcr.llama.autostart.enabled=false).");
+            logger.debug("llama.cpp auto-start is disabled (llmcr.llama.autostart.enabled=false).");
             return;
         }
 
@@ -101,7 +101,7 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
                 continue;
             }
 
-            logger.info("Stopping llama-server [{}] on port {}.", managedProcess.name(), managedProcess.port());
+            logger.debug("Stopping llama-server [{}] on port {}.", managedProcess.name(), managedProcess.port());
             process.destroy();
             try {
                 boolean exited = process.waitFor(3, TimeUnit.SECONDS);
@@ -115,7 +115,7 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
         }
 
         managedProcesses.clear();
-        logger.info("llama-server autostarter metrics starts_attempted={} starts_succeeded={} starts_failed={}",
+        logger.debug("llama-server autostarter metrics starts_attempted={} starts_succeeded={} starts_failed={}",
                 startAttemptCounter.sum(),
                 startSuccessCounter.sum(),
                 startFailureCounter.sum());
@@ -156,17 +156,17 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
         try {
             uri = URI.create(spec.url());
         } catch (Exception e) {
-            logger.warn("Skipping llama-server [{}]: invalid URL '{}'", spec.name(), spec.url());
+            logger.debug("Skipping llama-server [{}]: invalid URL '{}'", spec.name(), spec.url());
             return;
         }
 
         if (uri.getPort() <= 0) {
-            logger.warn("Skipping llama-server [{}]: URL must include a port: {}", spec.name(), spec.url());
+            logger.debug("Skipping llama-server [{}]: URL must include a port: {}", spec.name(), spec.url());
             return;
         }
 
         if (!isAllowedConnectHost(uri.getHost())) {
-            logger.info("Skipping llama-server [{}]: URL host '{}' is not local.", spec.name(), uri.getHost());
+            logger.debug("Skipping llama-server [{}]: URL host '{}' is not local.", spec.name(), uri.getHost());
             return;
         }
 
@@ -197,6 +197,7 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
         startAttemptCounter.increment();
         Instant startAt = Instant.now();
         try {
+            logger.info("Starting llama-server [{}] on port {}.", spec.name(), port);
             Process process = new ProcessBuilder(command)
                     .redirectErrorStream(true)
                     .start();
@@ -207,17 +208,17 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
             if (!waitForPort(uri.getHost(), port, process, startTimeoutMs)) {
                 startFailureCounter.increment();
                 if (process.isAlive()) {
-                    logger.warn("llama-server [{}] did not become ready within {} ms.",
+                    logger.error("llama-server [{}] did not become ready within {} ms.",
                             spec.name(), startTimeoutMs);
                 } else {
-                    logger.warn("llama-server [{}] exited before becoming ready (exit code {}).",
+                    logger.error("llama-server [{}] exited before becoming ready (exit code {}).",
                             spec.name(), process.exitValue());
                 }
             } else {
                 startSuccessCounter.increment();
                 long latencyMs = Duration.between(startAt, Instant.now()).toMillis();
                 logger.info("Started llama-server [{}] on port {}.", spec.name(), port);
-                logger.info(
+                logger.debug(
                         "llama_server_start name={} port={} startup_latency_ms={} starts_attempted={} starts_succeeded={} starts_failed={}",
                         spec.name(),
                         port,
@@ -317,14 +318,28 @@ public class LlamaServerAutoStarter implements SmartLifecycle {
                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    logger.info("llama_server_log name={} msg={}", name, line);
+                    if (isErrorLogLine(line)) {
+                        logger.error("llama_server_log name={} msg={}", name, line);
+                    } else {
+                        logger.info("llama_server_log name={} msg={}", name, line);
+                    }
                 }
             } catch (IOException e) {
-                logger.warn("Log stream error for {}", name, e);
+                logger.error("Log stream error for {}", name, e);
             }
         }, "llama-log-" + name);
         logThread.setDaemon(true);
         logThread.start();
+    }
+
+    private boolean isErrorLogLine(String line) {
+        if (!StringUtils.hasText(line)) {
+            return false;
+        }
+        String normalized = line.toLowerCase();
+        return normalized.contains("error")
+                || normalized.contains("fatal")
+                || normalized.contains("fail");
     }
 
     private void registerShutdownHook() {

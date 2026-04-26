@@ -60,6 +60,10 @@ public class Chunk {
     protected Chunk() {
     }
 
+    public Chunk(String content) {
+        this.content = content;
+    }
+
     public Chunk(Context context, Integer chunkIndex, String content) {
         setContext(context);
         this.chunkIndex = chunkIndex;
@@ -91,9 +95,8 @@ public class Chunk {
 
         this.context = context;
         if (context != null
-                && Hibernate.isInitialized(context.getChunks())
                 && !context.getChunks().contains(this)) {
-            context.getChunks().add(this);
+            context.addChunk(this);
         }
     }
 
