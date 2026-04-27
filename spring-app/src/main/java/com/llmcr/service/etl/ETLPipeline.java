@@ -1,19 +1,19 @@
 package com.llmcr.service.etl;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.llmcr.entity.Context.ContextType;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.repository.SourceRepository;
 
 @Service
 public class ETLPipeline {
 
     private static final Logger log = LoggerFactory.getLogger(ETLPipeline.class);
 
-    private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
     private final ExtractService extractService;
     private final SplitService splitService;
@@ -21,13 +21,11 @@ public class ETLPipeline {
     private final LoadService loadService;
 
     public ETLPipeline(
-            SourceRepository sourceRepository,
             ContextRepository contextRepository,
             ExtractService extractService,
             SplitService splitService,
             EnrichService enrichService,
             LoadService loadService) {
-        this.sourceRepository = sourceRepository;
         this.contextRepository = contextRepository;
         this.extractService = extractService;
         this.splitService = splitService;
@@ -35,12 +33,14 @@ public class ETLPipeline {
         this.loadService = loadService;
     }
 
-    public void run() {
-        log.info("ETL pipeline started.");
+    public void run(List<Long> sourceIds) {
+        log.info("ETL pipeline started");
 
         loadService.initCollections();
-        sourceRepository.findAllIds().forEach(id -> extractService.extract(id));
-        contextRepository.findAllIds().forEach(id -> splitService.splitAndLoad(id));
+        // extract and split specific sources, then enrich and load all contexts
+        sourceIds.forEach(id -> extractService.extract(id));
+        sourceIds.forEach(id -> contextRepository.findAllIdsBySourceId(id)
+                .forEach(contextId -> splitService.splitAndLoad(contextId)));
         contextRepository.findAllIdsByType(ContextType.CLASSNODE)
                 .forEach(id -> enrichService.enrichAndLoad(id));
     }

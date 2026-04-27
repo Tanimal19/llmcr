@@ -5,33 +5,17 @@ Detail: https://drive.google.com/file/d/1ROs21oOD5hAumyx3W9JTEB31CfwmOUw5/view?u
 
 
 # Run
+Prerequisites:
+- Java 17+
+- Docker and Docker Compose
+- llama.cpp and llama-swap
+
+
 To run the application, follow these steps:
-- Make sure llama.cpp is installed.
-- Start llamacpp server
-```sh
-llama-server \
-  --models-dir models/ \
-  --models-max 1 \
-  --ctx-size 8192 \
-  --batch-size 512 \
-  --ubatch-size 128 \
-  --parallel 1 \
-  --threads -1 \
-  --host 0.0.0.0 \
-  --port 8080
-```
+- Make sure llama.cpp and llama-swap is installed.
+- Start llama-swap `llama-swap -config llama-swap.yml -listen 0.0.0.0:8080 2>&1 | tee llama-swap.log`.
 - Start the FAISS and MariaDB services using `docker-compose up -d`.
 - Run the application using `./run.sh` in the `spring-app` directory. (`cd spring-app` first)
-
-## llama-server
-
-Start embedding, reranking and chat server:
-```sh
-llama-server -m {chatmodel_name}.gguf --ctx-size 8192 --batch-size 512 --ubatch-size 128 --parallel 1 --host 0.0.0.0 --port {port}
-llama-server -m models/harrier-oss-v1-0.6b.Q8_0.gguf --embeddings --ctx-size 2048 -ngl 0 --parallel 1 --host 0.0.0.0 --port 10002
-llama-server -m models/zerank-2.Q8_0.gguf --reranking --ctx-size 2048 --parallel 1 --host 0.0.0.0 --port 10003
-```
-
 
 ## ETL Pipeline
 To run the ETL pipeline, set the `--app.mode=etl` in `run.sh`.  

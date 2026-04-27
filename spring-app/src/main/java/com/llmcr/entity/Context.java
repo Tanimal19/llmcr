@@ -60,10 +60,17 @@ public class Context {
     private String content;
 
     /**
-     * Whether the context has been fully transformed.
+     * Whether the context has been transformed by splitters. This is used to
+     * determine whether the context can be enriched and loaded.
      */
-    @Column(name = "transformed", nullable = false)
-    private boolean transformed = false;
+    @Column(name = "loaded", nullable = false)
+    private boolean loaded = false;
+
+    /**
+     * Whether the context has been transformed by enrichers.
+     */
+    @Column(name = "enriched", nullable = false)
+    private boolean enriched = false;
 
     /**
      * The type of the context, which is used to determine which collection the
@@ -153,12 +160,20 @@ public class Context {
         this.content = content;
     }
 
-    public boolean isTransformed() {
-        return transformed;
+    public boolean isLoaded() {
+        return loaded;
     }
 
-    public void setTransformed(boolean transformed) {
-        this.transformed = transformed;
+    public void setLoaded(boolean loaded) {
+        this.loaded = loaded;
+    }
+
+    public boolean isEnriched() {
+        return enriched;
+    }
+
+    public void setEnriched(boolean enriched) {
+        this.enriched = enriched;
     }
 
     public Integer getContextIndex() {

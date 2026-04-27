@@ -27,7 +27,7 @@ public class ContextRetriever {
             SelectStrategy selectStrategy) {
     }
 
-    public record ChunkScorePair(Long chunkId, float score) {
+    public record ChunkIdScorePair(Long chunkId, float score) {
     }
 
     public record ContextScorePair(Context context, float score) {
@@ -49,7 +49,7 @@ public class ContextRetriever {
      * select strategy.
      */
     public List<ContextScorePair> retrieve(String query, RetrievalConfiguration config) {
-        List<ChunkScorePair> topNChunks = vectorStore.similaritySearch(query, topN, config.collectionName());
+        List<ChunkIdScorePair> topNChunks = vectorStore.similaritySearch(query, topN, config.collectionName());
 
         List<ContextScorePair> rankedContexts;
         if (config.useReranker()) {
@@ -75,9 +75,9 @@ public class ContextRetriever {
                 .toList();
     }
 
-    private List<ContextScorePair> rerank(String query, List<ChunkScorePair> chunks) {
+    private List<ContextScorePair> rerank(String query, List<ChunkIdScorePair> chunks) {
         List<Context> contexts = contextRepository.findAllByChunkIds(chunks.stream()
-                .map(ChunkScorePair::chunkId)
+                .map(ChunkIdScorePair::chunkId)
                 .toList());
 
         List<String> documents = contexts.stream()
@@ -104,7 +104,7 @@ public class ContextRetriever {
         return rankedContexts;
     }
 
-    private List<ContextScorePair> merge(String query, List<ChunkScorePair> chunks) {
+    private List<ContextScorePair> merge(String query, List<ChunkIdScorePair> chunks) {
         // This method is not used in the current implementation, but can be used to
         // merge
         // chunks into contexts and assign a score to each context based on the chunk

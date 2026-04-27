@@ -45,6 +45,9 @@ public class Source {
     @Column(name = "last_sync_time")
     private LocalDateTime lastSyncTime;
 
+    @Column(name = "extracted", nullable = false)
+    private boolean extracted = false;
+
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Context> contexts = new ArrayList<>();
 
@@ -58,6 +61,9 @@ public class Source {
         MARKDOWN,
         ASCIIDOC,
         JSON,
+    }
+
+    public Source() {
     }
 
     public Long getId() {
@@ -106,6 +112,14 @@ public class Source {
 
     public void setLastSyncTime(LocalDateTime lastSyncTime) {
         this.lastSyncTime = lastSyncTime;
+    }
+
+    public boolean isExtracted() {
+        return extracted;
+    }
+
+    public void setExtracted(boolean extracted) {
+        this.extracted = extracted;
     }
 
     public List<Context> getContexts() {

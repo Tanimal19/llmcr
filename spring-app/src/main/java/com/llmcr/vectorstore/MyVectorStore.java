@@ -3,7 +3,7 @@ package com.llmcr.vectorstore;
 import java.util.List;
 
 import com.llmcr.entity.Chunk;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkScorePair;
+import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkIdScorePair;
 
 public abstract class MyVectorStore {
 
@@ -16,11 +16,11 @@ public abstract class MyVectorStore {
      * Search chunks within a collection. Return a list of chunk id and score pairs,
      * sorted by score in descending order.
      */
-    public List<ChunkScorePair> similaritySearch(String query, int topK, String collectionName) {
+    public List<ChunkIdScorePair> similaritySearch(String query, int topK, String collectionName) {
         return doSimilaritySearch(query, topK, collectionName).stream()
                 .sorted((a, b) -> Float.compare(b.score(), a.score()))
                 .toList();
     }
 
-    protected abstract List<ChunkScorePair> doSimilaritySearch(String query, int topK, String collectionName);
+    protected abstract List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName);
 }

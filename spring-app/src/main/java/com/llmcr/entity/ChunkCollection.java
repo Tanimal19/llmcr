@@ -1,7 +1,7 @@
 package com.llmcr.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.Hibernate;
 
@@ -31,8 +31,8 @@ public class ChunkCollection {
     private String name;
 
     @ManyToMany
-    @JoinTable(name = "chunk_index", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
-    private List<Chunk> chunks = new ArrayList<>();
+    @JoinTable(name = "have_chunks", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
+    private Set<Chunk> havedChunks = new HashSet<>();
 
     protected ChunkCollection() {
     }
@@ -57,23 +57,8 @@ public class ChunkCollection {
         this.name = chunkCollectionName;
     }
 
-    public List<Chunk> getChunks() {
-        return chunks;
-    }
-
-    public void setChunks(List<Chunk> chunks) {
-        List<Chunk> currentChunks = new ArrayList<>(this.chunks);
-        for (Chunk chunk : currentChunks) {
-            removeChunk(chunk);
-        }
-
-        if (chunks == null) {
-            return;
-        }
-
-        for (Chunk chunk : chunks) {
-            addChunk(chunk);
-        }
+    public Set<Chunk> getChunks() {
+        return havedChunks;
     }
 
     public void addChunk(Chunk chunk) {
@@ -81,8 +66,8 @@ public class ChunkCollection {
             return;
         }
 
-        if (Hibernate.isInitialized(chunks) && !chunks.contains(chunk)) {
-            chunks.add(chunk);
+        if (!havedChunks.contains(chunk)) {
+            havedChunks.add(chunk);
         }
 
         if (Hibernate.isInitialized(chunk.getChunkCollections())
@@ -96,9 +81,7 @@ public class ChunkCollection {
             return;
         }
 
-        if (Hibernate.isInitialized(chunks)) {
-            chunks.remove(chunk);
-        }
+        havedChunks.remove(chunk);
 
         if (Hibernate.isInitialized(chunk.getChunkCollections())) {
             chunk.getChunkCollections().remove(this);

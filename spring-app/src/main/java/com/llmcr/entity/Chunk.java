@@ -1,11 +1,14 @@
 package com.llmcr.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.Hibernate;
 
+import com.llmcr.entity.converter.FloatArrayStringConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -48,14 +51,20 @@ public class Chunk {
     private String content;
 
     /**
+     * Cached embedding vector for the chunk content.
+     */
+    @Convert(converter = FloatArrayStringConverter.class)
+    @Column(name = "embedding", columnDefinition = "TEXT")
+    private float[] embedding;
+
+    /**
      * Which collections the chunk belongs to. A chunk can belong to multiple
-     * collections, and a collection can have multiple chunks. The collection is
-     * determined by the context type, but it's not strictly one-to-one.
-     * The chunk will only be add to a collection after loading, so that we can
+     * collections, and a collection can have multiple chunks.
+     * The chunk should only be add to a collection after loading, so that we can
      * track which chunks have been loaded.
      */
-    @ManyToMany(mappedBy = "chunks")
-    private List<ChunkCollection> chunkCollections = new ArrayList<>();
+    @ManyToMany(mappedBy = "havedChunks")
+    private Set<ChunkCollection> inCollections = new HashSet<>();
 
     protected Chunk() {
     }
@@ -116,23 +125,16 @@ public class Chunk {
         this.content = content;
     }
 
-    public List<ChunkCollection> getChunkCollections() {
-        return chunkCollections;
+    public float[] getEmbedding() {
+        return embedding;
     }
 
-    public void setChunkCollections(List<ChunkCollection> chunkCollections) {
-        List<ChunkCollection> currentChunkCollections = new ArrayList<>(this.chunkCollections);
-        for (ChunkCollection chunkCollection : currentChunkCollections) {
-            removeChunkCollection(chunkCollection);
-        }
+    public void setEmbedding(float[] embedding) {
+        this.embedding = embedding;
+    }
 
-        if (chunkCollections == null) {
-            return;
-        }
-
-        for (ChunkCollection chunkCollection : chunkCollections) {
-            addChunkCollection(chunkCollection);
-        }
+    public Set<ChunkCollection> getChunkCollections() {
+        return inCollections;
     }
 
     public void addChunkCollection(ChunkCollection chunkCollection) {
@@ -140,8 +142,8 @@ public class Chunk {
             return;
         }
 
-        if (Hibernate.isInitialized(chunkCollections) && !chunkCollections.contains(chunkCollection)) {
-            chunkCollections.add(chunkCollection);
+        if (Hibernate.isInitialized(inCollections) && !inCollections.contains(chunkCollection)) {
+            inCollections.add(chunkCollection);
         }
 
         if (Hibernate.isInitialized(chunkCollection.getChunks())
@@ -155,8 +157,8 @@ public class Chunk {
             return;
         }
 
-        if (Hibernate.isInitialized(chunkCollections)) {
-            chunkCollections.remove(chunkCollection);
+        if (Hibernate.isInitialized(inCollections)) {
+            inCollections.remove(chunkCollection);
         }
 
         if (Hibernate.isInitialized(chunkCollection.getChunks())) {

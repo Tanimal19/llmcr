@@ -14,9 +14,8 @@ public class GuidelineExtractor extends JsonExtractor {
         return new ExtractorSchema(
                 "guideline",
                 List.of("id"),
-                List.of("id"),
+                "guideline",
                 "Guideline",
-                ContextType.GUIDELINE,
-                null);
+                ContextType.GUIDELINE);
     }
 }

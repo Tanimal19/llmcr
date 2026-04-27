@@ -30,12 +30,20 @@ public class ExtractService {
         this.sourceRepository = sourceRepository;
         this.contextRepository = contextRepository;
         this.extractors = extractors;
+
+        log.info("ExtractService initialized with {} extractors: {}",
+                extractors.size(),
+                extractors.stream()
+                        .map(e -> e.getClass().getSimpleName())
+                        .toList());
     }
 
     @Transactional
     public void extract(Long sourceId) {
         Source source = sourceRepository.findById(sourceId)
                 .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
+        log.info("Start extracting context from source '{}'", source.getSourceName());
+
         List<Context> contexts = new ArrayList<>();
         for (SourceExtractor extractor : extractors) {
             if (extractor.supports(source)) {

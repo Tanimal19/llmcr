@@ -19,7 +19,11 @@ public class ContextContentSplitter implements ContextTransformer {
 
     @Override
     public Context apply(Context context) {
-        TokenTextSplitter splitter = new TokenTextSplitter();
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+                .withChunkSize(400)
+                .withMinChunkSizeChars(200)
+                .withMinChunkLengthToEmbed(10)
+                .build();
 
         // split the content into chunks
         List<Chunk> contentChunks = splitter.split(new Document(filter(context.getContent()))).stream()
@@ -37,10 +41,17 @@ public class ContextContentSplitter implements ContextTransformer {
             return "";
         }
         return text
-                // remove control characters except newlines nd tabs
+                // remove control characters except newlines and tabs
                 .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")
                 // specific cleaning for ANTLR serialized ATN
                 .replaceAll("_serializedATN\\s*=\\s*\"[\\s\\S]*?\";",
-                        "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";");
+                        "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";")
+                // collapse runs of spaces/tabs (but not newlines) into a single space
+                .replaceAll("[ \\t]+", " ")
+                // trim leading/trailing whitespace on each line
+                .replaceAll("(?m)^[ \\t]+|[ \\t]+$", "")
+                // collapse 3+ consecutive blank lines into 2
+                .replaceAll("(\\r?\\n){3,}", "\n\n")
+                .strip();
     }
 }

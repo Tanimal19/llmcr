@@ -14,9 +14,8 @@ public class UsecaseExtractor extends JsonExtractor {
         return new ExtractorSchema(
                 "usecase",
                 List.of("id", "description"),
-                List.of("id", "description"),
+                "usecase",
                 "Usecase",
-                ContextType.USECASE,
-                "description");
+                ContextType.USECASE);
     }
 }

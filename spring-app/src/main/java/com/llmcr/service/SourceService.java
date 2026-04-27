@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
 import com.llmcr.repository.TrackRootRepository;
+import com.llmcr.service.etl.ETLPipeline;
 import com.llmcr.repository.SourceRepository;
 
 /**
@@ -36,24 +37,34 @@ public class SourceService {
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
+    private final ETLPipeline etlPipeline;
 
-    public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository) {
+    public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository,
+            ETLPipeline etlPipeline) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
+        this.etlPipeline = etlPipeline;
     }
 
     /**
      * 1. Reconcile local files with database records.
      * - Remove database sources that no longer exist locally.
      * - Add new local sources that are not in database.
-     * 2. Recompute content hash and update last sync time.
+     * 2. Recompute content hash and update last sync time. Run ETL pipeline for
+     * sources that are new or have changed content.
      */
     @Transactional
     public void refreshTrackRoots() {
         trackRootRepository.findAll().forEach(this::reconcileSource);
-        syncAllSources();
+
+        updateSyncStatus();
+
+        List<Long> unextractedIds = sourceRepository.findAllUnextractedIds();
+        etlPipeline.run(unextractedIds);
+        sourceRepository.setExtractedByIds(unextractedIds);
     }
 
+    @Transactional
     private void reconcileSource(TrackRoot trackRoot) {
         Map<String, Source> localSourcesByPath = new LinkedHashMap<>();
 
@@ -108,7 +119,8 @@ public class SourceService {
         }
     }
 
-    private void syncAllSources() {
+    @Transactional
+    private void updateSyncStatus() {
         LocalDateTime syncTime = LocalDateTime.now();
         sourceRepository.findAll().forEach(source -> {
             Path sourcePath = Path.of(source.getPath());
@@ -119,7 +131,10 @@ public class SourceService {
 
             String currentHash = computeContentHash(sourcePath);
             if (!Objects.equals(source.getContentHash(), currentHash)) {
+                logger.info("Source content changed, will sync: " + sourcePath);
                 source.setContentHash(currentHash);
+            } else {
+                source.setExtracted(true);
             }
             source.setLastSyncTime(syncTime);
             sourceRepository.save(source);
@@ -188,7 +203,7 @@ public class SourceService {
         Source source = new Source();
         source.setPath(path.toAbsolutePath().normalize().toString());
         source.setType(sType);
-        source.setContentHash(computeContentHash(path));
+        source.setContentHash("0"); // set dummy hash to trigger ETL for new sources
         return source;
     }
 

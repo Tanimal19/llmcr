@@ -14,6 +14,7 @@ import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
+import com.llmcr.model.EmbeddingClient;
 import com.llmcr.repository.ChunkCollectionRepository;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.vectorstore.MyVectorStore;
@@ -26,6 +27,7 @@ public class LoadService {
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final ContextRepository contextRepository;
     private final MyVectorStore vectorStore;
+    private final EmbeddingClient embeddingClient;
 
     private final Map<ContextType, Set<String>> contextTypeToCollectionNames = Map.of(
             ContextType.CLASSNODE, Set.of("PROJECT_CONTEXT", "CLASSNODE"),
@@ -36,10 +38,12 @@ public class LoadService {
     public LoadService(
             ChunkCollectionRepository chunkCollectionRepository,
             ContextRepository contextRepository,
-            MyVectorStore vectorStore) {
+            MyVectorStore vectorStore,
+            EmbeddingClient embeddingClient) {
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.contextRepository = contextRepository;
         this.vectorStore = vectorStore;
+        this.embeddingClient = embeddingClient;
     }
 
     @Transactional
@@ -56,6 +60,7 @@ public class LoadService {
         chunkCollectionRepository.flush();
     }
 
+    @Transactional
     public void loadContext(Context context) {
         List<String> collectionNames = contextTypeToCollectionNames
                 .getOrDefault(context.getType(), Set.of())
@@ -69,15 +74,34 @@ public class LoadService {
         }
 
         List<Chunk> chunks = context.getChunks();
-        for (String collectionName : collectionNames) {
-            vectorStore.add(chunks, collectionName);
-            ChunkCollection chunkCollection = chunkCollectionRepository.findByName(collectionName)
-                    .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
-            chunks.forEach(chunk -> chunk.addChunkCollection(chunkCollection));
-            log.info("Context '{}' -> {} chunk(s) added to collection '{}'",
-                    context.getName(), chunks.size(), collectionName);
+
+        for (Chunk chunk : chunks) {
+            if (chunk.getEmbedding() == null || chunk.getEmbedding().length == 0) {
+                chunk.setEmbedding(embeddingClient.embed(chunk.getContent()));
+            }
         }
 
+        for (String collectionName : collectionNames) {
+            ChunkCollection chunkCollection = chunkCollectionRepository.findByName(collectionName)
+                    .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
+
+            // Only add chunks that are not already in the collection to avoid duplicates in
+            // the vector store.
+            List<Chunk> chunksToAdd = chunks.stream()
+                    .filter(chunk -> chunk.getChunkCollections().stream()
+                            .map(ChunkCollection::getName)
+                            .noneMatch(collectionName::equals))
+                    .toList();
+
+            vectorStore.add(chunksToAdd, collectionName);
+            chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
+            chunkCollectionRepository.save(chunkCollection);
+        }
+
+        log.info("Loaded context '{}' (id={}) with {} chunks into collections: {}",
+                context.getName(), context.getId(), chunks.size(), collectionNames);
+
         contextRepository.save(context);
+        contextRepository.flush();
     }
 }

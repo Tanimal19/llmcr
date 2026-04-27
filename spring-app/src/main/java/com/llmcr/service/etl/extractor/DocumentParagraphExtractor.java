@@ -50,7 +50,9 @@ public class DocumentParagraphExtractor implements SourceExtractor {
             PdfDocumentReaderConfig config = PdfDocumentReaderConfig.builder()
                     .withPageTopMargin(0)
                     .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
-                            .withNumberOfTopTextLinesToDelete(0)
+                            .withNumberOfTopTextLinesToDelete(3)
+                            .withNumberOfBottomTextLinesToDelete(3)
+                            .withLeftAlignment(true)
                             .build())
                     .withPagesPerDocument(1)
                     .build();

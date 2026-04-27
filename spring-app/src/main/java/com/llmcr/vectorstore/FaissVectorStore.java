@@ -12,7 +12,7 @@ import com.llmcr.service.FaissService;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsResponse;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkScorePair;
+import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkIdScorePair;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {
@@ -34,22 +34,27 @@ public class FaissVectorStore extends MyVectorStore {
 
         List<Long> ids = chunks.stream().map(Chunk::getId).collect(Collectors.toList());
         List<float[]> embeddings = chunks.stream()
-                .map(c -> embeddingModel.embed(c.getContent()))
+                .map(chunk -> chunk.getEmbedding())
+                .filter(embedding -> embedding != null)
                 .collect(Collectors.toList());
+
+        if (embeddings.size() != ids.size()) {
+            throw new IllegalStateException("Some chunks are missing embeddings");
+        }
 
         faissService.addVectors(new AddVectorsRequest(collectionName, ids, embeddings));
     }
 
-    protected List<ChunkScorePair> doSimilaritySearch(String query, int topK, String collectionName) {
+    protected List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName) {
         float[] queryVector = embeddingModel.embed(truncateQuery(query));
         SearchVectorsResponse res = faissService.searchVectors(
                 new SearchVectorsRequest(collectionName, queryVector, topK));
 
         assert res.ids().size() == res.scores().size() : "FAISS response ids and scores size mismatch";
 
-        List<ChunkScorePair> chunks = new ArrayList<>(res.ids().size());
+        List<ChunkIdScorePair> chunks = new ArrayList<>(res.ids().size());
         for (int i = 0; i < res.ids().size(); i++) {
-            chunks.add(new ChunkScorePair(res.ids().get(i), res.scores().get(i)));
+            chunks.add(new ChunkIdScorePair(res.ids().get(i), res.scores().get(i)));
         }
 
         return chunks;
