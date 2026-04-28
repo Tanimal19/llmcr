@@ -1,9 +1,12 @@
 **/_datasets
+**/_backups
+*.index
+*.gguf
+*.sql
 
 *.DS_Store
 
 .env
 
-*.gguf
 
 *.log

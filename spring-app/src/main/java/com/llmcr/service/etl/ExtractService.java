@@ -42,13 +42,13 @@ public class ExtractService {
     public void extract(Long sourceId) {
         Source source = sourceRepository.findById(sourceId)
                 .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
-        log.info("Start extracting context from source '{}'", source.getSourceName());
 
         if (source.isExtracted()) {
             log.info("Source '{}' already extracted, skipping", source.getSourceName());
             return;
         }
 
+        log.info("Start extracting context from source '{}'", source.getSourceName());
         List<Context> contexts = new ArrayList<>();
         for (SourceExtractor extractor : extractors) {
             if (extractor.supports(source)) {

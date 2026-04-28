@@ -10,11 +10,11 @@ import com.llmcr.entity.Context;
 
 public interface ContextRepository extends JpaRepository<Context, Long> {
 
+    @Query("SELECT c.id FROM Context c")
+    public List<Long> findAllIds();
+
     @Query("SELECT c.id FROM Context c WHERE c.source.id = :sourceId")
     public List<Long> findAllIdsBySourceId(@Param("sourceId") Long sourceId);
-
-    @Query("SELECT c.id FROM Context c WHERE c.type = :type")
-    public List<Long> findAllIdsByType(@Param("type") Context.ContextType type);
 
     @Query("SELECT c FROM Context c JOIN c.chunks ch WHERE ch.id = :chunkId")
     public Context findByChunkId(@Param("chunkId") Long chunkId);

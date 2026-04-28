@@ -35,13 +35,13 @@ public class TestRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		resetEntityTables();
+		// resetEntityTables();
 
 		Map<String, List<SourceType>> trackRootConfig = Map.of(
-				// "../_datasets/test/spring-ai-main/",
-				// List.of(SourceType.JAVACODE),
-				// "../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
-				// List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
+				"../_datasets/test/spring-ai-main/",
+				List.of(SourceType.JAVACODE),
+				"../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
+				List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
 				"../_datasets/test/docs/",
 				List.of(SourceType.PDF, SourceType.JSON));
 

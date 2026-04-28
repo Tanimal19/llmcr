@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.llmcr.entity.Context.ContextType;
 import com.llmcr.repository.ContextRepository;
 
 @Service
@@ -43,7 +42,8 @@ public class ETLPipeline {
         sourceIds.forEach(id -> contextRepository.findAllIdsBySourceId(id)
                 .forEach(contextId -> splitService.splitAndLoad(contextId)));
 
-        contextRepository.findAllIdsByType(ContextType.CLASSNODE)
-                .forEach(id -> enrichService.enrichAndLoad(id));
+        // enrich must be performed on all contexts after splitting, since the
+        // enrichment may require the complete set of chunks in a context.
+        contextRepository.findAllIds().forEach(id -> enrichService.enrichAndLoad(id));
     }
 }

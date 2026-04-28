@@ -131,6 +131,10 @@ models:
       -m ${model_dir}/harrier-oss-v1-0.6b.Q4_K_M.gguf
       --embeddings
       --ctx-size 2048
+      --pooling cls
+      --ubatch-size 1024
+      --verbosity 4
+      --no-webui
       --cache-ram 0
       --parallel 1
       --port ${PORT}

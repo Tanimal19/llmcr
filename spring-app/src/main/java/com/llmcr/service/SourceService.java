@@ -53,9 +53,9 @@ public class SourceService {
      * 1. Reconcile local files with database records.
      * - Remove database sources that no longer exist locally.
      * - Add new local sources that are not in database.
-     *
      * 2. Recompute content hash and update last sync time.
-     * - Run ETL pipeline for sources that are new or have changed content.
+     * 3. Run ETL pipeline for all sources. (The ETL pipeline will internally check
+     * the sync status of each source and skip if already processed)
      */
     public void refreshTrackRoots() {
         trackRootRepository.findAll().forEach(this::reconcileSource);
@@ -63,7 +63,7 @@ public class SourceService {
         sourceRepository.findAll().forEach(source -> updateSourceSyncStatus(source, syncTime));
 
         // run ETL for sources that are unsynced
-        List<Long> unextractedIds = sourceRepository.findAllUnextractedIds();
+        List<Long> unextractedIds = sourceRepository.findAllIds();
         etlPipeline.run(unextractedIds);
     }
 
