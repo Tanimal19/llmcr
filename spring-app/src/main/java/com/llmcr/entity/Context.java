@@ -60,11 +60,16 @@ public class Context {
     private String content;
 
     /**
-     * Whether the context has been transformed by splitters (content splitted) and
-     * loaded into vector store.
+     * Whether all the chunks of the context have loaded into vector store.
      */
-    @Column(name = "contentLoaded", nullable = false)
-    private boolean contentLoaded = false;
+    @Column(name = "chunk_loaded", nullable = false)
+    private boolean chunkLoaded = false;
+
+    /**
+     * Whether the context has been splitted by splitters.
+     */
+    @Column(name = "splitted", nullable = false)
+    private boolean splitted = false;
 
     /**
      * Whether the context has been transformed by enrichers.
@@ -160,12 +165,20 @@ public class Context {
         this.content = content;
     }
 
-    public boolean isContentLoaded() {
-        return contentLoaded;
+    public boolean isChunkLoaded() {
+        return chunkLoaded;
     }
 
-    public void setContentLoaded(boolean contentLoaded) {
-        this.contentLoaded = contentLoaded;
+    public void setChunkLoaded(boolean chunkLoaded) {
+        this.chunkLoaded = chunkLoaded;
+    }
+
+    public boolean isSplitted() {
+        return splitted;
+    }
+
+    public void setSplitted(boolean splitted) {
+        this.splitted = splitted;
     }
 
     public boolean isEnriched() {

@@ -19,23 +19,19 @@ public class SplitService {
 
     private final ContextRepository contextRepository;
     private final List<ContextTransformer> splitters;
-    private final LoadService loadService;
 
     public SplitService(
             ContextRepository contextRepository,
-            @Qualifier("splitterTransformer") List<ContextTransformer> splitters,
-            LoadService loadService) {
+            @Qualifier("splitterTransformer") List<ContextTransformer> splitters) {
         this.contextRepository = contextRepository;
         this.splitters = splitters;
-        this.loadService = loadService;
     }
 
     @Transactional
-    public void splitAndLoad(Long contextId) {
+    public void split(Long contextId) {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
-
-        if (context.isContentLoaded()) {
+        if (context.isSplitted()) {
             log.info("Context '{}' already loaded, skipping splitting", context.getName());
             return;
         }
@@ -48,10 +44,9 @@ public class SplitService {
             }
         }
         contextRepository.save(context);
+        context.setSplitted(true);
+        context.setChunkLoaded(false);
         contextRepository.flush();
         log.info("Context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
-
-        loadService.loadContext(context);
-        context.setContentLoaded(true);
     }
 }

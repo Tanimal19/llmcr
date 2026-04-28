@@ -61,7 +61,9 @@ public class LoadService {
     }
 
     @Transactional
-    public void loadContext(Context context) {
+    public void loadContext(Long contextId) {
+        Context context = contextRepository.findById(contextId)
+                .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         List<String> collectionNames = contextTypeToCollectionNames
                 .getOrDefault(context.getType(), Set.of())
                 .stream()
@@ -101,6 +103,7 @@ public class LoadService {
         log.info("Loaded context '{}' (id={}) with {} chunks into collections: {}",
                 context.getName(), context.getId(), chunks.size(), collectionNames);
 
+        context.setChunkLoaded(true);
         contextRepository.save(context);
         contextRepository.flush();
     }

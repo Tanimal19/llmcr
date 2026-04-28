@@ -35,7 +35,7 @@ public class TestRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		// resetEntityTables();
+		resetEntityTables();
 
 		Map<String, List<SourceType>> trackRootConfig = Map.of(
 				"../_datasets/test/spring-ai-main/",

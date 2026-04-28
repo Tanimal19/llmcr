@@ -19,19 +19,16 @@ public class EnrichService {
 
     private final ContextRepository contextRepository;
     private final List<ContextTransformer> enrichers;
-    private final LoadService loadService;
 
     public EnrichService(
             ContextRepository contextRepository,
-            @Qualifier("enricherTransformer") List<ContextTransformer> enrichers,
-            LoadService loadService) {
+            @Qualifier("enricherTransformer") List<ContextTransformer> enrichers) {
         this.contextRepository = contextRepository;
         this.enrichers = enrichers;
-        this.loadService = loadService;
     }
 
     @Transactional
-    public void enrichAndLoad(Long contextId) {
+    public void enrich(Long contextId) {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isEnriched()) {
@@ -48,10 +45,9 @@ public class EnrichService {
         }
 
         contextRepository.save(context);
-        contextRepository.flush();
-        log.info("Context '{}' context", context.getName());
-
-        loadService.loadContext(context);
         context.setEnriched(true);
+        context.setChunkLoaded(false);
+        contextRepository.flush();
+        log.info("Context '{}' enriched", context.getName());
     }
 }
