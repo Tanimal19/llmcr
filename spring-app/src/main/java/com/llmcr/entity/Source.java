@@ -63,7 +63,13 @@ public class Source {
         JSON,
     }
 
-    public Source() {
+    protected Source() {
+    }
+
+    public Source(String path, String contentHash, SourceType type) {
+        this.path = path;
+        this.contentHash = contentHash;
+        this.type = type;
     }
 
     public Long getId() {

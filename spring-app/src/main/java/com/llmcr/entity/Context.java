@@ -60,11 +60,11 @@ public class Context {
     private String content;
 
     /**
-     * Whether the context has been transformed by splitters. This is used to
-     * determine whether the context can be enriched and loaded.
+     * Whether the context has been transformed by splitters (content splitted) and
+     * loaded into vector store.
      */
-    @Column(name = "loaded", nullable = false)
-    private boolean loaded = false;
+    @Column(name = "contentLoaded", nullable = false)
+    private boolean contentLoaded = false;
 
     /**
      * Whether the context has been transformed by enrichers.
@@ -160,12 +160,12 @@ public class Context {
         this.content = content;
     }
 
-    public boolean isLoaded() {
-        return loaded;
+    public boolean isContentLoaded() {
+        return contentLoaded;
     }
 
-    public void setLoaded(boolean loaded) {
-        this.loaded = loaded;
+    public void setContentLoaded(boolean contentLoaded) {
+        this.contentLoaded = contentLoaded;
     }
 
     public boolean isEnriched() {

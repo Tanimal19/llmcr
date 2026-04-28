@@ -22,5 +22,17 @@ services:
     volumes:
       - ./faiss_service/app/data:/app/app/data
 
+  # llama-swap:
+  #   image: ghcr.io/mostlygeek/llama-swap:cpu
+  #   platform: linux/amd64
+  #   container_name: llama-swap
+  #   restart: unless-stopped
+  #   command: ["-config", "/app/config.yaml", "-listen", "0.0.0.0:8080"]
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./llama-swap.yml:/app/config.yaml:ro
+  #     - ./models:/models
+
 volumes:
   mariadb_data:

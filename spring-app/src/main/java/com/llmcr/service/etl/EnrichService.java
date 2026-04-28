@@ -32,21 +32,26 @@ public class EnrichService {
 
     @Transactional
     public void enrichAndLoad(Long contextId) {
-        Context enriched = contextRepository.findById(contextId)
+        Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+        if (context.isEnriched()) {
+            log.info("Context '{}' already context, skipping enriching", context.getName());
+            return;
+        }
 
         for (ContextTransformer enricher : enrichers) {
             try {
-                enriched = enricher.apply(enriched);
+                context = enricher.apply(context);
             } catch (Exception e) {
-                throw new RuntimeException("Error enriching context " + enriched.getName(), e);
+                throw new RuntimeException("Error enriching context " + context.getName(), e);
             }
         }
 
-        contextRepository.save(enriched);
-        loadService.loadContext(enriched);
+        contextRepository.save(context);
         contextRepository.flush();
+        log.info("Context '{}' context", context.getName());
 
-        log.info("Context '{}' enriched", enriched.getName());
+        loadService.loadContext(context);
+        context.setEnriched(true);
     }
 }

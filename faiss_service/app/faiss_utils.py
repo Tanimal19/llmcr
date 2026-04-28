@@ -37,7 +37,7 @@ def get_or_create_index(index_name: str, dim: int | None) -> faiss.Index | None:
     return create_index(index_name, dim)
 
 
-def add_index(
+def add_index_ids(
     index_name: str,
     ids: List[int],
     vectors: List[List[float]],
@@ -78,6 +78,23 @@ def search(
 
     scores, ids = index.search(query_np, top_k)
     return scores[0].tolist(), ids[0].tolist()
+
+
+def remove_index_ids(index_name: str, ids: List[int]) -> None:
+    if not ids:
+        print("Ids is empty.")
+        return
+
+    index = load_index(index_name)
+    if index is None:
+        print(f"Index '{index_name}' does not exist.")
+        return
+
+    ids_np = np.asarray(ids, dtype=np.int64)
+    removed = index.remove_ids(ids_np)
+
+    faiss.write_index(index, get_index_path(index_name))
+    print(f"Removed {removed} vectors from index '{index_name}', ntotal={index.ntotal}")
 
 
 def remove_index(index_name: str) -> None:

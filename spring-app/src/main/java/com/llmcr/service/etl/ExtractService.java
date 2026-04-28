@@ -44,6 +44,11 @@ public class ExtractService {
                 .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
         log.info("Start extracting context from source '{}'", source.getSourceName());
 
+        if (source.isExtracted()) {
+            log.info("Source '{}' already extracted, skipping", source.getSourceName());
+            return;
+        }
+
         List<Context> contexts = new ArrayList<>();
         for (SourceExtractor extractor : extractors) {
             if (extractor.supports(source)) {
@@ -61,5 +66,6 @@ public class ExtractService {
             contextRepository.saveAll(contexts);
             contextRepository.flush();
         }
+        source.setExtracted(true);
     }
 }

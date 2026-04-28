@@ -32,21 +32,26 @@ public class SplitService {
 
     @Transactional
     public void splitAndLoad(Long contextId) {
-        Context splitted = contextRepository.findById(contextId)
+        Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+
+        if (context.isContentLoaded()) {
+            log.info("Context '{}' already loaded, skipping splitting", context.getName());
+            return;
+        }
 
         for (ContextTransformer splitter : splitters) {
             try {
-                splitted = splitter.apply(splitted);
+                context = splitter.apply(context);
             } catch (Exception e) {
-                throw new RuntimeException("Error splitting context " + splitted.getName(), e);
+                throw new RuntimeException("Error splitting context " + context.getName(), e);
             }
         }
-
-        contextRepository.save(splitted);
-        loadService.loadContext(splitted);
+        contextRepository.save(context);
         contextRepository.flush();
+        log.info("Context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
 
-        log.info("Context '{}' -> {} chunk(s)", splitted.getName(), splitted.getChunks().size());
+        loadService.loadContext(context);
+        context.setContentLoaded(true);
     }
 }

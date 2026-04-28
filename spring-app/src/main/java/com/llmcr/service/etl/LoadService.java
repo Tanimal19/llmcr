@@ -93,7 +93,7 @@ public class LoadService {
                             .noneMatch(collectionName::equals))
                     .toList();
 
-            vectorStore.add(chunksToAdd, collectionName);
+            vectorStore.addChunks(chunksToAdd, collectionName);
             chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
             chunkCollectionRepository.save(chunkCollection);
         }

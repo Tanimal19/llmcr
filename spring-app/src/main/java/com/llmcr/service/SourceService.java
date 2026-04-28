@@ -25,6 +25,7 @@ import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
 import com.llmcr.repository.TrackRootRepository;
 import com.llmcr.service.etl.ETLPipeline;
+import com.llmcr.vectorstore.MyVectorStore;
 import com.llmcr.repository.SourceRepository;
 
 /**
@@ -37,12 +38,14 @@ public class SourceService {
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
+    private final MyVectorStore vectorStore;
     private final ETLPipeline etlPipeline;
 
     public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository,
-            ETLPipeline etlPipeline) {
+            MyVectorStore vectorStore, ETLPipeline etlPipeline) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
+        this.vectorStore = vectorStore;
         this.etlPipeline = etlPipeline;
     }
 
@@ -50,18 +53,18 @@ public class SourceService {
      * 1. Reconcile local files with database records.
      * - Remove database sources that no longer exist locally.
      * - Add new local sources that are not in database.
-     * 2. Recompute content hash and update last sync time. Run ETL pipeline for
-     * sources that are new or have changed content.
+     *
+     * 2. Recompute content hash and update last sync time.
+     * - Run ETL pipeline for sources that are new or have changed content.
      */
-    @Transactional
     public void refreshTrackRoots() {
         trackRootRepository.findAll().forEach(this::reconcileSource);
+        LocalDateTime syncTime = LocalDateTime.now();
+        sourceRepository.findAll().forEach(source -> updateSourceSyncStatus(source, syncTime));
 
-        updateSyncStatus();
-
+        // run ETL for sources that are unsynced
         List<Long> unextractedIds = sourceRepository.findAllUnextractedIds();
         etlPipeline.run(unextractedIds);
-        sourceRepository.setExtractedByIds(unextractedIds);
     }
 
     @Transactional
@@ -89,7 +92,7 @@ public class SourceService {
 
         for (Source dbSource : dbSources) {
             if (!localSourcesByPath.containsKey(dbSource.getPath())) {
-                sourceRepository.delete(dbSource);
+                deleteSource(dbSource);
             }
         }
 
@@ -120,25 +123,41 @@ public class SourceService {
     }
 
     @Transactional
-    private void updateSyncStatus() {
-        LocalDateTime syncTime = LocalDateTime.now();
-        sourceRepository.findAll().forEach(source -> {
-            Path sourcePath = Path.of(source.getPath());
-            if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
-                logger.warn("Source path does not exist or is not a regular file, skip sync: " + sourcePath);
-                return;
-            }
+    private void updateSourceSyncStatus(Source source, LocalDateTime syncTime) {
+        Path sourcePath = Path.of(source.getPath());
+        if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
+            logger.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
+            deleteSource(source);
+            return;
+        }
 
-            String currentHash = computeContentHash(sourcePath);
-            if (!Objects.equals(source.getContentHash(), currentHash)) {
-                logger.info("Source content changed, will sync: " + sourcePath);
-                source.setContentHash(currentHash);
-            } else {
-                source.setExtracted(true);
-            }
-            source.setLastSyncTime(syncTime);
-            sourceRepository.save(source);
-        });
+        String currentHash = computeContentHash(sourcePath);
+        if (!Objects.equals(source.getContentHash(), currentHash)) {
+            logger.info("Source content changed: " + sourcePath);
+            source.setContentHash(currentHash);
+        }
+        source.setLastSyncTime(syncTime);
+        sourceRepository.save(source);
+    }
+
+    @Transactional
+    private void deleteSource(Source source) {
+        // remove chunks from vector store before deleting source and contexts
+        List<Long> affectedChunkIds = source.getContexts().stream()
+                .flatMap(context -> context.getChunks().stream())
+                .map(chunk -> chunk.getId())
+                .toList();
+        List<String> affectedCollectionNames = source.getContexts().stream()
+                .flatMap(context -> context.getChunks().stream())
+                .flatMap(chunk -> chunk.getChunkCollections().stream())
+                .map(collection -> collection.getName())
+                .distinct()
+                .toList();
+        for (String collectionName : affectedCollectionNames) {
+            vectorStore.removeChunks(affectedChunkIds, collectionName);
+        }
+
+        sourceRepository.delete(source);
     }
 
     private List<Source> loadSources(TrackRoot trackRoot) {
@@ -162,33 +181,32 @@ public class SourceService {
 
         List<Source> sources = new ArrayList<>();
         if (Files.isRegularFile(rootPath)) {
-            Source source = buildSource(rootPath, allowedTypes);
+            Source source = createSource(rootPath, allowedTypes);
             if (source != null) {
                 sources.add(source);
             }
             return sources;
         }
 
-        if (!Files.isDirectory(rootPath)) {
-            logger.warn("TrackRoot path is not a file or directory: " + rootPath);
-            return List.of();
+        if (Files.isDirectory(rootPath)) {
+            try (Stream<Path> pathStream = Files.walk(rootPath)) {
+                pathStream
+                        .filter(Files::isRegularFile)
+                        .sorted(Comparator.comparing(Path::toString))
+                        .map(path -> createSource(path, allowedTypes))
+                        .filter(Objects::nonNull)
+                        .forEach(sources::add);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to walk track root: " + trackRoot.getPath(), e);
+            }
+            return sources;
         }
 
-        try (Stream<Path> pathStream = Files.walk(rootPath)) {
-            pathStream
-                    .filter(Files::isRegularFile)
-                    .sorted(Comparator.comparing(Path::toString))
-                    .map(path -> buildSource(path, allowedTypes))
-                    .filter(Objects::nonNull)
-                    .forEach(sources::add);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to walk track root: " + trackRoot.getPath(), e);
-        }
-
-        return sources;
+        logger.warn("TrackRoot path is not a file or directory: " + rootPath);
+        return List.of();
     }
 
-    private Source buildSource(Path path, List<Source.SourceType> allowedTypes) {
+    private Source createSource(Path path, List<Source.SourceType> allowedTypes) {
         Source.SourceType sType = resolveSourceType(path);
         if (sType == null) {
             logger.warn("Unrecognized file type for source, Dropped: " + path);
@@ -200,11 +218,8 @@ public class SourceService {
             return null;
         }
 
-        Source source = new Source();
-        source.setPath(path.toAbsolutePath().normalize().toString());
-        source.setType(sType);
-        source.setContentHash("0"); // set dummy hash to trigger ETL for new sources
-        return source;
+        // set dummy hash to trigger sync for new sources
+        return new Source(path.toAbsolutePath().normalize().toString(), "0", sType);
     }
 
     private Source.SourceType resolveSourceType(Path path) {

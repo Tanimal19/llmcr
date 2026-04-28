@@ -37,10 +37,12 @@ public class ETLPipeline {
         log.info("ETL pipeline started");
 
         loadService.initCollections();
-        // extract and split specific sources, then enrich and load all contexts
+
         sourceIds.forEach(id -> extractService.extract(id));
+
         sourceIds.forEach(id -> contextRepository.findAllIdsBySourceId(id)
                 .forEach(contextId -> splitService.splitAndLoad(contextId)));
+
         contextRepository.findAllIdsByType(ContextType.CLASSNODE)
                 .forEach(id -> enrichService.enrichAndLoad(id));
     }

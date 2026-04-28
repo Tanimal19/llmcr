@@ -27,7 +27,7 @@ public class FaissService {
      */
     public AddVectorsResponse addVectors(AddVectorsRequest request) {
         return webClient.post()
-                .uri("/index/add")
+                .uri("/index/add_ids")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
@@ -41,11 +41,33 @@ public class FaissService {
      */
     public SearchVectorsResponse searchVectors(SearchVectorsRequest request) {
         return webClient.post()
-                .uri("/index/search")
+                .uri("/index/search_ids")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(SearchVectorsResponse.class)
+                .timeout(Duration.ofSeconds(30))
+                .block();
+    }
+
+    public void removeIndex(RemoveIndexRequest request) {
+        webClient.post()
+                .uri("/index/remove")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .timeout(Duration.ofSeconds(30))
+                .block();
+    }
+
+    public RemoveVectorsResponse removeVectors(RemoveVectorsRequest request) {
+        return webClient.post()
+                .uri("/index/remove_ids")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(RemoveVectorsResponse.class)
                 .timeout(Duration.ofSeconds(30))
                 .block();
     }
@@ -71,5 +93,19 @@ public class FaissService {
     public record SearchVectorsResponse(
             List<Long> ids,
             List<Float> scores) {
+    }
+
+    public record RemoveIndexRequest(
+            String index_name) {
+    }
+
+    public record RemoveVectorsRequest(
+            String index_name,
+            List<Long> ids) {
+    }
+
+    public record RemoveVectorsResponse(
+            String status,
+            int removed_count) {
     }
 }

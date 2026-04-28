@@ -31,7 +31,7 @@ public class ChunkCollection {
     private String name;
 
     @ManyToMany
-    @JoinTable(name = "have_chunks", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
+    @JoinTable(name = "collection_have_chunks", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
     private Set<Chunk> havedChunks = new HashSet<>();
 
     protected ChunkCollection() {

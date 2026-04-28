@@ -10,7 +10,7 @@ public abstract class MyVectorStore {
     /**
      * Add chunks to a collection.
      */
-    public abstract void add(List<Chunk> chunks, String collectionName);
+    public abstract void addChunks(List<Chunk> chunks, String collectionName);
 
     /**
      * Search chunks within a collection. Return a list of chunk id and score pairs,
@@ -23,4 +23,8 @@ public abstract class MyVectorStore {
     }
 
     protected abstract List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName);
+
+    public abstract void removeCollection(String collectionName);
+
+    public abstract void removeChunks(List<Long> chunkId, String collectionName);
 }

@@ -32,18 +32,28 @@ class RemoveIndexRequest(BaseModel):
     index_name: str
 
 
+class RemoveVectorsRequest(BaseModel):
+    index_name: str
+    ids: List[int]
+
+
+class RemoveVectorsResponse(BaseModel):
+    status: str
+    removed_count: int
+
+
 @app.get("/")
 async def root():
     return {"message": "FAISS Vector Search Service"}
 
 
-@app.post("/index/add", response_model=AddVectorsResponse)
+@app.post("/index/add_ids", response_model=AddVectorsResponse)
 async def add_vectors_endpoint(request: AddVectorsRequest):
-    add_index(request.index_name, request.ids, request.vectors)
+    add_index_ids(request.index_name, request.ids, request.vectors)
     return AddVectorsResponse(status="success", added_count=len(request.ids))
 
 
-@app.post("/index/search", response_model=SearchResponse)
+@app.post("/index/search_ids", response_model=SearchResponse)
 async def search_vectors_endpoint(request: SearchRequest):
     scores, ids = search(request.index_name, request.qvector, request.top_k)
     return SearchResponse(ids=ids, scores=scores)
@@ -52,3 +62,9 @@ async def search_vectors_endpoint(request: SearchRequest):
 @app.post("/index/remove")
 async def remove_index_endpoint(request: RemoveIndexRequest):
     return remove_index(request.index_name)
+
+
+@app.post("/index/remove_ids", response_model=RemoveVectorsResponse)
+async def remove_vectors_endpoint(request: RemoveVectorsRequest):
+    remove_index_ids(request.index_name, request.ids)
+    return RemoveVectorsResponse(status="success", removed_count=len(request.ids))

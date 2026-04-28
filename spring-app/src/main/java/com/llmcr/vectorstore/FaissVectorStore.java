@@ -27,7 +27,7 @@ public class FaissVectorStore extends MyVectorStore {
         this.embeddingModel = embeddingModel;
     }
 
-    public void add(List<Chunk> chunks, String collectionName) {
+    public void addChunks(List<Chunk> chunks, String collectionName) {
         if (chunks.isEmpty()) {
             return;
         }
@@ -66,5 +66,13 @@ public class FaissVectorStore extends MyVectorStore {
         }
         String truncated = query.substring(0, MAX_QUERY_LENGTH);
         return truncated;
+    }
+
+    public void removeCollection(String collectionName) {
+        faissService.removeIndex(new FaissService.RemoveIndexRequest(collectionName));
+    }
+
+    public void removeChunks(List<Long> chunkIds, String collectionName) {
+        faissService.removeVectors(new FaissService.RemoveVectorsRequest(collectionName, chunkIds));
     }
 }

@@ -40,8 +40,8 @@ public class TestRunner implements CommandLineRunner {
 		Map<String, List<SourceType>> trackRootConfig = Map.of(
 				// "../_datasets/test/spring-ai-main/",
 				// List.of(SourceType.JAVACODE),
-				"../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
-				List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
+				// "../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
+				// List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
 				"../_datasets/test/docs/",
 				List.of(SourceType.PDF, SourceType.JSON));
 
@@ -55,7 +55,7 @@ public class TestRunner implements CommandLineRunner {
 	private void resetEntityTables() {
 		jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
 		try {
-			jdbcTemplate.execute("TRUNCATE TABLE collection_join_chunk");
+			jdbcTemplate.execute("TRUNCATE TABLE collection_have_chunks");
 			jdbcTemplate.execute("TRUNCATE TABLE chunk");
 			jdbcTemplate.execute("TRUNCATE TABLE context");
 			jdbcTemplate.execute("TRUNCATE TABLE source");
