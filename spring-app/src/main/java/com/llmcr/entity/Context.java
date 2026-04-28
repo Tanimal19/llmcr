@@ -19,13 +19,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.EnumType;
 
 @Entity
-@Table(name = "context", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "name")
-})
+@Table(name = "context")
 @Inheritance(strategy = InheritanceType.JOINED)
 public class Context {
 
@@ -47,10 +44,9 @@ public class Context {
     private Integer contextIndex;
 
     /**
-     * A human-readable name for the context, which should be unique across all
-     * contexts. Used when displaying in the UI.
+     * A human-readable name for the context Used when displaying in the UI.
      */
-    @Column(name = "name", columnDefinition = "TEXT", nullable = false, unique = true)
+    @Column(name = "name", columnDefinition = "TEXT", nullable = false)
     private String name;
 
     /**

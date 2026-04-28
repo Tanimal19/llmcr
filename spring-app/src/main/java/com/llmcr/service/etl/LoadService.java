@@ -57,13 +57,18 @@ public class LoadService {
                         log.info("Created chunk collection: {}", name);
                     }
                 });
-        chunkCollectionRepository.flush();
     }
 
     @Transactional
     public void loadContext(Long contextId) {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+
+        if (context.isChunkLoaded()) {
+            log.info("Context '{}' (id={}) is already loaded, skipping", context.getName(), context.getId());
+            return;
+        }
+
         List<String> collectionNames = contextTypeToCollectionNames
                 .getOrDefault(context.getType(), Set.of())
                 .stream()
@@ -105,6 +110,5 @@ public class LoadService {
 
         context.setChunkLoaded(true);
         contextRepository.save(context);
-        contextRepository.flush();
     }
 }

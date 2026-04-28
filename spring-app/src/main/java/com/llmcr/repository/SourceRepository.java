@@ -10,6 +10,10 @@ import org.springframework.data.repository.query.Param;
 import com.llmcr.entity.Source;
 
 public interface SourceRepository extends JpaRepository<Source, Long> {
+
+    @Query("SELECT s FROM Source s WHERE s.path = :path")
+    public Source findByPath(String path);
+
     @Query("SELECT s.id FROM Source s")
     public List<Long> findAllIds();
 

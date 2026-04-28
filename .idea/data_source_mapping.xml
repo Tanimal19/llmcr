@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
-    <file url="file://$PROJECT_DIR$/_backups/0122/ragdb_backup_postchunk.sql" value="fd0e906e-6f26-47d2-900a-487b0a44919c" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/fd0e906e-6f26-47d2-900a-487b0a44919c/console.sql" value="fd0e906e-6f26-47d2-900a-487b0a44919c" />
   </component>
 </project>

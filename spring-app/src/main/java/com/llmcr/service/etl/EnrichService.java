@@ -47,7 +47,6 @@ public class EnrichService {
         contextRepository.save(context);
         context.setEnriched(true);
         context.setChunkLoaded(false);
-        contextRepository.flush();
         log.info("Context '{}' enriched", context.getName());
     }
 }

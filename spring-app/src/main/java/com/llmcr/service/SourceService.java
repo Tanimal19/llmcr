@@ -10,10 +10,10 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -69,57 +69,39 @@ public class SourceService {
 
     @Transactional
     private void reconcileSource(TrackRoot trackRoot) {
-        Map<String, Source> localSourcesByPath = new LinkedHashMap<>();
-
         List<Source> localSources = loadSources(trackRoot);
-        for (Source localSource : localSources) {
-            localSource.setTrackRoot(trackRoot);
-            Source duplicated = localSourcesByPath.putIfAbsent(localSource.getPath(), localSource);
-            if (duplicated != null) {
-                logger.warn("Duplicated source path found under track root, keeping first one: "
-                        + localSource.getPath());
-            }
-        }
-
         List<Source> dbSources = sourceRepository.findAll().stream()
                 .filter(source -> Objects.equals(source.getTrackRoot(), trackRoot))
                 .toList();
 
-        Map<String, Source> dbSourcesByPath = new LinkedHashMap<>();
+        // remove db sources that no longer exist locally
+        Set<String> localPaths = localSources.stream()
+                .map(Source::getPath)
+                .collect(Collectors.toSet());
         for (Source dbSource : dbSources) {
-            dbSourcesByPath.put(dbSource.getPath(), dbSource);
-        }
-
-        for (Source dbSource : dbSources) {
-            if (!localSourcesByPath.containsKey(dbSource.getPath())) {
-                deleteSource(dbSource);
+            if (!localPaths.contains(dbSource.getPath())) {
+                logger.info("Source no longer exists locally, removing: " + dbSource.getPath());
+                removeSource(dbSource);
             }
         }
 
-        for (Map.Entry<String, Source> entry : localSourcesByPath.entrySet()) {
-            Source existing = dbSourcesByPath.get(entry.getKey());
-            Source localSource = entry.getValue();
+        for (Source localSource : localSources) {
+            Source existing = sourceRepository.findByPath(localSource.getPath());
+
+            // insert new source
             if (existing == null) {
-                sourceRepository.save(localSource);
+                localSource.setTrackRoot(trackRoot);
+                trackRoot.addSource(localSource);
                 continue;
             }
 
-            boolean updated = false;
-
-            if (!Objects.equals(existing.getTrackRoot(), localSource.getTrackRoot())) {
-                existing.setTrackRoot(localSource.getTrackRoot());
-                updated = true;
-            }
-
-            if (existing.getType() != localSource.getType()) {
-                existing.setType(localSource.getType());
-                updated = true;
-            }
-
-            if (updated) {
-                sourceRepository.save(existing);
+            // update existing source if track root changed
+            if (!Objects.equals(existing.getTrackRoot(), trackRoot)) {
+                existing.setTrackRoot(trackRoot);
             }
         }
+
+        trackRootRepository.save(trackRoot);
     }
 
     @Transactional
@@ -127,7 +109,7 @@ public class SourceService {
         Path sourcePath = Path.of(source.getPath());
         if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
             logger.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
-            deleteSource(source);
+            removeSource(source);
             return;
         }
 
@@ -141,7 +123,7 @@ public class SourceService {
     }
 
     @Transactional
-    private void deleteSource(Source source) {
+    private void removeSource(Source source) {
         // remove chunks from vector store before deleting source and contexts
         List<Long> affectedChunkIds = source.getContexts().stream()
                 .flatMap(context -> context.getChunks().stream())
@@ -219,7 +201,7 @@ public class SourceService {
         }
 
         // set dummy hash to trigger sync for new sources
-        return new Source(path.toAbsolutePath().normalize().toString(), "0", sType);
+        return new Source(path.toAbsolutePath().normalize().toString(), sType);
     }
 
     private Source.SourceType resolveSourceType(Path path) {

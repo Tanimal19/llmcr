@@ -46,7 +46,6 @@ public class SplitService {
         contextRepository.save(context);
         context.setSplitted(true);
         context.setChunkLoaded(false);
-        contextRepository.flush();
         log.info("Context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
     }
 }

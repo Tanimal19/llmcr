@@ -66,9 +66,9 @@ public class Source {
     protected Source() {
     }
 
-    public Source(String path, String contentHash, SourceType type) {
+    public Source(String path, SourceType type) {
         this.path = path;
-        this.contentHash = contentHash;
+        this.contentHash = "0"; // default dummy hash to trigger sync for new sources
         this.type = type;
     }
 

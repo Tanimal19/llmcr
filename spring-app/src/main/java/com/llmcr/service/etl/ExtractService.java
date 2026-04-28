@@ -64,8 +64,8 @@ public class ExtractService {
         }
         if (!contexts.isEmpty()) {
             contextRepository.saveAll(contexts);
-            contextRepository.flush();
         }
         source.setExtracted(true);
+        sourceRepository.save(source);
     }
 }

@@ -35,18 +35,20 @@ public class TestRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		resetEntityTables();
+		// resetEntityTables();
 
 		Map<String, List<SourceType>> trackRootConfig = Map.of(
-				"../_datasets/test/spring-ai-main/",
+				"../_datasets/projects/spring-ai-main/",
 				List.of(SourceType.JAVACODE),
-				"../_datasets/test/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
+				"../_datasets/projects/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
 				List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
-				"../_datasets/test/docs/",
+				"../_datasets/docs/",
 				List.of(SourceType.PDF, SourceType.JSON));
 
 		trackRootConfig.forEach((path, sourceTypes) -> {
-			trackRootRepository.save(new TrackRoot(path, sourceTypes));
+			if (!trackRootRepository.existsByPath(path)) {
+				trackRootRepository.save(new TrackRoot(path, sourceTypes));
+			}
 		});
 
 		sourceService.refreshTrackRoots();
