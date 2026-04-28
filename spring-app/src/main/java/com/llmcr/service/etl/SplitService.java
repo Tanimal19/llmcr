@@ -43,9 +43,9 @@ public class SplitService {
                 throw new RuntimeException("Error splitting context " + context.getName(), e);
             }
         }
-        contextRepository.save(context);
         context.setSplitted(true);
         context.setChunkLoaded(false);
+        contextRepository.save(context);
         log.info("Context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
     }
 }

@@ -12,12 +12,14 @@ import com.llmcr.model.RerankingClient;
 import com.llmcr.model.reranking.RerankingResponse;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
+import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
 import com.llmcr.service.rag.retrieval.select.SelectStrategy;
 import com.llmcr.vectorstore.MyVectorStore;
 
 @Component
 public class ContextRetriever {
 
+    private static final int maxQueryLength = 512;
     private static final int topN = 1000;
     private final MyVectorStore vectorStore;
     private final ContextRepository contextRepository;
@@ -40,6 +42,25 @@ public class ContextRetriever {
         this.rerankingModel = rerankingModel;
     }
 
+    public List<ContextScorePair> retrieve(String query, RetrievalConfiguration config) {
+        if (query == null || query.isEmpty()) {
+            return List.of();
+        }
+
+        if (query.length() <= maxQueryLength) {
+            return retrieveSingleQuery(query, config);
+        } else {
+            // For long query, we can split it into multiple segments and perform retrieval
+            // for each segment, then fuse the results.
+            List<String> segments = splitQuery(query);
+            return retrieveMultiQuery(segments, config, new RankFusionStrategy());
+        }
+    }
+
+    public List<ContextScorePair> retrieve(List<String> queries, RetrievalConfiguration config) {
+        return retrieveMultiQuery(queries, config, new RankFusionStrategy());
+    }
+
     /**
      * Retrieve relevant contexts for the query. The retrieval process includes
      * these steps:
@@ -48,7 +69,7 @@ public class ContextRetriever {
      * 3) Rerank the contexts and select topK contexts based on the specified
      * select strategy.
      */
-    public List<ContextScorePair> retrieve(String query, RetrievalConfiguration config) {
+    private List<ContextScorePair> retrieveSingleQuery(String query, RetrievalConfiguration config) {
         List<ChunkIdScorePair> topNChunks = vectorStore.similaritySearch(query, topN, config.collectionName());
 
         List<ContextScorePair> rankedContexts;
@@ -65,14 +86,25 @@ public class ContextRetriever {
         return config.selectStrategy.select(rankedContexts, config.topK());
     }
 
-    public List<Context> retrieve(List<String> queries, RetrievalConfiguration config, FusionStrategy fusionStrategy) {
+    private List<ContextScorePair> retrieveMultiQuery(List<String> queries, RetrievalConfiguration config,
+            FusionStrategy fusionStrategy) {
         List<List<ContextScorePair>> contextLists = queries.stream()
                 .map(q -> retrieve(q, config))
                 .toList();
 
-        return fusionStrategy.fuse(contextLists, config.topK()).stream()
-                .map(ContextScorePair::context)
-                .toList();
+        return fusionStrategy.fuse(contextLists, config.topK());
+    }
+
+    private List<String> splitQuery(String query) {
+        List<String> segments = new ArrayList<>();
+        int start = 0;
+        while (start < query.length()) {
+            int end = Math.min(start + maxQueryLength, query.length());
+            segments.add(query.substring(start, end));
+            start = end;
+        }
+
+        return segments;
     }
 
     private List<ContextScorePair> rerank(String query, List<ChunkIdScorePair> chunks) {

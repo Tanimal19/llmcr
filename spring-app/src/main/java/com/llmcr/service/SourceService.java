@@ -58,9 +58,9 @@ public class SourceService {
      * the sync status of each source and skip if already processed)
      */
     public void refreshTrackRoots() {
-        trackRootRepository.findAll().forEach(this::reconcileSource);
+        trackRootRepository.findAllIds().forEach(this::reconcileSource);
         LocalDateTime syncTime = LocalDateTime.now();
-        sourceRepository.findAll().forEach(source -> updateSourceSyncStatus(source, syncTime));
+        sourceRepository.findAllIds().forEach(id -> updateSourceSyncStatus(id, syncTime));
 
         // run ETL for sources that are unsynced
         List<Long> unextractedIds = sourceRepository.findAllIds();
@@ -68,11 +68,12 @@ public class SourceService {
     }
 
     @Transactional
-    private void reconcileSource(TrackRoot trackRoot) {
+    public void reconcileSource(Long trackRootId) {
+        TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
+                .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
+
         List<Source> localSources = loadSources(trackRoot);
-        List<Source> dbSources = sourceRepository.findAll().stream()
-                .filter(source -> Objects.equals(source.getTrackRoot(), trackRoot))
-                .toList();
+        List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
 
         // remove db sources that no longer exist locally
         Set<String> localPaths = localSources.stream()
@@ -91,21 +92,24 @@ public class SourceService {
             // insert new source
             if (existing == null) {
                 localSource.setTrackRoot(trackRoot);
-                trackRoot.addSource(localSource);
+                sourceRepository.save(localSource);
                 continue;
             }
 
             // update existing source if track root changed
-            if (!Objects.equals(existing.getTrackRoot(), trackRoot)) {
+            Long existingTrackRootId = existing.getTrackRoot() == null ? null : existing.getTrackRoot().getId();
+            if (!Objects.equals(existingTrackRootId, trackRootId)) {
                 existing.setTrackRoot(trackRoot);
+                sourceRepository.save(existing);
             }
         }
-
-        trackRootRepository.save(trackRoot);
     }
 
     @Transactional
-    private void updateSourceSyncStatus(Source source, LocalDateTime syncTime) {
+    public void updateSourceSyncStatus(Long sourceId, LocalDateTime syncTime) {
+        Source source = sourceRepository.findById(sourceId)
+                .orElseThrow(() -> new IllegalStateException("Source not found: " + sourceId));
+
         Path sourcePath = Path.of(source.getPath());
         if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
             logger.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
@@ -122,7 +126,6 @@ public class SourceService {
         sourceRepository.save(source);
     }
 
-    @Transactional
     private void removeSource(Source source) {
         // remove chunks from vector store before deleting source and contexts
         List<Long> affectedChunkIds = source.getContexts().stream()

@@ -19,6 +19,12 @@ public interface ContextRepository extends JpaRepository<Context, Long> {
     @Query("SELECT c.id FROM Context c WHERE c.chunkLoaded = false")
     public List<Long> findAllUnloadedIds();
 
+    @Query("SELECT c.id FROM Context c WHERE c.splitted = false")
+    public List<Long> findAllUnsplittedIds();
+
+    @Query("SELECT c.id FROM Context c WHERE c.enriched = false")
+    public List<Long> findAllUnenrichedIds();
+
     @Query("SELECT c FROM Context c JOIN c.chunks ch WHERE ch.id = :chunkId")
     public Context findByChunkId(@Param("chunkId") Long chunkId);
 

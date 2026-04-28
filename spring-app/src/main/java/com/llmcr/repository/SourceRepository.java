@@ -17,6 +17,9 @@ public interface SourceRepository extends JpaRepository<Source, Long> {
     @Query("SELECT s.id FROM Source s")
     public List<Long> findAllIds();
 
+    @Query("SELECT s FROM Source s WHERE s.trackRoot.id = :trackRootId")
+    public List<Source> findAllByTrackRootId(@Param("trackRootId") Long trackRootId);
+
     @Query("SELECT s.id FROM Source s WHERE s.extracted = false")
     public List<Long> findAllUnextractedIds();
 

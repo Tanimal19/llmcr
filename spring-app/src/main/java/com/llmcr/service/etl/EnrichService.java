@@ -36,6 +36,8 @@ public class EnrichService {
             return;
         }
 
+        Integer originalChunkCount = context.getChunkCount();
+
         for (ContextTransformer enricher : enrichers) {
             try {
                 context = enricher.apply(context);
@@ -44,9 +46,11 @@ public class EnrichService {
             }
         }
 
-        contextRepository.save(context);
         context.setEnriched(true);
-        context.setChunkLoaded(false);
+        if (context.getChunkCount() != originalChunkCount) {
+            context.setChunkLoaded(false);
+        }
+        contextRepository.save(context);
         log.info("Context '{}' enriched", context.getName());
     }
 }
