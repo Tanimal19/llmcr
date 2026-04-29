@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.llmcr.config.DatabaseInitializer;
-import com.llmcr.service.SyncService;
 import com.llmcr.service.etl.ETLPipeline;
+import com.llmcr.service.sync.SyncService;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "test")

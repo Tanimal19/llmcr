@@ -1,7 +1,8 @@
 package com.llmcr.service.rag.retrieval.select;
 
 import java.util.List;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
 
 /**
@@ -11,6 +12,8 @@ import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
  * include some additional contexts for robustness.
  */
 public class AdaptiveKStrategy implements SelectStrategy {
+
+    private static final Logger log = LoggerFactory.getLogger(AdaptiveKStrategy.class);
 
     private final int buffer = 5;
     private final float highConfidenceScore = 0.7f;
@@ -35,6 +38,8 @@ public class AdaptiveKStrategy implements SelectStrategy {
                 optimalK = i + 1;
             }
         }
+
+        log.info("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
 
         return contexts.subList(0, Math.min(optimalK + buffer, topK));
     }

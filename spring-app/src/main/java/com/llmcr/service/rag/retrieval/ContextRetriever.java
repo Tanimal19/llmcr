@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Context;
@@ -18,6 +20,8 @@ import com.llmcr.vectorstore.MyVectorStore;
 
 @Component
 public class ContextRetriever {
+
+    private static final Logger log = LoggerFactory.getLogger(ContextRetriever.class);
 
     private static final int maxQueryLength = 512;
     private static final int topN = 1000;
@@ -52,6 +56,8 @@ public class ContextRetriever {
         } else {
             // For long query, we can split it into multiple segments and perform retrieval
             // for each segment, then fuse the results.
+            log.info("Query length {} exceeds max length {}, splitting into segments for retrieval",
+                    query.length(), maxQueryLength);
             List<String> segments = splitQuery(query);
             return retrieveMultiQuery(segments, config, new RankFusionStrategy());
         }
@@ -70,6 +76,8 @@ public class ContextRetriever {
      * select strategy.
      */
     private List<ContextScorePair> retrieveSingleQuery(String query, RetrievalConfiguration config) {
+        log.info("Retrieving contexts for query: {}", query);
+
         List<ChunkIdScorePair> topNChunks = vectorStore.similaritySearch(query, topN, config.collectionName());
 
         List<ContextScorePair> rankedContexts;
@@ -78,6 +86,10 @@ public class ContextRetriever {
         } else {
             rankedContexts = merge(query, topNChunks);
         }
+
+        log.info("Ranked contexts before selection: {}", rankedContexts.stream()
+                .map(c -> String.format("ContextId: %d, Score: %.4f", c.context().getId(), c.score()))
+                .toList());
 
         if (rankedContexts.size() <= config.topK()) {
             return rankedContexts;

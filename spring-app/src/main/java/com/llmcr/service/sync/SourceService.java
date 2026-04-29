@@ -1,4 +1,4 @@
-package com.llmcr.service;
+package com.llmcr.service.sync;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +34,7 @@ import com.llmcr.repository.SourceRepository;
 @Service
 public class SourceService {
 
-    private static final Logger logger = LoggerFactory.getLogger(SourceService.class);
+    private static final Logger log = LoggerFactory.getLogger(SourceService.class);
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
@@ -65,7 +65,7 @@ public class SourceService {
                 .collect(Collectors.toSet());
         for (Source dbSource : dbSources) {
             if (!localPaths.contains(dbSource.getPath())) {
-                logger.info("Source no longer exists locally, removing: " + dbSource.getPath());
+                log.info("Source no longer exists locally, removing: " + dbSource.getPath());
                 removeSource(dbSource);
             }
         }
@@ -102,14 +102,14 @@ public class SourceService {
 
         Path sourcePath = Path.of(source.getPath());
         if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
-            logger.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
+            log.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
             removeSource(source);
             return;
         }
 
         String currentHash = computeContentHash(sourcePath);
         if (!Objects.equals(source.getContentHash(), currentHash)) {
-            logger.info("Source content changed: " + sourcePath);
+            log.info("Source content changed: " + sourcePath);
             source.setContentHash(currentHash);
             source.getContexts().clear();
             source.setExtracted(false);
@@ -139,19 +139,19 @@ public class SourceService {
 
     private List<Source> loadLocalSources(TrackRoot trackRoot) {
         if (trackRoot == null || trackRoot.getPath() == null || trackRoot.getPath().isBlank()) {
-            logger.warn("TrackRoot or its path is null/blank: " + trackRoot);
+            log.warn("TrackRoot or its path is null/blank: " + trackRoot);
             return List.of();
         }
 
         Path rootPath = Path.of(trackRoot.getPath());
         if (!Files.exists(rootPath)) {
-            logger.warn("TrackRoot path does not exist: " + rootPath);
+            log.warn("TrackRoot path does not exist: " + rootPath);
             return List.of();
         }
 
         Set<SourceType> configuredTypes = trackRoot.getAllowedSourceTypes();
         if (configuredTypes == null || configuredTypes.isEmpty()) {
-            logger.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
+            log.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
             configuredTypes = Set.of(SourceType.values());
         }
         final Set<SourceType> allowedTypes = configuredTypes;
@@ -179,19 +179,19 @@ public class SourceService {
             return sources;
         }
 
-        logger.warn("TrackRoot path is not a file or directory: " + rootPath);
+        log.warn("TrackRoot path is not a file or directory: " + rootPath);
         return List.of();
     }
 
     private Source createSource(Path path, Set<SourceType> allowedTypes) {
         SourceType sType = resolveSourceType(path);
         if (sType == null) {
-            logger.warn("Unrecognized file type for source, Dropped: " + path);
+            log.warn("Unrecognized file type for source, Dropped: " + path);
             return null;
         }
 
         if (!allowedTypes.contains(sType)) {
-            logger.info("Source type not allowed by track root config, Dropped: " + path);
+            log.info("Source type not allowed by track root config, Dropped: " + path);
             return null;
         }
 

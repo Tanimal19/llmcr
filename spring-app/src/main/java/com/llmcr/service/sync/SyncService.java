@@ -1,4 +1,4 @@
-package com.llmcr.service;
+package com.llmcr.service.sync;
 
 import java.time.LocalDateTime;
 
