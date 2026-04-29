@@ -4,12 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Chunk;
@@ -24,8 +25,9 @@ import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
  * Enrich ClassNode context by generating a summary using LLM.
  */
 @Component
-@Qualifier("enricherTransformer")
-public class ClassNodeEnricher implements ContextTransformer {
+public class ClassNodeEnricher implements ContextEnricher {
+
+    private static final Logger log = LoggerFactory.getLogger(ClassNodeEnricher.class);
 
     private static final PromptTemplate promptTemplate = PromptTemplate.builder()
             .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
@@ -68,14 +70,19 @@ public class ClassNodeEnricher implements ContextTransformer {
     }
 
     @Override
-    public Context apply(Context classNode) {
-        if (classNode.getType() != Context.ContextType.CLASSNODE) {
-            return classNode;
-        }
+    public boolean supports(Context context) {
+        return context.getType() == Context.ContextType.CLASSNODE;
+    }
 
+    @Override
+    public Context apply(Context classNode) {
         // retrieve relevant document contexts for enrichment
         List<ContextScorePair> relevantDocuments = contextRetriever.retrieve(classNode.getContent(),
-                new RetrievalConfiguration(5, "DOCUMENT", true, new AdaptiveKStrategy()));
+                new RetrievalConfiguration(5, "DOCUMENT", false, new AdaptiveKStrategy()));
+
+        log.info("Enriching class node {} with documents: {}", classNode.getName(), relevantDocuments.stream()
+                .map(p -> p.context().getId() + "(score=" + p.score() + ")")
+                .collect(Collectors.joining(", ")));
 
         // build prompt
         String doc = relevantDocuments.stream()
@@ -87,10 +94,14 @@ public class ClassNodeEnricher implements ContextTransformer {
                 "doc", doc,
                 "format", outputConverter.getFormat()));
 
+        log.info("Enrichment prompt for class node {}: {}", classNode.getId(), prompt.getContents());
+
         // call chat model
         ChatResponse response;
         response = chatModel.call(prompt);
         String rawResponse = response.getResult().getOutput().getText();
+
+        log.info("Raw enrichment response for class node {}: {}", classNode.getId(), rawResponse);
 
         ClassNodeEnrichment enrichment;
         try {

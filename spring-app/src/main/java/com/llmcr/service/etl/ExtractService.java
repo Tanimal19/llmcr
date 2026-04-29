@@ -42,7 +42,6 @@ public class ExtractService {
     public void extract(Long sourceId) {
         Source source = sourceRepository.findById(sourceId)
                 .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
-
         if (source.isExtracted()) {
             log.info("Source '{}' already extracted, skipping", source.getSourceName());
             return;
@@ -51,15 +50,16 @@ public class ExtractService {
         log.info("Start extracting context from source '{}'", source.getSourceName());
         List<Context> contexts = new ArrayList<>();
         for (SourceExtractor extractor : extractors) {
-            if (extractor.supports(source)) {
-                try {
-                    List<Context> extracted = extractor.apply(source);
-                    contexts.addAll(extracted);
-                    log.info("{} extracted {} context(s) from source '{}'",
-                            extractor.getClass().getSimpleName(), extracted.size(), source.getSourceName());
-                } catch (Exception e) {
-                    throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);
-                }
+            if (!extractor.supports(source)) {
+                continue;
+            }
+            try {
+                List<Context> extracted = extractor.apply(source);
+                contexts.addAll(extracted);
+                log.info("{} extracted {} context(s) from source '{}'",
+                        extractor.getClass().getSimpleName(), extracted.size(), source.getSourceName());
+            } catch (Exception e) {
+                throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);
             }
         }
         if (!contexts.isEmpty()) {

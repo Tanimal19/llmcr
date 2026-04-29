@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
+import com.llmcr.entity.Source.SourceType;
 import com.llmcr.repository.TrackRootRepository;
-import com.llmcr.service.etl.ETLPipeline;
 import com.llmcr.vectorstore.MyVectorStore;
 import com.llmcr.repository.SourceRepository;
 
@@ -39,40 +39,24 @@ public class SourceService {
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
     private final MyVectorStore vectorStore;
-    private final ETLPipeline etlPipeline;
 
     public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository,
-            MyVectorStore vectorStore, ETLPipeline etlPipeline) {
+            MyVectorStore vectorStore) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
         this.vectorStore = vectorStore;
-        this.etlPipeline = etlPipeline;
     }
 
     /**
-     * 1. Reconcile local files with database records.
-     * - Remove database sources that no longer exist locally.
-     * - Add new local sources that are not in database.
-     * 2. Recompute content hash and update last sync time.
-     * 3. Run ETL pipeline for all sources. (The ETL pipeline will internally check
-     * the sync status of each source and skip if already processed)
+     * Remove database sources that no longer exist locally. Then add new local
+     * sources that are not in database.
      */
-    public void refreshTrackRoots() {
-        trackRootRepository.findAllIds().forEach(this::reconcileSource);
-        LocalDateTime syncTime = LocalDateTime.now();
-        sourceRepository.findAllIds().forEach(id -> updateSourceSyncStatus(id, syncTime));
-
-        // run ETL for sources that are unsynced
-        List<Long> unextractedIds = sourceRepository.findAllIds();
-        etlPipeline.run(unextractedIds);
-    }
-
     @Transactional
-    public void reconcileSource(Long trackRootId) {
+    public void updateTrackRootSources(Long trackRootId) {
         TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
                 .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
 
-        List<Source> localSources = loadSources(trackRoot);
+        List<Source> localSources = loadLocalSources(trackRoot);
         List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
 
         // remove db sources that no longer exist locally
@@ -105,6 +89,12 @@ public class SourceService {
         }
     }
 
+    /**
+     * Update source sync status:
+     * - If source file no longer exists, remove the source.
+     * - If source content changed, remove contexts and reset extracted status to
+     * trigger re-processing in ETL.
+     */
     @Transactional
     public void updateSourceSyncStatus(Long sourceId, LocalDateTime syncTime) {
         Source source = sourceRepository.findById(sourceId)
@@ -121,6 +111,8 @@ public class SourceService {
         if (!Objects.equals(source.getContentHash(), currentHash)) {
             logger.info("Source content changed: " + sourcePath);
             source.setContentHash(currentHash);
+            source.getContexts().clear();
+            source.setExtracted(false);
         }
         source.setLastSyncTime(syncTime);
         sourceRepository.save(source);
@@ -145,7 +137,7 @@ public class SourceService {
         sourceRepository.delete(source);
     }
 
-    private List<Source> loadSources(TrackRoot trackRoot) {
+    private List<Source> loadLocalSources(TrackRoot trackRoot) {
         if (trackRoot == null || trackRoot.getPath() == null || trackRoot.getPath().isBlank()) {
             logger.warn("TrackRoot or its path is null/blank: " + trackRoot);
             return List.of();
@@ -157,12 +149,12 @@ public class SourceService {
             return List.of();
         }
 
-        List<Source.SourceType> configuredTypes = trackRoot.getAllowedSourceTypes();
+        Set<SourceType> configuredTypes = trackRoot.getAllowedSourceTypes();
         if (configuredTypes == null || configuredTypes.isEmpty()) {
             logger.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
-            configuredTypes = List.of(Source.SourceType.values());
+            configuredTypes = Set.of(SourceType.values());
         }
-        final List<Source.SourceType> allowedTypes = configuredTypes;
+        final Set<SourceType> allowedTypes = configuredTypes;
 
         List<Source> sources = new ArrayList<>();
         if (Files.isRegularFile(rootPath)) {
@@ -191,8 +183,8 @@ public class SourceService {
         return List.of();
     }
 
-    private Source createSource(Path path, List<Source.SourceType> allowedTypes) {
-        Source.SourceType sType = resolveSourceType(path);
+    private Source createSource(Path path, Set<SourceType> allowedTypes) {
+        SourceType sType = resolveSourceType(path);
         if (sType == null) {
             logger.warn("Unrecognized file type for source, Dropped: " + path);
             return null;
@@ -207,7 +199,7 @@ public class SourceService {
         return new Source(path.toAbsolutePath().normalize().toString(), sType);
     }
 
-    private Source.SourceType resolveSourceType(Path path) {
+    private SourceType resolveSourceType(Path path) {
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
 
         if (fileName.endsWith(".java")) {

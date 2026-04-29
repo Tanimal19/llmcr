@@ -74,8 +74,8 @@ public class Context {
     private boolean enriched = false;
 
     /**
-     * The type of the context, which is used to determine which collection the
-     * context belongs to.
+     * The type of the context, which is used to determine how to split / enrich the
+     * context.
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
@@ -98,7 +98,6 @@ public class Context {
         CLASSNODE,
         DOCUMENT,
         USECASE,
-        GUIDELINE,
         TOOLDEF,
     }
 
@@ -206,9 +205,11 @@ public class Context {
     }
 
     public void setChunks(List<Chunk> chunks) {
-        List<Chunk> currentChunks = new ArrayList<>(this.chunks);
-        for (Chunk chunk : currentChunks) {
-            removeChunk(chunk);
+        if (Hibernate.isInitialized(this.chunks)) {
+            List<Chunk> currentChunks = new ArrayList<>(this.chunks);
+            for (Chunk chunk : currentChunks) {
+                removeChunk(chunk);
+            }
         }
 
         if (chunks == null) {

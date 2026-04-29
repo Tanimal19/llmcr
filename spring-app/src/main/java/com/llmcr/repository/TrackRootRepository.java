@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import com.llmcr.entity.TrackRoot;
 
 public interface TrackRootRepository extends JpaRepository<TrackRoot, Long> {
-    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM TrackRoot t WHERE t.path = :path")
-    public boolean existsByPath(String path);
+    @Query("SELECT t FROM TrackRoot t WHERE t.path = :path")
+    public TrackRoot findByPath(String path);
 
     @Query("SELECT t.id FROM TrackRoot t")
     public List<Long> findAllIds();

@@ -31,14 +31,21 @@ public class ChunkCollection {
     private String name;
 
     @ManyToMany
+    @JoinTable(name = "collection_have_track_roots", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "track_root_id"))
+    private Set<TrackRoot> havedTrackRoots = new HashSet<>();
+
+    @ManyToMany
     @JoinTable(name = "collection_have_chunks", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
     private Set<Chunk> havedChunks = new HashSet<>();
 
     protected ChunkCollection() {
     }
 
-    public ChunkCollection(String name) {
+    public ChunkCollection(String name, Set<TrackRoot> havedTrackRoots) {
         this.name = name;
+        for (TrackRoot trackRoot : havedTrackRoots) {
+            addTrackRoot(trackRoot);
+        }
     }
 
     public Long getId() {
@@ -61,12 +68,45 @@ public class ChunkCollection {
         return havedChunks;
     }
 
+    public Set<TrackRoot> getTrackRoots() {
+        return havedTrackRoots;
+    }
+
+    public void addTrackRoot(TrackRoot trackRoot) {
+        if (trackRoot == null) {
+            return;
+        }
+
+        if (Hibernate.isInitialized(havedTrackRoots) && !havedTrackRoots.contains(trackRoot)) {
+            havedTrackRoots.add(trackRoot);
+        }
+
+        if (Hibernate.isInitialized(trackRoot.getInCollections())
+                && !trackRoot.getInCollections().contains(this)) {
+            trackRoot.getInCollections().add(this);
+        }
+    }
+
+    public void removeTrackRoot(TrackRoot trackRoot) {
+        if (trackRoot == null) {
+            return;
+        }
+
+        if (Hibernate.isInitialized(havedTrackRoots)) {
+            havedTrackRoots.remove(trackRoot);
+        }
+
+        if (Hibernate.isInitialized(trackRoot.getInCollections())) {
+            trackRoot.getInCollections().remove(this);
+        }
+    }
+
     public void addChunk(Chunk chunk) {
         if (chunk == null) {
             return;
         }
 
-        if (!havedChunks.contains(chunk)) {
+        if (Hibernate.isInitialized(havedChunks) && !havedChunks.contains(chunk)) {
             havedChunks.add(chunk);
         }
 
@@ -81,7 +121,9 @@ public class ChunkCollection {
             return;
         }
 
-        havedChunks.remove(chunk);
+        if (Hibernate.isInitialized(havedChunks)) {
+            havedChunks.remove(chunk);
+        }
 
         if (Hibernate.isInitialized(chunk.getChunkCollections())) {
             chunk.getChunkCollections().remove(this);

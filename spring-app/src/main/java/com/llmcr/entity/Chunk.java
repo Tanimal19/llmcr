@@ -104,6 +104,7 @@ public class Chunk {
 
         this.context = context;
         if (context != null
+                && Hibernate.isInitialized(context.getChunks())
                 && !context.getChunks().contains(this)) {
             context.addChunk(this);
         }
@@ -135,35 +136,6 @@ public class Chunk {
 
     public Set<ChunkCollection> getChunkCollections() {
         return inCollections;
-    }
-
-    public void addChunkCollection(ChunkCollection chunkCollection) {
-        if (chunkCollection == null) {
-            return;
-        }
-
-        if (Hibernate.isInitialized(inCollections) && !inCollections.contains(chunkCollection)) {
-            inCollections.add(chunkCollection);
-        }
-
-        if (Hibernate.isInitialized(chunkCollection.getChunks())
-                && !chunkCollection.getChunks().contains(this)) {
-            chunkCollection.getChunks().add(this);
-        }
-    }
-
-    public void removeChunkCollection(ChunkCollection chunkCollection) {
-        if (chunkCollection == null) {
-            return;
-        }
-
-        if (Hibernate.isInitialized(inCollections)) {
-            inCollections.remove(chunkCollection);
-        }
-
-        if (Hibernate.isInitialized(chunkCollection.getChunks())) {
-            chunkCollection.getChunks().remove(this);
-        }
     }
 
     @Override

@@ -1,35 +1,36 @@
 package com.llmcr.runner;
 
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.llmcr.entity.TrackRoot;
-import com.llmcr.entity.Source.SourceType;
-import com.llmcr.repository.TrackRootRepository;
-import com.llmcr.service.SourceService;
+import com.llmcr.config.DatabaseInitializer;
+import com.llmcr.service.SyncService;
+import com.llmcr.service.etl.ETLPipeline;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "test")
 public class TestRunner implements CommandLineRunner {
 	@Autowired
-	private final TrackRootRepository trackRootRepository;
+	private final DatabaseInitializer databaseInitializer;
 
 	@Autowired
-	private final SourceService sourceService;
+	private final SyncService syncService;
+
+	@Autowired
+	private final ETLPipeline etlPipeline;
 
 	@Autowired
 	private final JdbcTemplate jdbcTemplate;
 
-	public TestRunner(TrackRootRepository trackRootRepository, SourceService sourceService,
+	public TestRunner(DatabaseInitializer databaseInitializer,
+			SyncService syncService, ETLPipeline etlPipeline,
 			JdbcTemplate jdbcTemplate) {
-		this.trackRootRepository = trackRootRepository;
-		this.sourceService = sourceService;
+		this.databaseInitializer = databaseInitializer;
+		this.syncService = syncService;
+		this.etlPipeline = etlPipeline;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -37,27 +38,16 @@ public class TestRunner implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 		// resetEntityTables();
 
-		Map<String, List<SourceType>> trackRootConfig = Map.of(
-				"../_datasets/projects/spring-ai-main/",
-				List.of(SourceType.JAVACODE),
-				"../_datasets/projects/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/",
-				List.of(SourceType.MARKDOWN, SourceType.ASCIIDOC),
-				"../_datasets/docs/",
-				List.of(SourceType.PDF, SourceType.JSON));
-
-		trackRootConfig.forEach((path, sourceTypes) -> {
-			if (!trackRootRepository.existsByPath(path)) {
-				trackRootRepository.save(new TrackRoot(path, sourceTypes));
-			}
-		});
-
-		sourceService.refreshTrackRoots();
+		databaseInitializer.init();
+		syncService.sync();
+		etlPipeline.run();
 	}
 
 	private void resetEntityTables() {
 		jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
 		try {
 			jdbcTemplate.execute("TRUNCATE TABLE collection_have_chunks");
+			jdbcTemplate.execute("TRUNCATE TABLE collection_have_track_roots");
 			jdbcTemplate.execute("TRUNCATE TABLE chunk");
 			jdbcTemplate.execute("TRUNCATE TABLE context");
 			jdbcTemplate.execute("TRUNCATE TABLE source");

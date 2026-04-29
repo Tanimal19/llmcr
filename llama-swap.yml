@@ -143,12 +143,21 @@ models:
   "Zerank2":
     cmd: >
       llama-server
-      -m ${model_dir}/zerank-2.Q5_K_M.gguf
+      -m ${model_dir}/zerank-2.Q8_0.gguf
       --reranking
       --ctx-size 2048
-      --ubatch-size 1024
       --no-webui
-      --parallel 1
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "Zerank2"
+
+  "Qwen3-Reranker-0.6b":
+    cmd: >
+      llama-server
+      -m ${model_dir}/qwen3-reranker-0.6b-q8_0.gguf
+      --reranking
+      --ctx-size 2048
+      --no-webui
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Qwen3-Reranker-0.6b"

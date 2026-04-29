@@ -4,13 +4,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.etl.transformer.ContextTransformer;
+import com.llmcr.service.etl.transformer.ContextSplitter;
 
 @Service
 public class SplitService {
@@ -18,11 +17,11 @@ public class SplitService {
     private static final Logger log = LoggerFactory.getLogger(SplitService.class);
 
     private final ContextRepository contextRepository;
-    private final List<ContextTransformer> splitters;
+    private final List<ContextSplitter> splitters;
 
     public SplitService(
             ContextRepository contextRepository,
-            @Qualifier("splitterTransformer") List<ContextTransformer> splitters) {
+            List<ContextSplitter> splitters) {
         this.contextRepository = contextRepository;
         this.splitters = splitters;
     }
@@ -36,7 +35,10 @@ public class SplitService {
             return;
         }
 
-        for (ContextTransformer splitter : splitters) {
+        for (ContextSplitter splitter : splitters) {
+            if (!splitter.supports(context)) {
+                continue;
+            }
             try {
                 context = splitter.apply(context);
             } catch (Exception e) {
@@ -46,6 +48,6 @@ public class SplitService {
         context.setSplitted(true);
         context.setChunkLoaded(false);
         contextRepository.save(context);
-        log.info("Context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
+        log.info("Split context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
     }
 }

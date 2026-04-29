@@ -7,15 +7,19 @@ import com.llmcr.entity.Chunk;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
  * Split the content of a Context into multiple Chunks
  */
 @Component
-@Qualifier("splitterTransformer")
-public class ContextContentSplitter implements ContextTransformer {
+public class ContextContentSplitter implements ContextSplitter {
+
+    @Override
+    public boolean supports(Context context) {
+        // only split context that has no chunks yet
+        return context.getChunks().isEmpty();
+    }
 
     @Override
     public Context apply(Context context) {

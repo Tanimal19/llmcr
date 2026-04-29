@@ -4,13 +4,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.etl.transformer.ContextTransformer;
+import com.llmcr.service.etl.transformer.ContextEnricher;
 
 @Service
 public class EnrichService {
@@ -18,11 +17,11 @@ public class EnrichService {
     private static final Logger log = LoggerFactory.getLogger(EnrichService.class);
 
     private final ContextRepository contextRepository;
-    private final List<ContextTransformer> enrichers;
+    private final List<ContextEnricher> enrichers;
 
     public EnrichService(
             ContextRepository contextRepository,
-            @Qualifier("enricherTransformer") List<ContextTransformer> enrichers) {
+            List<ContextEnricher> enrichers) {
         this.contextRepository = contextRepository;
         this.enrichers = enrichers;
     }
@@ -38,7 +37,7 @@ public class EnrichService {
 
         Integer originalChunkCount = context.getChunkCount();
 
-        for (ContextTransformer enricher : enrichers) {
+        for (ContextEnricher enricher : enrichers) {
             try {
                 context = enricher.apply(context);
             } catch (Exception e) {

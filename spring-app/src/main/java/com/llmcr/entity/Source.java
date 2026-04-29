@@ -35,9 +35,16 @@ public class Source {
     @Column(name = "path", columnDefinition = "TEXT", nullable = false, unique = true)
     private String path;
 
+    /**
+     * Hash of the content of the source. Used to determine if the source has
+     * changed since last sync.
+     */
     @Column(name = "content_hash", columnDefinition = "TEXT", nullable = false)
     private String contentHash;
 
+    /**
+     * Determine how to extract content and split chunks from the source.
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
     private SourceType type;
@@ -133,9 +140,11 @@ public class Source {
     }
 
     public void setContexts(List<Context> contexts) {
-        List<Context> currentContexts = new ArrayList<>(this.contexts);
-        for (Context context : currentContexts) {
-            removeContext(context);
+        if (Hibernate.isInitialized(this.contexts)) {
+            List<Context> currentContexts = new ArrayList<>(this.contexts);
+            for (Context context : currentContexts) {
+                removeContext(context);
+            }
         }
 
         if (contexts == null) {
