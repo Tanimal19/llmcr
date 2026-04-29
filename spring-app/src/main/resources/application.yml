@@ -25,9 +25,8 @@ app:
         track-roots:
           - "spring-ai-main-code"
           - "spring-ai-main-docs"
-      - name: "all"
+      - name: "docs"
         track-roots:
-          - "spring-ai-main-code"
           - "spring-ai-main-docs"
           - "docs"
       - name: "guidelines"

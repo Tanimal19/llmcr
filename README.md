@@ -10,28 +10,14 @@ Prerequisites:
 - Docker and Docker Compose
 - llama.cpp and llama-swap
 
-
 To run the application, follow these steps:
 - Make sure llama.cpp and llama-swap is installed.
-- Start llama-swap `llama-swap -config llama-swap.yml -listen 0.0.0.0:8080 2>&1 | tee llama-swap.log`.
+- Start llama-swap `llama-swap -config llama-swap.yml -listen 0.0.0.0:8080`.
 - Start the FAISS and MariaDB services using `docker-compose up -d`.
-- Run the application using `./run.sh` in the `spring-app` directory. (`cd spring-app` first)
-
-## ETL Pipeline
-To run the ETL pipeline, set the `--app.mode=etl` in `run.sh`.  
-You need to set the paths of Java project and documentation in `run.sh` as well.
-```sh
-SPRING_ARGUMENTS="--app.mode=etl"
-```
-
-
-
-## RAG
-To run the RAG application, set the `--app.mode=rag` in `run.sh`.  
-This will start a CLI interface for you to ask questions about the Java project and documentation.
+- Run the application using `./run.sh`.
 
 > [!NOTE]
-> You can use the extracted data at `_backups/` to run the RAG application without running the ETL pipeline.  
+> You can use the pre-extracted test data at `_backups/` to run the RAG application without running the ETL pipeline.  
 > Place `.index` file under `./faiss_service/app/data` and import `.sql` file to MariaDB.  
 > For example, run the following to import DB.  
 > ```sh
@@ -46,49 +32,14 @@ This will start a CLI interface for you to ask questions about the Java project 
     docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
     ```
 - Set spring app properties at `application.properties`.
+- Set datasets and code review configurations at `application.yml`.
+- Set llama-swap configuration at `llama-swap.yml`.
 - Set environment variables at `.env` file.
   ```sh
   export DB_USERNAME="user"
   export DB_PASSWORD="123"
   export GOOGLE_GEMINI_API_KEY="???"
   ```
-
-## File Format
-### Documents
-Documents are unstructured files that provide additional information about the codebase, such as design documents, API documentation ...  
-No syntax, accept `.pdf`, `.md`, `.asciidoc` files for now.
-
-### Guideline
-Guideline is a special type of context that describe code review guidelines.
-```json
-[
-    {
-        "id": 1,
-        "guideline": "Guideline description",
-    },
-    // more guidelines
-]
-```
-
-### Usecase
-Usecase is an example on how to perform specific code review check.  
-```json
-[
-    {
-        "id": 1,
-        "description": "Usecase description",
-        "usecase": {
-            "input": "some check list item",
-            "output": "expected answer",
-        }
-    },
-]
-```
-
-
-### ToolAction
-ToolAction is a special type of context that describe the usage of a specific action, where each action maps to a java method.
-All avaliable actions are pre-defined in `ToolActionRegistry.java`.
 
 
 # Structure
@@ -115,3 +66,40 @@ All avaliable actions are pre-defined in `ToolActionRegistry.java`.
 #### Can not find JAVA_HOME (Windows)
 1. Set `JAVA_HOME` in System Environment Variables, e.g. `C:\Program Files\Java\jdk-xx `
 2. Please use git bash instead of WSL bash/sh in powershell (WSL bash cannot find your JAVA_HOME)，add git bash in `PATH` System Environment Variables, e.g. `C:\Program Files\Git\bin`
+
+# Design Concepts
+
+## Database Tables
+- `TrackRoot`: represents a specific folder or file that we want to track.
+  - A `TrackRoot` can be configure with `allowed_source_types` defines what type of data source to be included when tracking. 
+- `Source`: represents a specific file that we want to extract data from.
+- A `Context` is a paragraph of meaningful text.
+  - It can be an entire Java class, a paragraph in a document, or some defined structure.
+  - The retrieval result is a list of `Context`.
+- A `Chunk` is a smaller paragraph of text that is stored in a vector database as embedding.
+  - The similarity search result is a list of `Chunk`.
+- A `ChunkCollection` is a collection of `Chunk` that represents a specific scope of data.
+  - The retrieval is performed on `ChunkCollection` level, which means the only the `Chunk` within the `ChunkCollection` is considered when performing retrieval.
+
+### Avaliable ChunkCollections
+- `project-context` including all source code and internal documentations of the project.
+- `docs` including all internal documentations and all external knowledge.
+- `guidelines` including all code review guidelines.
+- `usecases` including all use cases on how to perform specific code review checks.
+- `tool-definitions` including all tool API specifications.
+
+
+## Multi-Agent Code Review
+![alt text](./assets/architecture.png)
+
+- **InterpretationLM**: Code Changes + (RAG) Project Context → Code Interpretation
+- **PlanningLM**: Code Interpretation + Code Analysis + (RAG) Review Guidelines → Checklist
+  - A checklist states items that need to be check during the review
+- **ComputationLM**: Code Changes + Checklist Item → Item Answer
+  - If current data is not enough, it delegate a query to RetrievalLM.
+- **RetrievalLM**: Data Query + Tool Definitions → Tool Requests
+  - After received tool responses, it evaluates whether the responses satisfied the query.
+  - If the responses is determined to satisfy the query, send it back to the ComputationLM; otherwise, call tools again.
+- **SummaryLM**: Code Changes + Code Analysis + Item Answers → Code Review Report
+- **EvaluationLM**: Code Changes + Code Review Report → Quality Scores
+  
