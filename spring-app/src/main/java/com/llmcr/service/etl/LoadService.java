@@ -75,7 +75,8 @@ public class LoadService {
             vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
             chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
             chunkCollectionRepository.save(chunkCollection);
-            log.info("Loaded '{}' new chunks into collection '{}'.", chunksToAdd.size(), chunkCollection.getName());
+            log.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
+                    context.getName(), chunkCollection.getName());
         }
 
         context.setChunkLoaded(true);
