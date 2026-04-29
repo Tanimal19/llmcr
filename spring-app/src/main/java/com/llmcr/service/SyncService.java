@@ -2,9 +2,12 @@ package com.llmcr.service;
 
 import java.time.LocalDateTime;
 
+import org.springframework.stereotype.Component;
+
 import com.llmcr.repository.SourceRepository;
 import com.llmcr.repository.TrackRootRepository;
 
+@Component
 public class SyncService {
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
