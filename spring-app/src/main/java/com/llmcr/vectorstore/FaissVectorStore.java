@@ -12,7 +12,7 @@ import com.llmcr.service.FaissService;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsResponse;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkIdScorePair;
+import com.llmcr.service.rag.ContextRetriever.ChunkIdScorePair;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {

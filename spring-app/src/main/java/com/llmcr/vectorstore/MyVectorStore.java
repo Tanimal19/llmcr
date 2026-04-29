@@ -3,7 +3,7 @@ package com.llmcr.vectorstore;
 import java.util.List;
 
 import com.llmcr.entity.Chunk;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ChunkIdScorePair;
+import com.llmcr.service.rag.ContextRetriever.ChunkIdScorePair;
 
 public abstract class MyVectorStore {
 

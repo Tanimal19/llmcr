@@ -1,25 +1,20 @@
 package com.llmcr.service.etl.transformer;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.advisor.RAGAdvisor;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.model.LargeChatClient;
-import com.llmcr.service.rag.retrieval.ContextRetriever;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
-import com.llmcr.service.rag.retrieval.ContextRetriever.RetrievalConfiguration;
-import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.service.rag.ContextRetriever.RetrievalConfiguration;
+import com.llmcr.service.rag.select.FixedKStrategy;
 
 /**
  * Enrich ClassNode context by generating a summary using LLM.
@@ -28,33 +23,42 @@ import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
 public class ClassNodeEnricher implements ContextEnricher {
 
     private static final Logger log = LoggerFactory.getLogger(ClassNodeEnricher.class);
+    private static final int QUERY_CHUNK_SIZE = 1200;
 
-    private static final PromptTemplate promptTemplate = PromptTemplate.builder()
-            .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-            .template(
-                    """
-                            You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and its related documentation contents.
-                            You should generate below information for enrichment:
-                            - **functional**: What does this class do?
-                            - **relationship**: How does this class relate to other classes or components in the project?
-                            - **usage**: A example that show the most important usage scenario of this class, illustrate the one most important example in natural language rather than code.
+    private static final String ENRICHMENT_PROMPT_TEMPLATE = """
+            You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and its related documentation contents.
+            You should generate below information for enrichment:
+            - **functional**: What does this class do?
+            - **relationship**: How does this class relate to other classes or components in the project?
+            - **usage**: A example that show the most important usage scenario of this class, illustrate the one most important example in natural language rather than code.
 
-                            Raw code at below.
-                            ```java
-                            <code>
-                            ```
+            Raw code at below.
+            ```java
+            <user_input>
+            ```
 
-                            Documentation contents at below.
-                            -----------------
-                            <doc>
-                            -----------------
+            Documentation contents at below.
+            -----------------
+            <contexts>
+            -----------------
 
-                            Output the enrichment in the following JSON format:
-                            <format>
+            Output the enrichment in the following JSON format:
+            %s
 
-                            Enrichment:
-                            """)
-            .build();
+            Enrichment:
+            """;
+
+    private static final String QUERY_DESCRIPTION = """
+            Retrieve documentation that helps explain the behavior, relationship, and usage of this Java class fragment.
+            Focus on API intent, collaborator relationship, and concrete usage clues.
+            """;
+
+    private static final RetrievalConfiguration RETRIEVAL_CONFIGURATION = new RetrievalConfiguration(
+            5,
+            "DOCUMENT",
+            false,
+            new FixedKStrategy());
+
     private static final BeanOutputConverter<ClassNodeEnrichment> outputConverter = new BeanOutputConverter<>(
             ClassNodeEnrichment.class);
 
@@ -62,11 +66,11 @@ public class ClassNodeEnricher implements ContextEnricher {
     }
 
     private final LargeChatClient chatModel;
-    private final ContextRetriever contextRetriever;
+    private final RAGAdvisor ragAdvisor;
 
-    public ClassNodeEnricher(LargeChatClient chatModel, ContextRetriever contextRetriever) {
+    public ClassNodeEnricher(LargeChatClient chatModel, RAGAdvisor ragAdvisor) {
         this.chatModel = chatModel;
-        this.contextRetriever = contextRetriever;
+        this.ragAdvisor = ragAdvisor;
     }
 
     @Override
@@ -76,29 +80,19 @@ public class ClassNodeEnricher implements ContextEnricher {
 
     @Override
     public Context apply(Context classNode) {
-        // retrieve relevant document contexts for enrichment
-        List<ContextScorePair> relevantDocuments = contextRetriever.retrieve(classNode.getContent(),
-                new RetrievalConfiguration(5, "DOCUMENT", false, new AdaptiveKStrategy()));
+        String ragPromptTemplate = ENRICHMENT_PROMPT_TEMPLATE.formatted(outputConverter.getFormat());
+        List<String> retrievalQueries = buildClassNodeQueries(classNode.getContent());
 
-        log.info("Enriching class node {} with documents: {}", classNode.getName(), relevantDocuments.stream()
-                .map(p -> p.context().getId() + "(score=" + p.score() + ")")
-                .collect(Collectors.joining(", ")));
+        ChatResponse response = chatModel.getChatClient().prompt()
+                .advisors(spec -> spec
+                        .advisors(ragAdvisor)
+                        .param(RAGAdvisor.RETRIEVAL_CONFIGURATION_PARAM, RETRIEVAL_CONFIGURATION)
+                        .param(RAGAdvisor.QUERY_LIST_PARAM, retrievalQueries)
+                        .param(RAGAdvisor.PROMPT_TEMPLATE_PARAM, ragPromptTemplate))
+                .user(classNode.getContent())
+                .call()
+                .chatResponse();
 
-        // build prompt
-        String doc = relevantDocuments.stream()
-                .map(c -> c.context().getContent())
-                .collect(Collectors.joining("\n-----------------\n"));
-
-        Prompt prompt = promptTemplate.create(Map.of(
-                "code", classNode.getContent(),
-                "doc", doc,
-                "format", outputConverter.getFormat()));
-
-        log.info("Enrichment prompt for class node {}: {}", classNode.getId(), prompt.getContents());
-
-        // call chat model
-        ChatResponse response;
-        response = chatModel.call(prompt);
         String rawResponse = response.getResult().getOutput().getText();
 
         log.info("Raw enrichment response for class node {}: {}", classNode.getId(), rawResponse);
@@ -119,5 +113,39 @@ public class ClassNodeEnricher implements ContextEnricher {
         classNode.addChunk(new Chunk(enrichment.usage()));
 
         return classNode;
+    }
+
+    private List<String> buildClassNodeQueries(String classNodeContent) {
+        List<String> chunks = splitIntoChunks(classNodeContent, QUERY_CHUNK_SIZE);
+        List<String> queries = new ArrayList<>();
+
+        for (int i = 0; i < chunks.size(); i++) {
+            String chunk = chunks.get(i);
+            String query = """
+                    %s
+
+                    Chunk %d/%d:
+                    %s
+                    """.formatted(QUERY_DESCRIPTION, i + 1, chunks.size(), chunk);
+            queries.add(query);
+        }
+
+        return queries;
+    }
+
+    private List<String> splitIntoChunks(String content, int chunkSize) {
+        if (content == null || content.isBlank()) {
+            return List.of("");
+        }
+
+        List<String> chunks = new ArrayList<>();
+        int start = 0;
+        while (start < content.length()) {
+            int end = Math.min(start + chunkSize, content.length());
+            chunks.add(content.substring(start, end));
+            start = end;
+        }
+
+        return chunks;
     }
 }

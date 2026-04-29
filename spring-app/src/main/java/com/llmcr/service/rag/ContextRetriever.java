@@ -1,4 +1,4 @@
-package com.llmcr.service.rag.retrieval;
+package com.llmcr.service.rag;
 
 import java.util.List;
 import java.util.Map;
@@ -13,9 +13,9 @@ import com.llmcr.entity.Context;
 import com.llmcr.model.RerankingClient;
 import com.llmcr.model.reranking.RerankingResponse;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
-import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
-import com.llmcr.service.rag.retrieval.select.SelectStrategy;
+import com.llmcr.service.rag.fusion.FusionStrategy;
+import com.llmcr.service.rag.fusion.RankFusionStrategy;
+import com.llmcr.service.rag.select.TopKSelectionStrategy;
 import com.llmcr.vectorstore.MyVectorStore;
 
 @Component
@@ -29,8 +29,21 @@ public class ContextRetriever {
     private final ContextRepository contextRepository;
     private final RerankingClient rerankingModel;
 
+    /**
+     * @param topK                  the number of contexts to return after retrieval
+     *                              and
+     *                              reranking.
+     * @param collectionName        the name of the vector store collection to
+     *                              search for
+     *                              relevant chunks.
+     * @param useReranker           whether to use the reranking model to rerank the
+     *                              retrieved contexts.
+     * @param topKSelectionStrategy the strategy to select topK contexts from the
+     *                              ranked
+     *                              contexts.
+     */
     public record RetrievalConfiguration(int topK, String collectionName, boolean useReranker,
-            SelectStrategy selectStrategy) {
+            TopKSelectionStrategy topKSelectionStrategy) {
     }
 
     public record ChunkIdScorePair(Long chunkId, float score) {
@@ -95,7 +108,7 @@ public class ContextRetriever {
             return rankedContexts;
         }
 
-        return config.selectStrategy.select(rankedContexts, config.topK());
+        return config.topKSelectionStrategy.select(rankedContexts, config.topK());
     }
 
     private List<ContextScorePair> retrieveMultiQuery(List<String> queries, RetrievalConfiguration config,

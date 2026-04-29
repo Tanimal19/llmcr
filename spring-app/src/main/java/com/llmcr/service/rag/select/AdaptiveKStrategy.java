@@ -1,9 +1,10 @@
-package com.llmcr.service.rag.retrieval.select;
+package com.llmcr.service.rag.select;
 
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
+
+import com.llmcr.service.rag.ContextRetriever.ContextScorePair;
 
 /**
  * AdaptiveKStrategy dynamically determines the optimal number of contexts to
@@ -11,7 +12,7 @@ import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
  * scores to find a natural cutoff point, while also applying a buffer to
  * include some additional contexts for robustness.
  */
-public class AdaptiveKStrategy implements SelectStrategy {
+public class AdaptiveKStrategy implements TopKSelectionStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(AdaptiveKStrategy.class);
 

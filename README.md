@@ -12,7 +12,7 @@ Prerequisites:
 
 To run the application, follow these steps:
 - Make sure llama.cpp and llama-swap is installed.
-- Start llama-swap `llama-swap -config llama-swap.yml -listen 0.0.0.0:8080`.
+- Start llama-swap `llama-swap -config llama-swap.yml -listen localhost:8080`.
 - Start the FAISS and MariaDB services using `docker-compose up -d`.
 - Run the application using `./run.sh`.
 
@@ -46,18 +46,9 @@ To run the application, follow these steps:
 - `_datasets/`: Datasets for ETL. (you need to prepare it by yourself)
 - `faiss_service/`: FAISS vector store service implemented in Python Flask.
 - `spring-app/`: Spring Boot application for ETL and RAG.
-- `evaluation/`: Evaluation scripts and data.
+- `models/`: LLM and embedding model files.
 
-## Java classes
-- `datasource/`: Represents different type of data sources.
-- `entity/`: Database schema entities.
-- `extractor/`: Extractor that extract specific data from data sources.
-- `repository/`: Repository for database operations.
-- `service/etl/`: Classes for ETL pipeline.
-- `service/faiss/`: Encapsulate FAISS operations as Spring AI's Vector Store.
-- `service/rag/`: Classes for RAG application.
-  - `RAGTemplate.java`: Base class for RAG template, indicate the use case of RAG.
-  - `RetrievalStrategy.java`: Base class for retrieval strategy.
+## Spring APP
 
 ## Database Schema
 

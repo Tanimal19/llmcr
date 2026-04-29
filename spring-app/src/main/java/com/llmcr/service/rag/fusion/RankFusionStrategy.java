@@ -1,4 +1,4 @@
-package com.llmcr.service.rag.retrieval.fusion;
+package com.llmcr.service.rag.fusion;
 
 import java.util.HashMap;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.llmcr.entity.Context;
-import com.llmcr.service.rag.retrieval.ContextRetriever.ContextScorePair;
+import com.llmcr.service.rag.ContextRetriever.ContextScorePair;
 
 /**
  * Use Reciprocal Rank Fusion (RRF) to fuse multiple lists of contexts.

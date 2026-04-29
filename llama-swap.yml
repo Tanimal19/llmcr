@@ -85,6 +85,7 @@ models:
       llama-server
       -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
       --ctx-size 8192
+      --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "LFM2.5-1.2b"
@@ -94,6 +95,7 @@ models:
       llama-server
       -m ${model_dir}/SmolLM3-Q8_0.gguf
       --ctx-size 8192
+      --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "SmolLM3-3b"
@@ -103,27 +105,10 @@ models:
       llama-server
       -m ${model_dir}/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
       --ctx-size 8192
+      --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "Llama3-8b"
-
-  "Gemma3-12b":
-    cmd: >
-      llama-server
-      -m ${model_dir}/gemma-3-12b-it-Q4_K_M.gguf
-      --ctx-size 8192
-      --port ${PORT}
-    checkEndpoint: /v1/models
-    name: "Gemma3-12b"
-
-  "Ministral3-14b":
-    cmd: >
-      llama-server
-      -m ${model_dir}/Ministral-3-14B-Instruct-2512-Q4_K_M.gguf
-      --ctx-size 8192
-      --port ${PORT}
-    checkEndpoint: /v1/models
-    name: "Mistral3-14b"
 
   "Harrier-0.6b":
     cmd: >
@@ -133,23 +118,12 @@ models:
       --ctx-size 2048
       --pooling cls
       --ubatch-size 1024
-      --no-webui
       --cache-ram 0
       --parallel 1
+      --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "Harrier-0.6b"
-
-  "Zerank2":
-    cmd: >
-      llama-server
-      -m ${model_dir}/zerank-2.Q8_0.gguf
-      --reranking
-      --ctx-size 2048
-      --no-webui
-      --port ${PORT}
-    checkEndpoint: /v1/models
-    name: "Zerank2"
 
   "Qwen3-Reranker-0.6b":
     cmd: >
