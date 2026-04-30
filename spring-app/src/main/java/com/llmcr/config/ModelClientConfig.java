@@ -1,4 +1,4 @@
-package com.llmcr.model;
+package com.llmcr.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.MetadataMode;
@@ -13,81 +13,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.BackOffContext;
-import org.springframework.retry.backoff.BackOffInterruptedException;
-import org.springframework.retry.backoff.BackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.llmcr.model.EmbeddingClient;
+import com.llmcr.model.LargeChatClient;
+import com.llmcr.model.RerankingClient;
+import com.llmcr.model.SmallChatClient;
 import com.llmcr.model.reranking.OpenAiRerankingApi;
-import com.llmcr.model.reranking.OpenApiRerankingModel;
+import com.llmcr.model.reranking.OpenAiRerankingModel;
 
 @Configuration
 public class ModelClientConfig {
 
-    private static final long DEFAULT_BACKOFF_MILLIS = 10_000L;
-    private static final long HTTP_502_503_BACKOFF_MILLIS = 30_000L;
-
     @Value("${spring.ai.openai.base-url}")
     private String openAiBaseUrl;
-
-    private RetryTemplate defaultRetryTemplate() {
-        RetryTemplate retryTemplate = RetryTemplate.builder()
-                .maxAttempts(3)
-                .build();
-
-        retryTemplate.setBackOffPolicy(new HttpStatusAwareBackOffPolicy(
-                DEFAULT_BACKOFF_MILLIS,
-                HTTP_502_503_BACKOFF_MILLIS));
-
-        return retryTemplate;
-    }
-
-    private static final class HttpStatusAwareBackOffPolicy implements BackOffPolicy {
-
-        private final long defaultBackoffMillis;
-        private final long http502503BackoffMillis;
-
-        private HttpStatusAwareBackOffPolicy(long defaultBackoffMillis, long http502503BackoffMillis) {
-            this.defaultBackoffMillis = defaultBackoffMillis;
-            this.http502503BackoffMillis = http502503BackoffMillis;
-        }
-
-        @Override
-        public BackOffContext start(RetryContext context) {
-            return new RetryContextBackOffContext(context);
-        }
-
-        @Override
-        public void backOff(BackOffContext backOffContext) throws BackOffInterruptedException {
-            RetryContext retryContext = ((RetryContextBackOffContext) backOffContext).retryContext();
-            Throwable throwable = retryContext.getLastThrowable();
-            long backoffMillis = is502Or503Error(throwable) ? http502503BackoffMillis
-                    : defaultBackoffMillis;
-
-            try {
-                Thread.sleep(backoffMillis);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new BackOffInterruptedException("Retry backoff interrupted", e);
-            }
-        }
-
-        private boolean is502Or503Error(Throwable throwable) {
-            Throwable current = throwable;
-            while (current != null) {
-                String message = current.getMessage();
-                if (message != null && (message.contains("HTTP 502") || message.contains("HTTP 503"))) {
-                    return true;
-                }
-                current = current.getCause();
-            }
-            return false;
-        }
-    }
-
-    private record RetryContextBackOffContext(RetryContext retryContext) implements BackOffContext {
-    }
 
     // ── LargeChatClient ──────────────────────────────────────────────────────
 
@@ -95,10 +34,11 @@ public class ModelClientConfig {
     @ConditionalOnProperty(name = "llmcr.chat.large.provider", havingValue = "openai", matchIfMissing = true)
     public LargeChatClient largeChatClientOpenAi(
             OpenAiChatModel baseOpenAiChatModel,
+            RetryTemplate retryTemplate,
             @Value("${llmcr.chat.large.model}") String model) {
         OpenAiChatModel chatModel = baseOpenAiChatModel.mutate()
                 .defaultOptions(OpenAiChatOptions.builder().model(model).build())
-                .retryTemplate(defaultRetryTemplate())
+                .retryTemplate(retryTemplate)
                 .build();
         return new LargeChatClient(ChatClient.create(chatModel));
     }
@@ -120,10 +60,11 @@ public class ModelClientConfig {
     @ConditionalOnProperty(name = "llmcr.chat.small.provider", havingValue = "openai", matchIfMissing = true)
     public SmallChatClient smallChatClientOpenAi(
             OpenAiChatModel baseOpenAiChatModel,
+            RetryTemplate retryTemplate,
             @Value("${llmcr.chat.small.model}") String model) {
         OpenAiChatModel chatModel = baseOpenAiChatModel.mutate()
                 .defaultOptions(OpenAiChatOptions.builder().model(model).build())
-                .retryTemplate(defaultRetryTemplate())
+                .retryTemplate(retryTemplate)
                 .build();
         return new SmallChatClient(ChatClient.create(chatModel));
     }
@@ -145,12 +86,13 @@ public class ModelClientConfig {
     @ConditionalOnProperty(name = "llmcr.embedding.provider", havingValue = "openai", matchIfMissing = true)
     public EmbeddingClient embeddingClientOpenAi(
             OpenAiApi baseOpenAiApi,
+            RetryTemplate retryTemplate,
             @Value("${llmcr.embedding.model}") String model) {
         OpenAiEmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
                 baseOpenAiApi,
                 MetadataMode.EMBED,
                 OpenAiEmbeddingOptions.builder().model(model).build(),
-                defaultRetryTemplate());
+                retryTemplate);
         return new EmbeddingClient(embeddingModel);
     }
 
@@ -159,10 +101,11 @@ public class ModelClientConfig {
     @Bean
     @ConditionalOnProperty(name = "llmcr.reranking.provider", havingValue = "openai", matchIfMissing = true)
     public RerankingClient rerankingClientOpenAi(
+            RetryTemplate retryTemplate,
             @Value("${llmcr.reranking.model}") String model) {
         OpenAiRerankingApi rerankingApi = new OpenAiRerankingApi(openAiBaseUrl, "no-key");
-        OpenApiRerankingModel rerankingModel = new OpenApiRerankingModel(rerankingApi, model,
-                defaultRetryTemplate());
+        OpenAiRerankingModel rerankingModel = new OpenAiRerankingModel(rerankingApi, model,
+                retryTemplate);
         return new RerankingClient(rerankingModel);
     }
 

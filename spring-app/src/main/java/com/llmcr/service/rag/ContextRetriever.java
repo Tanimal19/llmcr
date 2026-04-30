@@ -23,7 +23,7 @@ public class ContextRetriever {
 
     private static final Logger log = LoggerFactory.getLogger(ContextRetriever.class);
 
-    private static final int maxQueryLength = 512;
+    private static final int maxQueryLength = 2048;
     private static final int topN = 1000;
     private final MyVectorStore vectorStore;
     private final ContextRepository contextRepository;
@@ -100,10 +100,6 @@ public class ContextRetriever {
             rankedContexts = merge(query, topNChunks);
         }
 
-        log.info("Ranked contexts before selection: {}", rankedContexts.stream()
-                .map(c -> String.format("ContextId: %d, Score: %.4f", c.context().getId(), c.score()))
-                .toList());
-
         if (rankedContexts.size() <= config.topK()) {
             return rankedContexts;
         }
@@ -114,7 +110,7 @@ public class ContextRetriever {
     private List<ContextScorePair> retrieveMultiQuery(List<String> queries, RetrievalConfiguration config,
             FusionStrategy fusionStrategy) {
         List<List<ContextScorePair>> contextLists = queries.stream()
-                .map(q -> retrieve(q, config))
+                .map(q -> retrieveSingleQuery(q, config))
                 .toList();
 
         return fusionStrategy.fuse(contextLists, config.topK());

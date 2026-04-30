@@ -6,21 +6,21 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
-public class OpenApiRerankingModel implements RerankingModel {
+public class OpenAiRerankingModel implements RerankingModel {
 
     private final OpenAiRerankingApi openAiRerankingApi;
     private final String defaultModel;
     private final RetryTemplate retryTemplate;
 
-    public OpenApiRerankingModel(OpenAiRerankingApi openAiRerankingApi) {
+    public OpenAiRerankingModel(OpenAiRerankingApi openAiRerankingApi) {
         this(openAiRerankingApi, "");
     }
 
-    public OpenApiRerankingModel(OpenAiRerankingApi openAiRerankingApi, String defaultModel) {
+    public OpenAiRerankingModel(OpenAiRerankingApi openAiRerankingApi, String defaultModel) {
         this(openAiRerankingApi, defaultModel, RetryUtils.DEFAULT_RETRY_TEMPLATE);
     }
 
-    public OpenApiRerankingModel(OpenAiRerankingApi openAiRerankingApi, String defaultModel,
+    public OpenAiRerankingModel(OpenAiRerankingApi openAiRerankingApi, String defaultModel,
             RetryTemplate retryTemplate) {
         Assert.notNull(openAiRerankingApi, "openAiRerankingApi must not be null");
         Assert.notNull(retryTemplate, "retryTemplate must not be null");

@@ -106,7 +106,7 @@ public class ChunkCollection {
             return;
         }
 
-        if (Hibernate.isInitialized(havedChunks) && !havedChunks.contains(chunk)) {
+        if (!havedChunks.contains(chunk)) {
             havedChunks.add(chunk);
         }
 
@@ -121,9 +121,7 @@ public class ChunkCollection {
             return;
         }
 
-        if (Hibernate.isInitialized(havedChunks)) {
-            havedChunks.remove(chunk);
-        }
+        havedChunks.remove(chunk);
 
         if (Hibernate.isInitialized(chunk.getChunkCollections())) {
             chunk.getChunkCollections().remove(this);

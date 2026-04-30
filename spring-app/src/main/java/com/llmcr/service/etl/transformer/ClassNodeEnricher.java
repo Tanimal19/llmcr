@@ -9,12 +9,13 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.advisor.LoggingAdvisor;
 import com.llmcr.advisor.RAGAdvisor;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.model.LargeChatClient;
 import com.llmcr.service.rag.ContextRetriever.RetrievalConfiguration;
-import com.llmcr.service.rag.select.FixedKStrategy;
+import com.llmcr.service.rag.select.AdaptiveKStrategy;
 
 /**
  * Enrich ClassNode context by generating a summary using LLM.
@@ -23,7 +24,7 @@ import com.llmcr.service.rag.select.FixedKStrategy;
 public class ClassNodeEnricher implements ContextEnricher {
 
     private static final Logger log = LoggerFactory.getLogger(ClassNodeEnricher.class);
-    private static final int QUERY_CHUNK_SIZE = 1200;
+    private static final int QUERY_CHUNK_SIZE = 2048;
 
     private static final String ENRICHMENT_PROMPT_TEMPLATE = """
             You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and its related documentation contents.
@@ -54,10 +55,10 @@ public class ClassNodeEnricher implements ContextEnricher {
             """;
 
     private static final RetrievalConfiguration RETRIEVAL_CONFIGURATION = new RetrievalConfiguration(
-            5,
-            "DOCUMENT",
+            10,
+            "project-context",
             false,
-            new FixedKStrategy());
+            new AdaptiveKStrategy());
 
     private static final BeanOutputConverter<ClassNodeEnrichment> outputConverter = new BeanOutputConverter<>(
             ClassNodeEnrichment.class);
@@ -67,10 +68,12 @@ public class ClassNodeEnricher implements ContextEnricher {
 
     private final LargeChatClient chatModel;
     private final RAGAdvisor ragAdvisor;
+    private final LoggingAdvisor loggingAdvisor;
 
-    public ClassNodeEnricher(LargeChatClient chatModel, RAGAdvisor ragAdvisor) {
+    public ClassNodeEnricher(LargeChatClient chatModel, RAGAdvisor ragAdvisor, LoggingAdvisor loggingAdvisor) {
         this.chatModel = chatModel;
         this.ragAdvisor = ragAdvisor;
+        this.loggingAdvisor = loggingAdvisor;
     }
 
     @Override
@@ -85,7 +88,7 @@ public class ClassNodeEnricher implements ContextEnricher {
 
         ChatResponse response = chatModel.getChatClient().prompt()
                 .advisors(spec -> spec
-                        .advisors(ragAdvisor)
+                        .advisors(ragAdvisor, loggingAdvisor)
                         .param(RAGAdvisor.RETRIEVAL_CONFIGURATION_PARAM, RETRIEVAL_CONFIGURATION)
                         .param(RAGAdvisor.QUERY_LIST_PARAM, retrievalQueries)
                         .param(RAGAdvisor.PROMPT_TEMPLATE_PARAM, ragPromptTemplate))

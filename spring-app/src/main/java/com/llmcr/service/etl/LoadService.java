@@ -14,6 +14,7 @@ import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Context;
 import com.llmcr.model.EmbeddingClient;
 import com.llmcr.repository.ChunkCollectionRepository;
+import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.vectorstore.MyVectorStore;
 
@@ -28,16 +29,19 @@ public class LoadService {
 
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final ContextRepository contextRepository;
+    private final ChunkRepository chunkRepository;
     private final MyVectorStore vectorStore;
     private final EmbeddingClient embeddingClient;
 
     public LoadService(
             ChunkCollectionRepository chunkCollectionRepository,
             ContextRepository contextRepository,
+            ChunkRepository chunkRepository,
             MyVectorStore vectorStore,
             EmbeddingClient embeddingClient) {
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.contextRepository = contextRepository;
+        this.chunkRepository = chunkRepository;
         this.vectorStore = vectorStore;
         this.embeddingClient = embeddingClient;
     }
@@ -62,6 +66,7 @@ public class LoadService {
             if (chunk.getEmbedding() == null || chunk.getEmbedding().length == 0) {
                 chunk.setEmbedding(embeddingClient.embed(chunk.getContent()));
             }
+            chunkRepository.save(chunk);
         }
 
         for (ChunkCollection chunkCollection : inCollections) {
