@@ -2,21 +2,21 @@ app:
   datasets:
     track-roots:
       - id: "spring-ai-main-code"
-        path: "../_datasets/projects/spring-ai-main simple/"
+        path: "../_datasets/projects/spring-ai-main/"
         allowed-source-types:
           - JAVACODE
       - id: "spring-ai-main-docs"
-        path: "../_datasets/projects/spring-ai-main simple/spring-ai-docs/src/main/antora/modules/ROOT/pages/"
+        path: "../_datasets/projects/spring-ai-main/spring-ai-docs/src/main/antora/modules/ROOT/pages/"
         allowed-source-types:
           - ASCIIDOC
-      # - id: "docs"
-      #   path: "../_datasets/docs/"
-      #   allowed-source-types:
-      # - id: "guidelines"
-      #   path: "../_datasets/guidelines/"
-      #   allowed-source-types:
-      #     - MARKDOWN
-      #     - PDF
+      - id: "docs"
+        path: "../_datasets/docs/"
+        allowed-source-types:
+      - id: "guidelines"
+        path: "../_datasets/guidelines/"
+        allowed-source-types:
+          - MARKDOWN
+          - PDF
     collections:
       - name: "project-code"
         track-roots:

@@ -24,7 +24,6 @@ import com.llmcr.service.rag.select.AdaptiveKStrategy;
 public class ClassNodeEnricher implements ContextEnricher {
 
     private static final Logger log = LoggerFactory.getLogger(ClassNodeEnricher.class);
-    private static final int QUERY_CHUNK_SIZE = 2048;
 
     private static final String ENRICHMENT_PROMPT_TEMPLATE = """
             You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and its related documentation contents.
@@ -60,6 +59,22 @@ public class ClassNodeEnricher implements ContextEnricher {
             false,
             new AdaptiveKStrategy());
 
+    private static final int QUERY_CHUNK_SIZE = 2000;
+
+    /**
+     * Content length below this threshold is unlikely to benefit from enrichment,
+     * so we skip to save cost
+     */
+    private static final int MIN_CONTENT_LENGTH = 1000;
+
+    /**
+     * Exclude class names that are likely to be test or configuration classes,
+     * which often have less clear functional description and more noisy
+     * relationships and usage. This is a heuristic to further reduce unnecessary
+     * enrichment cost.
+     */
+    private static final List<String> CLASSNAME_EXCLUDE = List.of("Test", "Tests", "Configuration", "Properties");
+
     private static final BeanOutputConverter<ClassNodeEnrichment> outputConverter = new BeanOutputConverter<>(
             ClassNodeEnrichment.class);
 
@@ -83,6 +98,17 @@ public class ClassNodeEnricher implements ContextEnricher {
 
     @Override
     public Context apply(Context classNode) {
+        if (classNode.getContent().length() < MIN_CONTENT_LENGTH) {
+            log.info("Class node content is short ({}), skip enrichment", classNode.getContent().length());
+            return classNode;
+        }
+        for (String exclude : CLASSNAME_EXCLUDE) {
+            if (classNode.getName().endsWith(exclude)) {
+                log.info("Class node name contains '{}', skip enrichment", exclude);
+                return classNode;
+            }
+        }
+
         String ragPromptTemplate = ENRICHMENT_PROMPT_TEMPLATE.formatted(outputConverter.getFormat());
         List<String> retrievalQueries = buildClassNodeQueries(classNode.getContent());
 

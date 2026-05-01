@@ -23,7 +23,7 @@ public class ContextRetriever {
 
     private static final Logger log = LoggerFactory.getLogger(ContextRetriever.class);
 
-    private static final int maxQueryLength = 2048;
+    private static final int MAX_QUERY_LENGTH = 2048;
     private static final int topN = 1000;
     private final MyVectorStore vectorStore;
     private final ContextRepository contextRepository;
@@ -64,13 +64,13 @@ public class ContextRetriever {
             return List.of();
         }
 
-        if (query.length() <= maxQueryLength) {
+        if (query.length() <= MAX_QUERY_LENGTH) {
             return retrieveSingleQuery(query, config);
         } else {
             // For long query, we can split it into multiple segments and perform retrieval
             // for each segment, then fuse the results.
             log.info("Query length {} exceeds max length {}, splitting into segments for retrieval",
-                    query.length(), maxQueryLength);
+                    query.length(), MAX_QUERY_LENGTH);
             List<String> segments = splitQuery(query);
             return retrieveMultiQuery(segments, config, new RankFusionStrategy());
         }
@@ -120,7 +120,7 @@ public class ContextRetriever {
         List<String> segments = new ArrayList<>();
         int start = 0;
         while (start < query.length()) {
-            int end = Math.min(start + maxQueryLength, query.length());
+            int end = Math.min(start + MAX_QUERY_LENGTH, query.length());
             segments.add(query.substring(start, end));
             start = end;
         }
