@@ -37,18 +37,18 @@ public class ChainWorkflow {
     }
 
     public String run(String codeChanges, String codeAnalysis) {
-        log.info("[ChainWorkflow] Step 1/4 — InterpretationAgent");
+        log.info("Step 1/4 — InterpretationAgent");
         String codeInterpretation = interpretationAgent.execute(new InterpretationInput(codeChanges));
 
-        log.info("[ChainWorkflow] Step 2/4 — PlanningAgent");
+        log.info("Step 2/4 — PlanningAgent");
         PlanningOutput planningOutput = planningAgent.execute(new PlanningInput(codeInterpretation, codeAnalysis));
         List<String> checklistItems = splitChecklist(planningOutput);
-        log.info("[ChainWorkflow] Checklist produced: {} items", checklistItems.size());
+        log.info("Checklist produced: {} items", checklistItems.size());
 
-        log.info("[ChainWorkflow] Step 3/4 — ParallelizationWorkflow ({} items)", checklistItems.size());
+        log.info("Step 3/4 — Executing checklist ({} items)", checklistItems.size());
         List<String> itemAnswers = parallelizationWorkflow.run(codeChanges, checklistItems);
 
-        log.info("[ChainWorkflow] Step 4/4 — SummaryAgent");
+        log.info("Step 4/4 — SummaryAgent");
         return summaryAgent.execute(new SummaryInput(codeChanges, codeAnalysis, itemAnswers, checklistItems));
     }
 

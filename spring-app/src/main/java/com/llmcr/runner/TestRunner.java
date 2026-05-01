@@ -13,48 +13,48 @@ import com.llmcr.service.sync.SyncService;
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "test")
 public class TestRunner implements CommandLineRunner {
-	@Autowired
-	private final DatabaseInitializer databaseInitializer;
+    @Autowired
+    private final DatabaseInitializer databaseInitializer;
 
-	@Autowired
-	private final SyncService syncService;
+    @Autowired
+    private final SyncService syncService;
 
-	@Autowired
-	private final ETLPipeline etlPipeline;
+    @Autowired
+    private final ETLPipeline etlPipeline;
 
-	@Autowired
-	private final JdbcTemplate jdbcTemplate;
+    @Autowired
+    private final JdbcTemplate jdbcTemplate;
 
-	public TestRunner(DatabaseInitializer databaseInitializer,
-			SyncService syncService, ETLPipeline etlPipeline,
-			JdbcTemplate jdbcTemplate) {
-		this.databaseInitializer = databaseInitializer;
-		this.syncService = syncService;
-		this.etlPipeline = etlPipeline;
-		this.jdbcTemplate = jdbcTemplate;
-	}
+    public TestRunner(DatabaseInitializer databaseInitializer,
+            SyncService syncService, ETLPipeline etlPipeline,
+            JdbcTemplate jdbcTemplate) {
+        this.databaseInitializer = databaseInitializer;
+        this.syncService = syncService;
+        this.etlPipeline = etlPipeline;
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
-	@Override
-	public void run(String... args) throws Exception {
-		// resetEntityTables();
+    @Override
+    public void run(String... args) throws Exception {
+        // resetEntityTables();
 
-		databaseInitializer.init();
-		syncService.sync();
-		etlPipeline.run();
-	}
+        databaseInitializer.init();
+        // syncService.sync();
+        etlPipeline.run();
+    }
 
-	private void resetEntityTables() {
-		jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
-		try {
-			jdbcTemplate.execute("TRUNCATE TABLE collection_have_chunks");
-			jdbcTemplate.execute("TRUNCATE TABLE collection_have_track_roots");
-			jdbcTemplate.execute("TRUNCATE TABLE chunk");
-			jdbcTemplate.execute("TRUNCATE TABLE context");
-			jdbcTemplate.execute("TRUNCATE TABLE source");
-			jdbcTemplate.execute("TRUNCATE TABLE track_root");
-			jdbcTemplate.execute("TRUNCATE TABLE chunk_collection");
-		} finally {
-			jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
-		}
-	}
+    private void resetEntityTables() {
+        jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
+        try {
+            jdbcTemplate.execute("TRUNCATE TABLE collection_have_chunks");
+            jdbcTemplate.execute("TRUNCATE TABLE collection_have_track_roots");
+            jdbcTemplate.execute("TRUNCATE TABLE chunk");
+            jdbcTemplate.execute("TRUNCATE TABLE context");
+            jdbcTemplate.execute("TRUNCATE TABLE source");
+            jdbcTemplate.execute("TRUNCATE TABLE track_root");
+            jdbcTemplate.execute("TRUNCATE TABLE chunk_collection");
+        } finally {
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
+        }
+    }
 }

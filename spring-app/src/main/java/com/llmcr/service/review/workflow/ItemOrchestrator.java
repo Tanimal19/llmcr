@@ -31,7 +31,7 @@ public class ItemOrchestrator {
                     new ComputationInput(codeChanges, checklistItem, accumulatedContext));
 
             if (decision == null) {
-                log.warn("[ItemOrchestrator] Null decision for item '{}'", checklistItem);
+                log.warn("Null decision for item '{}'", checklistItem);
                 return "(no answer)";
             }
 
@@ -40,11 +40,11 @@ public class ItemOrchestrator {
             }
 
             if (round == MAX_RETRIEVAL_ROUNDS) {
-                log.warn("[ItemOrchestrator] Max retrieval rounds reached for item '{}'", checklistItem);
+                log.warn("Max retrieval rounds reached for item '{}'", checklistItem);
                 return decision.answer().isBlank() ? "(max retrieval rounds reached)" : decision.answer();
             }
 
-            log.debug("[ItemOrchestrator] Round {}: querying RetrievalOrchestrator for '{}'",
+            log.debug("Round {}: querying RetrievalOrchestrator for '{}'",
                     round + 1, decision.dataQuery());
             String retrieved = retrievalOrchestrator.retrieve(decision.dataQuery());
             accumulatedContext = mergeContext(accumulatedContext, decision.dataQuery(), retrieved);
