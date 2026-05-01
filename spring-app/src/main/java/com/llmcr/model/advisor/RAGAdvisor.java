@@ -1,10 +1,12 @@
-package com.llmcr.advisor;
+package com.llmcr.model.advisor;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
@@ -24,6 +26,8 @@ import reactor.core.publisher.Flux;
 
 @Component
 public class RAGAdvisor implements CallAdvisor, StreamAdvisor {
+
+    private static final Logger log = LoggerFactory.getLogger(RAGAdvisor.class);
 
     public static final String RETRIEVAL_CONFIGURATION_PARAM = "rag.retrievalConfiguration";
     public static final String QUERY_LIST_PARAM = "rag.queryList";
@@ -111,14 +115,20 @@ public class RAGAdvisor implements CallAdvisor, StreamAdvisor {
                 ? retrievalQueries.get(0)
                 : String.join("\n\n---\n\n", retrievalQueries);
 
-        List<ContextScorePair> contexts = retrievalQueries.size() == 1
-                ? contextRetriever.retrieve(retrievalQuery, retrievalConfiguration)
-                : contextRetriever.retrieve(retrievalQueries, retrievalConfiguration);
+        List<ContextScorePair> contexts = contextRetriever.retrieve(retrievalQueries, retrievalConfiguration);
+        String retrievedContextSummary = contexts.stream()
+                .map(c -> "[id=%d, name=%s, score=%.4f]".formatted(
+                        c.context().getId(),
+                        c.context().getName(),
+                        c.score()))
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("[]");
+        log.info("Retrieved contexts: {}", retrievedContextSummary);
 
         String mergedContexts = contexts.stream()
                 .map(c -> {
-                    String content = c.context().getContent() == null ? "" : c.context().getContent();
-                    return "[id=%d, score=%.4f]%n%s".formatted(c.context().getId(), c.score(), content);
+                    return "[id=%d, score=%.4f]%n%s".formatted(c.context().getId(), c.score(),
+                            c.context().getContent());
                 })
                 .filter(s -> !s.isBlank())
                 .reduce((a, b) -> a + delimiter + b)

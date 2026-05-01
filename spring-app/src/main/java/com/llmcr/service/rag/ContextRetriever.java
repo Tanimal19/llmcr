@@ -59,25 +59,31 @@ public class ContextRetriever {
         this.rerankingModel = rerankingModel;
     }
 
-    public List<ContextScorePair> retrieve(String query, RetrievalConfiguration config) {
-        if (query == null || query.isEmpty()) {
+    public List<ContextScorePair> retrieve(List<String> queries, RetrievalConfiguration config) {
+        if (queries == null || queries.isEmpty()) {
             return List.of();
         }
 
-        if (query.length() <= MAX_QUERY_LENGTH) {
-            return retrieveSingleQuery(query, config);
-        } else {
-            // For long query, we can split it into multiple segments and perform retrieval
-            // for each segment, then fuse the results.
-            log.info("Query length {} exceeds max length {}, splitting into segments for retrieval",
-                    query.length(), MAX_QUERY_LENGTH);
-            List<String> segments = splitQuery(query);
-            return retrieveMultiQuery(segments, config, new RankFusionStrategy());
+        // Make sure each query is not null or empty, and split long queries into
+        // segments
+        List<String> processedQueries = new ArrayList<>();
+        for (String query : queries) {
+            if (query == null || query.isEmpty()) {
+                continue;
+            }
+            if (query.length() <= MAX_QUERY_LENGTH) {
+                processedQueries.add(query);
+            } else {
+                processedQueries.addAll(splitQuery(query));
+            }
         }
-    }
 
-    public List<ContextScorePair> retrieve(List<String> queries, RetrievalConfiguration config) {
-        return retrieveMultiQuery(queries, config, new RankFusionStrategy());
+        if (processedQueries.size() == 1) {
+            String query = processedQueries.get(0);
+            return retrieveSingleQuery(query, config);
+        }
+
+        return retrieveMultiQuery(processedQueries, config, new RankFusionStrategy());
     }
 
     /**

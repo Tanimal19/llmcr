@@ -86,11 +86,11 @@ To run the application, follow these steps:
 - **InterpretationLM**: Code Changes + (RAG) Project Context → Code Interpretation
 - **PlanningLM**: Code Interpretation + Code Analysis + (RAG) Review Guidelines → Checklist
   - A checklist states items that need to be check during the review
-- **ComputationLM**: Code Changes + Checklist Item → Item Answer
+- **ComputationLM** (SLM): Code Changes + Checklist Item → Item Answer
   - If current data is not enough, it delegate a query to RetrievalLM.
-- **RetrievalLM**: Data Query + Tool Definitions → Tool Requests
+- **RetrievalLM** (SLM): Data Query + Tool Definitions → Tool Requests
   - After received tool responses, it evaluates whether the responses satisfied the query.
   - If the responses is determined to satisfy the query, send it back to the ComputationLM; otherwise, call tools again.
 - **SummaryLM**: Code Changes + Code Analysis + Item Answers → Code Review Report
-- **EvaluationLM**: Code Changes + Code Review Report → Quality Scores
+- (Not Implement Now) **EvaluationLM**: Code Changes + Code Review Report → Quality Scores
   

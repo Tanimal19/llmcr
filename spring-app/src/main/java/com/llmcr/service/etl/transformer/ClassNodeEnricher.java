@@ -9,11 +9,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.advisor.LoggingAdvisor;
-import com.llmcr.advisor.RAGAdvisor;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.model.LargeChatClient;
+import com.llmcr.model.advisor.LoggingAdvisor;
+import com.llmcr.model.advisor.RAGAdvisor;
 import com.llmcr.service.rag.ContextRetriever.RetrievalConfiguration;
 import com.llmcr.service.rag.select.AdaptiveKStrategy;
 
@@ -73,7 +73,7 @@ public class ClassNodeEnricher implements ContextEnricher {
      * relationships and usage. This is a heuristic to further reduce unnecessary
      * enrichment cost.
      */
-    private static final List<String> CLASSNAME_EXCLUDE = List.of("Test", "Tests", "Configuration", "Properties");
+    private static final List<String> CLASSNAME_EXCLUDE = List.of("Test", "Configuration", "Properties");
 
     private static final BeanOutputConverter<ClassNodeEnrichment> outputConverter = new BeanOutputConverter<>(
             ClassNodeEnrichment.class);
@@ -103,7 +103,7 @@ public class ClassNodeEnricher implements ContextEnricher {
             return classNode;
         }
         for (String exclude : CLASSNAME_EXCLUDE) {
-            if (classNode.getName().endsWith(exclude)) {
+            if (classNode.getName().contains(exclude)) {
                 log.info("Class node name contains '{}', skip enrichment", exclude);
                 return classNode;
             }
@@ -130,10 +130,15 @@ public class ClassNodeEnricher implements ContextEnricher {
         try {
             enrichment = outputConverter.convert(rawResponse);
         } catch (Exception e) {
-            throw new RuntimeException(
-                    "Failed to convert chat response to ClassNodeEnrichment. Response: "
-                            + rawResponse,
-                    e);
+            log.warn("BeanOutputConverter failed for class node {}, attempting fallback parsing", classNode.getId());
+            try {
+                enrichment = fallbackParse(rawResponse);
+            } catch (Exception fallbackEx) {
+                throw new RuntimeException(
+                        "Failed to convert chat response to ClassNodeEnrichment. Response: "
+                                + rawResponse,
+                        e);
+            }
         }
 
         // update class node
@@ -160,6 +165,46 @@ public class ClassNodeEnricher implements ContextEnricher {
         }
 
         return queries;
+    }
+
+    /**
+     * Fallback parser for LLM responses that contain unescaped double quotes inside
+     * JSON string values. Extracts field values using known field boundary markers.
+     */
+    private ClassNodeEnrichment fallbackParse(String raw) {
+        String functional = extractFieldValue(raw, "functional", "relationship");
+        String relationship = extractFieldValue(raw, "relationship", "usage");
+        String usage = extractLastFieldValue(raw, "usage");
+        if (functional == null || relationship == null || usage == null) {
+            throw new IllegalArgumentException("Fallback parsing failed to extract all fields");
+        }
+        return new ClassNodeEnrichment(functional, relationship, usage);
+    }
+
+    private String extractFieldValue(String json, String field, String nextField) {
+        String startMarker = "\"" + field + "\": \"";
+        String endMarker = "\", \"" + nextField + "\"";
+        int start = json.indexOf(startMarker);
+        if (start == -1)
+            return null;
+        start += startMarker.length();
+        int end = json.indexOf(endMarker, start);
+        if (end <= start)
+            return null;
+        return json.substring(start, end);
+    }
+
+    private String extractLastFieldValue(String json, String field) {
+        String startMarker = "\"" + field + "\": \"";
+        int start = json.indexOf(startMarker);
+        if (start == -1)
+            return null;
+        start += startMarker.length();
+        // Value ends at the last `"` in the document (before closing `}`)
+        int end = json.lastIndexOf("\"");
+        if (end <= start)
+            return null;
+        return json.substring(start, end);
     }
 
     private List<String> splitIntoChunks(String content, int chunkSize) {

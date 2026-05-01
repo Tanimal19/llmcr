@@ -1,4 +1,4 @@
-package com.llmcr.advisor;
+package com.llmcr.model.advisor;
 
 import java.io.IOException;
 import java.nio.file.Files;
