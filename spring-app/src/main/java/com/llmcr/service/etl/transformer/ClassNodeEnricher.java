@@ -9,6 +9,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.Utils;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.model.LargeChatClient;
@@ -150,7 +151,8 @@ public class ClassNodeEnricher implements ContextEnricher {
     }
 
     private List<String> buildClassNodeQueries(String classNodeContent) {
-        List<String> chunks = splitIntoChunks(classNodeContent, QUERY_CHUNK_SIZE);
+        String filteredContent = Utils.stringFilter(classNodeContent);
+        List<String> chunks = splitIntoChunks(filteredContent, QUERY_CHUNK_SIZE);
         List<String> queries = new ArrayList<>();
 
         for (int i = 0; i < chunks.size(); i++) {

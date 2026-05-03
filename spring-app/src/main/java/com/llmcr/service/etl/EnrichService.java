@@ -38,6 +38,9 @@ public class EnrichService {
         Integer originalChunkCount = context.getChunkCount();
 
         for (ContextEnricher enricher : enrichers) {
+            if (!enricher.supports(context)) {
+                continue;
+            }
             try {
                 context = enricher.apply(context);
             } catch (Exception e) {
