@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.llmcr.service.review.util.GitDiffParser;
-import com.llmcr.service.review.util.GitDiffParser.FileChange;
 import com.llmcr.service.review.workflow.ChainWorkflow;
+import com.llmcr.util.GitDiffParser;
+import com.llmcr.util.GitDiffParser.FileChange;
 
 /**
  * Multi-Agent Code Review — entry point

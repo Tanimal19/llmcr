@@ -1,6 +1,6 @@
-package com.llmcr;
+package com.llmcr.util;
 
-public class Utils {
+public class StringUtils {
     public static String stringFilter(String text) {
         if (text == null) {
             return "";

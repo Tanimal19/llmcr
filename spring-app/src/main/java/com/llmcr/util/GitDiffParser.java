@@ -1,4 +1,4 @@
-package com.llmcr.service.review.util;
+package com.llmcr.util;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

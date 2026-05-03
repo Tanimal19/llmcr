@@ -5,9 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.model.advisor.RAGAdvisor;
+
 @Component
 public class ComputationAgent
-        extends Agent<ComputationAgent.ComputationInput, ComputationAgent.ComputationDecision> {
+        implements AgentInvokeStrategy<ComputationAgent.ComputationInput, ComputationAgent.ComputationDecision> {
 
     private static final Logger log = LoggerFactory.getLogger(ComputationAgent.class);
 
@@ -39,24 +41,44 @@ public class ComputationAgent
             }
             """;
 
-    private final com.llmcr.model.SmallChatClient smallChatClient;
+    private static final int RAG_TOP_K = 5;
+    private static final String COLLECTION = "usecase";
 
-    public ComputationAgent(com.llmcr.model.SmallChatClient smallChatClient) {
+    private final com.llmcr.model.SmallChatClient smallChatClient;
+    private final Agent<ComputationInput, ComputationDecision> agent;
+
+    public ComputationAgent(com.llmcr.model.SmallChatClient smallChatClient, RAGAdvisor ragAdvisor,
+            AgentStepLogger agentStepLogger) {
         this.smallChatClient = smallChatClient;
+        this.agent = new Agent<>(this, ragAdvisor, agentStepLogger);
+    }
+
+    public ComputationDecision execute(ComputationInput input) {
+        return agent.execute(input);
     }
 
     @Override
-    protected ChatClient chatClient() {
+    public ChatClient chatClient() {
         return smallChatClient.getChatClient();
     }
 
     @Override
-    protected String systemPrompt() {
+    public String systemPrompt() {
         return SYSTEM_PROMPT;
     }
 
     @Override
-    protected String parseInput(ComputationInput input) {
+    public Integer ragTopK() {
+        return RAG_TOP_K;
+    }
+
+    @Override
+    public String ragCollectionName() {
+        return COLLECTION;
+    }
+
+    @Override
+    public String parseInput(ComputationInput input) {
         String contextSection = (input.additionalContext() == null || input.additionalContext().isBlank())
                 ? "(no additional context)"
                 : input.additionalContext();
@@ -74,7 +96,7 @@ public class ComputationAgent
     }
 
     @Override
-    protected ComputationDecision parseOutput(ChatClient.CallResponseSpec response) {
+    public ComputationDecision parseOutput(ChatClient.CallResponseSpec response) {
         ComputationDecision decision = response.entity(ComputationDecision.class);
 
         if (decision == null) {

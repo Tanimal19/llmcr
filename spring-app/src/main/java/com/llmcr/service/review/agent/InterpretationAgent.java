@@ -1,17 +1,13 @@
 package com.llmcr.service.review.agent;
 
-import java.util.List;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.model.LargeChatClient;
-import com.llmcr.service.rag.ContextRetriever;
-import com.llmcr.service.rag.ContextRetriever.RetrievalConfiguration;
-import com.llmcr.service.rag.select.FixedKStrategy;
+import com.llmcr.model.advisor.RAGAdvisor;
 
 @Component
-public class InterpretationAgent extends Agent<InterpretationAgent.InterpretationInput, String> {
+public class InterpretationAgent implements AgentInvokeStrategy<InterpretationAgent.InterpretationInput, String> {
 
     public record InterpretationInput(String codeChanges) {
     }
@@ -28,49 +24,51 @@ public class InterpretationAgent extends Agent<InterpretationAgent.Interpretatio
     private static final String COLLECTION = "project-context";
 
     private final LargeChatClient largeChatClient;
-    private final ContextRetriever contextRetriever;
+    private final Agent<InterpretationInput, String> agent;
 
-    public InterpretationAgent(LargeChatClient largeChatClient, ContextRetriever contextRetriever) {
+    public InterpretationAgent(LargeChatClient largeChatClient, RAGAdvisor ragAdvisor,
+            AgentStepLogger agentStepLogger) {
         this.largeChatClient = largeChatClient;
-        this.contextRetriever = contextRetriever;
+        this.agent = new Agent<>(this, ragAdvisor, agentStepLogger);
+    }
+
+    public String execute(InterpretationInput input) {
+        return agent.execute(input);
     }
 
     @Override
-    protected ChatClient chatClient() {
+    public ChatClient chatClient() {
         return largeChatClient.getChatClient();
     }
 
     @Override
-    protected String systemPrompt() {
+    public String systemPrompt() {
         return SYSTEM_PROMPT;
     }
 
     @Override
-    protected String parseInput(InterpretationInput input) {
-        RetrievalConfiguration config = new RetrievalConfiguration(
-                RAG_TOP_K, COLLECTION, true, new FixedKStrategy());
-        List<ContextRetriever.ContextScorePair> retrieved = contextRetriever.retrieve(List.of(input.codeChanges()),
-                config);
+    public Integer ragTopK() {
+        return RAG_TOP_K;
+    }
 
-        String contextText = retrieved.stream()
-                .map(pair -> pair.context().getContent())
-                .reduce((a, b) -> a + "\n\n---\n\n" + b)
-                .orElse("");
+    @Override
+    public String ragCollectionName() {
+        return COLLECTION;
+    }
 
+    @Override
+    public String parseInput(InterpretationInput input) {
         return """
-                ## Project Context (retrieved)
-                %s
-
                 ## Code Changes
                 %s
 
                 ## Task
                 Interpret the code changes above.
-                """.formatted(contextText, input.codeChanges());
+                """.formatted(input.codeChanges());
     }
 
     @Override
-    protected String parseOutput(ChatClient.CallResponseSpec response) {
+    public String parseOutput(ChatClient.CallResponseSpec response) {
         return response.content();
     }
 }

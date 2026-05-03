@@ -1,13 +1,13 @@
 package com.llmcr.service.review.agent;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.model.SmallChatClient;
+import com.llmcr.model.advisor.RAGAdvisor;
 import com.llmcr.service.review.tool.RetrievalTools;
 
 @Component
-public class RetrievalAgent extends Agent<RetrievalAgent.RetrievalInput, String> {
+public class RetrievalAgent implements AgentInvokeStrategy<RetrievalAgent.RetrievalInput, String> {
 
     public record RetrievalInput(String dataQuery) {
     }
@@ -26,30 +26,31 @@ public class RetrievalAgent extends Agent<RetrievalAgent.RetrievalInput, String>
 
     private final SmallChatClient smallChatClient;
     private final RetrievalTools retrievalTools;
+    private final Agent<RetrievalInput, String> agent;
 
-    public RetrievalAgent(SmallChatClient smallChatClient, RetrievalTools retrievalTools) {
+    public RetrievalAgent(SmallChatClient smallChatClient, RetrievalTools retrievalTools,
+            RAGAdvisor ragAdvisor, AgentStepLogger agentStepLogger) {
         this.smallChatClient = smallChatClient;
         this.retrievalTools = retrievalTools;
+        this.agent = new Agent<>(this, ragAdvisor, agentStepLogger);
+    }
+
+    public String execute(RetrievalInput input) {
+        return agent.execute(input);
     }
 
     @Override
-    protected ChatClient chatClient() {
+    public org.springframework.ai.chat.client.ChatClient chatClient() {
         return smallChatClient.getChatClient();
     }
 
     @Override
-    public String execute(RetrievalInput input) {
-        return smallChatClient.getChatClient()
-                .prompt()
-                .system(systemPrompt())
-                .user(parseInput(input))
-                .tools(retrievalTools)
-                .call()
-                .content();
+    public Object[] tools(RetrievalInput input) {
+        return new Object[] { retrievalTools };
     }
 
     @Override
-    protected String parseInput(RetrievalInput input) {
+    public String parseInput(RetrievalInput input) {
         return """
                 ## Data Query
                 %s
@@ -60,12 +61,12 @@ public class RetrievalAgent extends Agent<RetrievalAgent.RetrievalInput, String>
     }
 
     @Override
-    protected String systemPrompt() {
+    public String systemPrompt() {
         return SYSTEM_PROMPT;
     }
 
     @Override
-    protected String parseOutput(org.springframework.ai.chat.client.ChatClient.CallResponseSpec response) {
+    public String parseOutput(org.springframework.ai.chat.client.ChatClient.CallResponseSpec response) {
         return response.content();
     }
 }

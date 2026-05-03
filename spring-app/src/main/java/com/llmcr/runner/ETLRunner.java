@@ -11,8 +11,8 @@ import com.llmcr.service.etl.ETLPipeline;
 import com.llmcr.service.sync.SyncService;
 
 @Component
-@ConditionalOnProperty(name = "app.mode", havingValue = "test")
-public class TestRunner implements CommandLineRunner {
+@ConditionalOnProperty(name = "app.mode", havingValue = "etl")
+public class ETLRunner implements CommandLineRunner {
     @Autowired
     private final DatabaseInitializer databaseInitializer;
 
@@ -25,7 +25,7 @@ public class TestRunner implements CommandLineRunner {
     @Autowired
     private final JdbcTemplate jdbcTemplate;
 
-    public TestRunner(DatabaseInitializer databaseInitializer,
+    public ETLRunner(DatabaseInitializer databaseInitializer,
             SyncService syncService, ETLPipeline etlPipeline,
             JdbcTemplate jdbcTemplate) {
         this.databaseInitializer = databaseInitializer;
@@ -39,7 +39,7 @@ public class TestRunner implements CommandLineRunner {
         // resetEntityTables();
 
         databaseInitializer.init();
-        // syncService.sync();
+        syncService.sync();
         etlPipeline.run();
     }
 

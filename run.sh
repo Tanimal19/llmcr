@@ -1,6 +1,6 @@
 source .env
 
-SPRING_ARGUMENTS="--app.mode=test"
+SPRING_ARGUMENTS="--app.mode=review"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 cd "spring-app/"

@@ -9,7 +9,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.Utils;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.model.LargeChatClient;
@@ -17,6 +16,7 @@ import com.llmcr.model.advisor.LoggingAdvisor;
 import com.llmcr.model.advisor.RAGAdvisor;
 import com.llmcr.service.rag.ContextRetriever.RetrievalConfiguration;
 import com.llmcr.service.rag.select.AdaptiveKStrategy;
+import com.llmcr.util.StringUtils;
 
 /**
  * Enrich ClassNode context by generating a summary using LLM.
@@ -151,7 +151,7 @@ public class ClassNodeEnricher implements ContextEnricher {
     }
 
     private List<String> buildClassNodeQueries(String classNodeContent) {
-        String filteredContent = Utils.stringFilter(classNodeContent);
+        String filteredContent = StringUtils.stringFilter(classNodeContent);
         List<String> chunks = splitIntoChunks(filteredContent, QUERY_CHUNK_SIZE);
         List<String> queries = new ArrayList<>();
 

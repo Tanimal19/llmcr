@@ -36,7 +36,7 @@ public class LoggingAdvisor implements CallAdvisor, StreamAdvisor {
     private int order = Ordered.LOWEST_PRECEDENCE - 50;
 
     public LoggingAdvisor(ObjectMapper objectMapper,
-            @Value("${llmcr.logging.advisor.file:../logs/llm-interactions.json}") String logFilePath) {
+            @Value("${llmcr.logging.model.history.file:../logs/llm-interactions.json}") String logFilePath) {
         this.objectMapper = objectMapper;
         this.logFilePath = Paths.get(logFilePath);
     }

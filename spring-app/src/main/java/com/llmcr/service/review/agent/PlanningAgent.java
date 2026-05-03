@@ -6,12 +6,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.model.LargeChatClient;
-import com.llmcr.service.rag.ContextRetriever;
-import com.llmcr.service.rag.ContextRetriever.RetrievalConfiguration;
-import com.llmcr.service.rag.select.FixedKStrategy;
+import com.llmcr.model.advisor.RAGAdvisor;
 
 @Component
-public class PlanningAgent extends Agent<PlanningAgent.PlanningInput, PlanningAgent.PlanningOutput> {
+public class PlanningAgent implements AgentInvokeStrategy<PlanningAgent.PlanningInput, PlanningAgent.PlanningOutput> {
 
     public record PlanningInput(String codeInterpretation, String codeAnalysis) {
     }
@@ -36,43 +34,45 @@ public class PlanningAgent extends Agent<PlanningAgent.PlanningInput, PlanningAg
     private static final String COLLECTION = "guidelines";
 
     private final LargeChatClient largeChatClient;
-    private final ContextRetriever contextRetriever;
+    private final Agent<PlanningInput, PlanningOutput> agent;
 
-    public PlanningAgent(LargeChatClient largeChatClient, ContextRetriever contextRetriever) {
+    public PlanningAgent(LargeChatClient largeChatClient, RAGAdvisor ragAdvisor,
+            AgentStepLogger agentStepLogger) {
         this.largeChatClient = largeChatClient;
-        this.contextRetriever = contextRetriever;
+        this.agent = new Agent<>(this, ragAdvisor, agentStepLogger);
+    }
+
+    public PlanningOutput execute(PlanningInput input) {
+        return agent.execute(input);
     }
 
     @Override
-    protected ChatClient chatClient() {
+    public ChatClient chatClient() {
         return largeChatClient.getChatClient();
     }
 
     @Override
-    protected String systemPrompt() {
+    public String systemPrompt() {
         return SYSTEM_PROMPT;
     }
 
     @Override
-    protected String parseInput(PlanningInput input) {
-        RetrievalConfiguration config = new RetrievalConfiguration(
-                RAG_TOP_K, COLLECTION, true, new FixedKStrategy());
-        List<ContextRetriever.ContextScorePair> retrieved = contextRetriever
-                .retrieve(List.of(input.codeInterpretation()), config);
+    public Integer ragTopK() {
+        return RAG_TOP_K;
+    }
 
-        String guidelinesText = retrieved.stream()
-                .map(pair -> pair.context().getContent())
-                .reduce((a, b) -> a + "\n\n---\n\n" + b)
-                .orElse("");
+    @Override
+    public String ragCollectionName() {
+        return COLLECTION;
+    }
 
+    @Override
+    public String parseInput(PlanningInput input) {
         String analysisSection = (input.codeAnalysis() == null || input.codeAnalysis().isBlank())
                 ? "(no static analysis provided)"
                 : input.codeAnalysis();
 
         return """
-                ## Review Guidelines (retrieved)
-                %s
-
                 ## Code Interpretation
                 %s
 
@@ -81,11 +81,11 @@ public class PlanningAgent extends Agent<PlanningAgent.PlanningInput, PlanningAg
 
                 ## Task
                 Produce the review checklist.
-                """.formatted(guidelinesText, input.codeInterpretation(), analysisSection);
+                """.formatted(input.codeInterpretation(), analysisSection);
     }
 
     @Override
-    protected PlanningOutput parseOutput(ChatClient.CallResponseSpec response) {
+    public PlanningOutput parseOutput(ChatClient.CallResponseSpec response) {
         return response.entity(PlanningOutput.class);
     }
 }

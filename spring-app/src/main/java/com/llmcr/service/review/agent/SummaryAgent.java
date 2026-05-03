@@ -7,9 +7,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.model.LargeChatClient;
+import com.llmcr.model.advisor.RAGAdvisor;
 
 @Component
-public class SummaryAgent extends Agent<SummaryAgent.SummaryInput, String> {
+public class SummaryAgent implements AgentInvokeStrategy<SummaryAgent.SummaryInput, String> {
 
     public record SummaryInput(String codeChanges, String codeAnalysis, List<String> itemAnswers,
             List<String> checklistItems) {
@@ -32,23 +33,30 @@ public class SummaryAgent extends Agent<SummaryAgent.SummaryInput, String> {
             """;
 
     private final LargeChatClient largeChatClient;
+    private final Agent<SummaryInput, String> agent;
 
-    public SummaryAgent(LargeChatClient largeChatClient) {
+    public SummaryAgent(LargeChatClient largeChatClient, RAGAdvisor ragAdvisor,
+            AgentStepLogger agentStepLogger) {
         this.largeChatClient = largeChatClient;
+        this.agent = new Agent<>(this, ragAdvisor, agentStepLogger);
+    }
+
+    public String execute(SummaryInput input) {
+        return agent.execute(input);
     }
 
     @Override
-    protected ChatClient chatClient() {
+    public ChatClient chatClient() {
         return largeChatClient.getChatClient();
     }
 
     @Override
-    protected String systemPrompt() {
+    public String systemPrompt() {
         return SYSTEM_PROMPT;
     }
 
     @Override
-    protected String parseInput(SummaryInput input) {
+    public String parseInput(SummaryInput input) {
         String analysisSection = (input.codeAnalysis() == null || input.codeAnalysis().isBlank())
                 ? "(no static analysis provided)"
                 : input.codeAnalysis();
@@ -74,7 +82,7 @@ public class SummaryAgent extends Agent<SummaryAgent.SummaryInput, String> {
     }
 
     @Override
-    protected String parseOutput(ChatClient.CallResponseSpec response) {
+    public String parseOutput(ChatClient.CallResponseSpec response) {
         return response.content();
     }
 }
