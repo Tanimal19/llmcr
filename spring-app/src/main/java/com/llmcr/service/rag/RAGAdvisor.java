@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -23,8 +21,6 @@ import com.llmcr.service.rag.retrieval.select.FixedKStrategy;
 
 public class RAGAdvisor implements BaseAdvisor {
 
-    private static final Logger logger = LoggerFactory.getLogger(RAGAdvisor.class);
-
     public static final String RAG_INPUT = "ragInput";
     public static final String RETRIEVED_CONTEXT = "retrievedContext";
 
@@ -34,8 +30,8 @@ public class RAGAdvisor implements BaseAdvisor {
     private final ContextRetrievalConfiguration retrievalConfiguration;
     private final String messageTemplate;
 
-    private RAGAdvisor(QueryContextRetriever retriever, @Nullable ContextRetrievalConfiguration retrievalConfiguration,
-            @Nullable String messageTemplate) {
+    private RAGAdvisor(QueryContextRetriever retriever, ContextRetrievalConfiguration retrievalConfiguration,
+            String messageTemplate) {
         this.retriever = retriever;
         this.retrievalConfiguration = retrievalConfiguration != null ? retrievalConfiguration
                 : new ContextRetrievalConfiguration(5, new FixedKStrategy(), "docs", false);
@@ -60,8 +56,6 @@ public class RAGAdvisor implements BaseAdvisor {
         List<String> queries = ragInput.buildQueries();
         List<ContextScorePair> retrievedContexts = retriever
                 .retrieve(new ContextRetrievalRequest(queries, retrievalConfiguration));
-        logger.info("Retrieved contexts: {}", retrievedContexts.stream()
-                .map(pair -> "[Context: {}, Score: {}]".formatted(pair.context().getContent(), pair.score())).toList());
 
         // render retrieved context into a message using the template
         String renderedContext = renderContext(retrievedContexts);

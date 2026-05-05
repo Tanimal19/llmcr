@@ -1,7 +1,9 @@
 source ../.env
 
 # please refer to runner/ to see available modes
-SPRING_ARGUMENTS="--app.mode=review"
+# Usage: ./review.sh <diff-file-path>
+DIFF_FILE="${1:?Usage: ./review.sh <diff-file-path>}"
+SPRING_ARGUMENTS="--app.mode=review $DIFF_FILE"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 ./mvnw spring-boot:run \

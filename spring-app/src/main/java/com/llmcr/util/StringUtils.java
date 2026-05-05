@@ -1,6 +1,10 @@
 package com.llmcr.util;
 
 public class StringUtils {
+    public static String safeText(String text) {
+        return text == null ? "" : text;
+    }
+
     public static String stringFilter(String text) {
         if (text == null) {
             return "";

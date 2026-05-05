@@ -136,9 +136,7 @@ public class ClassNodeEnricher implements ContextEnricher {
         private final LargeChatClient chatClient;
 
         private ClassNodeEnrichAgent(LargeChatClient chatClient, RAGAdvisor.Builder ragAdvisorBuilder) {
-            super(ClassNodeEnrichOutput.class);
             this.chatClient = chatClient;
-            super.advisors = new ArrayList<>();
             super.advisors.add(ragAdvisorBuilder
                     .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
                     .messageTemplate(CONTEXT_MESSAGE_TEMPLATE)
@@ -161,8 +159,13 @@ public class ClassNodeEnricher implements ContextEnricher {
         }
 
         @Override
-        public Map<String, Object> buildAdvisorParams(ClassNodeEnrichInput input) {
-            return Map.of(RAGAdvisor.RAG_INPUT, input.classContent());
+        public Class<ClassNodeEnrichOutput> outputClass() {
+            return ClassNodeEnrichOutput.class;
+        }
+
+        @Override
+        protected void preprocess(ClassNodeEnrichInput input) {
+            super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
         }
     }
 

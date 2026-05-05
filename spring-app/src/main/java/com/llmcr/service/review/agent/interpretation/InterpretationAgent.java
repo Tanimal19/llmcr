@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.llmcr.agent.Agent;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
@@ -13,12 +12,13 @@ import com.llmcr.service.rag.RAGAdvisor;
 import com.llmcr.service.rag.RAGInput;
 import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.service.review.agent.BaseReviewAgent;
 import com.llmcr.service.review.agent.interpretation.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.service.review.agent.interpretation.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
-public class InterpretationAgent extends Agent<InterpretationAgentInput, InterpretationAgentOutput> {
+public class InterpretationAgent extends BaseReviewAgent<InterpretationAgentInput, InterpretationAgentOutput> {
 
     public record InterpretationAgentInput(List<CodeChange> codeChanges) implements AgentInput, RAGInput {
         @Override
@@ -50,7 +50,7 @@ public class InterpretationAgent extends Agent<InterpretationAgentInput, Interpr
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """
-            Here is the code change you need to interpret:
+            Below is the code change you need to interpret:
             <code_changes>
             """;
 
@@ -65,13 +65,32 @@ public class InterpretationAgent extends Agent<InterpretationAgentInput, Interpr
     private LargeChatClient chatClient;
 
     public InterpretationAgent(LargeChatClient chatClient, RAGAdvisor.Builder ragAdvisroBuilder) {
-        super(InterpretationAgentOutput.class);
-
         this.chatClient = chatClient;
         super.advisors.add(ragAdvisroBuilder
                 .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
                 .messageTemplate(CONTEXT_MESSAGE_TEMPLATE)
                 .build());
+    }
+
+    @Override
+    public Class<InterpretationAgentOutput> outputClass() {
+        return InterpretationAgentOutput.class;
+    }
+
+    @Override
+    protected String agentName() {
+        return this.getClass().getSimpleName();
+    }
+
+    @Override
+    protected String clientType() {
+        return this.chatClient.getClass().getSimpleName();
+    }
+
+    @Override
+    protected void preprocess(InterpretationAgentInput input) {
+        super.preprocess(input);
+        super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
     }
 
     @Override
@@ -89,8 +108,4 @@ public class InterpretationAgent extends Agent<InterpretationAgentInput, Interpr
         return USER_MESSAGE_TEMPLATE;
     }
 
-    @Override
-    public Map<String, Object> buildAdvisorParams(InterpretationAgentInput input) {
-        return Map.of(RAGAdvisor.RAG_INPUT, input);
-    }
 }

@@ -83,14 +83,38 @@ To run the application, follow these steps:
 ## Multi-Agent Code Review
 ![alt text](./assets/architecture.png)
 
-- **InterpretationLM**: Code Changes + (RAG) Project Context → Code Interpretation
-- **PlanningLM**: Code Interpretation + Code Analysis + (RAG) Review Guidelines → Checklist
-  - A checklist states items that need to be check during the review
-- **ComputationLM** (SLM): Code Changes + Checklist Item → Item Answer
-  - If current data is not enough, it delegate a query to RetrievalLM.
-- **RetrievalLM** (SLM): Data Query + Tool Definitions → Tool Requests
-  - After received tool responses, it evaluates whether the responses satisfied the query.
-  - If the responses is determined to satisfy the query, send it back to the ComputationLM; otherwise, call tools again.
-- **SummaryLM**: Code Changes + Code Analysis + Item Answers → Code Review Report
-- (Not Implement Now) **EvaluationLM**: Code Changes + Code Review Report → Quality Scores
-  
+### Workflow
+1. Interpretation Agent receives code changes and project context, and generates code interpretation including change description and change motivation.
+2. Planning Agent receives code changes, code interpretation, code analysis and review guidelines, and generates a checklist of code review items.
+3. For each checklist item, Computation Agent receives code changes, checklist item, previous analysis and previous retrieval result, and generates item answer. If the current data is not enough for answering the checklist item, it will generate a data query and send it to Retrieval Agent.
+4. Retrieval Agent receives data query and tool definitions, and generates tool requests. After receiving tool responses, it evaluates whether the responses satisfied the query. If the responses is determined to satisfy the query, send it back to the Computation Agent; otherwise, call tools again until the query is satisfied.
+5. Summary Agent receives code changes, code analysis and item answers, and generates code review report.
+6. (Not Implement Now) Evaluation Agent receives code changes and code review report, and generates quality scores.
+
+### Agents
+#### Interpretation Agent
+- Input: Code Changes + (RAG) Project Context
+- Output: Code Interpretation (change description + change motivation)
+
+#### Planning Agent
+- Input: Code Changes + Code Interpretation + Code Analysis + (RAG) Review Guidelines
+- Output: Checklist
+
+#### Computation Agent
+- Input: Code Changes + Checklist Item + Previous Analysis (if have) + Previous Retrieval Result (if have)
+- Output: Item Answer
+    - If current data is not enough, it output a query to Retrieval Agent.
+
+#### Retrieval Agent
+- Input: Data Query + Tool Definitions
+- Output: Tool Requests
+    - After received tool responses, it evaluates whether the responses satisfied the query.
+    - If the responses is determined to satisfy the query, send it back to the Computation Agent; otherwise, call tools again.
+
+#### Summary Agent
+- Input: Code Changes + Code Analysis + Item Answers
+- Output: Code Review Report
+
+#### Evaluation Agent (Not Implement Now)
+- Input: Code Changes + Code Review Report
+- Output: Quality Scores

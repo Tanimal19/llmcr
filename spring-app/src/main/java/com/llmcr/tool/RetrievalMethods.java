@@ -25,7 +25,7 @@ public class RetrievalMethods {
 
     private static final Logger log = LoggerFactory.getLogger(RetrievalMethods.class);
 
-    private static final int MAX_RESULT_ROWS = 50;
+    private static final int MAX_RESULT_ROWS = 20;
     private static final int MAX_CELL_CHARS = 500;
 
     private static final Set<String> ALLOWED_TYPES = Set.of("CLASSNODE", "DOCUMENT", "USECASE", "TOOLDEF");
@@ -111,7 +111,6 @@ public class RetrievalMethods {
                 content = content.substring(0, MAX_CELL_CHARS) + "...(truncated)";
             }
             output.append("\n### Row ").append(i + 1).append("\n")
-                    .append("- id: ").append(c.getId()).append("\n")
                     .append("- name: ").append(c.getName()).append("\n")
                     .append("- type: ").append(c.getType()).append("\n")
                     .append("- content:\n").append(content).append("\n");
