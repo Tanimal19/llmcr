@@ -64,7 +64,7 @@ public class PlanningAgent
 
             You will be given a list of code changes, an interpretation of the change, and outputs of static analysis tools.
 
-            Based on the given information, generate a checklist for code review. Each checklist item should be a concise question focusing on one specific aspect to check. Avoid vague or open-ended items. Plan at most 8 steps.
+            Based on the given information, generate a checklist for code review. Each checklist item should be a concise question focusing on one specific aspect to check. Avoid vague or open-ended items. Plan 5 ~ 8 items.
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """

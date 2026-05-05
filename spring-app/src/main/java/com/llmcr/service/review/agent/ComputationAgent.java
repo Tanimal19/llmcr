@@ -47,9 +47,12 @@ public class ComputationAgent
     }
 
     private static final String SYSTEM_MESSAGE = """
-            You are now a focused code-review model.
-            Your task is to answer one checklist item based on provided code change and analysis.
-            If information is insufficient, set needsAdditionalData=true and provide a concise dataQuery.
+            You are now a experienced code reviewer.
+            Your task is to analysis the checklist item based on provided information, and give a clear answer whether the checklist item is satisfied or not. If the checklist item is statisfied, answer with a detailed explanation why it is satisfied; if not satisfied, give a detailed explanation why it is not satisfied, and what is the potential risk.
+
+            You will be given the code change, the checklist item to be checked, previous analysis for this checklist item (if any), and tool retrieval result (if any). You should make use of all provided information to give a comprehensive analysis for the checklist item. Do not make any assumption beyond the provided information.
+
+            If information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. The dataQuery should be as specific as possible to guide the next retrieval step.
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """
@@ -61,7 +64,7 @@ public class ComputationAgent
             Previous analysis for this checklist item:
             <previous_analysis>
 
-            Tool retrieval result (if any):
+            Previous tool retrieval result:
             <retrieval_result>
             """;
 

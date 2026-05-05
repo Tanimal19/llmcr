@@ -79,14 +79,14 @@ public class ChainWorkflow {
                 new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
         log.info("Planning output: {}", planning);
 
-        // log.info("step=computation items={}", planning.checklistItems().size());
-        // List<ItemAnswer> itemAnswers = parallelizationWorkflow.run(
-        // codeChanges, planning.checklistItems());
+        log.info("step=computation items={}", planning.checklistItems().size());
+        List<ItemAnswer> itemAnswers = parallelizationWorkflow.run(
+                codeChanges, planning.checklistItems());
 
-        // log.info("step=summary");
-        // SummaryAgentOutput summary = summaryAgent.execute(
-        // new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
+        log.info("step=summary");
+        SummaryAgentOutput summary = summaryAgent.execute(
+                new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
 
-        return new ReviewResult(interpretation, null);
+        return new ReviewResult(interpretation, summary);
     }
 }

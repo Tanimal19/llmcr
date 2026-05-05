@@ -42,21 +42,22 @@ public class SummaryAgent extends BaseReviewAgent<SummaryAgent.SummaryAgentInput
         }
     }
 
-    public record Finding(String title, String detail, String severity, String filePath) {
+    public record Issue(String title, String detail, String location, String type, String severity) {
     }
 
     public record SummaryAgentOutput(
             String summary,
-            List<Finding> findings,
-            List<String> risks,
+            List<String> goodPoints,
+            List<String> badPoints,
+            List<Issue> issues,
             String overallVerdict) {
     }
 
     private static final String SYSTEM_MESSAGE = """
             You are now a senior reviewer writing a final code review report.
-            Aggregate checklist answers into a concise summary and explicit findings.
-            Severity should be one of: CRITICAL, HIGH, MEDIUM, LOW, INFO.
-            Avoid inventing facts not present in the given input.
+            Your task is to write a final review including a concise summary, good points, bad points, and potential issues. Each issue should have a title, detailed description, location (file and line number), type (e.g., bug, code smell, security ...) and severity level (low, medium, high). Finally give an overall verdict of the code change (e.g., approve, request changes, etc.).
+
+            You will be given the code change, code analysis, and checklist item answers. You should make use of all provided information to write a comprehensive review report. Avoid making any assumption beyond the provided information.
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """

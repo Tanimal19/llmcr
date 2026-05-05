@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.llmcr.service.review.agent.SummaryAgent;
+import com.llmcr.service.review.agent.SummaryAgent.Issue;
 import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.service.review.agent.SummaryAgent.SummaryAgentOutput;
 import com.llmcr.service.review.trace.ReviewTraceCollector;
@@ -122,25 +122,35 @@ public class CodeReviewService {
             sb.append("### Summary\n\n");
             sb.append(report.summary()).append("\n\n");
 
-            if (report.findings() != null && !report.findings().isEmpty()) {
-                sb.append("### Findings\n\n");
-                sb.append("| Severity | Title | File | Detail |\n");
-                sb.append("|----------|-------|------|--------|\n");
-                for (SummaryAgent.Finding f : report.findings()) {
-                    String file = f.filePath() != null ? f.filePath() : "";
-                    sb.append("| ").append(f.severity())
-                            .append(" | ").append(f.title())
-                            .append(" | ").append(file)
-                            .append(" | ").append(f.detail())
-                            .append(" |\n");
+            if (report.goodPoints() != null && !report.goodPoints().isEmpty()) {
+                sb.append("### Good Points\n\n");
+                for (String point : report.goodPoints()) {
+                    sb.append("- ").append(point).append("\n");
                 }
                 sb.append("\n");
             }
 
-            if (report.risks() != null && !report.risks().isEmpty()) {
-                sb.append("### Risks\n\n");
-                for (String risk : report.risks()) {
-                    sb.append("- ").append(risk).append("\n");
+            if (report.badPoints() != null && !report.badPoints().isEmpty()) {
+                sb.append("### Bad Points\n\n");
+                for (String point : report.badPoints()) {
+                    sb.append("- ").append(point).append("\n");
+                }
+                sb.append("\n");
+            }
+
+            if (report.issues() != null && !report.issues().isEmpty()) {
+                sb.append("### Issues\n\n");
+                sb.append("| Severity | Type | Title | Location | Detail |\n");
+                sb.append("|----------|------|-------|----------|--------|\n");
+                for (Issue issue : report.issues()) {
+                    String location = issue.location() != null ? issue.location() : "";
+                    String type = issue.type() != null ? issue.type() : "";
+                    sb.append("| ").append(issue.severity())
+                            .append(" | ").append(type)
+                            .append(" | ").append(issue.title())
+                            .append(" | ").append(location)
+                            .append(" | ").append(issue.detail())
+                            .append(" |\n");
                 }
                 sb.append("\n");
             }

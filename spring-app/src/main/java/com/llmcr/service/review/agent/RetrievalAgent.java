@@ -9,9 +9,6 @@ import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.SmallChatClient;
 import com.llmcr.service.rag.RAGAdvisor;
-import com.llmcr.service.rag.RAGInput;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.util.StringUtils;
 
 @Component
@@ -20,12 +17,7 @@ public class RetrievalAgent
 
     public record RetrievalAgentInput(
             String dataQuery,
-            List<String> toolResponses) implements AgentInput, RAGInput {
-
-        @Override
-        public List<String> buildQueries() {
-            return List.of(StringUtils.safeText(dataQuery));
-        }
+            List<String> toolResponses) implements AgentInput {
 
         @Override
         public Map<String, Object> getTemplateVariables() {
@@ -51,8 +43,8 @@ public class RetrievalAgent
     private static final String SYSTEM_MESSAGE = """
             You are now a retrieval planning model.
             Your task is to decide what tool calls should be made to satisfy the data query.
-            If existing tool responses already satisfy the query, set satisfied=true and return an empty toolRequests list.
-            If not satisfied, set satisfied=false and propose the minimum set of concrete tool requests.
+            If existing tool responses already satisfy the query, set satisfied=true and return an empty toolRequests list. If not satisfied, set satisfied=false and propose the minimum set of concrete tool requests.
+            If no tool call can satisfy the query, ask user for feedback on whether the query is too ambiguous or too difficult to answer.
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """
@@ -63,22 +55,10 @@ public class RetrievalAgent
             <tool_responses>
             """;
 
-    private static final String CONTEXT_MESSAGE_TEMPLATE = """
-            Below is additional retrieval/tool context:
-            <context>
-            """;
-
-    private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
-            6, new AdaptiveKStrategy(), "docs", false);
-
     private final SmallChatClient chatClient;
 
     public RetrievalAgent(SmallChatClient chatClient, RAGAdvisor.Builder ragAdvisorBuilder) {
         this.chatClient = chatClient;
-        super.advisors.add(ragAdvisorBuilder
-                .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
-                .messageTemplate(CONTEXT_MESSAGE_TEMPLATE)
-                .build());
     }
 
     @Override
