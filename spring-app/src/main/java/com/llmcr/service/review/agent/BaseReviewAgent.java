@@ -16,18 +16,14 @@ public abstract class BaseReviewAgent<I extends AgentInput, O> extends Agent<I, 
         super.advisors.add(new LoggingAdvisor());
     }
 
-    abstract protected String agentName();
-
-    abstract protected String clientType();
-
     protected void preprocess(I input) {
         // reset entry for each call
         traceCollector = ReviewTraceContext.current();
         entry = new AgentCallEntry();
         super.advisorParams.put(LoggingAdvisor.AGENT_CALL_ENTRY, entry);
-        this.entry.agentName = agentName();
-        this.entry.clientType = clientType();
-        this.entry.input = input;
+        this.entry.agentName = this.getClass().getSimpleName();
+        this.entry.clientType = this.chatClient().getClass().getSimpleName();
+        this.entry.input = input.getTemplateVariables();
     }
 
     protected void onSuccess(O output) {

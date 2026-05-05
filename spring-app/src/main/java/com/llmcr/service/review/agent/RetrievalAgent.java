@@ -1,4 +1,4 @@
-package com.llmcr.service.review.agent.retrieval;
+package com.llmcr.service.review.agent;
 
 import java.util.List;
 import java.util.Map;
@@ -12,7 +12,6 @@ import com.llmcr.service.rag.RAGAdvisor;
 import com.llmcr.service.rag.RAGInput;
 import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
-import com.llmcr.service.review.agent.BaseReviewAgent;
 import com.llmcr.util.StringUtils;
 
 @Component
@@ -95,16 +94,6 @@ public class RetrievalAgent
     @Override
     public Class<RetrievalAgentOutput> outputClass() {
         return RetrievalAgentOutput.class;
-    }
-
-    @Override
-    protected String agentName() {
-        return this.getClass().getSimpleName();
-    }
-
-    @Override
-    protected String clientType() {
-        return this.chatClient.getClass().getSimpleName();
     }
 
     @Override

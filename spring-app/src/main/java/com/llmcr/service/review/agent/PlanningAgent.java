@@ -1,4 +1,4 @@
-package com.llmcr.service.review.agent.planning;
+package com.llmcr.service.review.agent;
 
 import java.util.List;
 import java.util.Map;
@@ -12,8 +12,7 @@ import com.llmcr.service.rag.RAGAdvisor;
 import com.llmcr.service.rag.RAGInput;
 import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
-import com.llmcr.service.review.agent.BaseReviewAgent;
-import com.llmcr.service.review.agent.interpretation.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
@@ -50,17 +49,22 @@ public class PlanningAgent
         }
     }
 
-    public record ChecklistItem(String id, String description) {
-    }
-
-    public record PlanningAgentOutput(List<ChecklistItem> checklistItems) {
+    public record PlanningAgentOutput(List<String> checklistItems) {
     }
 
     private static final String SYSTEM_MESSAGE = """
-            You are now a senior software engineer specializing in Java and Spring code review.
-            Your task is to create a practical review checklist for the given code change.
-            You will be given a code change, a description of the change, and an analysis of the change.
-            Keep checklist items concrete and verifiable. You should produce at most 10 checklist items, each item should be concise (1-2 sentences) and focus on one specific aspect to check.
+            You are now a software engineer experienced at Java and Spring Framework. Your task is to generate a checklist to be check in the code review. Here's the things you need to consider but not limited to:
+            - The compatibility of the code change, does it fit with existing code and intended usage scenarios?
+            - The design of the code change, is it well-structured and following best practices?
+            - The security implications of the code change, does it introduce any vulnerabilities?
+            - The functionality of the code change, is it working as intended?
+            - The performance impact of the code change, does it introduce any inefficiencies?
+            - The maintainability of the code change, is it easy to understand and modify in the future?
+            - The readability of the code change, is it clear and well-documented?
+
+            You will be given a list of code changes, an interpretation of the change, and outputs of static analysis tools.
+
+            Based on the given information, generate a checklist for code review. Each checklist item should be a concise question focusing on one specific aspect to check. Avoid vague or open-ended items. Plan at most 8 steps.
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """
@@ -95,16 +99,6 @@ public class PlanningAgent
     @Override
     public Class<PlanningAgentOutput> outputClass() {
         return PlanningAgentOutput.class;
-    }
-
-    @Override
-    protected String agentName() {
-        return this.getClass().getSimpleName();
-    }
-
-    @Override
-    protected String clientType() {
-        return this.chatClient.getClass().getSimpleName();
     }
 
     @Override

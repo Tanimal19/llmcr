@@ -7,8 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.service.review.agent.planning.PlanningAgent.ChecklistItem;
-import com.llmcr.service.review.agent.summary.SummaryAgent.ItemAnswer;
+import com.llmcr.service.review.agent.SummaryAgent.ItemAnswer;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 /**
@@ -33,14 +32,15 @@ public class ParallelizationWorkflow {
      * Process all {@code checklistItems} and return one {@link ItemAnswer} per
      * item.
      */
-    public List<ItemAnswer> run(List<CodeChange> codeChanges, List<ChecklistItem> checklistItems) {
+    public List<ItemAnswer> run(List<CodeChange> codeChanges, List<String> checklistItems) {
         List<ItemAnswer> answers = new ArrayList<>();
-        List<ChecklistItem> safeItems = checklistItems == null ? List.of() : checklistItems;
+        List<String> safeItems = checklistItems == null ? List.of() : checklistItems;
 
-        for (ChecklistItem item : safeItems) {
-            log.info("processing item={}", item.description());
+        for (String item : safeItems) {
+            log.info("processing item: {}", item);
             ItemAnswer answer = orchestrator.run(codeChanges, item);
             answers.add(answer);
+            log.info("answer: {}", item, answer);
         }
 
         return answers;

@@ -40,7 +40,7 @@ public class RAGAdvisor implements BaseAdvisor {
 
     @Override
     public int getOrder() {
-        return Ordered.LOWEST_PRECEDENCE - 100;
+        return Ordered.HIGHEST_PRECEDENCE + 100;
     }
 
     @Override
@@ -61,9 +61,12 @@ public class RAGAdvisor implements BaseAdvisor {
         String renderedContext = renderContext(retrievedContexts);
         context.put(RETRIEVED_CONTEXT, renderedContext);
 
-        // put the rendered context as system message
+        // insert the rendered context at the front of the user message
+        String originalUserMessage = request.prompt().getUserMessage().getText();
+        String newUserMessage = renderedContext + "\n\n" + originalUserMessage;
+
         return request.mutate()
-                .prompt(request.prompt().augmentSystemMessage(renderedContext))
+                .prompt(request.prompt().augmentUserMessage(newUserMessage))
                 .build();
     }
 

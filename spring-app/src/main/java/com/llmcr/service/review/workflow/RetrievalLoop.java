@@ -1,6 +1,7 @@
 package com.llmcr.service.review.workflow;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.service.review.agent.retrieval.RetrievalAgent;
-import com.llmcr.service.review.agent.retrieval.RetrievalAgent.RetrievalAgentInput;
-import com.llmcr.service.review.agent.retrieval.RetrievalAgent.RetrievalAgentOutput;
-import com.llmcr.service.review.agent.retrieval.RetrievalAgent.ToolRequest;
+import com.llmcr.service.review.agent.RetrievalAgent;
+import com.llmcr.service.review.agent.RetrievalAgent.RetrievalAgentInput;
+import com.llmcr.service.review.agent.RetrievalAgent.RetrievalAgentOutput;
+import com.llmcr.service.review.agent.RetrievalAgent.ToolRequest;
 import com.llmcr.tool.RetrievalMethods;
 
 /**
@@ -89,7 +90,7 @@ public class RetrievalLoop {
         if (req == null || req.toolName() == null) {
             return "(tool error: null request)";
         }
-        Map<String, Object> args = req.arguments() != null ? req.arguments() : Map.of();
+        Map<String, Object> args = normalizeArgs(req.toolName(), req.arguments());
         return switch (req.toolName()) {
             case "askUserQuestion" -> retrievalMethods.askUserQuestion(
                     stringArg(args, "question"));
@@ -102,6 +103,34 @@ public class RetrievalLoop {
                 yield "(tool error: unknown tool '" + req.toolName() + "')";
             }
         };
+    }
+
+    private Map<String, Object> normalizeArgs(String toolName, Object rawArguments) {
+        if (rawArguments == null) {
+            return Map.of();
+        }
+
+        if (rawArguments instanceof Map<?, ?> rawMap) {
+            Map<String, Object> normalized = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+                if (entry.getKey() != null) {
+                    normalized.put(entry.getKey().toString(), entry.getValue());
+                }
+            }
+            return normalized;
+        }
+
+        if (rawArguments instanceof String text && !text.isBlank()) {
+            if ("askUserQuestion".equals(toolName)) {
+                return Map.of("question", text.trim());
+            }
+            if ("retrieveContext".equals(toolName)) {
+                return Map.of("contentKeyword", text.trim());
+            }
+            return Map.of("raw", text.trim());
+        }
+
+        return Map.of("raw", rawArguments.toString());
     }
 
     private String stringArg(Map<String, Object> args, String key) {

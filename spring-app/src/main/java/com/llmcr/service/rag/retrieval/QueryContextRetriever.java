@@ -112,7 +112,8 @@ public class QueryContextRetriever {
     }
 
     private List<ContextScorePair> retrieveSingleQuery(String query, ContextRetrievalConfiguration config) {
-        logger.info("Retrieving contexts for query: {}", query);
+        logger.info("Retrieving contexts for query: {}",
+                query.substring(0, Math.min(100, query.length())) + (query.length() > 100 ? "..." : ""));
 
         List<ChunkIdScorePair> topNChunks = vectorStore.similaritySearch(query, TOP_N, config.collectionName());
 

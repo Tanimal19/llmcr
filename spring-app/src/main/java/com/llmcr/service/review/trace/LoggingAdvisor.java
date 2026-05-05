@@ -18,12 +18,9 @@ public class LoggingAdvisor implements BaseAdvisor {
 
     public static final String AGENT_CALL_ENTRY = "agentCallEntry";
 
-    public LoggingAdvisor() {
-    }
-
     @Override
     public int getOrder() {
-        return Ordered.LOWEST_PRECEDENCE;
+        return Ordered.LOWEST_PRECEDENCE - 100;
     }
 
     @Override

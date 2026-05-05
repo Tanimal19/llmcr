@@ -1,4 +1,4 @@
-package com.llmcr.service.review.agent.summary;
+package com.llmcr.service.review.agent;
 
 import java.util.List;
 import java.util.Map;
@@ -8,14 +8,13 @@ import org.springframework.stereotype.Component;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
-import com.llmcr.service.review.agent.BaseReviewAgent;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
 @Component
 public class SummaryAgent extends BaseReviewAgent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput> {
 
-    public record ItemAnswer(String checklistItemId, String checklistItemTitle, String answer, String confidence) {
+    public record ItemAnswer(String checklistItemTitle, String answer) {
     }
 
     public record SummaryAgentInput(
@@ -32,9 +31,7 @@ public class SummaryAgent extends BaseReviewAgent<SummaryAgent.SummaryAgentInput
 
             List<ItemAnswer> safeItemAnswers = itemAnswers == null ? List.of() : itemAnswers;
             String itemAnswersText = String.join("\n----\n", safeItemAnswers.stream()
-                    .map(answer -> "ItemId: " + answer.checklistItemId()
-                            + "\nItemTitle: " + answer.checklistItemTitle()
-                            + "\nConfidence: " + answer.confidence()
+                    .map(answer -> "ItemTitle: " + answer.checklistItemTitle()
                             + "\nAnswer: " + answer.answer())
                     .toList());
 
@@ -82,16 +79,6 @@ public class SummaryAgent extends BaseReviewAgent<SummaryAgent.SummaryAgentInput
     @Override
     public Class<SummaryAgentOutput> outputClass() {
         return SummaryAgentOutput.class;
-    }
-
-    @Override
-    protected String agentName() {
-        return this.getClass().getSimpleName();
-    }
-
-    @Override
-    protected String clientType() {
-        return this.chatClient.getClass().getSimpleName();
     }
 
     @Override

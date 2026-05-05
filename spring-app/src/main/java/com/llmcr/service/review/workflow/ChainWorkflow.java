@@ -6,16 +6,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.service.review.agent.interpretation.InterpretationAgent;
-import com.llmcr.service.review.agent.interpretation.InterpretationAgent.InterpretationAgentInput;
-import com.llmcr.service.review.agent.interpretation.InterpretationAgent.InterpretationAgentOutput;
-import com.llmcr.service.review.agent.planning.PlanningAgent;
-import com.llmcr.service.review.agent.planning.PlanningAgent.PlanningAgentInput;
-import com.llmcr.service.review.agent.planning.PlanningAgent.PlanningAgentOutput;
-import com.llmcr.service.review.agent.summary.SummaryAgent;
-import com.llmcr.service.review.agent.summary.SummaryAgent.ItemAnswer;
-import com.llmcr.service.review.agent.summary.SummaryAgent.SummaryAgentInput;
-import com.llmcr.service.review.agent.summary.SummaryAgent.SummaryAgentOutput;
+import com.llmcr.service.review.agent.InterpretationAgent;
+import com.llmcr.service.review.agent.PlanningAgent;
+import com.llmcr.service.review.agent.SummaryAgent;
+import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentInput;
+import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.service.review.agent.PlanningAgent.PlanningAgentInput;
+import com.llmcr.service.review.agent.PlanningAgent.PlanningAgentOutput;
+import com.llmcr.service.review.agent.SummaryAgent.ItemAnswer;
+import com.llmcr.service.review.agent.SummaryAgent.SummaryAgentInput;
+import com.llmcr.service.review.agent.SummaryAgent.SummaryAgentOutput;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 /**
@@ -72,19 +72,21 @@ public class ChainWorkflow {
         log.info("step=interpretation");
         InterpretationAgentOutput interpretation = interpretationAgent.execute(
                 new InterpretationAgentInput(codeChanges));
+        log.info("Interpretation output: {}", interpretation);
 
         log.info("step=planning");
         PlanningAgentOutput planning = planningAgent.execute(
                 new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+        log.info("Planning output: {}", planning);
 
-        log.info("step=computation items={}", planning.checklistItems().size());
-        List<ItemAnswer> itemAnswers = parallelizationWorkflow.run(
-                codeChanges, planning.checklistItems());
+        // log.info("step=computation items={}", planning.checklistItems().size());
+        // List<ItemAnswer> itemAnswers = parallelizationWorkflow.run(
+        // codeChanges, planning.checklistItems());
 
-        log.info("step=summary");
-        SummaryAgentOutput summary = summaryAgent.execute(
-                new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
+        // log.info("step=summary");
+        // SummaryAgentOutput summary = summaryAgent.execute(
+        // new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
 
-        return new ReviewResult(interpretation, summary);
+        return new ReviewResult(interpretation, null);
     }
 }

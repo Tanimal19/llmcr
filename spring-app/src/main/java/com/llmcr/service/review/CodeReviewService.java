@@ -15,9 +15,9 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.llmcr.service.review.agent.interpretation.InterpretationAgent.InterpretationAgentOutput;
-import com.llmcr.service.review.agent.summary.SummaryAgent;
-import com.llmcr.service.review.agent.summary.SummaryAgent.SummaryAgentOutput;
+import com.llmcr.service.review.agent.SummaryAgent;
+import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.service.review.agent.SummaryAgent.SummaryAgentOutput;
 import com.llmcr.service.review.trace.ReviewTraceCollector;
 import com.llmcr.service.review.trace.ReviewTraceContext;
 import com.llmcr.service.review.workflow.ChainWorkflow;

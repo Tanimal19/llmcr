@@ -1,4 +1,4 @@
-package com.llmcr.service.review.agent.computation;
+package com.llmcr.service.review.agent;
 
 import java.util.List;
 import java.util.Map;
@@ -8,8 +8,6 @@ import org.springframework.stereotype.Component;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.SmallChatClient;
-import com.llmcr.service.review.agent.BaseReviewAgent;
-import com.llmcr.service.review.agent.planning.PlanningAgent.ChecklistItem;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
@@ -19,7 +17,7 @@ public class ComputationAgent
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
-            ChecklistItem checklistItem,
+            String checklistItem,
             String previousAnalysis,
             String retrievalResult) implements AgentInput {
 
@@ -30,7 +28,7 @@ public class ComputationAgent
                     .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                     .toList());
 
-            String itemDescription = checklistItem == null ? "" : StringUtils.safeText(checklistItem.description());
+            String itemDescription = StringUtils.safeText(checklistItem);
             String safePreviousAnalysis = StringUtils.safeText(previousAnalysis);
             String safeRetrievalResult = StringUtils.safeText(retrievalResult);
 
@@ -58,7 +56,7 @@ public class ComputationAgent
             Here is the code change:
             <code_changes>
 
-            Checklist item to check: <checklist_description>
+            Checklist item to be check: <checklist_description>
 
             Previous analysis for this checklist item:
             <previous_analysis>
@@ -91,15 +89,5 @@ public class ComputationAgent
     @Override
     public String userMessageTemplate() {
         return USER_MESSAGE_TEMPLATE;
-    }
-
-    @Override
-    protected String agentName() {
-        return this.getClass().getSimpleName();
-    }
-
-    @Override
-    protected String clientType() {
-        return this.chatClient.getClass().getSimpleName();
     }
 }

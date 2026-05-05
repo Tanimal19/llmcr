@@ -6,11 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.service.review.agent.computation.ComputationAgent;
-import com.llmcr.service.review.agent.computation.ComputationAgent.ComputationAgentInput;
-import com.llmcr.service.review.agent.computation.ComputationAgent.ComputationAgentOutput;
-import com.llmcr.service.review.agent.planning.PlanningAgent.ChecklistItem;
-import com.llmcr.service.review.agent.summary.SummaryAgent.ItemAnswer;
+import com.llmcr.service.review.agent.ComputationAgent;
+import com.llmcr.service.review.agent.ComputationAgent.ComputationAgentInput;
+import com.llmcr.service.review.agent.ComputationAgent.ComputationAgentOutput;
+import com.llmcr.service.review.agent.SummaryAgent.ItemAnswer;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 /**
@@ -41,21 +40,21 @@ public class ChecklistItemOrchestrator {
      *
      * @return an {@link ItemAnswer} with the final answer for the item.
      */
-    public ItemAnswer run(List<CodeChange> codeChanges, ChecklistItem checklistItem) {
+    public ItemAnswer run(List<CodeChange> codeChanges, String checklistItem) {
         String previousAnalysis = null;
         String retrievalResult = null;
 
         for (int i = 0; i < MAX_ITERATIONS; i++) {
-            log.info("item={} iteration={}", checklistItem.id(), i);
+            log.info("item={} iteration={}", checklistItem, i);
 
             ComputationAgentOutput output = computationAgent.execute(
                     new ComputationAgentInput(codeChanges, checklistItem, previousAnalysis, retrievalResult));
 
             if (!output.needsAdditionalData()) {
-                return new ItemAnswer(checklistItem.id(), checklistItem.description(), output.answer(), "");
+                return new ItemAnswer(checklistItem, output.answer());
             }
 
-            log.info("item={} needs retrieval query={}", checklistItem.id(), output.dataQuery());
+            log.info("item={} needs retrieval query={}", checklistItem, output.dataQuery());
             retrievalResult = retrievalLoop.run(output.dataQuery());
             previousAnalysis = output.answer();
         }
@@ -63,6 +62,6 @@ public class ChecklistItemOrchestrator {
         // Max iterations reached – return best effort answer from last computation
         ComputationAgentOutput finalOutput = computationAgent.execute(
                 new ComputationAgentInput(codeChanges, checklistItem, previousAnalysis, retrievalResult));
-        return new ItemAnswer(checklistItem.id(), checklistItem.description(), finalOutput.answer(), "");
+        return new ItemAnswer(checklistItem, finalOutput.answer());
     }
 }
