@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.llmcr.entity.Context;
+import com.llmcr.entity.Context.ContextType;
 
 public interface ContextRepository extends JpaRepository<Context, Long> {
 
@@ -30,4 +31,14 @@ public interface ContextRepository extends JpaRepository<Context, Long> {
 
     @Query("SELECT DISTINCT c FROM Context c JOIN c.chunks ch WHERE ch.id IN :chunkIds")
     public List<Context> findAllByChunkIds(@Param("chunkIds") List<Long> chunkIds);
+
+    @Query("SELECT c FROM Context c WHERE "
+            + "(:type IS NULL OR c.type = :type) AND "
+            + "(:nameKeyword IS NULL OR c.name LIKE %:nameKeyword%) AND "
+            + "(:contentKeyword IS NULL OR c.content LIKE %:contentKeyword%)")
+    public List<Context> findByFilter(
+            @Param("type") ContextType type,
+            @Param("nameKeyword") String nameKeyword,
+            @Param("contentKeyword") String contentKeyword,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.llmcr.client.EmbeddingClient;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Context;
-import com.llmcr.model.EmbeddingClient;
 import com.llmcr.repository.ChunkCollectionRepository;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;

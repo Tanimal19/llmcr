@@ -14,10 +14,13 @@ public final class GitDiffParser {
 
     private static final Pattern GIT_DIFF_HEADER_PATTERN = Pattern.compile("^diff --git a/(.+) b/(.+)$");
 
+    public record CodeChange(String filePath, String diffContent) {
+    }
+
     private GitDiffParser() {
     }
 
-    public static List<FileChange> parseDiffFile(String diffFilePath) {
+    public static List<CodeChange> parseDiffFile(String diffFilePath) {
         if (diffFilePath == null || diffFilePath.isBlank()) {
             throw new IllegalArgumentException("diffFilePath cannot be null or blank");
         }
@@ -34,12 +37,12 @@ public final class GitDiffParser {
         }
     }
 
-    public static List<FileChange> parseDiffContent(String diffContent) {
+    public static List<CodeChange> parseDiffContent(String diffContent) {
         if (diffContent == null || diffContent.isBlank()) {
             return List.of();
         }
 
-        List<FileChange> fileChanges = new ArrayList<>();
+        List<CodeChange> fileChanges = new ArrayList<>();
         String currentFilePath = null;
         StringBuilder currentDiff = new StringBuilder();
 
@@ -66,13 +69,13 @@ public final class GitDiffParser {
         return List.copyOf(fileChanges);
     }
 
-    private static void appendCurrentChange(List<FileChange> fileChanges, String filePath, StringBuilder diffBuilder) {
+    private static void appendCurrentChange(List<CodeChange> fileChanges, String filePath, StringBuilder diffBuilder) {
         if (filePath == null) {
             return;
         }
 
         String diffContent = trimTrailingNewline(diffBuilder.toString());
-        fileChanges.add(new FileChange(filePath, diffContent));
+        fileChanges.add(new CodeChange(filePath, diffContent));
     }
 
     private static String trimTrailingNewline(String value) {
@@ -80,9 +83,6 @@ public final class GitDiffParser {
             return value.substring(0, value.length() - 1);
         }
         return value;
-    }
-
-    public record FileChange(String filePath, String diffContent) {
     }
 
 }

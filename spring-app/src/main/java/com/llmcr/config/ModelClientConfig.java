@@ -15,12 +15,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.llmcr.model.EmbeddingClient;
-import com.llmcr.model.LargeChatClient;
-import com.llmcr.model.RerankingClient;
-import com.llmcr.model.SmallChatClient;
-import com.llmcr.model.reranking.OpenAiRerankingApi;
-import com.llmcr.model.reranking.OpenAiRerankingModel;
+import com.llmcr.client.EmbeddingClient;
+import com.llmcr.client.LargeChatClient;
+import com.llmcr.client.RerankingClient;
+import com.llmcr.client.SmallChatClient;
+import com.llmcr.client.reranking.OpenAiRerankingApi;
+import com.llmcr.client.reranking.OpenAiRerankingModel;
 
 @Configuration
 public class ModelClientConfig {

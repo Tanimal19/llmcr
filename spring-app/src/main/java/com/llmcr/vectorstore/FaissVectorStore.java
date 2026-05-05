@@ -6,13 +6,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
+import com.llmcr.client.EmbeddingClient;
 import com.llmcr.entity.Chunk;
-import com.llmcr.model.EmbeddingClient;
 import com.llmcr.service.FaissService;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsResponse;
-import com.llmcr.service.rag.ContextRetriever.ChunkIdScorePair;
+import com.llmcr.service.rag.retrieval.QueryContextRetriever.ChunkIdScorePair;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {

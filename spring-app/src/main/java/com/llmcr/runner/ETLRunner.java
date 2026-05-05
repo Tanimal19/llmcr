@@ -11,7 +11,7 @@ import com.llmcr.service.etl.ETLPipeline;
 import com.llmcr.service.sync.SyncService;
 
 @Component
-@ConditionalOnProperty(name = "app.mode", havingValue = "etl")
+@ConditionalOnProperty(name = "app.mode", havingValue = "etl-test")
 public class ETLRunner implements CommandLineRunner {
     @Autowired
     private final DatabaseInitializer databaseInitializer;

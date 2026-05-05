@@ -71,7 +71,7 @@ includeAliasesInList: false
 # - macro values can be numbers, bools, or strings
 # - macros can contain other macros, but they must be defined before they are used
 macros:
-  "model_dir": /Users/bobch/Desktop/軟工專題/llmcr/models
+  "model_dir": ./models
 
 # models: a dictionary of model configurations
 # - required
@@ -115,7 +115,7 @@ models:
       llama-server
       -m ${model_dir}/harrier-oss-v1-0.6b.Q4_K_M.gguf
       --embeddings
-      --ctx-size 2048
+      --ctx-size 4096
       --ubatch-size 1024
       --cache-ram 0
       --parallel 1
@@ -129,7 +129,7 @@ models:
       llama-server
       -m ${model_dir}/qwen3-reranker-0.6b-q8_0.gguf
       --reranking
-      --ctx-size 2048
+      --ctx-size 4096
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
