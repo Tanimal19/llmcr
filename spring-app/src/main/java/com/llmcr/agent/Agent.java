@@ -5,9 +5,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
 
 import com.llmcr.client.ChatClientWrapper;
@@ -30,6 +32,11 @@ public abstract class Agent<I extends AgentInput, O> {
         // enrichment
     }
 
+    protected ChatClientRequestSpec enrichRequestSpec(ChatClientRequestSpec requestSpec) {
+        // default no-op, can be overridden by subclasses for request enrichment
+        return requestSpec;
+    }
+
     protected void onSuccess(O output) {
         // default no-op, can be overridden by subclasses for output validation or
         // enrichment
@@ -42,14 +49,19 @@ public abstract class Agent<I extends AgentInput, O> {
     public O execute(I input) {
         try {
             preprocess(input);
+            BeanOutputConverter<O> outputConverter = new BeanOutputConverter<>(outputClass());
+            String formatInstruction = outputConverter.getFormat();
+
             String userMessage = renderUserMessage(input);
             Prompt prompt = new Prompt()
-                    .augmentSystemMessage(systemMessage())
+                    .augmentSystemMessage(systemMessage() + "\n" + formatInstruction)
                     .augmentUserMessage(userMessage);
 
-            O response = chatClient().getChatClient().prompt(prompt)
+            ChatClientRequestSpec requestSpec = chatClient().getChatClient().prompt(prompt)
                     .advisors(advisors)
-                    .advisors(spec -> spec.params(advisorParams))
+                    .advisors(spec -> spec.params(advisorParams));
+
+            O response = enrichRequestSpec(requestSpec)
                     .call()
                     .entity(outputClass());
             onSuccess(response);

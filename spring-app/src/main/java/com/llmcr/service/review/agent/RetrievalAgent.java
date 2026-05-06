@@ -3,12 +3,14 @@ package com.llmcr.service.review.agent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.SmallChatClient;
 import com.llmcr.service.rag.RAGAdvisor;
+import com.llmcr.tool.RetrievalMethods;
 import com.llmcr.util.StringUtils;
 
 @Component
@@ -56,9 +58,12 @@ public class RetrievalAgent
             """;
 
     private final SmallChatClient chatClient;
+    private final RetrievalMethods retrievalMethods;
 
-    public RetrievalAgent(SmallChatClient chatClient, RAGAdvisor.Builder ragAdvisorBuilder) {
+    public RetrievalAgent(SmallChatClient chatClient,
+            RetrievalMethods retrievalMethods) {
         this.chatClient = chatClient;
+        this.retrievalMethods = retrievalMethods;
     }
 
     @Override
@@ -80,6 +85,11 @@ public class RetrievalAgent
     protected void preprocess(RetrievalAgentInput input) {
         super.preprocess(input);
         super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
+    }
+
+    @Override
+    protected ChatClientRequestSpec enrichRequestSpec(ChatClientRequestSpec requestSpec) {
+        return requestSpec.tools(retrievalMethods);
     }
 
     @Override

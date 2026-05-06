@@ -50,9 +50,7 @@ public class ComputationAgent
             You are now a experienced code reviewer.
             Your task is to analysis the checklist item based on provided information, and give a clear answer whether the checklist item is satisfied or not. If the checklist item is statisfied, answer with a detailed explanation why it is satisfied; if not satisfied, give a detailed explanation why it is not satisfied, and what is the potential risk.
 
-            You will be given the code change, the checklist item to be checked, previous analysis for this checklist item (if any), and tool retrieval result (if any). You should make use of all provided information to give a comprehensive analysis for the checklist item. Do not make any assumption beyond the provided information.
-
-            If information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. The dataQuery should be as specific as possible to guide the next retrieval step.
+            You will be given the code change, the checklist item to be checked, previous analysis for this checklist item (if any), and tool retrieval result (if any). You should make use of all provided information to give a comprehensive analysis follow the checklist item. Do not make any assumption beyond the provided information. If the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed.
             """;
 
     private static final String USER_MESSAGE_TEMPLATE = """

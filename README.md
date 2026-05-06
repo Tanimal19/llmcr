@@ -43,20 +43,55 @@ To run the application, follow these steps:
 
 
 # Structure
-- `_datasets/`: Datasets for ETL. (you need to prepare it by yourself)
-- `faiss_service/`: FAISS vector store service implemented in Python Flask.
-- `spring-app/`: Spring Boot application for ETL and RAG.
-- `models/`: LLM and embedding model files.
+```
+llmcr/
+├── docker-compose.yml          # MariaDB + FAISS service containers
+├── llama-swap.yml              # LLM model routing config (llama-swap)
+├── faiss_service/              # Python FAISS microservice (REST API)
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py             # FastAPI endpoints
+│       ├── faiss_utils.py      # Index CRUD helpers
+│       └── data/               # .index files (vector store persistence)
+├── spring-app/                 # Main Spring Boot application
+│   ├── pom.xml
+│   ├── review.sh               # Entry point to trigger code review
+│   └── src/main/
+│       ├── resources/
+│       │   ├── application.properties   # DB / model endpoint config
+│       │   └── application.yml          # Dataset paths & review config
+│       └── java/com/llmcr/
+│           ├── LlmcrApplication.java
+│           ├── entity/                  # JPA entities (TrackRoot, Source, Context, Chunk, …)
+│           ├── repository/              # Spring Data repositories
+│           ├── service/
+│           │   ├── etl/                 # ETL pipeline (extract → split → enrich → load)
+│           │   │   ├── ETLPipeline.java
+│           │   │   ├── extractor/       # Per-source-type extractors
+│           │   │   └── transformer/     # Splitters & enrichers
+│           │   ├── rag/                 # RAG advisor & retrieval strategies
+│           │   │   ├── RAGAdvisor.java
+│           │   │   └── retrieval/       # Fusion & top-k selection
+│           │   ├── review/              # Multi-agent code review workflow
+│           │   │   ├── CodeReviewService.java
+│           │   │   ├── agent/           # Interpretation / Planning / Computation / Retrieval / Summary agents
+│           │   │   ├── workflow/        # Chain, parallelization & retrieval-loop orchestration
+│           │   │   └── trace/           # Logging & trace collection
+│           │   └── sync/               # Source sync service
+│           ├── tool/
+│           │   └── RetrievalMethods.java  # Tool definitions exposed to Retrieval Agent
+│           ├── vectorstore/             # FAISS vector store adapter
+│           └── client/                  # LLM / embedding / reranking clients
+├── _datasets/                  # Raw data fed into ETL
+│   ├── docs/
+│   ├── guidelines/             # Code review guidelines (Google, GitLab, …)
+│   └── projects/               # Source projects to review
+├── _backups/                   # Pre-built index & DB dump for quick start
+│   ├── ragdb_backup.sql
+│   └── faiss/*.index
+```
 
-## Spring APP
-
-## Database Schema
-
-
-# Common Problems
-#### Can not find JAVA_HOME (Windows)
-1. Set `JAVA_HOME` in System Environment Variables, e.g. `C:\Program Files\Java\jdk-xx `
-2. Please use git bash instead of WSL bash/sh in powershell (WSL bash cannot find your JAVA_HOME)，add git bash in `PATH` System Environment Variables, e.g. `C:\Program Files\Git\bin`
 
 # Design Concepts
 
@@ -77,13 +112,11 @@ To run the application, follow these steps:
 - `docs` including all internal documentations and all external knowledge.
 - `guidelines` including all code review guidelines.
 - `usecases` including all use cases on how to perform specific code review checks.
-- `tool-definitions` including all tool API specifications.
 
 
-## Multi-Agent Code Review
+## Multi-Agent Code Review Workflow
 ![alt text](./assets/architecture.png)
 
-### Workflow
 1. Interpretation Agent receives code changes and project context, and generates code interpretation including change description and change motivation.
 2. Planning Agent receives code changes, code interpretation, code analysis and review guidelines, and generates a checklist of code review items.
 3. For each checklist item, Computation Agent receives code changes, checklist item, previous analysis and previous retrieval result, and generates item answer. If the current data is not enough for answering the checklist item, it will generate a data query and send it to Retrieval Agent.
@@ -106,7 +139,7 @@ To run the application, follow these steps:
     - If current data is not enough, it output a query to Retrieval Agent.
 
 #### Retrieval Agent
-- Input: Data Query + Tool Definitions
+- Input: Data Query + (Fixed) Tool Definitions
 - Output: Tool Requests
     - After received tool responses, it evaluates whether the responses satisfied the query.
     - If the responses is determined to satisfy the query, send it back to the Computation Agent; otherwise, call tools again.
@@ -118,3 +151,11 @@ To run the application, follow these steps:
 #### Evaluation Agent (Not Implement Now)
 - Input: Code Changes + Code Review Report
 - Output: Quality Scores
+
+# TODO
+- Write use cases
+
+# Common Problems
+#### Can not find JAVA_HOME (Windows)
+1. Set `JAVA_HOME` in System Environment Variables, e.g. `C:\Program Files\Java\jdk-xx `
+2. Please use git bash instead of WSL bash/sh in powershell (WSL bash cannot find your JAVA_HOME)，add git bash in `PATH` System Environment Variables, e.g. `C:\Program Files\Git\bin`

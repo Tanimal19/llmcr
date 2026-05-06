@@ -28,7 +28,7 @@ public class LoggingAdvisor implements BaseAdvisor {
         Map<String, Object> context = new HashMap<>(request.context());
         if (context.containsKey(AGENT_CALL_ENTRY)) {
             AgentCallEntry entry = (AgentCallEntry) context.get(AGENT_CALL_ENTRY);
-            entry.rawPrompt = request.prompt().getContents();
+            entry.rawPrompt = request.prompt().toString();
         }
         return request;
     }
