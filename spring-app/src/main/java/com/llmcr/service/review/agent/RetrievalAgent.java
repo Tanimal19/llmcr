@@ -9,8 +9,9 @@ import org.springframework.stereotype.Component;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.SmallChatClient;
-import com.llmcr.service.rag.RAGAdvisor;
-import com.llmcr.tool.RetrievalMethods;
+import com.llmcr.service.rag.ContextAugmentAdvisor;
+import com.llmcr.tool.DatabaseTool;
+import com.llmcr.tool.UserInteractionTool;
 import com.llmcr.util.StringUtils;
 
 @Component
@@ -58,12 +59,15 @@ public class RetrievalAgent
             """;
 
     private final SmallChatClient chatClient;
-    private final RetrievalMethods retrievalMethods;
+    private final UserInteractionTool userInteractionTool;
+    private final DatabaseTool databaseTool;
 
     public RetrievalAgent(SmallChatClient chatClient,
-            RetrievalMethods retrievalMethods) {
+            UserInteractionTool userInteractionTool,
+            DatabaseTool databaseTool) {
         this.chatClient = chatClient;
-        this.retrievalMethods = retrievalMethods;
+        this.userInteractionTool = userInteractionTool;
+        this.databaseTool = databaseTool;
     }
 
     @Override
@@ -84,12 +88,12 @@ public class RetrievalAgent
     @Override
     protected void preprocess(RetrievalAgentInput input) {
         super.preprocess(input);
-        super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
+        super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
     }
 
     @Override
     protected ChatClientRequestSpec enrichRequestSpec(ChatClientRequestSpec requestSpec) {
-        return requestSpec.tools(retrievalMethods);
+        return requestSpec.tools(userInteractionTool, databaseTool);
     }
 
     @Override

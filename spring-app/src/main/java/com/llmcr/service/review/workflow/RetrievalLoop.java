@@ -13,14 +13,15 @@ import com.llmcr.service.review.agent.RetrievalAgent;
 import com.llmcr.service.review.agent.RetrievalAgent.RetrievalAgentInput;
 import com.llmcr.service.review.agent.RetrievalAgent.RetrievalAgentOutput;
 import com.llmcr.service.review.agent.RetrievalAgent.ToolRequest;
-import com.llmcr.tool.RetrievalMethods;
+import com.llmcr.tool.DatabaseTool;
+import com.llmcr.tool.UserInteractionTool;
 
 /**
  * Loops the RetrievalAgent until it signals satisfied or MAX_ITERATIONS is
  * reached.
  * On each iteration the agent decides which tools to call; this class
  * dispatches
- * those calls against {@link RetrievalMethods} and feeds the responses back.
+ * those calls against tool components and feeds the responses back.
  */
 @Component
 public class RetrievalLoop {
@@ -35,11 +36,14 @@ public class RetrievalLoop {
     private static final int ASK_USER_AFTER_ITERATIONS = 3;
 
     private final RetrievalAgent retrievalAgent;
-    private final RetrievalMethods retrievalMethods;
+    private final UserInteractionTool userInteractionTool;
+    private final DatabaseTool databaseTool;
 
-    public RetrievalLoop(RetrievalAgent retrievalAgent, RetrievalMethods retrievalMethods) {
+    public RetrievalLoop(RetrievalAgent retrievalAgent, UserInteractionTool userInteractionTool,
+            DatabaseTool databaseTool) {
         this.retrievalAgent = retrievalAgent;
-        this.retrievalMethods = retrievalMethods;
+        this.userInteractionTool = userInteractionTool;
+        this.databaseTool = databaseTool;
     }
 
     /**
@@ -92,9 +96,9 @@ public class RetrievalLoop {
         }
         Map<String, Object> args = normalizeArgs(req.toolName(), req.arguments());
         return switch (req.toolName()) {
-            case "askUserQuestion" -> retrievalMethods.askUserQuestion(
+            case "askUserQuestion" -> userInteractionTool.askUserQuestion(
                     stringArg(args, "question"));
-            case "retrieveContext" -> retrievalMethods.retrieveContext(
+            case "retrieveContext" -> databaseTool.retrieveContext(
                     stringArg(args, "contextType"),
                     stringArg(args, "nameKeyword"),
                     stringArg(args, "contentKeyword"));

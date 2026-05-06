@@ -1,8 +1,8 @@
 package com.llmcr.service.review.agent;
 
 import com.llmcr.agent.Agent;
+import com.llmcr.agent.AgentCallEntry;
 import com.llmcr.agent.AgentInput;
-import com.llmcr.service.review.trace.AgentCallEntry;
 import com.llmcr.service.review.trace.LoggingAdvisor;
 import com.llmcr.service.review.trace.ReviewTraceCollector;
 import com.llmcr.service.review.trace.ReviewTraceContext;

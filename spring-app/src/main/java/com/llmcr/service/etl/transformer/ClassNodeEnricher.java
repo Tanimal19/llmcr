@@ -14,7 +14,7 @@ import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
-import com.llmcr.service.rag.RAGAdvisor;
+import com.llmcr.service.rag.ContextAugmentAdvisor;
 import com.llmcr.service.rag.RAGInput;
 import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
@@ -43,7 +43,7 @@ public class ClassNodeEnricher implements ContextEnricher {
 
     private final ClassNodeEnrichAgent classNodeEnrichAgent;
 
-    public ClassNodeEnricher(LargeChatClient chatModel, RAGAdvisor.Builder ragAdvisorBuilder) {
+    public ClassNodeEnricher(LargeChatClient chatModel, ContextAugmentAdvisor.Builder ragAdvisorBuilder) {
         this.classNodeEnrichAgent = new ClassNodeEnrichAgent(chatModel, ragAdvisorBuilder);
     }
 
@@ -135,7 +135,7 @@ public class ClassNodeEnricher implements ContextEnricher {
 
         private final LargeChatClient chatClient;
 
-        private ClassNodeEnrichAgent(LargeChatClient chatClient, RAGAdvisor.Builder ragAdvisorBuilder) {
+        private ClassNodeEnrichAgent(LargeChatClient chatClient, ContextAugmentAdvisor.Builder ragAdvisorBuilder) {
             this.chatClient = chatClient;
             super.advisors.add(ragAdvisorBuilder
                     .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
@@ -165,7 +165,7 @@ public class ClassNodeEnricher implements ContextEnricher {
 
         @Override
         protected void preprocess(ClassNodeEnrichInput input) {
-            super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
+            super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
         }
     }
 

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
-import com.llmcr.service.rag.RAGAdvisor;
+import com.llmcr.service.rag.ContextAugmentAdvisor;
 import com.llmcr.service.rag.RAGInput;
 import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
@@ -88,7 +88,7 @@ public class PlanningAgent
 
     private final LargeChatClient chatClient;
 
-    public PlanningAgent(LargeChatClient chatClient, RAGAdvisor.Builder ragAdvisorBuilder) {
+    public PlanningAgent(LargeChatClient chatClient, ContextAugmentAdvisor.Builder ragAdvisorBuilder) {
         this.chatClient = chatClient;
         super.advisors.add(ragAdvisorBuilder
                 .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
@@ -104,7 +104,7 @@ public class PlanningAgent
     @Override
     protected void preprocess(PlanningAgentInput input) {
         super.preprocess(input);
-        super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
+        super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
     }
 
     @Override

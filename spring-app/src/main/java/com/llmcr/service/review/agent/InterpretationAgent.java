@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
-import com.llmcr.service.rag.RAGAdvisor;
+import com.llmcr.service.rag.ContextAugmentAdvisor;
 import com.llmcr.service.rag.RAGInput;
 import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
@@ -62,7 +62,7 @@ public class InterpretationAgent extends BaseReviewAgent<InterpretationAgentInpu
 
     private LargeChatClient chatClient;
 
-    public InterpretationAgent(LargeChatClient chatClient, RAGAdvisor.Builder ragAdvisroBuilder) {
+    public InterpretationAgent(LargeChatClient chatClient, ContextAugmentAdvisor.Builder ragAdvisroBuilder) {
         this.chatClient = chatClient;
         super.advisors.add(ragAdvisroBuilder
                 .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
@@ -78,7 +78,7 @@ public class InterpretationAgent extends BaseReviewAgent<InterpretationAgentInpu
     @Override
     protected void preprocess(InterpretationAgentInput input) {
         super.preprocess(input);
-        super.advisorParams.put(RAGAdvisor.RAG_INPUT, input);
+        super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
     }
 
     @Override

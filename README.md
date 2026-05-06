@@ -47,15 +47,8 @@ To run the application, follow these steps:
 llmcr/
 ├── docker-compose.yml          # MariaDB + FAISS service containers
 ├── llama-swap.yml              # LLM model routing config (llama-swap)
-├── faiss_service/              # Python FAISS microservice (REST API)
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── main.py             # FastAPI endpoints
-│       ├── faiss_utils.py      # Index CRUD helpers
-│       └── data/               # .index files (vector store persistence)
+├── faiss_service/              # Python FAISS microservice
 ├── spring-app/                 # Main Spring Boot application
-│   ├── pom.xml
 │   ├── review.sh               # Entry point to trigger code review
 │   └── src/main/
 │       ├── resources/
@@ -84,10 +77,7 @@ llmcr/
 │           ├── vectorstore/             # FAISS vector store adapter
 │           └── client/                  # LLM / embedding / reranking clients
 ├── _datasets/                  # Raw data fed into ETL
-│   ├── docs/
-│   ├── guidelines/             # Code review guidelines (Google, GitLab, …)
-│   └── projects/               # Source projects to review
-├── _backups/                   # Pre-built index & DB dump for quick start
+├── _backups/                   # Pre-built index & DB dump
 │   ├── ragdb_backup.sql
 │   └── faiss/*.index
 ```
