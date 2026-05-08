@@ -7,12 +7,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.llmcr.config.DatabaseInitializer;
-import com.llmcr.service.etl.ETLPipeline;
 import com.llmcr.service.sync.SyncService;
 
 @Component
-@ConditionalOnProperty(name = "app.mode", havingValue = "etl-test")
-public class ETLRunner implements CommandLineRunner {
+@ConditionalOnProperty(name = "app.mode", havingValue = "sync")
+public class SyncRunner implements CommandLineRunner {
     @Autowired
     private final DatabaseInitializer databaseInitializer;
 
@@ -20,17 +19,14 @@ public class ETLRunner implements CommandLineRunner {
     private final SyncService syncService;
 
     @Autowired
-    private final ETLPipeline etlPipeline;
-
-    @Autowired
     private final JdbcTemplate jdbcTemplate;
 
-    public ETLRunner(DatabaseInitializer databaseInitializer,
-            SyncService syncService, ETLPipeline etlPipeline,
+    public SyncRunner(
+            DatabaseInitializer databaseInitializer,
+            SyncService syncService,
             JdbcTemplate jdbcTemplate) {
         this.databaseInitializer = databaseInitializer;
         this.syncService = syncService;
-        this.etlPipeline = etlPipeline;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -40,7 +36,6 @@ public class ETLRunner implements CommandLineRunner {
 
         databaseInitializer.init();
         syncService.sync();
-        etlPipeline.run();
     }
 
     private void resetEntityTables() {

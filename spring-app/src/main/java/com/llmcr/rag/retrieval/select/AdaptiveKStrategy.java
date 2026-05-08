@@ -1,10 +1,10 @@
-package com.llmcr.service.rag.retrieval.select;
+package com.llmcr.rag.retrieval.select;
 
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
 
 /**
  * AdaptiveKStrategy dynamically determines the optimal number of contexts to

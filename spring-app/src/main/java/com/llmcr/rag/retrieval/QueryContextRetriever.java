@@ -1,4 +1,4 @@
-package com.llmcr.service.rag.retrieval;
+package com.llmcr.rag.retrieval;
 
 import java.util.List;
 import java.util.Map;
@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 import com.llmcr.client.RerankingClient;
 import com.llmcr.client.reranking.RerankingResponse;
 import com.llmcr.entity.Context;
+import com.llmcr.rag.retrieval.fusion.FusionStrategy;
+import com.llmcr.rag.retrieval.fusion.RankFusionStrategy;
+import com.llmcr.rag.retrieval.select.TopKSelectionStrategy;
 import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.rag.retrieval.fusion.FusionStrategy;
-import com.llmcr.service.rag.retrieval.fusion.RankFusionStrategy;
-import com.llmcr.service.rag.retrieval.select.TopKSelectionStrategy;
 import com.llmcr.vectorstore.MyVectorStore;
 
 /**

@@ -3,8 +3,11 @@ package com.llmcr.service.review.agent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.Agent;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.SmallChatClient;
@@ -13,7 +16,8 @@ import com.llmcr.util.StringUtils;
 
 @Component
 public class ComputationAgent
-        extends BaseReviewAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationAgentOutput> {
+        extends
+        Agent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationAgentOutput, ComputationAgent.ComputationAgentOutput> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -69,26 +73,31 @@ public class ComputationAgent
     private final SmallChatClient chatClient;
 
     public ComputationAgent(SmallChatClient chatClient) {
+        super(
+                null,
+                null,
+                1,
+                null,
+                false, false, true,
+                SYSTEM_MESSAGE,
+                "",
+                USER_MESSAGE_TEMPLATE);
         this.chatClient = chatClient;
     }
 
     @Override
-    public Class<ComputationAgentOutput> outputClass() {
+    protected Class<ComputationAgentOutput> modelOutputClass() {
         return ComputationAgentOutput.class;
     }
 
     @Override
-    public ChatClientWrapper chatClient() {
+    protected ChatClientWrapper chatClient() {
         return chatClient;
     }
 
     @Override
-    public String systemMessage() {
-        return SYSTEM_MESSAGE;
-    }
-
-    @Override
-    public String userMessageTemplate() {
-        return USER_MESSAGE_TEMPLATE;
+    protected ComputationAgentOutput constructAgentOutput(
+            ResponseEntity<ChatResponse, ComputationAgentOutput> responseEntity) {
+        return responseEntity.entity();
     }
 }

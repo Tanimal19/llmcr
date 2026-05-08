@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.client.EmbeddingClient;
@@ -18,11 +18,7 @@ import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.vectorstore.MyVectorStore;
 
-/**
- * Load chunks of a context into the vector store based on the TrackRoot's
- * in-collections.
- */
-@Service
+@Component
 public class LoadService {
 
     private static final Logger log = LoggerFactory.getLogger(LoadService.class);

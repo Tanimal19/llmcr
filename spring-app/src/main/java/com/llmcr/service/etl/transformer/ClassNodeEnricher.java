@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,10 +16,9 @@ import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
-import com.llmcr.service.rag.ContextAugmentAdvisor;
-import com.llmcr.service.rag.RAGInput;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 
 /**
  * Enrich ClassNode context by generating a summary using LLM.
@@ -43,8 +44,8 @@ public class ClassNodeEnricher implements ContextEnricher {
 
     private final ClassNodeEnrichAgent classNodeEnrichAgent;
 
-    public ClassNodeEnricher(LargeChatClient chatModel, ContextAugmentAdvisor.Builder ragAdvisorBuilder) {
-        this.classNodeEnrichAgent = new ClassNodeEnrichAgent(chatModel, ragAdvisorBuilder);
+    public ClassNodeEnricher(LargeChatClient chatModel, QueryContextRetriever queryContextRetriever) {
+        this.classNodeEnrichAgent = new ClassNodeEnrichAgent(chatModel, queryContextRetriever);
     }
 
     @Override
@@ -66,7 +67,7 @@ public class ClassNodeEnricher implements ContextEnricher {
         }
 
         ClassNodeEnrichOutput enrichment = classNodeEnrichAgent
-                .execute(new ClassNodeEnrichInput(classNode.getContent()));
+                .execute(new ClassNodeEnrichInput(classNode.getContent()), "none");
 
         // update class node
         classNode.addChunk(new Chunk(enrichment.functional()));
@@ -76,7 +77,7 @@ public class ClassNodeEnricher implements ContextEnricher {
         return classNode;
     }
 
-    private record ClassNodeEnrichInput(String classContent) implements AgentInput, RAGInput {
+    private record ClassNodeEnrichInput(String classContent) implements AgentInput {
 
         private static final int QUERY_CHUNK_SIZE = 2000;
 
@@ -101,7 +102,8 @@ public class ClassNodeEnricher implements ContextEnricher {
     private record ClassNodeEnrichOutput(String functional, String relationship, String usage) {
     }
 
-    private class ClassNodeEnrichAgent extends Agent<ClassNodeEnrichInput, ClassNodeEnrichOutput> {
+    private class ClassNodeEnrichAgent
+            extends Agent<ClassNodeEnrichInput, ClassNodeEnrichOutput, ClassNodeEnrichOutput> {
 
         private static final String SYSTEM_MESSAGE = """
                 You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and its related documentation contents.
@@ -135,37 +137,33 @@ public class ClassNodeEnricher implements ContextEnricher {
 
         private final LargeChatClient chatClient;
 
-        private ClassNodeEnrichAgent(LargeChatClient chatClient, ContextAugmentAdvisor.Builder ragAdvisorBuilder) {
+        private ClassNodeEnrichAgent(LargeChatClient chatClient, QueryContextRetriever queryContextRetriever) {
+            super(
+                    queryContextRetriever,
+                    RETRIEVAL_CONFIGURATION,
+                    1,
+                    null,
+                    true, false, true,
+                    SYSTEM_MESSAGE,
+                    CONTEXT_MESSAGE_TEMPLATE,
+                    USER_MESSAGE_TEMPLATE);
             this.chatClient = chatClient;
-            super.advisors.add(ragAdvisorBuilder
-                    .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
-                    .messageTemplate(CONTEXT_MESSAGE_TEMPLATE)
-                    .build());
         }
 
         @Override
-        public ChatClientWrapper chatClient() {
+        protected ChatClientWrapper chatClient() {
             return chatClient;
         }
 
         @Override
-        public String systemMessage() {
-            return SYSTEM_MESSAGE;
-        }
-
-        @Override
-        public String userMessageTemplate() {
-            return USER_MESSAGE_TEMPLATE;
-        }
-
-        @Override
-        public Class<ClassNodeEnrichOutput> outputClass() {
+        protected Class<ClassNodeEnrichOutput> modelOutputClass() {
             return ClassNodeEnrichOutput.class;
         }
 
         @Override
-        protected void preprocess(ClassNodeEnrichInput input) {
-            super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
+        protected ClassNodeEnrichOutput constructAgentOutput(
+                ResponseEntity<ChatResponse, ClassNodeEnrichOutput> responseEntity) {
+            return responseEntity.entity();
         }
     }
 

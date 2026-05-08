@@ -3,8 +3,16 @@ package com.llmcr.vectorstore;
 import java.util.List;
 
 import com.llmcr.entity.Chunk;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ChunkIdScorePair;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ChunkIdScorePair;
 
+/**
+ * This abstract class defines the interface for a vector store that can be used
+ * for storing and retrieving chunks of context based on similarity search.
+ * We're not using Spring AI's built-in vector store because we want to avoid
+ * conversions between `Chunk` and Spring AI's `Document` format. One can use
+ * Adapter pattern to adapt this interface to Spring AI's vector store if
+ * needed.
+ */
 public abstract class MyVectorStore {
 
     /**

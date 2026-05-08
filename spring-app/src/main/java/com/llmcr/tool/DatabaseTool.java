@@ -31,7 +31,7 @@ public class DatabaseTool {
             Allowed type values: CLASSNODE, DOCUMENT, USECASE, TOOLDEF. \
             nameKeyword and contentKeyword perform case-insensitive substring matches on the 'name' \
             and 'content' fields respectively. All three filters are optional but at least one must \
-            be provided.""")
+            be provided.""", returnDirect = true)
     public String retrieveContext(
             @ToolParam(description = "Optional context type filter. One of: CLASSNODE, DOCUMENT, USECASE, TOOLDEF.", required = false) String contextType,
             @ToolParam(description = "Optional keyword for case-insensitive substring match on the 'name' field.", required = false) String nameKeyword,

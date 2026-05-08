@@ -3,27 +3,30 @@ package com.llmcr.service.review.agent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.Agent;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
-import com.llmcr.service.rag.ContextAugmentAdvisor;
-import com.llmcr.service.rag.RAGInput;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
 @Component
 public class PlanningAgent
-        extends BaseReviewAgent<PlanningAgent.PlanningAgentInput, PlanningAgent.PlanningAgentOutput> {
+        extends
+        Agent<PlanningAgent.PlanningAgentInput, PlanningAgent.PlanningAgentOutput, PlanningAgent.PlanningAgentOutput> {
 
     public record PlanningAgentInput(
             List<CodeChange> codeChanges,
             InterpretationAgentOutput codeInterpretation,
-            String codeAnalysis) implements AgentInput, RAGInput {
+            String codeAnalysis) implements AgentInput {
 
         @Override
         public List<String> buildQueries() {
@@ -88,38 +91,33 @@ public class PlanningAgent
 
     private final LargeChatClient chatClient;
 
-    public PlanningAgent(LargeChatClient chatClient, ContextAugmentAdvisor.Builder ragAdvisorBuilder) {
+    public PlanningAgent(LargeChatClient chatClient, QueryContextRetriever queryContextRetriever) {
+        super(
+                queryContextRetriever,
+                RETRIEVAL_CONFIGURATION,
+                1,
+                null,
+                true, false, true,
+                SYSTEM_MESSAGE,
+                CONTEXT_MESSAGE_TEMPLATE,
+                USER_MESSAGE_TEMPLATE);
         this.chatClient = chatClient;
-        super.advisors.add(ragAdvisorBuilder
-                .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
-                .messageTemplate(CONTEXT_MESSAGE_TEMPLATE)
-                .build());
     }
 
     @Override
-    public Class<PlanningAgentOutput> outputClass() {
+    protected Class<PlanningAgentOutput> modelOutputClass() {
         return PlanningAgentOutput.class;
     }
 
     @Override
-    protected void preprocess(PlanningAgentInput input) {
-        super.preprocess(input);
-        super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
-    }
-
-    @Override
-    public ChatClientWrapper chatClient() {
+    protected ChatClientWrapper chatClient() {
         return chatClient;
     }
 
     @Override
-    public String systemMessage() {
-        return SYSTEM_MESSAGE;
-    }
-
-    @Override
-    public String userMessageTemplate() {
-        return USER_MESSAGE_TEMPLATE;
+    protected PlanningAgentOutput constructAgentOutput(
+            ResponseEntity<ChatResponse, PlanningAgentOutput> responseEntity) {
+        return responseEntity.entity();
     }
 
 }

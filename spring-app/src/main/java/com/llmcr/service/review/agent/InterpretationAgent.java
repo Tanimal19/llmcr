@@ -3,23 +3,26 @@ package com.llmcr.service.review.agent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.Agent;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
-import com.llmcr.service.rag.ContextAugmentAdvisor;
-import com.llmcr.service.rag.RAGInput;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.service.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
-public class InterpretationAgent extends BaseReviewAgent<InterpretationAgentInput, InterpretationAgentOutput> {
+public class InterpretationAgent
+        extends Agent<InterpretationAgentInput, InterpretationAgentOutput, InterpretationAgentOutput> {
 
-    public record InterpretationAgentInput(List<CodeChange> codeChanges) implements AgentInput, RAGInput {
+    public record InterpretationAgentInput(List<CodeChange> codeChanges) implements AgentInput {
         @Override
         public List<String> buildQueries() {
             return codeChanges.stream()
@@ -60,40 +63,34 @@ public class InterpretationAgent extends BaseReviewAgent<InterpretationAgentInpu
     private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
             10, new AdaptiveKStrategy(), "project-context", false);
 
-    private LargeChatClient chatClient;
+    private final LargeChatClient chatClient;
 
-    public InterpretationAgent(LargeChatClient chatClient, ContextAugmentAdvisor.Builder ragAdvisroBuilder) {
+    public InterpretationAgent(LargeChatClient chatClient, QueryContextRetriever queryContextRetriever) {
+        super(
+                queryContextRetriever,
+                RETRIEVAL_CONFIGURATION,
+                1,
+                null,
+                true, false, true,
+                SYSTEM_MESSAGE,
+                CONTEXT_MESSAGE_TEMPLATE,
+                USER_MESSAGE_TEMPLATE);
         this.chatClient = chatClient;
-        super.advisors.add(ragAdvisroBuilder
-                .retrievalConfiguration(RETRIEVAL_CONFIGURATION)
-                .messageTemplate(CONTEXT_MESSAGE_TEMPLATE)
-                .build());
     }
 
     @Override
-    public Class<InterpretationAgentOutput> outputClass() {
+    protected Class<InterpretationAgentOutput> modelOutputClass() {
         return InterpretationAgentOutput.class;
     }
 
     @Override
-    protected void preprocess(InterpretationAgentInput input) {
-        super.preprocess(input);
-        super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
-    }
-
-    @Override
-    public ChatClientWrapper chatClient() {
+    protected ChatClientWrapper chatClient() {
         return chatClient;
     }
 
     @Override
-    public String systemMessage() {
-        return SYSTEM_MESSAGE;
+    protected InterpretationAgentOutput constructAgentOutput(
+            ResponseEntity<ChatResponse, InterpretationAgentOutput> responseEntity) {
+        return responseEntity.entity();
     }
-
-    @Override
-    public String userMessageTemplate() {
-        return USER_MESSAGE_TEMPLATE;
-    }
-
 }

@@ -16,12 +16,11 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.llmcr.service.review.agent.SummaryAgent.Issue;
+import com.llmcr.service.review.ChainWorkflow.ReviewResult;
 import com.llmcr.service.review.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.service.review.agent.SummaryAgent.SummaryAgentOutput;
 import com.llmcr.service.review.trace.ReviewTraceCollector;
 import com.llmcr.service.review.trace.ReviewTraceContext;
-import com.llmcr.service.review.workflow.ChainWorkflow;
-import com.llmcr.service.review.workflow.ChainWorkflow.ReviewResult;
 import com.llmcr.util.GitDiffParser;
 import com.llmcr.util.GitDiffParser.CodeChange;
 

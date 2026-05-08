@@ -3,8 +3,11 @@ package com.llmcr.service.review.agent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.Agent;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.LargeChatClient;
@@ -12,7 +15,8 @@ import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
 @Component
-public class SummaryAgent extends BaseReviewAgent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput> {
+public class SummaryAgent extends
+        Agent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput, SummaryAgent.SummaryAgentOutput> {
 
     public record ItemAnswer(String checklistItemTitle, String answer) {
     }
@@ -74,27 +78,30 @@ public class SummaryAgent extends BaseReviewAgent<SummaryAgent.SummaryAgentInput
     private final LargeChatClient chatClient;
 
     public SummaryAgent(LargeChatClient chatClient) {
+        super(
+                null,
+                null,
+                1,
+                null,
+                false, false, true,
+                SYSTEM_MESSAGE,
+                "",
+                USER_MESSAGE_TEMPLATE);
         this.chatClient = chatClient;
     }
 
     @Override
-    public Class<SummaryAgentOutput> outputClass() {
+    protected Class<SummaryAgentOutput> modelOutputClass() {
         return SummaryAgentOutput.class;
     }
 
     @Override
-    public ChatClientWrapper chatClient() {
+    protected ChatClientWrapper chatClient() {
         return chatClient;
     }
 
     @Override
-    public String systemMessage() {
-        return SYSTEM_MESSAGE;
+    protected SummaryAgentOutput constructAgentOutput(ResponseEntity<ChatResponse, SummaryAgentOutput> responseEntity) {
+        return responseEntity.entity();
     }
-
-    @Override
-    public String userMessageTemplate() {
-        return USER_MESSAGE_TEMPLATE;
-    }
-
 }

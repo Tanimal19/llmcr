@@ -1,5 +1,8 @@
 package com.llmcr.agent;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AgentExecuteEntry {
     public String agentName = "none";
     public String clientType = "none";
@@ -8,8 +11,9 @@ public class AgentExecuteEntry {
     public Object input = "none";
     public Object output = "none";
     public String error = "none";
+    public List<ModelCallEntry> modelCalls = new ArrayList<>();
 
-    public class ModelCallEntry {
+    public static class ModelCallEntry {
         public Object request = "none";
         public Object response = "none";
     }

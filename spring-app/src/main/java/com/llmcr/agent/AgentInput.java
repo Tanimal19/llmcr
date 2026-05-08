@@ -2,7 +2,7 @@ package com.llmcr.agent;
 
 import java.util.Map;
 
-import com.llmcr.service.rag.RAGInput;
+import com.llmcr.rag.RAGInput;
 
 public interface AgentInput extends RAGInput {
     /**

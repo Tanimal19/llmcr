@@ -3,20 +3,21 @@ package com.llmcr.service.review.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.Agent;
 import com.llmcr.agent.AgentInput;
 import com.llmcr.client.ChatClientWrapper;
 import com.llmcr.client.SmallChatClient;
-import com.llmcr.service.rag.ContextAugmentAdvisor;
 import com.llmcr.tool.DatabaseTool;
 import com.llmcr.tool.UserInteractionTool;
 import com.llmcr.util.StringUtils;
 
 @Component
 public class RetrievalAgent
-        extends BaseReviewAgent<RetrievalAgent.RetrievalAgentInput, RetrievalAgent.RetrievalAgentOutput> {
+        extends Agent<RetrievalAgent.RetrievalAgentInput, String, String> {
 
     public record RetrievalAgentInput(
             String dataQuery,
@@ -37,12 +38,6 @@ public class RetrievalAgent
     public record ToolRequest(String toolName, Map<String, Object> arguments, String purpose) {
     }
 
-    public record RetrievalAgentOutput(
-            List<ToolRequest> toolRequests,
-            boolean satisfied,
-            String refinedQuery) {
-    }
-
     private static final String SYSTEM_MESSAGE = """
             You are now a retrieval planning model.
             Your task is to decide what tool calls should be made to satisfy the data query.
@@ -59,46 +54,35 @@ public class RetrievalAgent
             """;
 
     private final SmallChatClient chatClient;
-    private final UserInteractionTool userInteractionTool;
-    private final DatabaseTool databaseTool;
 
     public RetrievalAgent(SmallChatClient chatClient,
             UserInteractionTool userInteractionTool,
             DatabaseTool databaseTool) {
+        super(
+                null,
+                null,
+                1,
+                List.of(userInteractionTool, databaseTool),
+                false, true, false,
+                SYSTEM_MESSAGE,
+                "",
+                USER_MESSAGE_TEMPLATE);
         this.chatClient = chatClient;
-        this.userInteractionTool = userInteractionTool;
-        this.databaseTool = databaseTool;
     }
 
     @Override
-    public ChatClientWrapper chatClient() {
+    protected ChatClientWrapper chatClient() {
         return chatClient;
     }
 
     @Override
-    public String systemMessage() {
-        return SYSTEM_MESSAGE;
+    protected Class<String> modelOutputClass() {
+        return String.class;
     }
 
     @Override
-    public Class<RetrievalAgentOutput> outputClass() {
-        return RetrievalAgentOutput.class;
-    }
-
-    @Override
-    protected void preprocess(RetrievalAgentInput input) {
-        super.preprocess(input);
-        super.advisorParams.put(ContextAugmentAdvisor.RAG_INPUT, input);
-    }
-
-    @Override
-    protected ChatClientRequestSpec enrichRequestSpec(ChatClientRequestSpec requestSpec) {
-        return requestSpec.tools(userInteractionTool, databaseTool);
-    }
-
-    @Override
-    public String userMessageTemplate() {
-        return USER_MESSAGE_TEMPLATE;
+    protected String constructAgentOutput(ResponseEntity<ChatResponse, String> responseEntity) {
+        return responseEntity.entity();
     }
 
 }

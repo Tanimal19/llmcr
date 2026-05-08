@@ -18,24 +18,22 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.lang.Nullable;
 
 import com.llmcr.client.ChatClientWrapper;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.service.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
 
 /**
  * Abstract base class for implementing agents.
  * 
  * @param <I> The type of the agent input, which must implement AgentInput
  *            interface.
- * @param <T> The type of the intermediate model response. (This can be same as
- *            O
- *            if no intermediate response is needed)
+ * @param <T> The type of the intermediate model response.
+ *            (This can be same as O if no intermediate response is needed)
  * @param <O> The type of the agent output.
  */
 public abstract class Agent<I extends AgentInput, T, O> {
@@ -44,61 +42,67 @@ public abstract class Agent<I extends AgentInput, T, O> {
 
     protected abstract ChatClientWrapper chatClient();
 
-    private static final ToolCallingManager TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
-
     private final QueryContextRetriever QUERY_CONTEXT_RETRIEVER;
     private final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION;
     private final int MAX_ITERATION;
+
+    protected List<Object> tools;
+
+    private final boolean enableRag;
+    private final boolean enableTools;
+    private final boolean enableStructuredOutput;
 
     private final String TASK_INSTRUCTION;
     private final String FORMAT_INSTRUCTION;
     private final String CONTEXT_INPUT_TEMPLATE;
     private final String USER_INPUT_TEMPLATE;
 
-    private List<Object> tools;
-
-    protected boolean useRag() {
-        return true;
-    }
-
-    protected boolean useTools() {
-        return true;
-    }
-
-    Agent(QueryContextRetriever retriever,
+    protected Agent(@Nullable QueryContextRetriever retriever,
             @Nullable ContextRetrievalConfiguration retrievalConfiguration,
-            int maxIteration,
-            String taskInstruction,
-            String contextInputTemplate,
-            String userInputTemplate,
-            @Nullable List<Object> tools) {
+            int maxIteration, @Nullable List<Object> tools,
+            boolean enableRag, boolean enableTools, boolean enableStructuredOutput,
+            String taskInstruction, String contextInputTemplate, String userInputTemplate) {
 
         this.QUERY_CONTEXT_RETRIEVER = retriever;
         this.RETRIEVAL_CONFIGURATION = retrievalConfiguration;
         this.MAX_ITERATION = maxIteration;
+        this.tools = tools;
+
+        this.enableRag = enableRag && RETRIEVAL_CONFIGURATION != null && QUERY_CONTEXT_RETRIEVER != null;
+        this.enableTools = enableTools && tools != null && !tools.isEmpty();
+        this.enableStructuredOutput = enableStructuredOutput;
 
         this.TASK_INSTRUCTION = taskInstruction;
-        this.FORMAT_INSTRUCTION = new BeanOutputConverter<>(modelOutputClass()).getFormat();
+        if (this.enableStructuredOutput) {
+            this.FORMAT_INSTRUCTION = new BeanOutputConverter<>(modelOutputClass()).getFormat();
+        } else {
+            this.FORMAT_INSTRUCTION = "";
+        }
         this.CONTEXT_INPUT_TEMPLATE = contextInputTemplate;
         this.USER_INPUT_TEMPLATE = userInputTemplate;
 
-        this.tools = tools;
     }
 
     public O execute(I input, String conversationId) {
+        AgentExecuteEntry executionEntry = new AgentExecuteEntry();
+        executionEntry.agentName = getClass().getSimpleName();
+        executionEntry.clientType = chatClient().getClass().getSimpleName();
+        executionEntry.conversationId = (conversationId == null || conversationId.isBlank()) ? "none" : conversationId;
+        executionEntry.input = input;
+
         List<Advisor> advisors = new ArrayList<>();
         Map<String, Object> advisorParams = new LinkedHashMap<>();
-        boolean ragEnabled = useRag() && RETRIEVAL_CONFIGURATION != null && QUERY_CONTEXT_RETRIEVER != null;
-        boolean toolsEnabled = useTools() && tools != null && !tools.isEmpty();
 
         // Set up advisors
         advisors.add(new SimpleLoggerAdvisor());
 
-        advisors.add(StructuredOutputValidationAdvisor.builder()
-                .outputType(modelOutputClass())
-                .maxRepeatAttempts(3)
-                .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)
-                .build());
+        if (enableStructuredOutput) {
+            advisors.add(StructuredOutputValidationAdvisor.builder()
+                    .outputType(modelOutputClass())
+                    .maxRepeatAttempts(3)
+                    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)
+                    .build());
+        }
 
         ChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .maxMessages(10)
@@ -108,9 +112,9 @@ public abstract class Agent<I extends AgentInput, T, O> {
                 .build());
         advisorParams.put(ChatMemory.CONVERSATION_ID, conversationId);
 
-        if (toolsEnabled) {
+        if (enableTools) {
             advisors.add(ToolCallAdvisor.builder()
-                    .toolCallingManager(TOOL_CALLING_MANAGER)
+                    .disableMemory()
                     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 400)
                     .build());
         }
@@ -118,7 +122,7 @@ public abstract class Agent<I extends AgentInput, T, O> {
         // Build prompt
         Map<String, Object> templateVariables = input.getTemplateVariables();
 
-        if (ragEnabled) {
+        if (enableRag) {
             assert CONTEXT_INPUT_TEMPLATE.contains("<context>")
                     : "Context input template must contain <context> placeholder for retrieved context";
 
@@ -146,35 +150,45 @@ public abstract class Agent<I extends AgentInput, T, O> {
         try {
             ChatClientRequestSpec requestSpec;
             ResponseEntity<ChatResponse, T> responseEntity = null;
-            String messageForNextTurn = initialMessageBuilder.toString();
+            String nextMessage = initialMessageBuilder.toString();
 
             int iteration = 0;
             while (responseEntity == null || shouldContinue(responseEntity)) {
 
                 if (iteration > 0) {
-                    messageForNextTurn = getNextMessage(responseEntity);
+                    nextMessage = getNextMessage(responseEntity);
                 }
 
                 if (iteration >= MAX_ITERATION) {
-                    messageForNextTurn += "\nMaximum iteration reached. Please provide the final answer based on the current information.";
+                    nextMessage += "\nMaximum iteration reached. Please provide the final answer based on the current information.";
                 }
+
+                AgentExecuteEntry.ModelCallEntry modelCallEntry = new AgentExecuteEntry.ModelCallEntry();
 
                 requestSpec = chatClient().getChatClient()
                         .prompt()
-                        .user(messageForNextTurn)
+                        .user(nextMessage)
                         .advisors(advisors)
                         .advisors(spec -> spec.params(advisorParams));
-                if (toolsEnabled) {
+                if (enableTools) {
                     requestSpec = requestSpec.tools(tools);
                 }
+                modelCallEntry.request = requestSpec;
 
                 responseEntity = requestSpec.call().responseEntity(modelOutputClass());
+                modelCallEntry.response = responseEntity.response();
+                executionEntry.modelCalls.add(modelCallEntry);
                 iteration++;
             }
 
-            return extractOutput(responseEntity);
+            executionEntry.totalIteration = iteration;
+            executionEntry.output = responseEntity.entity();
+            return constructAgentOutput(responseEntity);
         } catch (Exception e) {
+            executionEntry.error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             throw new RuntimeException("Failed to execute ChatClient: " + e.getMessage(), e);
+        } finally {
+            AgentExecutionLogger.write(executionEntry);
         }
     }
 
@@ -186,9 +200,16 @@ public abstract class Agent<I extends AgentInput, T, O> {
                 .render(variables);
     }
 
-    protected abstract boolean shouldContinue(ResponseEntity<ChatResponse, T> responseEntity);
+    /**
+     * The default action is running a single iteration and return the output.
+     */
+    protected boolean shouldContinue(ResponseEntity<ChatResponse, T> responseEntity) {
+        return false;
+    }
 
-    protected abstract String getNextMessage(ResponseEntity<ChatResponse, T> responseEntity);
+    protected String getNextMessage(ResponseEntity<ChatResponse, T> responseEntity) {
+        return "";
+    }
 
-    protected abstract O extractOutput(ResponseEntity<ChatResponse, T> responseEntity);
+    protected abstract O constructAgentOutput(ResponseEntity<ChatResponse, T> responseEntity);
 }
