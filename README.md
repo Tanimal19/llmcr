@@ -24,6 +24,9 @@ To run the application, follow these steps:
 > docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql
 > ```
 
+# Datasets
+- Spring AI: [release 2.0.0-M1](https://github.com/spring-projects/spring-ai/releases/tag/v2.0.0-M1)
+
 # Configuration
 - Set FAISS and MariaDB configurations in `docker-compose.yml`.
   - The index file of FAISS is stored in `./faiss_service/app/data`.

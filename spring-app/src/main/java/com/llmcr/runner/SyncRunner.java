@@ -32,8 +32,7 @@ public class SyncRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // resetEntityTables();
-
+        resetEntityTables();
         databaseInitializer.init();
         syncService.sync();
     }
@@ -48,6 +47,7 @@ public class SyncRunner implements CommandLineRunner {
             jdbcTemplate.execute("TRUNCATE TABLE source");
             jdbcTemplate.execute("TRUNCATE TABLE track_root");
             jdbcTemplate.execute("TRUNCATE TABLE chunk_collection");
+            jdbcTemplate.execute("TRUNCATE TABLE track_root_allowed_source_types");
         } finally {
             jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
         }

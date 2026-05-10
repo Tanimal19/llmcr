@@ -10,7 +10,10 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.llmcr.entity.Chunk;
+import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
 import com.llmcr.entity.Source.SourceType;
@@ -63,12 +68,15 @@ public class SourceService {
         Set<String> localPaths = localSources.stream()
                 .map(Source::getPath)
                 .collect(Collectors.toSet());
+        List<Source> sourcesToRemove = new ArrayList<>();
         for (Source dbSource : dbSources) {
             if (!localPaths.contains(dbSource.getPath())) {
                 log.info("Source no longer exists locally, removing: " + dbSource.getPath());
-                removeSource(dbSource);
+                sourcesToRemove.add(dbSource);
             }
         }
+
+        removeSources(sourcesToRemove);
 
         for (Source localSource : localSources) {
             Source existing = sourceRepository.findByPath(localSource.getPath());
@@ -111,6 +119,7 @@ public class SourceService {
         if (!Objects.equals(source.getContentHash(), currentHash)) {
             log.info("Source content changed: " + sourcePath);
             source.setContentHash(currentHash);
+            cleanupSourceChunks(source);
             source.getContexts().clear();
             source.setExtracted(false);
         }
@@ -119,22 +128,58 @@ public class SourceService {
     }
 
     private void removeSource(Source source) {
-        // remove chunks from vector store before deleting source and contexts
-        List<Long> affectedChunkIds = source.getContexts().stream()
-                .flatMap(context -> context.getChunks().stream())
-                .map(chunk -> chunk.getId())
-                .toList();
-        List<String> affectedCollectionNames = source.getContexts().stream()
-                .flatMap(context -> context.getChunks().stream())
-                .flatMap(chunk -> chunk.getChunkCollections().stream())
-                .map(collection -> collection.getName())
-                .distinct()
-                .toList();
-        for (String collectionName : affectedCollectionNames) {
-            vectorStore.removeChunks(affectedChunkIds, collectionName);
+        cleanupSourceChunks(source);
+        sourceRepository.delete(source);
+    }
+
+    private void removeSources(List<Source> sources) {
+        if (sources.isEmpty()) {
+            return;
         }
 
-        sourceRepository.delete(source);
+        cleanupSourceChunks(sources);
+        sourceRepository.deleteAll(sources);
+    }
+
+    private void cleanupSourceChunks(Source source) {
+        cleanupSourceChunks(List.of(source));
+    }
+
+    private void cleanupSourceChunks(List<Source> sources) {
+        List<Chunk> chunks = sources.stream()
+                .flatMap(source -> source.getContexts().stream())
+                .flatMap(context -> context.getChunks().stream())
+                .toList();
+
+        if (chunks.isEmpty()) {
+            return;
+        }
+
+        Map<String, Set<Long>> collectionToChunkIds = new HashMap<>();
+        for (Chunk chunk : chunks) {
+            Long chunkId = chunk.getId();
+            if (chunkId == null) {
+                continue;
+            }
+
+            for (ChunkCollection chunkCollection : chunk.getChunkCollections()) {
+                String collectionName = chunkCollection.getName();
+                if (collectionName == null) {
+                    continue;
+                }
+                collectionToChunkIds.computeIfAbsent(collectionName, key -> new HashSet<>()).add(chunkId);
+            }
+        }
+
+        for (Map.Entry<String, Set<Long>> entry : collectionToChunkIds.entrySet()) {
+            vectorStore.removeChunks(new ArrayList<>(entry.getValue()), entry.getKey());
+        }
+
+        for (Chunk chunk : chunks) {
+            for (ChunkCollection chunkCollection : new ArrayList<>(chunk.getChunkCollections())) {
+                chunkCollection.removeChunk(chunk);
+            }
+        }
     }
 
     private List<Source> loadLocalSources(TrackRoot trackRoot) {
