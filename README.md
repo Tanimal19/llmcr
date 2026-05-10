@@ -35,6 +35,15 @@ llmcr/
 └── _backups/                  # Pre-built index & DB dump
 ```
 
+### Important Classes
+- `agent/`: Agent implementations
+- `rag/retrieve/QueryContextRetriever.java`: RAG retriever that retrieves relevant contexts based on input query
+- `vectorstore/MyVectorStore.java`: The interface for a vector store that can be used for storing and retrieving chunks
+- `service/etl/ETLPipeline.java`: ETL pipeline entrypoint
+- `service/review/CodeReviewService.java`: Code review service entrypoint
+- `service/sync/SyncService.java`: Sync service entrypoint
+
+
 # Design Concepts
 
 ## Multi-Agent Code Review Workflow
