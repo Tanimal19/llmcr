@@ -18,8 +18,7 @@ public class ContextContentSplitter implements ContextSplitter {
 
     @Override
     public boolean supports(Context context) {
-        // only split context that has no chunks yet
-        return context.getChunks().isEmpty();
+        return true;
     }
 
     @Override

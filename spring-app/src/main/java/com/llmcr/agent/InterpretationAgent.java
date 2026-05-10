@@ -31,9 +31,10 @@ public class InterpretationAgent {
 
     private static final String PROMPT_TEMPLATE = """
             You are now a software engineer experienced at Java and Spring Framework.
+
             Your task is to interpret the code change by describing what was changed, and the movitation of the changes. For the motivation, you should consider why the original code was insufficient and what problem the change is trying to solve.
 
-            Do not make assumptions beyond the provided information. Focus on analyzing the code change based on the given context.
+            You will be given code changes and project context retrieved based on the code changes. The project context may include information such as related code snippets, documentation, discussions, etc. You should make use of the project context when interpreting the code change. Do not make assumptions beyond the provided information. Focus on analyzing the code change based on the given context.
 
             Below is the code change you need to interpret:
             <code_changes>
@@ -41,7 +42,7 @@ public class InterpretationAgent {
             Below is a list of project context:
             <context>
 
-            Think step by step internally before answering.
+            Think step by step before answering.
             """;
 
     private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(

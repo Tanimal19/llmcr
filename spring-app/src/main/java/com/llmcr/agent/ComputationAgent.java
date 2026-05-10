@@ -27,7 +27,7 @@ public class ComputationAgent {
 
     public record ModelResponse(
             String innerThought,
-            String answer,
+            String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
     }
@@ -38,14 +38,19 @@ public class ComputationAgent {
             You are now a experienced code reviewer.
             Your task is to perform code review based on the given code change and checklist item. You should give a clear and comprehensive analysis that follows the checklist item.
 
+            You will be given a code change and a checklist item to check. You should analyze the code change based on the checklist item and provide your analysis in the final answer.
+
             Do not make any assumption beyond the provided information. If the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. When providing dataQuery, make sure it is specific and provide enough details. Do not provide vague or irrelevant dataQuery.
 
-            When you have enough information to answer, set needsAdditionalData=false and provide the answer. The answer should be detailed and directly address the checklist item.
+            When you have enough information to answer, set needsAdditionalData=false and provide the answer. The answer should not be only 'yes' or 'no', but should include detailed reasons and your step-by-step reasoning.
 
             Below is the code change:
             <code_changes>
 
-            Checklist item to be check: <checklist_description>
+            Checklist item to be analysis: <checklist_description>
+
+            Below is a few examples of how to answer:
+            <examples>
 
             Think step by step internally before answering.
             """;
@@ -110,6 +115,6 @@ public class ComputationAgent {
             iteration++;
         } while (iteration <= MAX_ITERATION);
 
-        return response == null ? "" : StringUtils.safeText(response.answer());
+        return response == null ? "" : StringUtils.safeText(response.finalAnswer());
     }
 }

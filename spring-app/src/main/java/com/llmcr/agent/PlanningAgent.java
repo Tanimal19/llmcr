@@ -35,8 +35,8 @@ public class PlanningAgent {
 
     private static final String PROMPT_TEMPLATE = """
             You are now a software engineer experienced at Java and Spring Framework.
-            Your task is to generate a checklist for code review.
-            Here are aspects you should consider, including but not limited to:
+
+            Your task is to generate a checklist for code review. Here are aspects you should consider, including but not limited to:
             - Compatibility: does the change fit existing code and intended usage scenarios?
             - Design: is the change well-structured and aligned with best practices?
             - Security: does it introduce vulnerabilities?
@@ -45,9 +45,9 @@ public class PlanningAgent {
             - Maintainability: is it easy to understand and modify later?
             - Readability: is it clear and understandable?
 
-            You will be given code changes, a change interpretation, static analysis outputs, and review guidelines.
-            Do not make assumptions beyond the provided information.
-            Think step by step internally before answering.
+            Create 5 to 8 checklist items. Each item should be a concise question that focuses on one specific aspect to verify. Avoid vague or open-ended items.
+
+            You will be given code changes, a change interpretation, static analysis outputs, and review guidelines. Do not make assumptions beyond the provided information.
 
             Below is the code change:
             <code_changes>
@@ -61,9 +61,7 @@ public class PlanningAgent {
             Below is a list of review guideline to be used as reference when creating the checklist:
             <context>
 
-            Create 5 to 8 checklist items.
-            Each item should be a concise question that focuses on one specific aspect to verify.
-            Avoid vague or open-ended items.
+            Think step by step internally before answering.
             """;
 
     private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
@@ -85,7 +83,7 @@ public class PlanningAgent {
                 .toList());
 
         InterpretationAgentOutput interpretation = input.codeInterpretation();
-        String descriptionText = interpretation.changeDescription() + "\n" + interpretation.changeMotivation();
+        String descriptionText = interpretation.changeMotivation() + "\n" + interpretation.changeDescription();
         String contextText = retrieveContext(input, descriptionText);
 
         String prompt = PromptTemplate.builder()

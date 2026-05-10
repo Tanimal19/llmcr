@@ -259,7 +259,7 @@ public class SourceService {
         if (fileName.endsWith(".adoc") || fileName.endsWith(".asciidoc")) {
             return Source.SourceType.ASCIIDOC;
         }
-        if (fileName.endsWith(".json")) {
+        if (fileName.endsWith(".json") || fileName.endsWith(".jsonl")) {
             return Source.SourceType.JSON;
         }
 

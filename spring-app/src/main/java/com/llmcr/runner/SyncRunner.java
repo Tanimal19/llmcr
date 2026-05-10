@@ -32,7 +32,6 @@ public class SyncRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        resetEntityTables();
         databaseInitializer.init();
         syncService.sync();
     }

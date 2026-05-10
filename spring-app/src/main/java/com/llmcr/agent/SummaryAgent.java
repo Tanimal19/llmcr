@@ -52,9 +52,10 @@ public class SummaryAgent {
             - Suggestion: based on the bad points, provide concrete suggestions for improvement.
             - Implementation details: Summarize important implementation details that reviewers should pay attention to, such as pattern used, non-obvious design decisions, etc. Group the details by file.
             - Issues: Potential problems in the code change. Each issue should have a title, detailed description, type, and a location (file and line number).
+
             Be concise and specific in your report. Avoid vague and general statements. Focus on providing actionable feedback that can help the author improve the code change.
 
-            You should make use of all provided information to write a comprehensive review report. Avoid making any assumption beyond the provided information.
+            You will be given code changes, static analysis results, and checklist item answers. You should make use of all provided information to write a comprehensive review report. Avoid making any assumption beyond the provided information.
 
             Code changes:
             <code_changes>

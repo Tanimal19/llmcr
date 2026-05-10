@@ -17,6 +17,10 @@ app:
         allowed-source-types:
           - MARKDOWN
           - PDF
+      - id: "usecases"
+        path: "../_datasets/usecases/"
+        allowed-source-types:
+          - JSON
     collections:
       - name: "project-code"
         track-roots:
@@ -32,3 +36,6 @@ app:
       - name: "guidelines"
         track-roots:
           - "guidelines"
+      - name: "usecases"
+        track-roots:
+          - "usecases"
