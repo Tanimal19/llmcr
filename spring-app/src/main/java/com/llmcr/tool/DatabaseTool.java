@@ -1,83 +1,118 @@
 package com.llmcr.tool;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.retrieval.select.FixedKStrategy;
 import com.llmcr.repository.ContextRepository;
 
 @Component
 public class DatabaseTool {
 
-    private static final int MAX_RESULT_ROWS = 20;
-    private static final int MAX_CELL_CHARS = 500;
+    private static final int MAX_RESULT_ROWS = 30;
+    private static final int MAX_CELL_CHARS = 300;
 
-    private static final Set<String> ALLOWED_TYPES = Set.of("CLASSNODE", "DOCUMENT", "USECASE", "TOOLDEF");
+    private static final Set<String> ALLOWED_COLLECTIONS = Set.of("project_context", "docs", "guidelines");
 
     private final ContextRepository contextRepository;
+    private final QueryContextRetriever queryContextRetriever;
 
-    public DatabaseTool(ContextRepository contextRepository) {
+    public DatabaseTool(ContextRepository contextRepository, QueryContextRetriever queryContextRetriever) {
         this.contextRepository = contextRepository;
+        this.queryContextRetriever = queryContextRetriever;
     }
 
     @Tool(description = """
-            Retrieve Context records by filtering on context type and/or keyword strings. \
-            Allowed type values: CLASSNODE, DOCUMENT, USECASE, TOOLDEF. \
-            nameKeyword and contentKeyword perform case-insensitive substring matches on the 'name' \
-            and 'content' fields respectively. All three filters are optional but at least one must \
-            be provided.""", returnDirect = true)
-    public String retrieveContext(
-            @ToolParam(description = "Optional context type filter. One of: CLASSNODE, DOCUMENT, USECASE, TOOLDEF.", required = false) String contextType,
-            @ToolParam(description = "Optional keyword for case-insensitive substring match on the 'name' field.", required = false) String nameKeyword,
-            @ToolParam(description = "Optional keyword for case-insensitive substring match on the 'content' field.", required = false) String contentKeyword) {
-
-        if ((contextType == null || contextType.isBlank())
-                && (nameKeyword == null || nameKeyword.isBlank())
-                && (contentKeyword == null || contentKeyword.isBlank())) {
-            return "(tool error: at least one of contextType, nameKeyword, or contentKeyword must be provided)";
+                Retrieve relevant document content based on a semantic query.
+                Available collections for retrieval:
+                - project_context: Use this collection for queries related to project source code and APIs.
+                - docs:  Use this collection for queries related to understanding software best pratices and other non-code information.
+                - guidelines: Use this collection for queries related to code review advice, best practices, and guidelines.
+            """)
+    public String retrieveDocumentContentByQuery(
+            @ToolParam(description = "The semantic query to search document content for.", required = true) String query,
+            @ToolParam(description = "The collection to be search.", required = true) String collectionName) {
+        if (query == null || query.isBlank()) {
+            return "(tool error: query must not be blank)";
         }
 
-        ContextType resolvedType = null;
-        if (contextType != null && !contextType.isBlank()) {
-            String upper = contextType.trim().toUpperCase();
-            if (!ALLOWED_TYPES.contains(upper)) {
-                return "(tool error: invalid contextType '" + contextType + "'. Allowed values: " + ALLOWED_TYPES + ")";
-            }
-            resolvedType = ContextType.valueOf(upper);
+        if (!ALLOWED_COLLECTIONS.contains(collectionName)) {
+            return "(tool error: invalid collectionName '" + collectionName + "'. Allowed values: "
+                    + ALLOWED_COLLECTIONS + ")";
         }
 
-        String resolvedName = (nameKeyword == null || nameKeyword.isBlank()) ? null : nameKeyword.trim();
-        String resolvedContent = (contentKeyword == null || contentKeyword.isBlank()) ? null : contentKeyword.trim();
+        ContextRetrievalConfiguration retrievalConfiguration = new ContextRetrievalConfiguration(
+                MAX_RESULT_ROWS,
+                new FixedKStrategy(),
+                collectionName,
+                false);
+        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of(query.trim()), retrievalConfiguration);
+        List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(request);
 
-        List<Context> results = contextRepository.findByFilter(
-                resolvedType, resolvedName, resolvedContent,
-                PageRequest.of(0, MAX_RESULT_ROWS));
-
-        if (results.isEmpty()) {
+        if (retrievedContexts.isEmpty()) {
             return "Query returned no results.";
         }
 
-        StringBuilder output = new StringBuilder();
-        output.append("Query returned ").append(results.size()).append(" row(s).\n");
+        List<Context> orderedDocuments = new ArrayList<>();
+        for (ContextScorePair contextScore : retrievedContexts) {
+            Context context = contextScore.context();
+            if (context == null || context.getType() != ContextType.DOCUMENT) {
+                continue;
+            }
 
-        for (int i = 0; i < results.size(); i++) {
-            Context c = results.get(i);
-            String content = c.getContent() == null ? "NULL" : c.getContent();
+            boolean alreadyAdded = orderedDocuments.stream()
+                    .anyMatch(existing -> existing.getId().equals(context.getId()));
+            if (!alreadyAdded) {
+                orderedDocuments.add(context);
+            }
+        }
+
+        if (orderedDocuments.isEmpty()) {
+            return "Query returned no document results.";
+        }
+
+        StringBuilder output = new StringBuilder();
+        output.append("Query returned ").append(orderedDocuments.size()).append(" document(s).\n");
+
+        for (int i = 0; i < orderedDocuments.size(); i++) {
+            Context document = orderedDocuments.get(i);
+            String content = document.getContent() == null ? "NULL" : document.getContent();
             if (content.length() > MAX_CELL_CHARS) {
                 content = content.substring(0, MAX_CELL_CHARS) + "...(truncated)";
             }
-            output.append("\n### Row ").append(i + 1).append("\n")
-                    .append("- name: ").append(c.getName()).append("\n")
-                    .append("- type: ").append(c.getType()).append("\n")
+            output.append("\n### Document ").append(i + 1).append("\n")
+                    .append("- id: ").append(document.getId()).append("\n")
+                    .append("- name: ").append(document.getName()).append("\n")
+                    .append("- type: ").append(document.getType()).append("\n")
                     .append("- content:\n").append(content).append("\n");
         }
 
         return output.toString();
     }
+
+    @Tool(description = "Retrieve code or document content by exact id. Use this when you have a specific id from previous retrieval and want to get the full content.")
+    public String retrieveContextById(
+            @ToolParam(description = "The exact id of the context to retrieve.", required = true) Long id) {
+        return contextRepository.findById(id)
+                .map(c -> {
+                    String content = c.getContent() == null ? "NULL" : c.getContent();
+                    return "id: " + c.getId() + "\n"
+                            + "name: " + c.getName() + "\n"
+                            + "type: " + c.getType() + "\n"
+                            + "content:\n" + content;
+                })
+                .orElse("No context found with id: " + id);
+    }
+
 }

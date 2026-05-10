@@ -84,7 +84,7 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
-      --ctx-size 16384
+      --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
