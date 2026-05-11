@@ -1,66 +1,82 @@
 package com.llmcr.entity;
 
-import jakarta.persistence.*;
-
 import java.util.HashSet;
 import java.util.Set;
 
-import org.springframework.ai.document.Document;
+import org.hibernate.Hibernate;
 
-/**
- * content: the text used for generating vector embedding
- * source: the real source should be retrieved
- */
+import com.llmcr.entity.converter.FloatArrayStringConverter;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(name = "chunks")
+@Table(name = "chunk")
 public class Chunk {
 
+    /**
+     * This id is also used in FAISS index file.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(columnDefinition = "BIGINT UNSIGNED")
+    @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    /**
+     * The parent context of the chunk.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "context_id", nullable = false)
+    private Context context;
+
+    /**
+     * The index of the chunk in the parent context. It's not ordered.
+     */
+    @Column(name = "chunk_index", nullable = false)
+    private Integer chunkIndex;
+
+    /**
+     * The text used to generate embedding vector.
+     */
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 32, nullable = false)
-    private ChunkContentType contentType;
+    /**
+     * Cached embedding vector for the chunk content.
+     */
+    @Convert(converter = FloatArrayStringConverter.class)
+    @Column(name = "embedding", columnDefinition = "TEXT")
+    private float[] embedding;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id", nullable = false)
-    private Source source;
+    /**
+     * Which collections the chunk belongs to. A chunk can belong to multiple
+     * collections, and a collection can have multiple chunks.
+     * The chunk should only be add to a collection after loading, so that we can
+     * track which chunks have been loaded.
+     */
+    @ManyToMany(mappedBy = "havedChunks")
+    private Set<ChunkCollection> inCollections = new HashSet<>();
 
-    @ManyToMany(mappedBy = "chunks", fetch = FetchType.LAZY)
-    private Set<IndexSet> indexSets = new HashSet<>();
-
-    public Chunk() {
+    protected Chunk() {
     }
 
-    public Chunk(String content, ChunkContentType type, Source source) {
+    public Chunk(String content) {
         this.content = content;
-        this.contentType = type;
-        this.source = source;
     }
 
-    public Chunk(Document doc) {
-        this.content = doc.getText();
-
-        Object typeObj = doc.getMetadata().get("content_type");
-        if (typeObj instanceof ChunkContentType) {
-            this.contentType = (ChunkContentType) typeObj;
-        } else if (typeObj instanceof String) {
-            this.contentType = ChunkContentType.valueOf((String) typeObj);
-        } else {
-            this.contentType = ChunkContentType.UNDEFINED;
-        }
-
-        Object sourceObj = doc.getMetadata().get("source");
-        if (sourceObj instanceof Source) {
-            this.source = (Source) sourceObj;
-        } else {
-            this.source = null;
-        }
+    public Chunk(Context context, Integer chunkIndex, String content) {
+        setContext(context);
+        this.chunkIndex = chunkIndex;
+        this.content = content;
     }
 
     public Long getId() {
@@ -71,6 +87,37 @@ public class Chunk {
         this.id = id;
     }
 
+    public Context getContext() {
+        return context;
+    }
+
+    public void setContext(Context context) {
+        if (this.context == context) {
+            return;
+        }
+
+        Context oldContext = this.context;
+        this.context = null;
+        if (oldContext != null) {
+            oldContext.removeChunk(this);
+        }
+
+        this.context = context;
+        if (context != null
+                && Hibernate.isInitialized(context.getChunks())
+                && !context.getChunks().contains(this)) {
+            context.addChunk(this);
+        }
+    }
+
+    public Integer getChunkIndex() {
+        return chunkIndex;
+    }
+
+    public void setChunkIndex(Integer chunkIndex) {
+        this.chunkIndex = chunkIndex;
+    }
+
     public String getContent() {
         return content;
     }
@@ -79,28 +126,16 @@ public class Chunk {
         this.content = content;
     }
 
-    public ChunkContentType getContentType() {
-        return contentType;
+    public float[] getEmbedding() {
+        return embedding;
     }
 
-    public void setContentType(ChunkContentType contentType) {
-        this.contentType = contentType;
+    public void setEmbedding(float[] embedding) {
+        this.embedding = embedding;
     }
 
-    public Source getSource() {
-        return source;
-    }
-
-    public void setSource(Source source) {
-        this.source = source;
-    }
-
-    public Set<IndexSet> getIndexSets() {
-        return indexSets;
-    }
-
-    public void setIndexFiles(Set<IndexSet> indexSets) {
-        this.indexSets = indexSets;
+    public Set<ChunkCollection> getChunkCollections() {
+        return inCollections;
     }
 
     @Override
@@ -116,20 +151,5 @@ public class Chunk {
     @Override
     public int hashCode() {
         return getClass().hashCode();
-    }
-
-    public Document toDocument() {
-        Document doc = new Document(this.content);
-        doc.getMetadata().put("chunk_id", this.id);
-        doc.getMetadata().put("content_type", this.contentType);
-        doc.getMetadata().put("source", this.source);
-        return doc;
-    }
-
-    public enum ChunkContentType {
-        CODE,
-        ENRICHMENT,
-        DOCUMENT,
-        UNDEFINED
     }
 }

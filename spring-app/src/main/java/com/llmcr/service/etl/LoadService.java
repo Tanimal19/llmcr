@@ -1,93 +1,86 @@
 package com.llmcr.service.etl;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.transformer.splitter.TextSplitter;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.llmcr.client.EmbeddingClient;
 import com.llmcr.entity.Chunk;
-import com.llmcr.entity.Chunk.ChunkContentType;
+import com.llmcr.entity.ChunkCollection;
+import com.llmcr.entity.Context;
+import com.llmcr.repository.ChunkCollectionRepository;
+import com.llmcr.repository.ChunkRepository;
+import com.llmcr.repository.ContextRepository;
+import com.llmcr.vectorstore.MyVectorStore;
 
+@Component
 public class LoadService {
 
-        private static final Logger LOGGER = LoggerFactory.getLogger(LoadService.class);
+    private static final Logger log = LoggerFactory.getLogger(LoadService.class);
 
-        private LoadService() {
+    private final ChunkCollectionRepository chunkCollectionRepository;
+    private final ContextRepository contextRepository;
+    private final ChunkRepository chunkRepository;
+    private final MyVectorStore vectorStore;
+    private final EmbeddingClient embeddingClient;
+
+    public LoadService(
+            ChunkCollectionRepository chunkCollectionRepository,
+            ContextRepository contextRepository,
+            ChunkRepository chunkRepository,
+            MyVectorStore vectorStore,
+            EmbeddingClient embeddingClient) {
+        this.chunkCollectionRepository = chunkCollectionRepository;
+        this.contextRepository = contextRepository;
+        this.chunkRepository = chunkRepository;
+        this.vectorStore = vectorStore;
+        this.embeddingClient = embeddingClient;
+    }
+
+    @Transactional
+    public void load(Long contextId) {
+        Context context = contextRepository.findById(contextId)
+                .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+        if (context.isChunkLoaded()) {
+            log.info("Context '{}' is already loaded, skipping", context.getName(), context.getId());
+            return;
         }
 
-        public static void chunk(DataStore dataStore, TextSplitter splitter) {
-                long startTime = System.currentTimeMillis();
-                LOGGER.info("Start data chunking");
-
-                // chunk all class nodes
-                dataStore.findProcessedClassNodes().stream().forEach(node -> {
-                        List<Document> docs = new ArrayList<>();
-
-                        docs.add(new Document(textFilter(node.getContent()),
-                                        Map.of("content_type", ChunkContentType.CODE, "source", node)));
-
-                        docs.add(new Document(textFilter(node.getDescriptionText()),
-                                        Map.of("content_type", ChunkContentType.ENRICHMENT, "source", node)));
-                        docs.add(new Document(textFilter(node.getUsageText()),
-                                        Map.of("content_type", ChunkContentType.ENRICHMENT, "source", node)));
-                        docs.add(new Document(textFilter(node.getRelationshipText()),
-                                        Map.of("content_type", ChunkContentType.ENRICHMENT, "source", node)));
-
-                        List<Document> splitDocs = splitter.split(docs);
-                        dataStore.saveAllChunksByDocuments(splitDocs);
-                        LOGGER.info("Created " + splitDocs.size() + " chunks for ClassNode: "
-                                        + node.getSignature());
-                });
-
-                // chunk all document paragraphs
-                dataStore.findAllDocumentParagraphs().stream().forEach(paragraph -> {
-                        Document doc = new Document(textFilter(paragraph.getContent()),
-                                        Map.of("content_type", ChunkContentType.DOCUMENT, "source", paragraph));
-                        List<Document> splitDocs = splitter.split(doc);
-                        dataStore.saveAllChunksByDocuments(splitDocs);
-                        LOGGER.info("Created " + splitDocs.size() + " chunks for DocumentParagraph: "
-                                        + paragraph.getId());
-                });
-
-                long endTime = System.currentTimeMillis();
-                LOGGER.info("Data chunking completed in " + (endTime - startTime) + "ms");
+        Set<ChunkCollection> inCollections = context.getSource().getTrackRoot().getInCollections();
+        if (inCollections.isEmpty()) {
+            inCollections = new HashSet<>(chunkCollectionRepository.findAll());
         }
 
-        private static String textFilter(String text) {
-                if (text == null) {
-                        return "";
-                }
-                return text
-                                // remove control characters except newlines nd tabs
-                                .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")
-                                // specific cleaning for ANTLR serialized ATN
-                                .replaceAll("_serializedATN\\s*=\\s*\"[\\s\\S]*?\";",
-                                                "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";");
+        // generate embeddings for chunks if not exist
+        List<Chunk> chunks = context.getChunks();
+        for (Chunk chunk : chunks) {
+            if (chunk.getEmbedding() == null || chunk.getEmbedding().length == 0) {
+                chunk.setEmbedding(embeddingClient.embed(chunk.getContent()));
+            }
+            chunkRepository.save(chunk);
         }
 
-        public static void load(DataStore dataStore, VectorStore vectorStore,
-                        Set<ChunkContentType> loadedChunkTypes) {
-                long startTime = System.currentTimeMillis();
-                LOGGER.info("Start data loading");
+        for (ChunkCollection chunkCollection : inCollections) {
+            // Only add chunks that are not already in the collection to avoid duplicates in
+            // the vector store.
+            List<Chunk> chunksToAdd = chunks.stream()
+                    .filter(chunk -> chunk.getChunkCollections().stream()
+                            .noneMatch(c -> c.getId().equals(chunkCollection.getId())))
+                    .toList();
 
-                for (ChunkContentType type : loadedChunkTypes) {
-                        List<Document> documents = dataStore.findAllChunksByContentType(type).stream()
-                                        .map(Chunk::toDocument)
-                                        .toList();
-
-                        if (!documents.isEmpty()) {
-                                vectorStore.add(documents);
-                                LOGGER.info("+ Loaded " + documents.size() + " documents for type: " + type);
-                        }
-                }
-
-                long endTime = System.currentTimeMillis();
-                LOGGER.info("Data loading completed in " + (endTime - startTime) + "ms");
+            vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
+            chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
+            chunkCollectionRepository.save(chunkCollection);
+            log.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
+                    context.getName(), chunkCollection.getName());
         }
+
+        context.setChunkLoaded(true);
+        contextRepository.save(context);
+    }
 }

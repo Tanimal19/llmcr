@@ -1,43 +1,71 @@
 package com.llmcr.service.etl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.datasource.DataSource;
-import com.llmcr.entity.ClassNode;
-import com.llmcr.entity.DocumentParagraph;
-import com.llmcr.extractor.ClassNodeExtractor;
-import com.llmcr.extractor.DocumentParagraphExtractor;
+import com.llmcr.entity.Context;
+import com.llmcr.entity.Source;
+import com.llmcr.repository.ContextRepository;
+import com.llmcr.repository.SourceRepository;
+import com.llmcr.service.etl.extractor.SourceExtractor;
 
+@Component
 public class ExtractService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExtractService.class);
+    private static final Logger log = LoggerFactory.getLogger(ExtractService.class);
 
-    private ExtractService() {
+    private final SourceRepository sourceRepository;
+    private final ContextRepository contextRepository;
+    private final List<SourceExtractor> extractors;
+
+    public ExtractService(
+            SourceRepository sourceRepository,
+            ContextRepository contextRepository,
+            List<SourceExtractor> extractors) {
+        this.sourceRepository = sourceRepository;
+        this.contextRepository = contextRepository;
+        this.extractors = extractors;
+
+        log.info("ExtractService initialized with {} extractors: {}",
+                extractors.size(),
+                extractors.stream()
+                        .map(e -> e.getClass().getSimpleName())
+                        .toList());
     }
 
-    public static void extract(DataStore dataStore, List<DataSource> rawDataSources, int maxParagraphLength) {
-        long startTime = System.currentTimeMillis();
-        LOGGER.info("Start data extraction");
+    @Transactional
+    public void extract(Long sourceId) {
+        Source source = sourceRepository.findById(sourceId)
+                .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
+        if (source.isExtracted()) {
+            log.info("Source '{}' already extracted, skipping", source.getSourceName());
+            return;
+        }
 
-        ClassNodeExtractor classNodeExtractor = new ClassNodeExtractor();
-        DocumentParagraphExtractor documentParagraphExtractor = new DocumentParagraphExtractor(maxParagraphLength);
-
-        // Iterate over all raw data sources and extract data
-        rawDataSources.stream().forEach(source -> {
-            List<ClassNode> classNodes = source.accept(classNodeExtractor);
-            dataStore.saveAllClassNodes(classNodes);
-            LOGGER.info("Extracted " + classNodes.size() + " class nodes from source: " + source.getSourceName());
-
-            List<DocumentParagraph> paragraphs = source.accept(documentParagraphExtractor);
-            dataStore.saveAllDocumentParagraphs(paragraphs);
-            LOGGER.info(
-                    "Extracted " + paragraphs.size() + " document paragraphs from source: " + source.getSourceName());
-        });
-
-        long endTime = System.currentTimeMillis();
-        LOGGER.info("Data extraction completed in " + (endTime - startTime) + "ms");
+        log.info("Start extracting context from source '{}'", source.getSourceName());
+        List<Context> contexts = new ArrayList<>();
+        for (SourceExtractor extractor : extractors) {
+            if (!extractor.supports(source)) {
+                continue;
+            }
+            try {
+                List<Context> extracted = extractor.apply(source);
+                contexts.addAll(extracted);
+                log.info("{} extracted {} context(s) from source '{}'",
+                        extractor.getClass().getSimpleName(), extracted.size(), source.getSourceName());
+            } catch (Exception e) {
+                throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);
+            }
+        }
+        if (!contexts.isEmpty()) {
+            contextRepository.saveAll(contexts);
+        }
+        source.setExtracted(true);
+        sourceRepository.save(source);
     }
 }
