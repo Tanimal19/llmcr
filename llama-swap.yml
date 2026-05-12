@@ -80,15 +80,15 @@ macros:
 # - the model's ID is available in the ${MODEL_ID} macro, also available in macros defined above
 # - below are examples of the all the settings a model can have
 models:
-  "LFM2.5-1.2b":
+  "Phi-4-Mini":
     cmd: >
       llama-server
-      -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      -m ${model_dir}/Phi-4-mini-reasoning-Q4_K_M.gguf
       --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "LFM2.5-1.2b"
+    name: "Phi-4-Mini"
 
   "SmolLM3-3b":
     cmd: >
@@ -99,16 +99,6 @@ models:
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "SmolLM3-3b"
-
-  "Llama3-8b":
-    cmd: >
-      llama-server
-      -m ${model_dir}/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
-      --ctx-size 8192
-      --no-webui
-      --port ${PORT}
-    checkEndpoint: /v1/models
-    name: "Llama3-8b"
 
   "Harrier-0.6b":
     cmd: >
@@ -134,3 +124,18 @@ models:
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "Qwen3-Reranker-0.6b"
+
+matrix:
+  # vars: short names for models (alphanumeric, 1-8 chars)
+  # - required for sets and evict_costs settings
+  # - each entry is a short name to a real model ID. Do not use an alias
+  # - used to keep set DSL logic short and easier to read
+  # - sets and evict_costs only use identifiers defined in vars
+  vars:
+    pm: Phi-4-Mini
+    sm: SmolLM3-3b
+    he: Harrier-0.6b
+    qr: Qwen3-Reranker-0.6b
+
+  sets:
+    standard: "(pm | sm) & he"

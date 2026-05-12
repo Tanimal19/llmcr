@@ -20,8 +20,8 @@ import com.llmcr.repository.ContextRepository;
 @Component
 public class DatabaseTool {
 
-    private static final int MAX_RESULT_ROWS = 30;
-    private static final int MAX_CELL_CHARS = 300;
+    private static final int MAX_RESULT_ROWS = 10;
+    private static final int MAX_CELL_CHARS = 800;
 
     private static final Set<String> ALLOWED_COLLECTIONS = Set.of("project_context", "docs", "guidelines");
 

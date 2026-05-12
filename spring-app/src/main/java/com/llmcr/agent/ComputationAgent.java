@@ -31,7 +31,6 @@ public class ComputationAgent {
     }
 
     public record ModelResponse(
-            String innerThought,
             String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
@@ -43,19 +42,19 @@ public class ComputationAgent {
             You are now a experienced code reviewer.
             Your task is to perform code review based on the given code change and checklist item. You should give a clear and comprehensive analysis that follows the checklist item.
 
-            You will be given a code change and a checklist item to check. You should analyze the code change based on the checklist item and provide your analysis in the final answer.
+            You will be given a code change and a checklist item to check. You should analyze the code change based on the checklist item and provide your analysis in the final answer. The answer should not be only 'yes' or 'no', but should include detailed reasons and your step-by-step reasoning. Do not make any assumption beyond the provided information.
 
-            Do not make any assumption beyond the provided information. If the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. When providing dataQuery, make sure it is specific and provide enough details. Do not provide vague or irrelevant dataQuery.
+            <format_instruction>
 
-            When you have enough information to answer, set needsAdditionalData=false and provide the answer. The answer should not be only 'yes' or 'no', but should include detailed reasons and your step-by-step reasoning.
-
-            Below is the code change:
-            <code_changes>
-
-            Checklist item to be analysis: <checklist_description>
+            When you have enough information to answer, provide the answer in finalAnswer, and set needsAdditionalData=false, dataQuery=null. When you think the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. A dataQuery should be a detailed question that provide enough context for retrieval agent to response.
 
             Below is a few examples of how to answer:
             <examples>
+
+            Below is the code change to be analysis:
+            <code_changes>
+
+            Analyze the code follow this checklist item: <checklist_description>
 
             Think step by step internally before answering.
             """;
@@ -96,10 +95,10 @@ public class ComputationAgent {
                 .template(PROMPT_TEMPLATE)
                 .build()
                 .render(Map.of(
+                        "format_instruction", outputConverter.getFormat(),
                         "code_changes", codeChangesText,
                         "checklist_description", checklistDescription,
                         "examples", examples));
-        system_message = system_message + "\n\n" + outputConverter.getFormat();
 
         int iteration = 0;
         ModelResponse response = null;
