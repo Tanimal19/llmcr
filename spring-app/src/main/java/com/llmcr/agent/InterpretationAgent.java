@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -70,13 +68,13 @@ public class InterpretationAgent {
                 .render(Map.of("code_changes", codeChangesText, "context", contextText));
         prompt = prompt + "\n\n" + outputConverter.getFormat();
 
-        ResponseEntity<ChatResponse, InterpretationAgentOutput> response = chatClient
+        String response = chatClient
                 .prompt(prompt)
                 .advisors(new SimpleLoggerAdvisor())
                 .call()
-                .responseEntity(InterpretationAgentOutput.class);
+                .content();
 
-        return response.entity();
+        return outputConverter.convert(response);
     }
 
     private String retrieveContext(InterpretationAgentInput input) {
