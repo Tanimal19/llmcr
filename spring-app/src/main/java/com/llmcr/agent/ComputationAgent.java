@@ -14,6 +14,11 @@ import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.client.SmallChatClient;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
@@ -26,7 +31,6 @@ public class ComputationAgent {
     }
 
     public record ModelResponse(
-            String innerThought,
             String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
@@ -38,31 +42,37 @@ public class ComputationAgent {
             You are now a experienced code reviewer.
             Your task is to perform code review based on the given code change and checklist item. You should give a clear and comprehensive analysis that follows the checklist item.
 
-            You will be given a code change and a checklist item to check. You should analyze the code change based on the checklist item and provide your analysis in the final answer.
+            You will be given a code change and a checklist item to check. You should analyze the code change based on the checklist item and provide your analysis in the final answer. The answer should not be only 'yes' or 'no', but should include detailed reasons and your step-by-step reasoning. Do not make any assumption beyond the provided information.
 
-            Do not make any assumption beyond the provided information. If the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. When providing dataQuery, make sure it is specific and provide enough details. Do not provide vague or irrelevant dataQuery.
+            <format_instruction>
 
-            When you have enough information to answer, set needsAdditionalData=false and provide the answer. The answer should not be only 'yes' or 'no', but should include detailed reasons and your step-by-step reasoning.
-
-            Below is the code change:
-            <code_changes>
-
-            Checklist item to be analysis: <checklist_description>
+            When you have enough information to answer, provide the answer in finalAnswer, and set needsAdditionalData=false, dataQuery=null. When you think the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. A dataQuery should be a detailed question that provide enough context for retrieval agent to response.
 
             Below is a few examples of how to answer:
             <examples>
 
+            Below is the code change to be analysis:
+            <code_changes>
+
+            Analyze the code follow this checklist item: <checklist_description>
+
             Think step by step internally before answering.
             """;
 
+    private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
+            3, new AdaptiveKStrategy(), "usecases", false);
+
     private final ChatClient chatClient;
     private final RetrievalAgent retrievalAgent;
+    private final QueryContextRetriever queryContextRetriever;
     private final BeanOutputConverter<ModelResponse> outputConverter;
     private final MessageChatMemoryAdvisor memoryAdvisor;
 
-    public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent) {
+    public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent,
+            QueryContextRetriever queryContextRetriever) {
         this.chatClient = chatClient.getChatClient();
         this.retrievalAgent = retrievalAgent;
+        this.queryContextRetriever = queryContextRetriever;
         this.outputConverter = new BeanOutputConverter<>(ModelResponse.class);
 
         MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
@@ -78,15 +88,17 @@ public class ComputationAgent {
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
         String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
+        String examples = retrieveContext(input);
 
         String system_message = PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
                 .template(PROMPT_TEMPLATE)
                 .build()
                 .render(Map.of(
+                        "format_instruction", outputConverter.getFormat(),
                         "code_changes", codeChangesText,
-                        "checklist_description", checklistDescription));
-        system_message = system_message + "\n\n" + outputConverter.getFormat();
+                        "checklist_description", checklistDescription,
+                        "examples", examples));
 
         int iteration = 0;
         ModelResponse response = null;
@@ -116,5 +128,14 @@ public class ComputationAgent {
         } while (iteration <= MAX_ITERATION);
 
         return response == null ? "" : StringUtils.safeText(response.finalAnswer());
+    }
+
+    private String retrieveContext(ComputationAgentInput input) {
+        List<String> queries = List.of(input.checklistItem());
+        List<ContextScorePair> retrievedContexts = queryContextRetriever
+                .retrieve(new ContextRetrievalRequest(queries, RETRIEVAL_CONFIGURATION));
+        return String.join("\n---\n", retrievedContexts.stream()
+                .map(pair -> pair.context().getContent())
+                .toList());
     }
 }
