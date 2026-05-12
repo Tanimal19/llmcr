@@ -24,6 +24,7 @@ class CommentEntry:
 class ChangedFileEntry:
     path: str
     previous_path: Optional[str]
+    patch: str
     content: str
 
 
@@ -172,7 +173,7 @@ class GitHubPRExporter:
     ) -> List[ChangedFileEntry]:
         files: List[ChangedFileEntry] = []
         page = 1
-        per_page = 100
+        per_page = 50
 
         while True:
             params = {"page": page, "per_page": per_page}
@@ -208,6 +209,7 @@ class GitHubPRExporter:
                     ChangedFileEntry(
                         path=file_info.get("filename") or "",
                         previous_path=file_info.get("previous_filename"),
+                        patch=file_info.get("patch") or "",
                         content=content,
                     )
                 )
@@ -257,7 +259,7 @@ class GitHubPRExporter:
             "direction": "desc",
         }
         page = 1
-        per_page = 20
+        per_page = 30
         yielded = 0
 
         while True:
