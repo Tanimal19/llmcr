@@ -14,6 +14,11 @@ import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.client.SmallChatClient;
+import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
@@ -55,14 +60,20 @@ public class ComputationAgent {
             Think step by step internally before answering.
             """;
 
+    private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
+            3, new AdaptiveKStrategy(), "usecases", false);
+
     private final ChatClient chatClient;
     private final RetrievalAgent retrievalAgent;
+    private final QueryContextRetriever queryContextRetriever;
     private final BeanOutputConverter<ModelResponse> outputConverter;
     private final MessageChatMemoryAdvisor memoryAdvisor;
 
-    public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent) {
+    public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent,
+            QueryContextRetriever queryContextRetriever) {
         this.chatClient = chatClient.getChatClient();
         this.retrievalAgent = retrievalAgent;
+        this.queryContextRetriever = queryContextRetriever;
         this.outputConverter = new BeanOutputConverter<>(ModelResponse.class);
 
         MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
@@ -78,6 +89,7 @@ public class ComputationAgent {
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
         String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
+        String examples = retrieveContext(input);
 
         String system_message = PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
@@ -85,7 +97,8 @@ public class ComputationAgent {
                 .build()
                 .render(Map.of(
                         "code_changes", codeChangesText,
-                        "checklist_description", checklistDescription));
+                        "checklist_description", checklistDescription,
+                        "examples", examples));
         system_message = system_message + "\n\n" + outputConverter.getFormat();
 
         int iteration = 0;
@@ -116,5 +129,14 @@ public class ComputationAgent {
         } while (iteration <= MAX_ITERATION);
 
         return response == null ? "" : StringUtils.safeText(response.finalAnswer());
+    }
+
+    private String retrieveContext(ComputationAgentInput input) {
+        List<String> queries = List.of(input.checklistItem());
+        List<ContextScorePair> retrievedContexts = queryContextRetriever
+                .retrieve(new ContextRetrievalRequest(queries, RETRIEVAL_CONFIGURATION));
+        return String.join("\n---\n", retrievedContexts.stream()
+                .map(pair -> pair.context().getContent())
+                .toList());
     }
 }
