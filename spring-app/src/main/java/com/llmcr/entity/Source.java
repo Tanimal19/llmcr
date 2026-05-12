@@ -91,16 +91,16 @@ public class Source {
         return path;
     }
 
+    public void setPath(String path) {
+        this.path = path;
+    }
+
     public String getSourceName() {
         if (path == null || path.isEmpty()) {
             return "unknown_source";
         }
         String[] parts = path.replace("\\", "/").split("/");
         return parts[parts.length - 1];
-    }
-
-    public void setPath(String path) {
-        this.path = path;
     }
 
     public String getContentHash() {

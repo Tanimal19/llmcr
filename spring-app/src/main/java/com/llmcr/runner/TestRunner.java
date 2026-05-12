@@ -1,33 +1,56 @@
 package com.llmcr.runner;
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.agent.RetrievalAgent;
+import com.llmcr.entity.Source;
+import com.llmcr.repository.SourceRepository;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "test")
 public class TestRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(TestRunner.class);
+    private static final Path SPRING_APP_ROOT = Path.of("").toAbsolutePath().normalize();
 
-    private static final String DATA_QUERY = "What should I focus on when reviewing a code change that modifies the authentication logic?";
+    private final SourceRepository sourceRepository;
 
-    private final RetrievalAgent retrievalAgent;
-
-    public TestRunner(RetrievalAgent retrievalAgent) {
-        this.retrievalAgent = retrievalAgent;
+    public TestRunner(SourceRepository sourceRepository) {
+        this.sourceRepository = sourceRepository;
     }
 
     @Override
+    @Transactional
     public void run(String... args) {
-        log.info("Starting RetrievalAgent test runner");
-        log.info("Data query: {}", DATA_QUERY);
+        log.info("Starting source path normalization runner, SPRING_APP_ROOT={}", SPRING_APP_ROOT);
 
-        String response = retrievalAgent.execute(DATA_QUERY);
-        log.info("RetrievalAgent response:\n{}", response);
+        sourceRepository.findAll().stream().forEach(source -> {
+            try {
+                String original = source.getPath();
+                String relative = toRelativePath(original);
+                log.info("Source id={}, original path: {}, relative path: {}",
+                        source.getId(), original, relative);
+                if (!original.equals(relative)) {
+                    source.setPath(relative);
+                    sourceRepository.save(source);
+                }
+            } catch (InvalidPathException e) {
+                log.warn("Source id={} has invalid path: {}, skipping", source.getId(), source.getPath());
+            }
+        });
+    }
+
+    private String toRelativePath(String pathValue) {
+        Path inputPath = Path.of(pathValue).toAbsolutePath().normalize();
+        return SPRING_APP_ROOT.relativize(inputPath).toString();
     }
 }
