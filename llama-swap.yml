@@ -94,7 +94,7 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/SmolLM3-Q8_0.gguf
-      --ctx-size 16384
+      --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models

@@ -73,28 +73,28 @@ public class CodeReviewService {
             // TODO: integrate static analysis tool and populate codeAnalysis
             String codeAnalysis = null;
 
-            log.info("step=interpretation");
-            InterpretationAgentOutput interpretation = interpretationAgent.execute(
-                    new InterpretationAgentInput(codeChanges));
-            try {
-                log.info("interpretation result:\n{}",
-                        objectMapper.writeValueAsString(interpretation));
-            } catch (Exception e) {
-                log.info("interpretation result: {}", interpretation, e);
-            }
+            // log.info("step=interpretation");
+            // InterpretationAgentOutput interpretation = interpretationAgent.execute(
+            // new InterpretationAgentInput(codeChanges));
+            // try {
+            // log.info("interpretation result:\n{}",
+            // objectMapper.writeValueAsString(interpretation));
+            // } catch (Exception e) {
+            // log.info("interpretation result: {}", interpretation, e);
+            // }
 
-            log.info("step=planning");
-            PlanningAgentOutput planning = planningAgent.execute(
-                    new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
-            try {
-                log.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
-            } catch (Exception e) {
-                log.info("planning result: {}", planning, e);
-            }
+            // log.info("step=planning");
+            // PlanningAgentOutput planning = planningAgent.execute(
+            // new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+            // try {
+            // log.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
+            // } catch (Exception e) {
+            // log.info("planning result: {}", planning, e);
+            // }
 
-            log.info("step=computation items={}", planning.checklistItems().size());
+            log.info("step=computation items={}", MockReviewData.MOCK_PLANNING.checklistItems().size());
             List<ItemAnswer> itemAnswers = new ArrayList<>();
-            for (String item : planning.checklistItems()) {
+            for (String item : MockReviewData.MOCK_PLANNING.checklistItems()) {
                 log.debug("item={}", item);
                 String answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
                 itemAnswers.add(new ItemAnswer(item, answer));
