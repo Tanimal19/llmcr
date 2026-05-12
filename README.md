@@ -109,14 +109,14 @@ Prerequisites:
 
 ## Configuration
 - Set FAISS and MariaDB configurations in `docker-compose.yml`.
-  - The index file of FAISS is stored in `./faiss_service/app/data`.
+  - The index file of FAISS is stored in `faiss_service/app/data`.
   - The database data is stored in docker volume, you can backup it via:
     ```sh
     docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
     ```
-- Set spring app properties at `application.properties`.
-- Set datasets and code review configurations at `application.yml`.
-- Download and place .gguf model files under `./models` folder.
+- Set spring app properties at `spring-app/src/main/resources/application.properties`.
+- Set datasets and code review configurations at `spring-app/src/main/resources/application.yml`.
+- Download and place .gguf model files under `models/` folder.
 - Set llama-swap configuration at `llama-swap.yml`.
 - Set environment variables at `.env` file.
   ```sh
