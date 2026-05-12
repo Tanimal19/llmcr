@@ -15,10 +15,6 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.client.SmallChatClient;
 import com.llmcr.rag.retrieval.QueryContextRetriever;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
-import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
@@ -30,7 +26,14 @@ public class ComputationAgent {
             String checklistItem) {
     }
 
+    public record EvidenceItem(
+            String file,
+            String lines,
+            String reason) {
+    }
+
     public record ModelResponse(
+            List<EvidenceItem> evidence,
             String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
@@ -39,41 +42,66 @@ public class ComputationAgent {
     private static final int MAX_ITERATION = 5;
 
     private static final String PROMPT_TEMPLATE = """
-            You are now a experienced code reviewer.
-            Your task is to perform code review based on the given code change and checklist item. You should give a clear and comprehensive analysis that follows the checklist item.
+            You are an experienced code reviewer.
+            Your task is to analyze the provided code change strictly based on the checklist item.
+            You MUST only use information explicitly present in the provided code change and context.
+            Do NOT speculate or assume missing implementation details.
 
-            You will be given a code change and a checklist item to check. You should analyze the code change based on the checklist item and provide your analysis in the final answer. The answer should not be only 'yes' or 'no', but should include detailed reasons and your step-by-step reasoning. Do not make any assumption beyond the provided information.
+            Your review process:
+            1. Identify the code sections relevant to the checklist item.
+            2. Extract explicit evidence from the code change.
+            3. Analyze whether the evidence satisfies the checklist requirement.
+            4. If required information is missing, STOP the analysis and request additional data instead of making assumptions.
 
-            <format_instruction>
+            Rules:
+            - Do not infer behavior from naming alone.
+            - Do not assume omitted code behaves correctly.
+            - Do not speculate about framework behavior unless explicitly shown.
+            - If evidence is insufficient, set needsAdditionalData=true.
+            - Do not repeat the same reasoning multiple times.
+            - Keep reasoning concise and evidence-focused.
 
-            When you have enough information to answer, provide the answer in finalAnswer, and set needsAdditionalData=false, dataQuery=null. When you think the given information is insufficient to answer, set needsAdditionalData=true and provide a dataQuery that specifies what additional information is needed. A dataQuery should be a detailed question that provide enough context for retrieval agent to response.
+            Output format (JSON only):
+            {
+                "evidence": [
+                    {
+                        "file": "...",
+                        "lines": "...",
+                        "reason": "..."
+                    },
+                ],
+                "analysis": "...",
+                "finalAnswer": "...",
+                "needsAdditionalData": false,
+                "dataQuery": null
+            }
 
-            Below is a few examples of how to answer:
-            <examples>
+            When information is insufficient:
+            {
+                "evidence": [...],
+                "analysis": "The provided code does not contain enough information to verify the checklist item.",
+                "finalAnswer": null,
+                "needsAdditionalData": true,
+                "dataQuery": "Please provide ..."
+            }
 
-            Below is the code change to be analysis:
+            Checklist item:
+            <checklist_description>
+
+            Code changes:
             <code_changes>
-
-            Analyze the code follow this checklist item: <checklist_description>
-
-            Think step by step internally before answering.
             """;
 
-    private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
-            3, new AdaptiveKStrategy(), "usecases", false);
-
     private final ChatClient chatClient;
-    private final RetrievalAgent retrievalAgent;
-    private final QueryContextRetriever queryContextRetriever;
     private final BeanOutputConverter<ModelResponse> outputConverter;
+    private final RetrievalAgent retrievalAgent;
     private final MessageChatMemoryAdvisor memoryAdvisor;
 
     public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent,
             QueryContextRetriever queryContextRetriever) {
         this.chatClient = chatClient.getChatClient();
-        this.retrievalAgent = retrievalAgent;
-        this.queryContextRetriever = queryContextRetriever;
         this.outputConverter = new BeanOutputConverter<>(ModelResponse.class);
+        this.retrievalAgent = retrievalAgent;
 
         MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
                 .maxMessages(10)
@@ -88,17 +116,14 @@ public class ComputationAgent {
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
         String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
-        String examples = retrieveContext(input);
 
-        String system_message = PromptTemplate.builder()
+        String first_message = PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
                 .template(PROMPT_TEMPLATE)
                 .build()
                 .render(Map.of(
-                        "format_instruction", outputConverter.getFormat(),
-                        "code_changes", codeChangesText,
                         "checklist_description", checklistDescription,
-                        "examples", examples));
+                        "code_changes", codeChangesText));
 
         int iteration = 0;
         ModelResponse response = null;
@@ -106,8 +131,7 @@ public class ComputationAgent {
         String retrievalResult = "";
         do {
             ChatClient.ChatClientRequestSpec requestSpec = chatClient
-                    .prompt()
-                    .system(system_message)
+                    .prompt(first_message)
                     .advisors(new SimpleLoggerAdvisor(), memoryAdvisor)
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId));
 
@@ -115,9 +139,7 @@ public class ComputationAgent {
                 requestSpec = requestSpec.user(retrievalResult);
             }
 
-            response = requestSpec
-                    .call()
-                    .entity(ModelResponse.class);
+            response = this.outputConverter.convert(requestSpec.call().content());
 
             if (response == null || !response.needsAdditionalData()) {
                 break;
@@ -128,14 +150,5 @@ public class ComputationAgent {
         } while (iteration <= MAX_ITERATION);
 
         return response == null ? "" : StringUtils.safeText(response.finalAnswer());
-    }
-
-    private String retrieveContext(ComputationAgentInput input) {
-        List<String> queries = List.of(input.checklistItem());
-        List<ContextScorePair> retrievedContexts = queryContextRetriever
-                .retrieve(new ContextRetrievalRequest(queries, RETRIEVAL_CONFIGURATION));
-        return String.join("\n---\n", retrievedContexts.stream()
-                .map(pair -> pair.context().getContent())
-                .toList());
     }
 }

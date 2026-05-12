@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -97,12 +95,12 @@ public class SummaryAgent {
                         "item_answers", itemAnswersText));
         prompt = prompt + "\n\n" + outputConverter.getFormat();
 
-        ResponseEntity<ChatResponse, SummaryAgentOutput> response = chatClient
+        String response = chatClient
                 .prompt(prompt)
                 .advisors(new SimpleLoggerAdvisor())
                 .call()
-                .responseEntity(SummaryAgentOutput.class);
+                .content();
 
-        return response.entity();
+        return outputConverter.convert(response);
     }
 }

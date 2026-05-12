@@ -1,6 +1,6 @@
 source ../.env
 
-SPRING_ARGUMENTS="--app.mode=sync"
+SPRING_ARGUMENTS="--app.mode=test"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 ./mvnw spring-boot:run \

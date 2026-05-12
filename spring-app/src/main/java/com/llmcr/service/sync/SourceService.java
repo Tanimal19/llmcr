@@ -44,6 +44,7 @@ public class SourceService {
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
     private final MyVectorStore vectorStore;
+    private final Path PROJECT_ROOT = Path.of("").toAbsolutePath().normalize();
 
     public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository,
             MyVectorStore vectorStore) {
@@ -240,8 +241,7 @@ public class SourceService {
             return null;
         }
 
-        // set dummy hash to trigger sync for new sources
-        return new Source(path.toAbsolutePath().normalize().toString(), sType);
+        return new Source(absoluteToRelativePath(path), sType);
     }
 
     private SourceType resolveSourceType(Path path) {
@@ -288,5 +288,17 @@ public class SourceService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available", e);
         }
+    }
+
+    public String relativeToAbsolutePathString(String relative) {
+        return Path.of(relative).toAbsolutePath().normalize().toString();
+    }
+
+    public String absoluteToRelativePath(Path absolute) {
+        absolute = absolute.toAbsolutePath().normalize();
+        if (absolute.startsWith(PROJECT_ROOT)) {
+            return PROJECT_ROOT.relativize(absolute).toString();
+        }
+        return absolute.toString();
     }
 }
