@@ -41,6 +41,7 @@ public class AdaptiveKStrategy implements TopKSelectionStrategy {
         }
 
         log.info("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
+        log.info("Selected topK with buffer: {}", Math.min(optimalK + buffer, topK));
 
         return contexts.subList(0, Math.min(optimalK + buffer, topK));
     }

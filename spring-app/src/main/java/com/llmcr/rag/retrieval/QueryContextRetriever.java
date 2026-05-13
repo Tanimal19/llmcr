@@ -182,7 +182,6 @@ public class QueryContextRetriever {
     }
 
     private List<ContextScorePair> merge(String query, List<ChunkIdScorePair> chunks) {
-        // This method is not used in the current implementation, but can be used to
         // merge chunks into contexts and assign a score to each context based on the
         // chunk scores.
         Map<Context, Float> contextScoreMap = new HashMap<>();
