@@ -6,6 +6,8 @@ import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.agent.PlanningAgent.PlanningAgentOutput;
 
 public final class MockReviewData {
+    public static final String MOCK_DIFFPATH = "../_datasets/PR5979-mock.diff";
+
     public static final InterpretationAgentOutput MOCK_INTERPRETATION = new InterpretationAgentOutput(
             "In `DefaultChatClient` and `DefaultAroundAdvisorChain`, the `doFinally` and `doOnTerminate`/`doOnCancel` callbacks for stopping the observation in the streaming advisor chain have been updated to use an `AtomicBoolean` to prevent multiple calls to `observation.stop()`. This is to ensure that the observation is stopped only once, even if multiple termination signals are received (e.g., error, finally, cancel). Additionally, in `DefaultAroundAdvisorChain.nextStream`, the `contextView` is now passed to `advisor.adviseStream` which is later used in `ToolCallAdvisor.internalStream` for `ToolCallReactiveContextHolder.setContext` to correctly propagate the parent observation to tool call observations.",
             "The original implementation in `DefaultChatClient` and `DefaultAroundAdvisorChain` had a potential issue where `observation.stop()` could be called multiple times if multiple termination signals (error, finally, cancel) were emitted by the stream. This could lead to incorrect observation reporting or errors. The use of `AtomicBoolean` ensures that `observation.stop()` is called exactly once. The propagation of `contextView` to the `adviseStream` method allows for proper parent observation context to be set for tool call observations, ensuring correct hierarchical tracing of operations involving chat clients, advisors, models, and tools.");

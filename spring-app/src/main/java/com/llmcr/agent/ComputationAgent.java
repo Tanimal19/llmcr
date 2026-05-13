@@ -34,6 +34,7 @@ public class ComputationAgent {
 
     public record ModelResponse(
             List<EvidenceItem> evidence,
+            String analysis,
             String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
@@ -149,6 +150,16 @@ public class ComputationAgent {
             iteration++;
         } while (iteration <= MAX_ITERATION);
 
-        return response == null ? "" : StringUtils.safeText(response.finalAnswer());
+        if (response == null) {
+            return "";
+        }
+
+        return response.finalAnswer() + "\nAnalysis:\n" + response.analysis() + "\nEvidence:\n"
+                + response.evidence().stream()
+                        .map(e -> String.format("- file: %s, lines: %s, reason: %s",
+                                e.file(), e.lines(), e.reason()))
+                        .reduce((a, b) -> a + "\n" + b)
+                        .orElse("");
+
     }
 }

@@ -27,15 +27,22 @@ public class CodeReviewRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         List<String> nonOptionArgs = args.getNonOptionArgs();
+
+        if (args.containsOption("use-mock")) {
+            log.info("Using mock data for code review");
+            Path reportPath = codeReviewService.review(null, true);
+            log.info("Mock code review completed. Report written to: {}", reportPath.toAbsolutePath());
+            return;
+        }
         if (nonOptionArgs.isEmpty()) {
-            log.error("Usage: --app.mode=review <diff-file-path>");
+            log.error("Usage: --app.mode=review <diff-file-path> [--use-mock]");
             throw new IllegalArgumentException("No diff file path provided. Pass the path as a CLI argument.");
         }
 
         String diffFilePath = nonOptionArgs.get(0);
         log.info("Starting code review for diff file: {}", diffFilePath);
 
-        Path reportPath = codeReviewService.review(diffFilePath);
+        Path reportPath = codeReviewService.review(diffFilePath, false);
         log.info("Code review completed. Report written to: {}", reportPath.toAbsolutePath());
     }
 }

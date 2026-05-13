@@ -64,32 +64,44 @@ public class CodeReviewService {
      * @param diffFilePath absolute or relative path to the {@code .diff} file.
      * @return path of the written JSON report file.
      */
-    public Path review(String diffFilePath) {
+    public Path review(String diffFilePath, boolean useMockData) {
 
         try {
+            if (useMockData) {
+                diffFilePath = MockReviewData.MOCK_DIFFPATH;
+            }
+
             log.info("parsing diff file={}", diffFilePath);
             List<CodeChange> codeChanges = GitDiffParser.parseDiffFile(diffFilePath);
 
             // TODO: integrate static analysis tool and populate codeAnalysis
             String codeAnalysis = null;
 
-            log.info("step=interpretation");
-            InterpretationAgentOutput interpretation = interpretationAgent.execute(
-                    new InterpretationAgentInput(codeChanges));
-            try {
-                log.info("interpretation result:\n{}",
-                        objectMapper.writeValueAsString(interpretation));
-            } catch (Exception e) {
-                log.info("interpretation result: {}", interpretation, e);
-            }
+            InterpretationAgentOutput interpretation;
+            PlanningAgentOutput planning;
+            if (!useMockData) {
+                log.info("step=interpretation");
+                interpretation = interpretationAgent.execute(
+                        new InterpretationAgentInput(codeChanges));
+                try {
+                    log.info("interpretation result:\n{}",
+                            objectMapper.writeValueAsString(interpretation));
+                } catch (Exception e) {
+                    log.info("interpretation result: {}", interpretation, e);
+                }
 
-            log.info("step=planning");
-            PlanningAgentOutput planning = planningAgent.execute(
-                    new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
-            try {
-                log.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
-            } catch (Exception e) {
-                log.info("planning result: {}", planning, e);
+                log.info("step=planning");
+                planning = planningAgent.execute(
+                        new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+                try {
+                    log.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
+                } catch (Exception e) {
+                    log.info("planning result: {}", planning, e);
+                }
+            } else {
+                interpretation = MockReviewData.MOCK_INTERPRETATION;
+                planning = MockReviewData.MOCK_PLANNING;
+                log.info("using mock interpretation and planning results");
             }
 
             log.info("step=computation items={}", planning.checklistItems().size());
