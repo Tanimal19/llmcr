@@ -141,19 +141,22 @@ docker-compose up -d
   - `review.sh`: Run the code review service.
 
 > [!NOTE]
-> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1a08PXK3jMUdT_VJgu4LC9REbbv_8Hcla/view?usp=drive_link) to run the application without running the ETL pipeline.  
+> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1zy6l341eKZVn6dqB9GpuedcZ8ga2hvyZ/view?usp=drive_link) to run the application without running the ETL pipeline.  
 > 
 > You will see `.index` files under `faiss/` and an `ragdb_backup.sql`
+> 1. Import `ragdb_backup.sql` file to MariaDB use `docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql`
+> 2. Place `.index` file under `./faiss_service/app/data`
+> or you can run the `runner/ReloadChunkRunner` to reload all index to FAISS service.
 > 
-> Place `.index` file under `./faiss_service/app/data`
-> 
-> Import `ragdb_backup.sql` file to MariaDB use `docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql`
->
 > You can backup the database via: `docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql`
 
+> [!Warning]
+> If you want to run the ETL pipeline with the pre-extracted data, download the datasets in section [Datasets used](#datasets-used). And place the unzipped files under `./_datasets/` folder, and make sure the path configuration in `application.yml` is correct.
 
 
 # Datasets used
+[Download Datasets](https://drive.google.com/file/d/1CJLv8RLnf7EOtlpXyMEK07S8RFMN3Wk1/view?usp=drive_link)
+
 - Project Context: Spring AI [release 2.0.0-M1](https://github.com/spring-projects/spring-ai/releases/tag/v2.0.0-M1)
 - Review Guidelines:
   - https://google.github.io/eng-practices/review/reviewer/standard.html
