@@ -2,8 +2,6 @@ package com.llmcr.agent;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -20,9 +18,7 @@ import com.llmcr.tool.UserInteractionTool;
 import com.llmcr.util.StringUtils;
 
 @Component
-public class RetrievalAgent {
-
-    private static final Logger log = LoggerFactory.getLogger(RetrievalAgent.class);
+public class RetrievalAgent extends Agent<String, String> {
 
     private static final String SYSTEM_MESSAGE = """
             You are a retrieval assistant.
@@ -64,6 +60,7 @@ public class RetrievalAgent {
         this.chatClient = chatClient.getChatClient();
     }
 
+    @Override
     public String execute(String dataQuery) {
         String safeQuery = StringUtils.safeText(dataQuery);
         if (safeQuery.isBlank()) {

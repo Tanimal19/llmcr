@@ -7,15 +7,17 @@ import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.client.RerankingClient;
-import com.llmcr.client.reranking.RerankingResponse;
 import com.llmcr.entity.Context;
 import com.llmcr.rag.retrieval.fusion.FusionStrategy;
 import com.llmcr.rag.retrieval.fusion.RankFusionStrategy;
 import com.llmcr.rag.retrieval.select.TopKSelectionStrategy;
 import com.llmcr.repository.ContextRepository;
+import com.llmcr.reranking.RerankingModel;
+import com.llmcr.reranking.RerankingResponse;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.vectorstore.MyVectorStore;
 
 /**
@@ -63,17 +65,24 @@ public class QueryContextRetriever {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryContextRetriever.class);
 
-    private static final int MAX_QUERY_LENGTH = 4096;
-    private static final int TOP_N = 1000;
+    @Value("${llmcr.retrieval.topN:1000}")
+    private int TOP_N;
+
+    @Value("${llmcr.retrieval.maxQueryLength:4096}")
+    private int MAX_QUERY_LENGTH;
+
     private final MyVectorStore vectorStore;
     private final ContextRepository contextRepository;
-    private final RerankingClient rerankingModel;
+    private final RerankingModel rerankingModel;
 
-    public QueryContextRetriever(MyVectorStore vectorStore, ContextRepository contextRepository,
-            RerankingClient rerankingModel) {
+    public QueryContextRetriever(
+            @Value("${llmcr.reranking.provider}") String rerankingProviderName,
+            @Value("${llmcr.reranking.model}") String rerankingModelName,
+            MyVectorStore vectorStore, ContextRepository contextRepository,
+            ModelClientFactory modelClientFactory) {
         this.vectorStore = vectorStore;
         this.contextRepository = contextRepository;
-        this.rerankingModel = rerankingModel;
+        this.rerankingModel = modelClientFactory.createRerankingModel(rerankingProviderName, rerankingModelName);
     }
 
     public List<ContextScorePair> retrieve(ContextRetrievalRequest request) {
@@ -94,6 +103,7 @@ public class QueryContextRetriever {
                 processedQueries.addAll(splitQuery(query));
             }
         }
+        logger.info("Split queries: {} -> {}", request.queries().size(), processedQueries.size());
 
         List<ContextScorePair> retrievedContexts;
         if (processedQueries.size() == 1) {

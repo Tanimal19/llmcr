@@ -3,18 +3,16 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.client.LargeChatClient;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
-public class SummaryAgent {
+public class SummaryAgent extends
+        SingleCallAgent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput> {
 
     public record ItemAnswer(String checklistItemTitle, String answer) {
     }
@@ -65,17 +63,25 @@ public class SummaryAgent {
             <item_answers>
 
             Think step by step internally before generating the code review report.
+
+            <format_instructions>
             """;
 
-    private final ChatClient chatClient;
-    private final BeanOutputConverter<SummaryAgentOutput> outputConverter;
-
-    public SummaryAgent(LargeChatClient chatClient) {
-        this.chatClient = chatClient.getChatClient();
-        this.outputConverter = new BeanOutputConverter<>(SummaryAgentOutput.class);
+    public SummaryAgent(
+            @Value("${llmcr.agent.summary.chat.provider}") String chatProviderName,
+            @Value("${llmcr.agent.summary.chat.model}") String chatModelName,
+            ModelClientFactory modelClientFactory) {
+        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+                new BeanOutputConverter<>(SummaryAgentOutput.class));
     }
 
-    public SummaryAgentOutput execute(SummaryAgentInput input) {
+    @Override
+    protected String getPromptTemplate() {
+        return PROMPT_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> getPromptVariables(SummaryAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
@@ -85,22 +91,9 @@ public class SummaryAgent {
                         + "\nAnswer: " + answer.answer())
                 .toList());
 
-        String prompt = PromptTemplate.builder()
-                .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-                .template(PROMPT_TEMPLATE)
-                .build()
-                .render(Map.of(
-                        "code_changes", codeChangesText,
-                        "code_analysis", input.codeAnalysis() != null ? input.codeAnalysis() : "(not available)",
-                        "item_answers", itemAnswersText));
-        prompt = prompt + "\n\n" + outputConverter.getFormat();
-
-        String response = chatClient
-                .prompt(prompt)
-                .advisors(new SimpleLoggerAdvisor())
-                .call()
-                .content();
-
-        return outputConverter.convert(response);
+        return Map.of(
+                "code_changes", codeChangesText,
+                "code_analysis", input.codeAnalysis() != null ? input.codeAnalysis() : "(not available)",
+                "item_answers", itemAnswersText);
     }
 }

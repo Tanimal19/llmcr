@@ -3,11 +3,6 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -19,7 +14,8 @@ import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
 @Component
-public class ComputationAgent {
+public class ComputationAgent
+        extends RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -39,8 +35,6 @@ public class ComputationAgent {
             boolean needsAdditionalData,
             String dataQuery) {
     }
-
-    private static final int MAX_ITERATION = 5;
 
     private static final String PROMPT_TEMPLATE = """
             You are an experienced code reviewer.
@@ -93,24 +87,16 @@ public class ComputationAgent {
             <code_changes>
             """;
 
-    private final ChatClient chatClient;
-    private final BeanOutputConverter<ModelResponse> outputConverter;
     private final RetrievalAgent retrievalAgent;
-    private final MessageChatMemoryAdvisor memoryAdvisor;
 
     public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent,
             QueryContextRetriever queryContextRetriever) {
-        this.chatClient = chatClient.getChatClient();
-        this.outputConverter = new BeanOutputConverter<>(ModelResponse.class);
+        super(chatClient.getChatClient(), new BeanOutputConverter<>(ModelResponse.class));
         this.retrievalAgent = retrievalAgent;
-
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
-                .maxMessages(10)
-                .build();
-        this.memoryAdvisor = MessageChatMemoryAdvisor.builder(memory).build();
     }
 
-    public String execute(ComputationAgentInput input) {
+    @Override
+    protected String buildFirstMessage(ComputationAgentInput input) {
         List<CodeChange> safeCodeChanges = input == null || input.codeChanges() == null ? List.of()
                 : input.codeChanges();
         String codeChangesText = String.join("\n----\n", safeCodeChanges.stream()
@@ -118,48 +104,37 @@ public class ComputationAgent {
                 .toList());
         String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
 
-        String first_message = PromptTemplate.builder()
+        return PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
                 .template(PROMPT_TEMPLATE)
                 .build()
                 .render(Map.of(
                         "checklist_description", checklistDescription,
                         "code_changes", codeChangesText));
+    }
 
-        int iteration = 0;
-        ModelResponse response = null;
-        String conversationId = "computation-" + System.currentTimeMillis();
-        String retrievalResult = "";
-        do {
-            ChatClient.ChatClientRequestSpec requestSpec = chatClient
-                    .prompt(first_message)
-                    .advisors(new SimpleLoggerAdvisor(), memoryAdvisor)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId));
+    @Override
+    protected boolean shouldRequestMoreData(ModelResponse response) {
+        return response.needsAdditionalData();
+    }
 
-            if (retrievalResult != null && !retrievalResult.isBlank()) {
-                requestSpec = requestSpec.user(retrievalResult);
-            }
+    @Override
+    protected String getDataQuery(ModelResponse response) {
+        return response.dataQuery();
+    }
 
-            response = this.outputConverter.convert(requestSpec.call().content());
+    @Override
+    protected String fetchAdditionalData(String query) {
+        return retrievalAgent.execute(query);
+    }
 
-            if (response == null || !response.needsAdditionalData()) {
-                break;
-            }
-
-            retrievalResult = retrievalAgent.execute(response.dataQuery());
-            iteration++;
-        } while (iteration <= MAX_ITERATION);
-
-        if (response == null) {
-            return "";
-        }
-
+    @Override
+    protected String formatFinalAnswer(ModelResponse response) {
         return response.finalAnswer() + "\nAnalysis:\n" + response.analysis() + "\nEvidence:\n"
                 + response.evidence().stream()
                         .map(e -> String.format("- file: %s, lines: %s, reason: %s",
                                 e.file(), e.lines(), e.reason()))
                         .reduce((a, b) -> a + "\n" + b)
                         .orElse("");
-
     }
 }

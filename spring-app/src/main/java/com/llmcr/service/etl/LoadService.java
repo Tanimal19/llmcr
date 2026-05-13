@@ -6,16 +6,18 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.client.EmbeddingClient;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Context;
 import com.llmcr.repository.ChunkCollectionRepository;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.vectorstore.MyVectorStore;
 
 @Component
@@ -27,19 +29,21 @@ public class LoadService {
     private final ContextRepository contextRepository;
     private final ChunkRepository chunkRepository;
     private final MyVectorStore vectorStore;
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingClient;
 
     public LoadService(
+            @Value("${llmcr.embedding.provider}") String embeddingProviderName,
+            @Value("${llmcr.embedding.model}") String embeddingModelName,
             ChunkCollectionRepository chunkCollectionRepository,
             ContextRepository contextRepository,
             ChunkRepository chunkRepository,
             MyVectorStore vectorStore,
-            EmbeddingClient embeddingClient) {
+            ModelClientFactory modelClientFactory) {
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.contextRepository = contextRepository;
         this.chunkRepository = chunkRepository;
         this.vectorStore = vectorStore;
-        this.embeddingClient = embeddingClient;
+        this.embeddingClient = modelClientFactory.createEmbeddingModel(embeddingProviderName, embeddingModelName);
     }
 
     @Transactional
