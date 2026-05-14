@@ -40,6 +40,20 @@ public class ComputationAgent
             String finalAnswer,
             String analysis,
             List<EvidenceItem> evidence) {
+
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Final Answer: ").append(finalAnswer).append("\n");
+            sb.append("Analysis: ").append(analysis).append("\n");
+            sb.append("Evidence:\n");
+            if (evidence != null) {
+                for (EvidenceItem item : evidence) {
+                    sb.append("- File: ").append(item.file()).append(", Lines: ").append(item.lines())
+                            .append(", Reason: ").append(item.reason()).append("\n");
+                }
+            }
+            return sb.toString();
+        }
     }
 
     private static final String PROMPT_TEMPLATE = """

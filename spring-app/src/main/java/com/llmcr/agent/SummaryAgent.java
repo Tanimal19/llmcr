@@ -7,6 +7,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.ComputationAgent.ComputationAgentOutput;
 import com.llmcr.agent.base.SingleCallAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
@@ -15,7 +16,7 @@ import com.llmcr.util.GitDiffParser.CodeChange;
 public class SummaryAgent extends
         SingleCallAgent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput> {
 
-    public record ItemAnswer(String checklistItemTitle, String answer) {
+    public record ItemAnswer(String checklistItemTitle, ComputationAgentOutput answer) {
     }
 
     public record SummaryAgentInput(
@@ -89,7 +90,7 @@ public class SummaryAgent extends
 
         String itemAnswersText = String.join("\n----\n", input.itemAnswers().stream()
                 .map(answer -> "ItemTitle: " + answer.checklistItemTitle()
-                        + "\nAnswer: " + answer.answer())
+                        + "\nAnswer:\n" + answer.answer().toString())
                 .toList());
 
         return Map.of(

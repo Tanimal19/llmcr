@@ -90,21 +90,10 @@ public class CodeReviewService {
                 logger.info("[INTERPRETATION] start");
                 interpretation = interpretationAgent.execute(
                         new InterpretationAgentInput(codeChanges));
-                try {
-                    logger.info("[INTERPRETATION] result=\n{}", objectMapper.writeValueAsString(interpretation));
-                } catch (Exception e) {
-                    logger.info("[INTERPRETATION] result=\n{}", interpretation, e);
-                }
 
                 logger.info("[PLANNING] start");
                 planning = planningAgent.execute(
                         new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
-                try {
-                    logger.info("[PLANNING] result=\n{}", objectMapper.writeValueAsString(planning));
-                } catch (Exception e) {
-                    logger.info("[PLANNING] result=\n{}", planning, e);
-                }
-
             } else {
                 interpretation = MockReviewData.MOCK_INTERPRETATION;
                 planning = MockReviewData.MOCK_PLANNING;
@@ -116,32 +105,12 @@ public class CodeReviewService {
             for (String item : planning.checklistItems()) {
                 logger.info("[COMPUTATION] item={}", item);
                 ComputationAgentOutput answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
-                try {
-                    logger.info("[COMPUTATION] item={} | output=\n{}", item, objectMapper.writeValueAsString(answer));
-                } catch (Exception e) {
-                    logger.info("[COMPUTATION] item={} | output=\n{}", item, answer, e);
-                }
-
-                String answerString = "Final Answer: " + answer.finalAnswer() + "\n"
-                        + "Analysis: " + answer.analysis() + "\n"
-                        + "Evidence:\n" + (answer.evidence() != null
-                                ? answer.evidence().stream()
-                                        .map(e -> String.format("- file: %s, lines: %s, reason: %s",
-                                                e.file(), e.lines(), e.reason()))
-                                        .reduce((a, b) -> a + "\n" + b)
-                                        .orElse("No evidence provided.")
-                                : "No evidence provided.");
-                itemAnswers.add(new ItemAnswer(item, answerString));
+                itemAnswers.add(new ItemAnswer(item, answer));
             }
 
             logger.info("[SUMMARY] start");
             SummaryAgentOutput reviewResult = summaryAgent.execute(
                     new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
-            try {
-                logger.info("[SUMMARY] result=\n{}", objectMapper.writeValueAsString(reviewResult));
-            } catch (Exception e) {
-                logger.info("[SUMMARY] result=\n{}", reviewResult, e);
-            }
 
             Path reportPath = writeReport(diffFilePath,
                     new CodeReviewReport(reviewResult, interpretation, itemAnswers));
