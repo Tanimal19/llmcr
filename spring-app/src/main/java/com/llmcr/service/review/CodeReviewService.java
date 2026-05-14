@@ -86,54 +86,54 @@ public class CodeReviewService {
             InterpretationAgentOutput interpretation;
             PlanningAgentOutput planning;
             if (!useMockData) {
-                logger.info("step=interpretation");
+                logger.info("[INTERPRETATION] start");
                 interpretation = interpretationAgent.execute(
                         new InterpretationAgentInput(codeChanges));
                 try {
-                    logger.info("interpretation result:\n{}",
-                            objectMapper.writeValueAsString(interpretation));
+                    logger.info("[INTERPRETATION] result=\n{}", objectMapper.writeValueAsString(interpretation));
                 } catch (Exception e) {
-                    logger.info("interpretation result: {}", interpretation, e);
+                    logger.info("[INTERPRETATION] result=\n{}", interpretation, e);
                 }
 
-                logger.info("step=planning");
+                logger.info("[PLANNING] start");
                 planning = planningAgent.execute(
                         new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
                 try {
-                    logger.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
+                    logger.info("[PLANNING] result=\n{}", objectMapper.writeValueAsString(planning));
                 } catch (Exception e) {
-                    logger.info("planning result: {}", planning, e);
+                    logger.info("[PLANNING] result=\n{}", planning, e);
                 }
+
             } else {
                 interpretation = MockReviewData.MOCK_INTERPRETATION;
                 planning = MockReviewData.MOCK_PLANNING;
                 logger.info("using mock interpretation and planning results");
             }
 
-            logger.info("step=computation items={}", planning.checklistItems().size());
+            logger.info("[COMPUTATION] start", planning.checklistItems().size());
             List<ItemAnswer> itemAnswers = new ArrayList<>();
             for (String item : planning.checklistItems()) {
-                logger.debug("item={}", item);
+                logger.info("[COMPUTATION] item={}", item);
                 String answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
+                logger.info("[COMPUTATION] item={} | final answer=\n{}", item, answer);
                 itemAnswers.add(new ItemAnswer(item, answer));
             }
-            try {
-                logger.info("computation results:\n{}", objectMapper.writeValueAsString(itemAnswers));
-            } catch (Exception e) {
-                logger.info("computation results: {}", itemAnswers, e);
-            }
 
-            logger.info("step=summary");
+            logger.info("[SUMMARY] start");
             SummaryAgentOutput reviewResult = summaryAgent.execute(
                     new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
             try {
-                logger.info("summary result:\n{}", objectMapper.writeValueAsString(reviewResult));
+                logger.info("[SUMMARY] result=\n{}", objectMapper.writeValueAsString(reviewResult));
             } catch (Exception e) {
-                logger.info("summary result: {}", reviewResult, e);
+                logger.info("[SUMMARY] result=\n{}", reviewResult, e);
             }
 
             Path reportPath = writeReport(diffFilePath,
                     new CodeReviewReport(reviewResult, interpretation, itemAnswers));
+
+            logger.info("code review for {} completed. Report written to: {}",
+                    diffFilePath,
+                    reportPath.toAbsolutePath());
 
             return reportPath;
         } catch (RuntimeException e) {
@@ -153,7 +153,6 @@ public class CodeReviewService {
 
             String markdown = buildMarkdownReport(report);
             Files.writeString(reportPath, markdown);
-            logger.info("report written to {}", reportPath.toAbsolutePath());
             return reportPath;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write review report", e);

@@ -1,4 +1,4 @@
-package com.llmcr.rag.retrieval;
+package com.llmcr.service.rag;
 
 import java.util.List;
 import java.util.Map;
@@ -11,13 +11,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Context;
-import com.llmcr.rag.retrieval.fusion.FusionStrategy;
-import com.llmcr.rag.retrieval.fusion.RankFusionStrategy;
-import com.llmcr.rag.retrieval.select.TopKSelectionStrategy;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.reranking.RerankingModel;
 import com.llmcr.reranking.RerankingResponse;
 import com.llmcr.service.ModelClientFactory;
+import com.llmcr.service.rag.fusion.FusionStrategy;
+import com.llmcr.service.rag.fusion.RankFusionStrategy;
+import com.llmcr.service.rag.select.TopKSelectionStrategy;
 import com.llmcr.vectorstore.MyVectorStore;
 
 /**
@@ -103,7 +103,7 @@ public class QueryContextRetriever {
                 processedQueries.addAll(splitQuery(query));
             }
         }
-        logger.info("Split queries: {} -> {}", request.queries().size(), processedQueries.size());
+        logger.debug("Split queries: {} -> {}", request.queries().size(), processedQueries.size());
 
         List<ContextScorePair> retrievedContexts;
         if (processedQueries.size() == 1) {

@@ -84,6 +84,7 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
+      --temp 0.5
       --ctx-size 32768
       --no-webui
       --port ${PORT}
@@ -94,6 +95,9 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      --temp 0.2
+      --top-p 0.2
+      --repeat-penalty 1.1
       --ctx-size 32768
       --no-webui
       --port ${PORT}

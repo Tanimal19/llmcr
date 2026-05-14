@@ -129,6 +129,7 @@ public class SourceService {
     }
 
     private void removeSource(Source source) {
+        logger.info("Removing source: " + source.getPath());
         cleanupSourceChunks(source);
         sourceRepository.delete(source);
     }
@@ -232,12 +233,12 @@ public class SourceService {
     private Source createSource(Path path, Set<SourceType> allowedTypes) {
         SourceType sType = resolveSourceType(path);
         if (sType == null) {
-            logger.warn("Unrecognized file type for source, Dropped: " + path);
+            logger.debug("Unrecognized file type for source, Dropped: " + path);
             return null;
         }
 
         if (!allowedTypes.contains(sType)) {
-            logger.info("Source type not allowed by track root config, Dropped: " + path);
+            logger.debug("Source type not allowed by track root config, Dropped: " + path);
             return null;
         }
 

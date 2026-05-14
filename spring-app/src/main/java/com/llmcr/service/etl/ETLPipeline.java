@@ -51,16 +51,13 @@ public class ETLPipeline {
 
         // enrich must be performed on all contexts after splitting, since the
         // enrichment may require the complete set of chunks in a context.
-        // long t3 = System.currentTimeMillis();
-        // contextRepository.findAllUnenrichedIds().forEach(id ->
-        // enrichService.enrich(id));
-        // logger.info("Enrich completed in {} ms", System.currentTimeMillis() - t3);
+        long t3 = System.currentTimeMillis();
+        contextRepository.findAllUnenrichedIds().forEach(id -> enrichService.enrich(id));
+        logger.info("Enrich completed in {} ms", System.currentTimeMillis() - t3);
 
-        // long t4 = System.currentTimeMillis();
-        // contextRepository.findAllUnloadedIds().forEach(id -> loadService.load(id));
-        // logger.info("Load after enrich completed in {} ms",
-        // System.currentTimeMillis() -
-        // t4);
+        long t4 = System.currentTimeMillis();
+        contextRepository.findAllUnloadedIds().forEach(id -> loadService.load(id));
+        logger.info("Load after enrich completed in {} ms", System.currentTimeMillis() - t4);
 
         logger.info("ETL pipeline finished in {} ms", System.currentTimeMillis() - t0);
     }

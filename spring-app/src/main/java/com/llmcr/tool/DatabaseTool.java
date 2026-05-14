@@ -12,12 +12,12 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
-import com.llmcr.rag.retrieval.QueryContextRetriever;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
-import com.llmcr.rag.retrieval.select.FixedKStrategy;
 import com.llmcr.repository.ContextRepository;
+import com.llmcr.service.rag.QueryContextRetriever;
+import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.service.rag.select.FixedKStrategy;
 
 @Component
 public class DatabaseTool {
@@ -27,7 +27,7 @@ public class DatabaseTool {
     private static final int MAX_RESULT_ROWS = 10;
     private static final int MAX_CELL_CHARS = 800;
 
-    private static final Set<String> ALLOWED_COLLECTIONS = Set.of("project-context", "docs", "guidelines");
+    private static final Set<String> ALLOWED_COLLECTIONS = Set.of("project-code", "docs");
 
     private final ContextRepository contextRepository;
     private final QueryContextRetriever queryContextRetriever;
@@ -38,14 +38,14 @@ public class DatabaseTool {
     }
 
     @Tool(description = """
-                Retrieve relevant document content based on a semantic query.
+                Get an overview of most relevant code or document content based on a query. Use this when you want to find relevant information but don't have a specific id.
+
                 Available collections for retrieval:
-                - project-context: Use this collection for queries related to project source code and APIs.
-                - docs:  Use this collection for queries related to understanding software best pratices and other non-code information.
-                - guidelines: Use this collection for queries related to code review advice, best practices, and guidelines.
+                - project-code: Use this collection for queries related to project source code and APIs.
+                - docs: Use this collection for queries related to understanding software best pratices and other information.
             """)
     public String retrieveDocumentContentByQuery(
-            @ToolParam(description = "The semantic query to search document content for.", required = true) String query,
+            @ToolParam(description = "A query to search for content.", required = true) String query,
             @ToolParam(description = "The collection to be search.", required = true) String collectionName) {
         logger.info("[ToolCall] tool=retrieveDocumentContentByQuery collection={} query={}",
                 collectionName, query);

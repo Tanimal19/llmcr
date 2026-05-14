@@ -1,10 +1,10 @@
-package com.llmcr.rag.retrieval.select;
+package com.llmcr.service.rag.select;
 
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 
 /**
  * AdaptiveKStrategy dynamically determines the optimal number of contexts to
@@ -40,8 +40,8 @@ public class AdaptiveKStrategy implements TopKSelectionStrategy {
             }
         }
 
-        logger.info("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
-        logger.info("Selected topK with buffer: {}", Math.min(optimalK + buffer, topK));
+        logger.debug("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
+        logger.debug("Selected topK with buffer: {}", Math.min(optimalK + buffer, topK));
 
         return contexts.subList(0, Math.min(optimalK + buffer, topK));
     }

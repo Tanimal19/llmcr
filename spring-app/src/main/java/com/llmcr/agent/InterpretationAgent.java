@@ -7,12 +7,12 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.rag.retrieval.QueryContextRetriever;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
-import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
 import com.llmcr.service.ModelClientFactory;
+import com.llmcr.service.rag.QueryContextRetriever;
+import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.service.rag.select.AdaptiveKStrategy;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
