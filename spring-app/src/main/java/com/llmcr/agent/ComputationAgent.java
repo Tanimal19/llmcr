@@ -3,23 +3,18 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.client.SmallChatClient;
-import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.agent.base.RecursiveAgent;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
-import com.llmcr.util.StringUtils;
 
 @Component
-public class ComputationAgent {
+public class ComputationAgent
+        extends
+        RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse, ComputationAgent.ComputationAgentOutput> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -40,7 +35,25 @@ public class ComputationAgent {
             String dataQuery) {
     }
 
-    private static final int MAX_ITERATION = 5;
+    public record ComputationAgentOutput(
+            String finalAnswer,
+            String analysis,
+            List<EvidenceItem> evidence) {
+
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Final Answer: ").append(finalAnswer).append("\n");
+            sb.append("Analysis: ").append(analysis).append("\n");
+            sb.append("Evidence:\n");
+            if (evidence != null) {
+                for (EvidenceItem item : evidence) {
+                    sb.append("- File: ").append(item.file()).append(", Lines: ").append(item.lines())
+                            .append(", Reason: ").append(item.reason()).append("\n");
+                }
+            }
+            return sb.toString();
+        }
+    }
 
     private static final String PROMPT_TEMPLATE = """
             You are an experienced code reviewer.
@@ -53,6 +66,7 @@ public class ComputationAgent {
             2. Extract explicit evidence from the code change.
             3. Analyze whether the evidence satisfies the checklist requirement.
             4. If required information is missing, STOP the analysis and request additional data instead of making assumptions.
+            5. If you can't get the required additional data after multiple iteration, provide the best possible analysis based on the available information, but clearly state the limitations of your analysis.
 
             Rules:
             - Do not infer behavior from naming alone.
@@ -66,9 +80,9 @@ public class ComputationAgent {
             {
                 "evidence": [
                     {
-                        "file": "...",
-                        "lines": "...",
-                        "reason": "..."
+                        "file": "Example.java",
+                        "lines": "10-20",
+                        "reason": "Because ..."
                     },
                 ],
                 "analysis": "...",
@@ -86,6 +100,8 @@ public class ComputationAgent {
                 "dataQuery": "Please provide ..."
             }
 
+            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
+
             Checklist item:
             <checklist_description>
 
@@ -93,73 +109,57 @@ public class ComputationAgent {
             <code_changes>
             """;
 
-    private final ChatClient chatClient;
-    private final BeanOutputConverter<ModelResponse> outputConverter;
     private final RetrievalAgent retrievalAgent;
-    private final MessageChatMemoryAdvisor memoryAdvisor;
 
-    public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent,
-            QueryContextRetriever queryContextRetriever) {
-        this.chatClient = chatClient.getChatClient();
-        this.outputConverter = new BeanOutputConverter<>(ModelResponse.class);
+    public ComputationAgent(
+            @Value("${llmcr.agent.computation.chat.provider}") String chatProviderName,
+            @Value("${llmcr.agent.computation.chat.model}") String chatModelName,
+            ModelClientFactory modelClientFactory,
+            RetrievalAgent retrievalAgent) {
+        super(chatProviderName, chatModelName, modelClientFactory,
+                new BeanOutputConverter<>(ModelResponse.class));
         this.retrievalAgent = retrievalAgent;
-
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
-                .maxMessages(10)
-                .build();
-        this.memoryAdvisor = MessageChatMemoryAdvisor.builder(memory).build();
     }
 
-    public String execute(ComputationAgentInput input) {
-        List<CodeChange> safeCodeChanges = input == null || input.codeChanges() == null ? List.of()
-                : input.codeChanges();
-        String codeChangesText = String.join("\n----\n", safeCodeChanges.stream()
+    @Override
+    protected String getPromptTemplate() {
+        return PROMPT_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> getPromptVariables(ComputationAgentInput input) {
+        String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
-        String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
+        String checklistDescription = input.checklistItem();
 
-        String first_message = PromptTemplate.builder()
-                .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-                .template(PROMPT_TEMPLATE)
-                .build()
-                .render(Map.of(
-                        "checklist_description", checklistDescription,
-                        "code_changes", codeChangesText));
+        return Map.of(
+                "checklist_description", checklistDescription,
+                "code_changes", codeChangesText);
+    }
 
-        int iteration = 0;
-        ModelResponse response = null;
-        String conversationId = "computation-" + System.currentTimeMillis();
-        String retrievalResult = "";
-        do {
-            ChatClient.ChatClientRequestSpec requestSpec = chatClient
-                    .prompt(first_message)
-                    .advisors(new SimpleLoggerAdvisor(), memoryAdvisor)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId));
+    @Override
+    protected boolean shouldTerminate(ModelResponse response) {
+        return !response.needsAdditionalData();
+    }
 
-            if (retrievalResult != null && !retrievalResult.isBlank()) {
-                requestSpec = requestSpec.user(retrievalResult);
-            }
-
-            response = this.outputConverter.convert(requestSpec.call().content());
-
-            if (response == null || !response.needsAdditionalData()) {
-                break;
-            }
-
-            retrievalResult = retrievalAgent.execute(response.dataQuery());
-            iteration++;
-        } while (iteration <= MAX_ITERATION);
-
-        if (response == null) {
-            return "";
+    @Override
+    protected String getNextMessage(ModelResponse response) {
+        if (response.dataQuery() == null) {
+            return "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.";
         }
+        String retrievalResult = retrievalAgent.execute(response.dataQuery());
+        return "You requested additional data with the following query: " + response.dataQuery()
+                + "\nThe retrieval result is: " + retrievalResult;
+    }
 
-        return response.finalAnswer() + "\nAnalysis:\n" + response.analysis() + "\nEvidence:\n"
-                + response.evidence().stream()
-                        .map(e -> String.format("- file: %s, lines: %s, reason: %s",
-                                e.file(), e.lines(), e.reason()))
-                        .reduce((a, b) -> a + "\n" + b)
-                        .orElse("");
+    @Override
+    protected String getFinalMessage() {
+        return "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.";
+    }
 
+    @Override
+    protected ComputationAgentOutput convertModelResponse(ModelResponse response) {
+        return new ComputationAgentOutput(response.finalAnswer(), response.analysis(), response.evidence());
     }
 }

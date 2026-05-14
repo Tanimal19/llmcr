@@ -44,7 +44,10 @@ class RemoveVectorsResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "FAISS Vector Search Service"}
+    return {
+        "message": "FAISS Vector Search Service",
+        "indexes": list_indexes_with_counts(),
+    }
 
 
 @app.post("/index/add_ids", response_model=AddVectorsResponse)

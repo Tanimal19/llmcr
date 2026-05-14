@@ -3,24 +3,23 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
-import com.llmcr.client.LargeChatClient;
-import com.llmcr.rag.retrieval.QueryContextRetriever;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
-import com.llmcr.rag.retrieval.select.AdaptiveKStrategy;
+import com.llmcr.agent.base.SingleCallAgent;
+import com.llmcr.service.ModelClientFactory;
+import com.llmcr.service.rag.QueryContextRetriever;
+import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
+import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.service.rag.select.AdaptiveKStrategy;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
-public class PlanningAgent {
+public class PlanningAgent extends
+        SingleCallAgent<PlanningAgent.PlanningAgentInput, PlanningAgent.PlanningAgentOutput> {
 
     public record PlanningAgentInput(
             List<CodeChange> codeChanges,
@@ -60,22 +59,32 @@ public class PlanningAgent {
             <context>
 
             Think step by step internally before answering.
+
+            <format_instructions>
             """;
 
     private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
             10, new AdaptiveKStrategy(), "guidelines", false);
 
-    private final ChatClient chatClient;
     private final QueryContextRetriever queryContextRetriever;
-    private final BeanOutputConverter<PlanningAgentOutput> outputConverter;
 
-    public PlanningAgent(LargeChatClient chatClient, QueryContextRetriever queryContextRetriever) {
-        this.chatClient = chatClient.getChatClient();
+    public PlanningAgent(
+            @Value("${llmcr.agent.planning.chat.provider}") String chatProviderName,
+            @Value("${llmcr.agent.planning.chat.model}") String chatModelName,
+            ModelClientFactory modelClientFactory,
+            QueryContextRetriever queryContextRetriever) {
+        super(chatProviderName, chatModelName, modelClientFactory,
+                new BeanOutputConverter<>(PlanningAgentOutput.class));
         this.queryContextRetriever = queryContextRetriever;
-        this.outputConverter = new BeanOutputConverter<>(PlanningAgentOutput.class);
     }
 
-    public PlanningAgentOutput execute(PlanningAgentInput input) {
+    @Override
+    protected String getPromptTemplate() {
+        return PROMPT_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> getPromptVariables(PlanningAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
@@ -84,24 +93,11 @@ public class PlanningAgent {
         String descriptionText = interpretation.changeMotivation() + "\n" + interpretation.changeDescription();
         String contextText = retrieveContext(input, descriptionText);
 
-        String prompt = PromptTemplate.builder()
-                .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-                .template(PROMPT_TEMPLATE)
-                .build()
-                .render(Map.of(
-                        "code_changes", codeChangesText,
-                        "change_description", descriptionText,
-                        "code_analysis", input.codeAnalysis() != null ? input.codeAnalysis() : "(not available)",
-                        "context", contextText));
-        prompt = prompt + "\n\n" + outputConverter.getFormat();
-
-        String response = chatClient
-                .prompt(prompt)
-                .advisors(new SimpleLoggerAdvisor())
-                .call()
-                .content();
-
-        return outputConverter.convert(response);
+        return Map.of(
+                "code_changes", codeChangesText,
+                "change_description", descriptionText,
+                "code_analysis", input.codeAnalysis() != null ? input.codeAnalysis() : "(not available)",
+                "context", contextText);
     }
 
     private String retrieveContext(PlanningAgentInput input, String descriptionText) {

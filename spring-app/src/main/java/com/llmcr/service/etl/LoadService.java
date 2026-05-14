@@ -6,40 +6,44 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.client.EmbeddingClient;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Context;
 import com.llmcr.repository.ChunkCollectionRepository;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.vectorstore.MyVectorStore;
 
 @Component
 public class LoadService {
 
-    private static final Logger log = LoggerFactory.getLogger(LoadService.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoadService.class);
 
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final ContextRepository contextRepository;
     private final ChunkRepository chunkRepository;
     private final MyVectorStore vectorStore;
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingClient;
 
     public LoadService(
+            @Value("${llmcr.embedding.provider}") String embeddingProviderName,
+            @Value("${llmcr.embedding.model}") String embeddingModelName,
             ChunkCollectionRepository chunkCollectionRepository,
             ContextRepository contextRepository,
             ChunkRepository chunkRepository,
             MyVectorStore vectorStore,
-            EmbeddingClient embeddingClient) {
+            ModelClientFactory modelClientFactory) {
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.contextRepository = contextRepository;
         this.chunkRepository = chunkRepository;
         this.vectorStore = vectorStore;
-        this.embeddingClient = embeddingClient;
+        this.embeddingClient = modelClientFactory.createEmbeddingModel(embeddingProviderName, embeddingModelName);
     }
 
     @Transactional
@@ -47,7 +51,7 @@ public class LoadService {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isChunkLoaded()) {
-            log.info("Context '{}' is already loaded, skipping", context.getName(), context.getId());
+            logger.info("Context '{}' is already loaded, skipping", context.getName(), context.getId());
             return;
         }
 
@@ -76,7 +80,7 @@ public class LoadService {
             vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
             chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
             chunkCollectionRepository.save(chunkCollection);
-            log.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
+            logger.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
                     context.getName(), chunkCollection.getName());
         }
 

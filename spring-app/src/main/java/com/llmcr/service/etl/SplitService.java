@@ -14,7 +14,7 @@ import com.llmcr.service.etl.transformer.ContextSplitter;
 @Component
 public class SplitService {
 
-    private static final Logger log = LoggerFactory.getLogger(SplitService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SplitService.class);
 
     private final ContextRepository contextRepository;
     private final List<ContextSplitter> splitters;
@@ -31,7 +31,7 @@ public class SplitService {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isSplitted()) {
-            log.info("Context '{}' already loaded, skipping splitting", context.getName());
+            logger.info("Context '{}' already loaded, skipping splitting", context.getName());
             return;
         }
 
@@ -48,6 +48,6 @@ public class SplitService {
         context.setSplitted(true);
         context.setChunkLoaded(false);
         contextRepository.save(context);
-        log.info("Split context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
+        logger.info("Split context '{}' -> {} chunk(s)", context.getName(), context.getChunks().size());
     }
 }

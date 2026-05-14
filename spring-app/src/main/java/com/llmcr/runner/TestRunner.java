@@ -23,7 +23,7 @@ import com.llmcr.repository.ContextRepository;
 @ConditionalOnProperty(name = "app.mode", havingValue = "test")
 public class TestRunner implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(TestRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestRunner.class);
 
     private final ContextRepository contextRepository;
 
@@ -34,7 +34,7 @@ public class TestRunner implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        log.info("Regenerating context names based on source information");
+        logger.info("Regenerating context names based on source information");
 
         List<Context> allContexts = contextRepository.findAll();
         int updatedCount = 0;
@@ -42,7 +42,7 @@ public class TestRunner implements CommandLineRunner {
         for (Context context : allContexts) {
             Source source = context.getSource();
             if (source == null) {
-                log.warn("Context {} has no associated source, skipping", context.getId());
+                logger.warn("Context {} has no associated source, skipping", context.getId());
                 continue;
             }
             if (context.getType() == ContextType.CLASSNODE) {
@@ -57,6 +57,6 @@ public class TestRunner implements CommandLineRunner {
             updatedCount++;
         }
 
-        log.info("Updated {} context names", updatedCount);
+        logger.info("Updated {} context names", updatedCount);
     }
 }

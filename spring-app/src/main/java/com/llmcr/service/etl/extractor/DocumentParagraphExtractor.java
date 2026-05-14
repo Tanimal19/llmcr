@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class DocumentParagraphExtractor implements SourceExtractor {
 
-    private static final Logger log = LoggerFactory.getLogger(DocumentParagraphExtractor.class);
+    private static final Logger logger = LoggerFactory.getLogger(DocumentParagraphExtractor.class);
 
     @Override
     public boolean supports(Source source) {
@@ -58,12 +58,12 @@ public class DocumentParagraphExtractor implements SourceExtractor {
 
     private List<Document> readPdfWithFallback(Source source) {
         try {
-            log.info("Attempting to read PDF with ParagraphPdfDocumentReader: {}", source.getPath());
+            logger.info("Attempting to read PDF with ParagraphPdfDocumentReader: {}", source.getPath());
             DocumentReader reader = createParagraphPdfReader(source);
             return reader.read();
         } catch (IllegalArgumentException e) {
             if (e.getMessage() != null && e.getMessage().contains("table of contents")) {
-                log.warn(
+                logger.warn(
                         "ParagraphPdfDocumentReader failed due to missing TOC, falling back to PagePdfDocumentReader: {}",
                         source.getPath());
                 DocumentReader fallbackReader = createPagePdfReader(source);
@@ -71,13 +71,13 @@ public class DocumentParagraphExtractor implements SourceExtractor {
             }
             throw e;
         } catch (Exception e) {
-            log.warn("ParagraphPdfDocumentReader failed, falling back to PagePdfDocumentReader: {} - Error: {}",
+            logger.warn("ParagraphPdfDocumentReader failed, falling back to PagePdfDocumentReader: {} - Error: {}",
                     source.getPath(), e.getMessage());
             try {
                 DocumentReader fallbackReader = createPagePdfReader(source);
                 return fallbackReader.read();
             } catch (Exception fallbackException) {
-                log.error("Both ParagraphPdfDocumentReader and PagePdfDocumentReader failed for: {}",
+                logger.error("Both ParagraphPdfDocumentReader and PagePdfDocumentReader failed for: {}",
                         source.getPath(), fallbackException);
                 throw new RuntimeException("Failed to read PDF with both readers", fallbackException);
             }
