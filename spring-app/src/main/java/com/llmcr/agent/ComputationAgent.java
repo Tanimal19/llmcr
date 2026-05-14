@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import com.llmcr.agent.base.RecursiveAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
-import com.llmcr.util.StringUtils;
 
 @Component
 public class ComputationAgent
@@ -67,6 +66,7 @@ public class ComputationAgent
             2. Extract explicit evidence from the code change.
             3. Analyze whether the evidence satisfies the checklist requirement.
             4. If required information is missing, STOP the analysis and request additional data instead of making assumptions.
+            5. If you can't get the required additional data, provide the best possible analysis based on the available information, but clearly state the limitations of your analysis.
 
             Rules:
             - Do not infer behavior from naming alone.
@@ -131,7 +131,7 @@ public class ComputationAgent
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
-        String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
+        String checklistDescription = input.checklistItem();
 
         return Map.of(
                 "checklist_description", checklistDescription,
@@ -149,8 +149,8 @@ public class ComputationAgent
             return "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.";
         }
         String retrievalResult = retrievalAgent.execute(response.dataQuery());
-        return "You requested additional data with the following query:\n" + response.dataQuery()
-                + "\nThe retrieved data is:\n" + retrievalResult;
+        return "You requested additional data with the following query: " + response.dataQuery()
+                + "\nThe retrieved data is: " + retrievalResult;
     }
 
     @Override

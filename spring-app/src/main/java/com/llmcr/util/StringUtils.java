@@ -1,11 +1,7 @@
 package com.llmcr.util;
 
 public class StringUtils {
-    public static String safeText(String text) {
-        return text == null ? "" : text;
-    }
-
-    public static String stringFilter(String text) {
+    public static String clean(String text) {
         if (text == null) {
             return "";
         }
@@ -22,5 +18,37 @@ public class StringUtils {
                 // collapse 3+ consecutive blank lines into 2
                 .replaceAll("(\\r?\\n){3,}", "\n\n")
                 .strip();
+    }
+
+    /**
+     * 清理 markdown 代碼塊格式（```json ... ```）
+     * 處理各種不完整或不對稱的 markdown 格式
+     */
+    public static String cleanMarkdownCodeBlocks(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        text = text.trim();
+
+        // 移除開頭的 ```json 或 ```
+        if (text.startsWith("```")) {
+            String[] lines = text.split("\n", 2);
+            String firstLine = lines[0].trim();
+            if (firstLine.length() > 3) {
+                // 有語言標識符如 ```json
+                text = lines.length > 1 ? lines[1] : "";
+            } else {
+                // 只有 ```
+                text = text.substring(3);
+            }
+        }
+
+        // 移除結尾的 ```（只要有就移除，不需要開頭也有）
+        while (text.endsWith("```")) {
+            text = text.substring(0, text.length() - 3);
+        }
+
+        return text.trim();
     }
 }

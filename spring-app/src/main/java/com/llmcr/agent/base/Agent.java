@@ -12,6 +12,7 @@ import org.springframework.ai.template.st.StTemplateRenderer;
 import com.llmcr.agent.logging.AgentContextHolder;
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.service.ModelClientFactory;
+import com.llmcr.util.StringUtils;
 
 /**
  * Base class for agents that interact with a language model via ChatClient.
@@ -68,7 +69,8 @@ public abstract class Agent<I, R, O> {
 
     @SuppressWarnings("unchecked")
     protected R convertRawResponse(String rawResponse) {
-        return outputConverter != null ? outputConverter.convert(rawResponse) : (R) rawResponse;
+        String cleaned = StringUtils.cleanMarkdownCodeBlocks(rawResponse);
+        return outputConverter != null ? outputConverter.convert(cleaned) : (R) cleaned;
     }
 
     protected abstract O convertModelResponse(R modelResponse);

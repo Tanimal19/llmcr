@@ -14,7 +14,6 @@ import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
 import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 import com.llmcr.service.rag.select.AdaptiveKStrategy;
-import com.llmcr.util.StringUtils;
 
 @Component
 public class QuestionAnswerAgent extends
@@ -88,9 +87,8 @@ public class QuestionAnswerAgent extends
 
     @Override
     protected Map<String, Object> getPromptVariables(String query) {
-        String safeQuery = StringUtils.safeText(query);
-        String contextText = retrieveContext(safeQuery);
-        return Map.of("query", safeQuery, "context", contextText);
+        String contextText = retrieveContext(query);
+        return Map.of("query", query, "context", contextText);
     }
 
     @Override
