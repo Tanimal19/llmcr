@@ -66,7 +66,7 @@ public class ComputationAgent
             2. Extract explicit evidence from the code change.
             3. Analyze whether the evidence satisfies the checklist requirement.
             4. If required information is missing, STOP the analysis and request additional data instead of making assumptions.
-            5. If you can't get the required additional data, provide the best possible analysis based on the available information, but clearly state the limitations of your analysis.
+            5. If you can't get the required additional data after multiple iteration, provide the best possible analysis based on the available information, but clearly state the limitations of your analysis.
 
             Rules:
             - Do not infer behavior from naming alone.
