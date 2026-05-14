@@ -51,6 +51,8 @@ public class FaissVectorStore extends MyVectorStore {
 
     protected List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName) {
         float[] queryVector = embeddingModel.embed(query);
+        System.out.println("Query vector dimension: " + queryVector.length);
+
         SearchVectorsResponse res = faissService.searchVectors(
                 new SearchVectorsRequest(collectionName, queryVector, topK));
 

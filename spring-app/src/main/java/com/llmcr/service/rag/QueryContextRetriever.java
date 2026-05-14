@@ -197,6 +197,8 @@ public class QueryContextRetriever {
         Map<Context, Float> contextScoreMap = new HashMap<>();
         chunks.stream().forEach(c -> {
             Context context = contextRepository.findByChunkId(c.chunkId());
+            logger.info("Merging chunk {} (score: {}) into context {} (id: {})", c.chunkId(), c.score(),
+                    context == null ? "null" : context.getName(), context == null ? "null" : context.getId());
 
             Float existingScore = contextScoreMap.getOrDefault(context, 0.0f);
             contextScoreMap.put(context, Math.max(existingScore, c.score()));
