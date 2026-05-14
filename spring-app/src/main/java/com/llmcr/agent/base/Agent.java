@@ -1,14 +1,17 @@
-package com.llmcr.agent;
+package com.llmcr.agent.base;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
+
+import com.llmcr.agent.logging.AgentContextHolder;
+import com.llmcr.agent.logging.AgentLoggerAdvisor;
+import com.llmcr.service.ModelClientFactory;
 
 /**
  * Base class for agents that interact with a language model via ChatClient.
@@ -20,6 +23,8 @@ import org.springframework.ai.template.st.StTemplateRenderer;
  */
 public abstract class Agent<I, R, O> {
 
+    protected final String chatProviderName;
+    protected final String chatModelName;
     protected final ChatClient chatClient;
     protected final BeanOutputConverter<R> outputConverter;
 
@@ -28,8 +33,11 @@ public abstract class Agent<I, R, O> {
      * model response to type R. If outputConverter is null, the raw response will
      * be cast to R (which may cause a ClassCastException if R is not String).
      */
-    protected Agent(ChatClient chatClient, BeanOutputConverter<R> outputConverter) {
-        this.chatClient = chatClient;
+    protected Agent(String chatProviderName, String chatModelName,
+            ModelClientFactory modelClientFactory, BeanOutputConverter<R> outputConverter) {
+        this.chatProviderName = chatProviderName;
+        this.chatModelName = chatModelName;
+        this.chatClient = modelClientFactory.createChatClient(chatProviderName, chatModelName);
         this.outputConverter = outputConverter;
     }
 
@@ -48,6 +56,36 @@ public abstract class Agent<I, R, O> {
      */
     protected abstract Map<String, Object> getPromptVariables(I input);
 
+    /**
+     * This method can be overridden by subclasses to customize the
+     * ChatClientRequestSpec before making the API call. For example, subclasses can
+     * add specific advisors, set temperature or max tokens, etc. By default, it
+     * returns the requestSpec without any modifications.
+     */
+    protected ChatClientRequestSpec customizeRequest(ChatClientRequestSpec requestSpec) {
+        return requestSpec;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected R convertRawResponse(String rawResponse) {
+        return outputConverter != null ? outputConverter.convert(rawResponse) : (R) rawResponse;
+    }
+
+    protected abstract O convertModelResponse(R modelResponse);
+
+    protected O doExecute(I input) {
+        String prompt = buildPrompt(input);
+        ChatClientRequestSpec baseRequest = chatClient
+                .prompt(prompt)
+                .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
+
+        ChatClientRequestSpec requestSpec = customizeRequest(baseRequest);
+        String rawResponse = requestSpec.call().content();
+
+        R modelResponse = convertRawResponse(rawResponse);
+        return convertModelResponse(modelResponse);
+    }
+
     protected String buildPrompt(I input) {
         Map<String, Object> variables = new HashMap<>();
         variables.putAll(getPromptVariables(input));
@@ -60,32 +98,12 @@ public abstract class Agent<I, R, O> {
                 .render(variables);
     }
 
-    /**
-     * This method can be overridden by subclasses to customize the
-     * ChatClientRequestSpec before making the API call. For example, subclasses can
-     * add specific advisors, set temperature or max tokens, etc. By default, it
-     * returns the requestSpec without any modifications.
-     */
-    protected ChatClientRequestSpec customizeRequest(ChatClientRequestSpec requestSpec) {
-        return requestSpec;
-    }
-
-    protected abstract O convertModelResponse(R modelResponse);
-
     public O execute(I input) {
-        String prompt = buildPrompt(input);
-        ChatClientRequestSpec baseRequest = chatClient
-                .prompt(prompt)
-                .advisors(new SimpleLoggerAdvisor());
-
-        ChatClientRequestSpec requestSpec = customizeRequest(baseRequest);
-        // TODO: log raw request here
-
-        String rawResponse = requestSpec.call().content();
-        // TODO: log raw response here
-
-        // TODO: fallback parser if outputConverter fails
-        R modelResponse = outputConverter != null ? outputConverter.convert(rawResponse) : (R) rawResponse;
-        return convertModelResponse(modelResponse);
+        AgentContextHolder.beginContext(this.getClass().getSimpleName(), chatModelName);
+        try {
+            return doExecute(input);
+        } finally {
+            AgentContextHolder.endContext();
+        }
     }
 }

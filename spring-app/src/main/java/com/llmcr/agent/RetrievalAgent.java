@@ -9,6 +9,7 @@ import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.base.SingleCallAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.tool.DatabaseTool;
 import com.llmcr.tool.UserInteractionTool;
@@ -16,15 +17,8 @@ import com.llmcr.tool.UserInteractionTool;
 @Component
 public class RetrievalAgent extends SingleCallAgent<String, String> {
 
-    private static final String SYSTEM_PROMPT = """
-            You are a retrieval assistant.
-            Your task is to answer the user's data query by calling tools.
-            You should only use the provided tools to get information relevant to the user's query, and then answer the query based on the retrieved information.
-            If all tools tried and you still cannot find relevant information to answer the query, it's okay to say "I couldn't find relevant information to answer the query" rather than making up an answer.
-            """;
-
     private static final String PROMPT_TEMPLATE = """
-            User query: <query>
+            <query>
             """;
 
     private final ToolCallbackProvider toolProvider;
@@ -34,7 +28,7 @@ public class RetrievalAgent extends SingleCallAgent<String, String> {
             @Value("${llmcr.agent.retrieval.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,
             UserInteractionTool userInteractionTool, DatabaseTool databaseTool) {
-        super(modelClientFactory.createChatClient(chatProviderName, chatModelName), null);
+        super(chatProviderName, chatModelName, modelClientFactory, null);
 
         toolProvider = MethodToolCallbackProvider.builder()
                 .toolObjects(List.of(databaseTool, userInteractionTool).toArray())
@@ -53,7 +47,7 @@ public class RetrievalAgent extends SingleCallAgent<String, String> {
 
     @Override
     protected ChatClientRequestSpec customizeRequest(ChatClientRequestSpec requestSpec) {
-        return requestSpec.system(SYSTEM_PROMPT).toolCallbacks(toolProvider);
+        return requestSpec.toolCallbacks(toolProvider);
     }
 
 }

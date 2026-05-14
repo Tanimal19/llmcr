@@ -7,6 +7,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.base.SingleCallAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
@@ -71,7 +72,7 @@ public class SummaryAgent extends
             @Value("${llmcr.agent.summary.chat.provider}") String chatProviderName,
             @Value("${llmcr.agent.summary.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory) {
-        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+        super(chatProviderName, chatModelName, modelClientFactory,
                 new BeanOutputConverter<>(SummaryAgentOutput.class));
     }
 

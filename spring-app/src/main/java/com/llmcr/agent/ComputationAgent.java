@@ -7,13 +7,15 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.base.RecursiveAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
 @Component
 public class ComputationAgent
-        extends RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse, String> {
+        extends
+        RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse, ComputationAgent.ComputationAgentOutput> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -32,6 +34,12 @@ public class ComputationAgent
             String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
+    }
+
+    public record ComputationAgentOutput(
+            String finalAnswer,
+            String analysis,
+            List<EvidenceItem> evidence) {
     }
 
     private static final String PROMPT_TEMPLATE = """
@@ -58,9 +66,9 @@ public class ComputationAgent
             {
                 "evidence": [
                     {
-                        "file": "...",
-                        "lines": "...",
-                        "reason": "..."
+                        "file": "Example.java",
+                        "lines": "10-20",
+                        "reason": "Because ..."
                     },
                 ],
                 "analysis": "...",
@@ -78,7 +86,7 @@ public class ComputationAgent
                 "dataQuery": "Please provide ..."
             }
 
-            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure.
+            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
 
             Checklist item:
             <checklist_description>
@@ -94,7 +102,7 @@ public class ComputationAgent
             @Value("${llmcr.agent.computation.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,
             RetrievalAgent retrievalAgent) {
-        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+        super(chatProviderName, chatModelName, modelClientFactory,
                 new BeanOutputConverter<>(ModelResponse.class));
         this.retrievalAgent = retrievalAgent;
     }
@@ -132,12 +140,7 @@ public class ComputationAgent
     }
 
     @Override
-    protected String convertModelResponse(ModelResponse response) {
-        return response.finalAnswer() + "\nAnalysis:\n" + response.analysis() + "\nEvidence:\n"
-                + response.evidence().stream()
-                        .map(e -> String.format("- file: %s, lines: %s, reason: %s",
-                                e.file(), e.lines(), e.reason()))
-                        .reduce((a, b) -> a + "\n" + b)
-                        .orElse("");
+    protected ComputationAgentOutput convertModelResponse(ModelResponse response) {
+        return new ComputationAgentOutput(response.finalAnswer(), response.analysis(), response.evidence());
     }
 }

@@ -21,6 +21,7 @@ import com.llmcr.agent.InterpretationAgent;
 import com.llmcr.agent.PlanningAgent;
 import com.llmcr.agent.SummaryAgent;
 import com.llmcr.agent.ComputationAgent.ComputationAgentInput;
+import com.llmcr.agent.ComputationAgent.ComputationAgentOutput;
 import com.llmcr.agent.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.agent.PlanningAgent.PlanningAgentInput;
@@ -114,9 +115,23 @@ public class CodeReviewService {
             List<ItemAnswer> itemAnswers = new ArrayList<>();
             for (String item : planning.checklistItems()) {
                 logger.info("[COMPUTATION] item={}", item);
-                String answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
-                logger.info("[COMPUTATION] item={} | final answer=\n{}", item, answer);
-                itemAnswers.add(new ItemAnswer(item, answer));
+                ComputationAgentOutput answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
+                try {
+                    logger.info("[COMPUTATION] item={} | output=\n{}", item, objectMapper.writeValueAsString(answer));
+                } catch (Exception e) {
+                    logger.info("[COMPUTATION] item={} | output=\n{}", item, answer, e);
+                }
+
+                String answerString = "Final Answer: " + answer.finalAnswer() + "\n"
+                        + "Analysis: " + answer.analysis() + "\n"
+                        + "Evidence:\n" + (answer.evidence() != null
+                                ? answer.evidence().stream()
+                                        .map(e -> String.format("- file: %s, lines: %s, reason: %s",
+                                                e.file(), e.lines(), e.reason()))
+                                        .reduce((a, b) -> a + "\n" + b)
+                                        .orElse("No evidence provided.")
+                                : "No evidence provided.");
+                itemAnswers.add(new ItemAnswer(item, answerString));
             }
 
             logger.info("[SUMMARY] start");

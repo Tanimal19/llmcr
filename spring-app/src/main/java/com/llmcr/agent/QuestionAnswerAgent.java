@@ -7,6 +7,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.agent.base.RecursiveAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -27,7 +28,7 @@ public class QuestionAnswerAgent extends
     }
 
     private static final String PROMPT_TEMPLATE = """
-                You are a software engineering assistant.
+            You are a software engineering assistant.
 
             Your task is to answer the user's query using only the provided project context and any additional data you retrieve later.
 
@@ -55,14 +56,12 @@ public class QuestionAnswerAgent extends
 
             You should output JSON only, and strictly follow the output format.
 
-                User query:
-                <query>
+            User query:
+            <query>
 
-                Retrieved project context:
-                <context>
-
-            <format_instructions>
-                """;
+            Retrieved project context:
+            <context>
+            """;
 
     private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
             10, new AdaptiveKStrategy(), "project-context", false);
@@ -76,7 +75,7 @@ public class QuestionAnswerAgent extends
             ModelClientFactory modelClientFactory,
             QueryContextRetriever queryContextRetriever,
             RetrievalAgent retrievalAgent) {
-        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+        super(chatProviderName, chatModelName, modelClientFactory,
                 new BeanOutputConverter<>(ModelResponse.class));
         this.queryContextRetriever = queryContextRetriever;
         this.retrievalAgent = retrievalAgent;

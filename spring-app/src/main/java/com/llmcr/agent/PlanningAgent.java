@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.agent.base.SingleCallAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -72,7 +73,7 @@ public class PlanningAgent extends
             @Value("${llmcr.agent.planning.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,
             QueryContextRetriever queryContextRetriever) {
-        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+        super(chatProviderName, chatModelName, modelClientFactory,
                 new BeanOutputConverter<>(PlanningAgentOutput.class));
         this.queryContextRetriever = queryContextRetriever;
     }
