@@ -35,7 +35,7 @@ import com.llmcr.util.GitDiffParser.CodeChange;
 @Service
 public class CodeReviewService {
 
-    private static final Logger log = LoggerFactory.getLogger(CodeReviewService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CodeReviewService.class);
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .enable(SerializationFeature.INDENT_OUTPUT);
 
@@ -71,7 +71,7 @@ public class CodeReviewService {
                 diffFilePath = MockReviewData.MOCK_DIFFPATH;
             }
 
-            log.info("parsing diff file={}", diffFilePath);
+            logger.info("parsing diff file={}", diffFilePath);
             List<CodeChange> codeChanges = GitDiffParser.parseDiffFile(diffFilePath);
 
             // TODO: integrate static analysis tool and populate codeAnalysis
@@ -80,50 +80,50 @@ public class CodeReviewService {
             InterpretationAgentOutput interpretation;
             PlanningAgentOutput planning;
             if (!useMockData) {
-                log.info("step=interpretation");
+                logger.info("step=interpretation");
                 interpretation = interpretationAgent.execute(
                         new InterpretationAgentInput(codeChanges));
                 try {
-                    log.info("interpretation result:\n{}",
+                    logger.info("interpretation result:\n{}",
                             objectMapper.writeValueAsString(interpretation));
                 } catch (Exception e) {
-                    log.info("interpretation result: {}", interpretation, e);
+                    logger.info("interpretation result: {}", interpretation, e);
                 }
 
-                log.info("step=planning");
+                logger.info("step=planning");
                 planning = planningAgent.execute(
                         new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
                 try {
-                    log.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
+                    logger.info("planning result:\n{}", objectMapper.writeValueAsString(planning));
                 } catch (Exception e) {
-                    log.info("planning result: {}", planning, e);
+                    logger.info("planning result: {}", planning, e);
                 }
             } else {
                 interpretation = MockReviewData.MOCK_INTERPRETATION;
                 planning = MockReviewData.MOCK_PLANNING;
-                log.info("using mock interpretation and planning results");
+                logger.info("using mock interpretation and planning results");
             }
 
-            log.info("step=computation items={}", planning.checklistItems().size());
+            logger.info("step=computation items={}", planning.checklistItems().size());
             List<ItemAnswer> itemAnswers = new ArrayList<>();
             for (String item : planning.checklistItems()) {
-                log.debug("item={}", item);
+                logger.debug("item={}", item);
                 String answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
                 itemAnswers.add(new ItemAnswer(item, answer));
             }
             try {
-                log.info("computation results:\n{}", objectMapper.writeValueAsString(itemAnswers));
+                logger.info("computation results:\n{}", objectMapper.writeValueAsString(itemAnswers));
             } catch (Exception e) {
-                log.info("computation results: {}", itemAnswers, e);
+                logger.info("computation results: {}", itemAnswers, e);
             }
 
-            log.info("step=summary");
+            logger.info("step=summary");
             SummaryAgentOutput reviewResult = summaryAgent.execute(
                     new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
             try {
-                log.info("summary result:\n{}", objectMapper.writeValueAsString(reviewResult));
+                logger.info("summary result:\n{}", objectMapper.writeValueAsString(reviewResult));
             } catch (Exception e) {
-                log.info("summary result: {}", reviewResult, e);
+                logger.info("summary result: {}", reviewResult, e);
             }
 
             Path reportPath = writeReport(diffFilePath, reviewResult);
@@ -146,7 +146,7 @@ public class CodeReviewService {
 
             String markdown = buildMarkdownReport(reviewResult);
             Files.writeString(reportPath, markdown);
-            log.info("report written to {}", reportPath.toAbsolutePath());
+            logger.info("report written to {}", reportPath.toAbsolutePath());
             return reportPath;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write review report", e);

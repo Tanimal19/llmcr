@@ -1,84 +1,59 @@
 package com.llmcr.agent;
 
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
-import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
-import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.tool.augment.AugmentedToolCallbackProvider;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.client.SmallChatClient;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.tool.DatabaseTool;
 import com.llmcr.tool.UserInteractionTool;
-import com.llmcr.util.StringUtils;
 
 @Component
-public class RetrievalAgent extends Agent<String, String> {
+public class RetrievalAgent extends SingleCallAgent<String, String> {
 
-    private static final String SYSTEM_MESSAGE = """
+    private static final String PROMPT_TEMPLATE = """
             You are a retrieval assistant.
             Your task is to answer the user's data query by calling tools. You should try to find relevant information from the tool results to answer the query.
             If all tools tried and you still cannot find relevant information to answer the query, it's okay to say "I couldn't find relevant information to answer the query" rather than making up an answer.
             When generating the final answer, keep the answer concise and directly relevant to the query.
+
+            User query: <query>
             """;
 
-    private final ChatClient chatClient;
-    private final AugmentedToolCallbackProvider<ToolReasoning> augmentedToolProvider;
+    private final ToolCallbackProvider toolProvider;
 
-    public record ToolReasoning(
-            @ToolParam(description = "Your step-by-step reasoning for why you're calling this tool and what you expect", required = true) String innerThought,
-
-            @ToolParam(description = "Confidence level (low, medium, high) in this tool choice", required = false) String confidence) {
-    };
-
-    public RetrievalAgent(SmallChatClient chatClient,
+    public RetrievalAgent(
+            @Value("${llmcr.agent.retrieval.chat.provider}") String chatProviderName,
+            @Value("${llmcr.agent.retrieval.chat.model}") String chatModelName,
+            ModelClientFactory modelClientFactory,
             UserInteractionTool userInteractionTool, DatabaseTool databaseTool) {
+        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+                new BeanOutputConverter<>(String.class));
 
-        var delegateProvider = MethodToolCallbackProvider.builder()
+        toolProvider = MethodToolCallbackProvider.builder()
                 .toolObjects(List.of(databaseTool, userInteractionTool).toArray())
                 .build();
-        this.augmentedToolProvider = AugmentedToolCallbackProvider.<ToolReasoning>builder()
-                .delegate(delegateProvider)
-                .argumentType(ToolReasoning.class)
-                .argumentConsumer(event -> {
-                    ToolReasoning reasoning = event.arguments();
-                    String toolName = event.toolDefinition().name();
-
-                    log.info("=== Tool Call Reasoning ===");
-                    log.info("Tool: {}", toolName);
-                    log.info("Inner Thought: {}", reasoning.innerThought());
-                    log.info("Confidence: {}",
-                            reasoning.confidence() != null ? reasoning.confidence() : "not specified");
-                })
-                .build();
-
-        this.chatClient = chatClient.getChatClient();
     }
 
     @Override
-    public String execute(String dataQuery) {
-        String safeQuery = StringUtils.safeText(dataQuery);
-        if (safeQuery.isBlank()) {
-            return "Query is empty.";
-        }
+    protected String getPromptTemplate() {
+        return PROMPT_TEMPLATE;
+    }
 
-        ChatClientRequestSpec requestSpec = chatClient
-                .prompt()
-                .system(SYSTEM_MESSAGE)
-                .user(safeQuery)
-                .advisors(
-                        new SimpleLoggerAdvisor(),
-                        ToolCallAdvisor.builder()
-                                .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 400)
-                                .build())
-                .toolCallbacks(augmentedToolProvider);
+    @Override
+    protected Map<String, Object> getPromptVariables(String input) {
+        return Map.of("query", input);
+    }
 
-        return requestSpec.call().content();
+    @Override
+    protected ChatClientRequestSpec customizeRequest(ChatClientRequestSpec requestSpec) {
+        return requestSpec.toolCallbacks(toolProvider);
     }
 
 }

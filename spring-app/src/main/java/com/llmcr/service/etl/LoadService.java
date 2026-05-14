@@ -23,7 +23,7 @@ import com.llmcr.vectorstore.MyVectorStore;
 @Component
 public class LoadService {
 
-    private static final Logger log = LoggerFactory.getLogger(LoadService.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoadService.class);
 
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final ContextRepository contextRepository;
@@ -51,7 +51,7 @@ public class LoadService {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isChunkLoaded()) {
-            log.info("Context '{}' is already loaded, skipping", context.getName(), context.getId());
+            logger.info("Context '{}' is already loaded, skipping", context.getName(), context.getId());
             return;
         }
 
@@ -80,7 +80,7 @@ public class LoadService {
             vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
             chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
             chunkCollectionRepository.save(chunkCollection);
-            log.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
+            logger.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
                     context.getName(), chunkCollection.getName());
         }
 

@@ -17,7 +17,7 @@ import com.llmcr.service.etl.extractor.SourceExtractor;
 @Component
 public class ExtractService {
 
-    private static final Logger log = LoggerFactory.getLogger(ExtractService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExtractService.class);
 
     private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
@@ -31,7 +31,7 @@ public class ExtractService {
         this.contextRepository = contextRepository;
         this.extractors = extractors;
 
-        log.info("ExtractService initialized with {} extractors: {}",
+        logger.info("ExtractService initialized with {} extractors: {}",
                 extractors.size(),
                 extractors.stream()
                         .map(e -> e.getClass().getSimpleName())
@@ -43,11 +43,11 @@ public class ExtractService {
         Source source = sourceRepository.findById(sourceId)
                 .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
         if (source.isExtracted()) {
-            log.info("Source '{}' already extracted, skipping", source.getSourceName());
+            logger.info("Source '{}' already extracted, skipping", source.getSourceName());
             return;
         }
 
-        log.info("Start extracting context from source '{}'", source.getSourceName());
+        logger.info("Start extracting context from source '{}'", source.getSourceName());
         List<Context> contexts = new ArrayList<>();
         for (SourceExtractor extractor : extractors) {
             if (!extractor.supports(source)) {
@@ -56,7 +56,7 @@ public class ExtractService {
             try {
                 List<Context> extracted = extractor.apply(source);
                 contexts.addAll(extracted);
-                log.info("{} extracted {} context(s) from source '{}'",
+                logger.info("{} extracted {} context(s) from source '{}'",
                         extractor.getClass().getSimpleName(), extracted.size(), source.getSourceName());
             } catch (Exception e) {
                 throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);

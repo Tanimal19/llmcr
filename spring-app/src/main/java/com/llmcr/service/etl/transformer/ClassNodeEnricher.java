@@ -16,7 +16,7 @@ import com.llmcr.entity.Context;
 @Component
 public class ClassNodeEnricher implements ContextEnricher {
 
-    private static final Logger log = LoggerFactory.getLogger(ClassNodeEnricher.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClassNodeEnricher.class);
 
     /**
      * Content length below this threshold is unlikely to benefit from enrichment,
@@ -46,12 +46,12 @@ public class ClassNodeEnricher implements ContextEnricher {
     @Override
     public Context apply(Context classNode) {
         if (classNode.getContent().length() < MIN_CONTENT_LENGTH) {
-            log.info("Class node content is short ({}), skip enrichment", classNode.getContent().length());
+            logger.info("Class node content is short ({}), skip enrichment", classNode.getContent().length());
             return classNode;
         }
         for (String exclude : CLASSNAME_EXCLUDE) {
             if (classNode.getName().contains(exclude)) {
-                log.info("Class node name contains '{}', skip enrichment", exclude);
+                logger.info("Class node name contains '{}', skip enrichment", exclude);
                 return classNode;
             }
         }

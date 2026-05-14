@@ -3,19 +3,17 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.client.SmallChatClient;
-import com.llmcr.rag.retrieval.QueryContextRetriever;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
 import com.llmcr.util.StringUtils;
 
 @Component
 public class ComputationAgent
-        extends RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse> {
+        extends RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse, String> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -89,47 +87,50 @@ public class ComputationAgent
 
     private final RetrievalAgent retrievalAgent;
 
-    public ComputationAgent(SmallChatClient chatClient, RetrievalAgent retrievalAgent,
-            QueryContextRetriever queryContextRetriever) {
-        super(chatClient.getChatClient(), new BeanOutputConverter<>(ModelResponse.class));
+    public ComputationAgent(
+            @Value("${llmcr.agent.computation.chat.provider}") String chatProviderName,
+            @Value("${llmcr.agent.computation.chat.model}") String chatModelName,
+            ModelClientFactory modelClientFactory,
+            RetrievalAgent retrievalAgent) {
+        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
+                new BeanOutputConverter<>(ModelResponse.class));
         this.retrievalAgent = retrievalAgent;
     }
 
     @Override
-    protected String buildFirstMessage(ComputationAgentInput input) {
-        List<CodeChange> safeCodeChanges = input == null || input.codeChanges() == null ? List.of()
-                : input.codeChanges();
-        String codeChangesText = String.join("\n----\n", safeCodeChanges.stream()
+    protected String getPromptTemplate() {
+        return PROMPT_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> getPromptVariables(ComputationAgentInput input) {
+        String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
         String checklistDescription = StringUtils.safeText(input == null ? null : input.checklistItem());
 
-        return PromptTemplate.builder()
-                .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-                .template(PROMPT_TEMPLATE)
-                .build()
-                .render(Map.of(
-                        "checklist_description", checklistDescription,
-                        "code_changes", codeChangesText));
+        return Map.of(
+                "checklist_description", checklistDescription,
+                "code_changes", codeChangesText);
     }
 
     @Override
-    protected boolean shouldRequestMoreData(ModelResponse response) {
-        return response.needsAdditionalData();
+    protected boolean shouldTerminate(ModelResponse response) {
+        return !response.needsAdditionalData();
     }
 
     @Override
-    protected String getDataQuery(ModelResponse response) {
-        return response.dataQuery();
+    protected String getNextMessage(ModelResponse response) {
+        if (response.dataQuery() == null) {
+            return "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.";
+        }
+        String retrievalResult = retrievalAgent.execute(response.dataQuery());
+        return "You requested additional data with the following query:\n" + response.dataQuery()
+                + "\nThe retrieved data is:\n" + retrievalResult;
     }
 
     @Override
-    protected String fetchAdditionalData(String query) {
-        return retrievalAgent.execute(query);
-    }
-
-    @Override
-    protected String formatFinalAnswer(ModelResponse response) {
+    protected String convertModelResponse(ModelResponse response) {
         return response.finalAnswer() + "\nAnalysis:\n" + response.analysis() + "\nEvidence:\n"
                 + response.evidence().stream()
                         .map(e -> String.format("- file: %s, lines: %s, reason: %s",

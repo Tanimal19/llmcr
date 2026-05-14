@@ -23,7 +23,7 @@ import com.llmcr.vectorstore.MyVectorStore;
 @ConditionalOnProperty(name = "app.mode", havingValue = "reload")
 public class ReloadChunkRunner implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(ReloadChunkRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(ReloadChunkRunner.class);
 
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final MyVectorStore vectorStore;
@@ -36,11 +36,11 @@ public class ReloadChunkRunner implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        log.info("Starting vector store reload test runner");
+        logger.info("Starting vector store reload test runner");
 
         List<ChunkCollection> chunkCollections = chunkCollectionRepository.findAll();
         if (chunkCollections.isEmpty()) {
-            log.info("No chunk collections found, skipping reload");
+            logger.info("No chunk collections found, skipping reload");
             return;
         }
 
@@ -62,11 +62,11 @@ public class ReloadChunkRunner implements CommandLineRunner {
             totalAdded += chunksToLoad.size();
             totalSkippedMissingEmbedding += skippedMissingEmbedding;
 
-            log.info("Loaded {} chunks into collection '{}', skipped {} chunks without embedding",
+            logger.info("Loaded {} chunks into collection '{}', skipped {} chunks without embedding",
                     chunksToLoad.size(), collectionName, skippedMissingEmbedding);
         }
 
-        log.info("Vector store load complete. Added {} chunks, skipped {} chunks without embedding",
+        logger.info("Vector store load complete. Added {} chunks, skipped {} chunks without embedding",
                 totalAdded, totalSkippedMissingEmbedding);
     }
 }

@@ -14,7 +14,7 @@ import com.llmcr.service.etl.transformer.ContextEnricher;
 @Component
 public class EnrichService {
 
-    private static final Logger log = LoggerFactory.getLogger(EnrichService.class);
+    private static final Logger logger = LoggerFactory.getLogger(EnrichService.class);
 
     private final ContextRepository contextRepository;
     private final List<ContextEnricher> enrichers;
@@ -31,7 +31,7 @@ public class EnrichService {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isEnriched()) {
-            log.info("Context '{}' already context, skipping enriching", context.getName());
+            logger.info("Context '{}' already context, skipping enriching", context.getName());
             return;
         }
 
@@ -53,6 +53,6 @@ public class EnrichService {
             context.setChunkLoaded(false);
         }
         contextRepository.save(context);
-        log.info("Context '{}' enriched", context.getName());
+        logger.info("Context '{}' enriched", context.getName());
     }
 }

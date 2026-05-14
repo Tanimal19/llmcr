@@ -16,7 +16,7 @@ import com.llmcr.service.review.CodeReviewService;
 @ConditionalOnProperty(name = "app.mode", havingValue = "review")
 public class CodeReviewRunner implements ApplicationRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(CodeReviewRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(CodeReviewRunner.class);
 
     private final CodeReviewService codeReviewService;
 
@@ -29,20 +29,20 @@ public class CodeReviewRunner implements ApplicationRunner {
         List<String> nonOptionArgs = args.getNonOptionArgs();
 
         if (args.containsOption("use-mock")) {
-            log.info("Using mock data for code review");
+            logger.info("Using mock data for code review");
             Path reportPath = codeReviewService.review(null, true);
-            log.info("Mock code review completed. Report written to: {}", reportPath.toAbsolutePath());
+            logger.info("Mock code review completed. Report written to: {}", reportPath.toAbsolutePath());
             return;
         }
         if (nonOptionArgs.isEmpty()) {
-            log.error("Usage: --app.mode=review <diff-file-path> [--use-mock]");
+            logger.error("Usage: --app.mode=review <diff-file-path> [--use-mock]");
             throw new IllegalArgumentException("No diff file path provided. Pass the path as a CLI argument.");
         }
 
         String diffFilePath = nonOptionArgs.get(0);
-        log.info("Starting code review for diff file: {}", diffFilePath);
+        logger.info("Starting code review for diff file: {}", diffFilePath);
 
         Path reportPath = codeReviewService.review(diffFilePath, false);
-        log.info("Code review completed. Report written to: {}", reportPath.toAbsolutePath());
+        logger.info("Code review completed. Report written to: {}", reportPath.toAbsolutePath());
     }
 }

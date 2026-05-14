@@ -14,7 +14,7 @@ import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
  */
 public class AdaptiveKStrategy implements TopKSelectionStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(AdaptiveKStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdaptiveKStrategy.class);
 
     private final int buffer = 5;
     private final float highConfidenceScore = 0.7f;
@@ -40,8 +40,8 @@ public class AdaptiveKStrategy implements TopKSelectionStrategy {
             }
         }
 
-        log.info("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
-        log.info("Selected topK with buffer: {}", Math.min(optimalK + buffer, topK));
+        logger.info("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
+        logger.info("Selected topK with buffer: {}", Math.min(optimalK + buffer, topK));
 
         return contexts.subList(0, Math.min(optimalK + buffer, topK));
     }
