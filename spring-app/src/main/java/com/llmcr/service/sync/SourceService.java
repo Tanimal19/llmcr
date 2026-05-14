@@ -84,6 +84,7 @@ public class SourceService {
 
             // insert new source
             if (existing == null) {
+                logger.info("New source found, adding: " + localSource.getPath());
                 localSource.setTrackRoot(trackRoot);
                 sourceRepository.save(localSource);
                 continue;
@@ -291,15 +292,8 @@ public class SourceService {
         }
     }
 
-    public String relativeToAbsolutePathString(String relative) {
-        return Path.of(relative).toAbsolutePath().normalize().toString();
-    }
-
     public String absoluteToRelativePath(Path absolute) {
         absolute = absolute.toAbsolutePath().normalize();
-        if (absolute.startsWith(PROJECT_ROOT)) {
-            return PROJECT_ROOT.relativize(absolute).toString();
-        }
-        return absolute.toString();
+        return PROJECT_ROOT.relativize(absolute).toString();
     }
 }
