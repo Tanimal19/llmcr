@@ -34,7 +34,6 @@ public class AgentLoggerAdvisor implements BaseAdvisor {
         String responseText = extractText(chatClientResponse.chatResponse());
         if (responseText != null && !responseText.isBlank()) {
             logger.info("[{}] Output: {}", agentName, responseText);
-            System.out.println(responseText);
         }
 
         AgentContextHolder.completeIteration(responseText != null ? responseText : chatClientResponse.chatResponse());

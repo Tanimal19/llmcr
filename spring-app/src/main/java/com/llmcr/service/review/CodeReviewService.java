@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.llmcr.agent.ComputationAgent;
 import com.llmcr.agent.InterpretationAgent;
 import com.llmcr.agent.PlanningAgent;
@@ -37,8 +37,7 @@ import com.llmcr.util.GitDiffParser.CodeChange;
 public class CodeReviewService {
 
     private static final Logger logger = LoggerFactory.getLogger(CodeReviewService.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-            .enable(SerializationFeature.INDENT_OUTPUT);
+    private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     private final InterpretationAgent interpretationAgent;
     private final PlanningAgent planningAgent;
@@ -132,7 +131,8 @@ public class CodeReviewService {
 
             String baseName = Paths.get(diffFilePath).getFileName().toString()
                     .replaceAll("\\.diff$", "");
-            String fileName = baseName + "_" + Instant.now().toEpochMilli() + ".md";
+            String timestamp = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
+            String fileName = baseName + "_" + timestamp + ".md";
             Path reportPath = dir.resolve(fileName);
 
             String markdown = buildMarkdownReport(report);

@@ -102,6 +102,16 @@ models:
     checkEndpoint: /v1/models
     name: "LFM2.5-1.2B"
 
+  "Gemma3n-E2B":
+    cmd: >
+      llama-server
+      -m ${model_dir}/gemma-3n-E2B-it-Q4_K_M.gguf
+      --ctx-size 32768
+      --no-webui
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Gemma3n-E2B"
+
   "Harrier-0.6b":
     cmd: >
       llama-server
@@ -136,8 +146,9 @@ matrix:
   vars:
     lm: LFM2.5-1.2B
     pm: Phi-4-Mini
+    gm: Gemma3n-E2B
     he: Harrier-0.6b
     qr: Qwen3-Reranker-0.6b
 
   sets:
-    standard: "(lm | pm) & he"
+    standard: "(lm | pm | gm) & he"
