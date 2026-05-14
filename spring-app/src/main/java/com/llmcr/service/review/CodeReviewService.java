@@ -221,7 +221,7 @@ public class CodeReviewService {
         }
 
         // Appendix with interpretation results
-        sb.append("---\n\n");
+        sb.append("\n\n");
         sb.append("# Appendix: Original Interpretation Results\n\n");
         if (report != null && report.interpretation() != null) {
             InterpretationAgentOutput interpretation = report.interpretation();
@@ -238,7 +238,7 @@ public class CodeReviewService {
         }
 
         // Appendix with detailed checklist item answers
-        sb.append("---\n\n");
+        sb.append("\n\n");
         sb.append("# Appendix: Detailed Checklist Item Answers\n\n");
         if (report != null && report.itemAnswers() != null && !report.itemAnswers().isEmpty()) {
             for (ItemAnswer itemAnswer : report.itemAnswers()) {
