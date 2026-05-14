@@ -14,7 +14,7 @@ public abstract class RecursiveAgent<I, R, O> extends Agent<I, R, O> {
 
     protected RecursiveAgent(ChatClient chatClient, BeanOutputConverter<R> outputConverter) {
         super(chatClient, outputConverter);
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder().maxMessages(10).build();
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder().maxMessages(6).build();
         this.memoryAdvisor = MessageChatMemoryAdvisor.builder(memory).build();
     }
 
@@ -29,26 +29,30 @@ public abstract class RecursiveAgent<I, R, O> extends Agent<I, R, O> {
     @Override
     public O execute(I input) {
 
-        String prompt = buildPrompt(input);
+        String system_prompt = buildPrompt(input);
         String conversationId = Long.toString(System.currentTimeMillis());
         R modelResponse = null;
 
         int iteration = 0;
         do {
             ChatClientRequestSpec requestSpec = chatClient
-                    .prompt(prompt)
+                    .prompt()
+                    .system(system_prompt)
                     .advisors(new SimpleLoggerAdvisor(), memoryAdvisor)
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId));
 
+            if (modelResponse != null) {
+                requestSpec = requestSpec.user(getNextMessage(modelResponse));
+            }
+
             String rawResponse = requestSpec.call().content();
 
-            modelResponse = outputConverter.convert(rawResponse);
+            modelResponse = outputConverter != null ? outputConverter.convert(rawResponse) : (R) rawResponse;
 
             if (shouldTerminate(modelResponse)) {
                 break;
             }
 
-            prompt = getNextMessage(modelResponse);
             iteration++;
         } while (iteration <= maxIterations());
 

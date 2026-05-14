@@ -23,6 +23,11 @@ public abstract class Agent<I, R, O> {
     protected final ChatClient chatClient;
     protected final BeanOutputConverter<R> outputConverter;
 
+    /**
+     * If outputConverter is provided, the agent will use it to convert the raw
+     * model response to type R. If outputConverter is null, the raw response will
+     * be cast to R (which may cause a ClassCastException if R is not String).
+     */
     protected Agent(ChatClient chatClient, BeanOutputConverter<R> outputConverter) {
         this.chatClient = chatClient;
         this.outputConverter = outputConverter;
@@ -46,7 +51,7 @@ public abstract class Agent<I, R, O> {
     protected String buildPrompt(I input) {
         Map<String, Object> variables = new HashMap<>();
         variables.putAll(getPromptVariables(input));
-        variables.put("format_instructions", outputConverter.getFormat());
+        variables.put("format_instructions", outputConverter != null ? outputConverter.getFormat() : "");
 
         return PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
@@ -80,7 +85,7 @@ public abstract class Agent<I, R, O> {
         // TODO: log raw response here
 
         // TODO: fallback parser if outputConverter fails
-        R modelResponse = outputConverter.convert(rawResponse);
+        R modelResponse = outputConverter != null ? outputConverter.convert(rawResponse) : (R) rawResponse;
         return convertModelResponse(modelResponse);
     }
 }

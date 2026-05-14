@@ -83,7 +83,7 @@ models:
   "Phi-4-Mini":
     cmd: >
       llama-server
-      -m ${model_dir}/Phi-4-mini-instruct-Q4_K_M.gguf
+      -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
       --ctx-size 32768
       --no-webui
       --port ${PORT}

@@ -2,9 +2,11 @@ package com.llmcr.agent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +18,8 @@ import com.llmcr.tool.UserInteractionTool;
 
 @Component
 public class RetrievalAgent extends SingleCallAgent<String, String> {
+
+    private static final Logger logger = LoggerFactory.getLogger(RetrievalAgent.class);
 
     private static final String PROMPT_TEMPLATE = """
             You are a retrieval assistant.
@@ -33,12 +37,13 @@ public class RetrievalAgent extends SingleCallAgent<String, String> {
             @Value("${llmcr.agent.retrieval.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,
             UserInteractionTool userInteractionTool, DatabaseTool databaseTool) {
-        super(modelClientFactory.createChatClient(chatProviderName, chatModelName),
-                new BeanOutputConverter<>(String.class));
+        super(modelClientFactory.createChatClient(chatProviderName, chatModelName), null);
 
         toolProvider = MethodToolCallbackProvider.builder()
                 .toolObjects(List.of(databaseTool, userInteractionTool).toArray())
                 .build();
+
+        logger.info("RetrievalAgent initialized with tools: {}", Arrays.toString(toolProvider.getToolCallbacks()));
     }
 
     @Override

@@ -58,6 +58,12 @@ public class CodeReviewService {
         this.summaryAgent = summaryAgent;
     }
 
+    public record CodeReviewReport(
+            SummaryAgentOutput mainReport,
+            InterpretationAgentOutput interpretation,
+            List<ItemAnswer> itemAnswers) {
+    }
+
     /**
      * Run a full code review for the given git diff file and persist the report.
      *
@@ -126,7 +132,8 @@ public class CodeReviewService {
                 logger.info("summary result: {}", reviewResult, e);
             }
 
-            Path reportPath = writeReport(diffFilePath, reviewResult);
+            Path reportPath = writeReport(diffFilePath,
+                    new CodeReviewReport(reviewResult, interpretation, itemAnswers));
 
             return reportPath;
         } catch (RuntimeException e) {
@@ -134,7 +141,7 @@ public class CodeReviewService {
         }
     }
 
-    private Path writeReport(String diffFilePath, SummaryAgentOutput reviewResult) {
+    private Path writeReport(String diffFilePath, CodeReviewReport report) {
         try {
             Path dir = Paths.get(outputDir);
             Files.createDirectories(dir);
@@ -144,7 +151,7 @@ public class CodeReviewService {
             String fileName = baseName + "_" + Instant.now().toEpochMilli() + ".md";
             Path reportPath = dir.resolve(fileName);
 
-            String markdown = buildMarkdownReport(reviewResult);
+            String markdown = buildMarkdownReport(report);
             Files.writeString(reportPath, markdown);
             logger.info("report written to {}", reportPath.toAbsolutePath());
             return reportPath;
@@ -153,22 +160,22 @@ public class CodeReviewService {
         }
     }
 
-    private String buildMarkdownReport(SummaryAgentOutput reviewResult) {
+    private String buildMarkdownReport(CodeReviewReport report) {
         StringBuilder sb = new StringBuilder();
-        sb.append("# Code Review Report\n\n");
 
         // Summary Report section
-        if (reviewResult != null) {
+        sb.append("# Code Review Report\n\n");
+        if (report != null && report.mainReport() != null) {
             sb.append("## Motivation\n\n");
-            if (reviewResult.motivation() != null && !reviewResult.motivation().isBlank()) {
-                sb.append(reviewResult.motivation()).append("\n\n");
+            if (report.mainReport().motivation() != null && !report.mainReport().motivation().isBlank()) {
+                sb.append(report.mainReport().motivation()).append("\n\n");
             } else {
                 sb.append("_No motivation provided._\n\n");
             }
 
             sb.append("## Good Points\n\n");
-            if (reviewResult.goodPoints() != null && !reviewResult.goodPoints().isEmpty()) {
-                for (String point : reviewResult.goodPoints()) {
+            if (report.mainReport().goodPoints() != null && !report.mainReport().goodPoints().isEmpty()) {
+                for (String point : report.mainReport().goodPoints()) {
                     sb.append("- ").append(point).append("\n");
                 }
                 sb.append("\n");
@@ -177,8 +184,8 @@ public class CodeReviewService {
             }
 
             sb.append("## Bad Points\n\n");
-            if (reviewResult.badPoints() != null && !reviewResult.badPoints().isEmpty()) {
-                for (String point : reviewResult.badPoints()) {
+            if (report.mainReport().badPoints() != null && !report.mainReport().badPoints().isEmpty()) {
+                for (String point : report.mainReport().badPoints()) {
                     sb.append("- ").append(point).append("\n");
                 }
                 sb.append("\n");
@@ -187,15 +194,16 @@ public class CodeReviewService {
             }
 
             sb.append("## Suggestion\n\n");
-            if (reviewResult.suggestion() != null && !reviewResult.suggestion().isBlank()) {
-                sb.append(reviewResult.suggestion()).append("\n\n");
+            if (report.mainReport().suggestion() != null && !report.mainReport().suggestion().isBlank()) {
+                sb.append(report.mainReport().suggestion()).append("\n\n");
             } else {
                 sb.append("_No suggestion provided._\n\n");
             }
 
             sb.append("## Implementation Details\n\n");
-            if (reviewResult.implementationDetails() != null && !reviewResult.implementationDetails().isEmpty()) {
-                for (var detailsByFile : reviewResult.implementationDetails()) {
+            if (report.mainReport().implementationDetails() != null
+                    && !report.mainReport().implementationDetails().isEmpty()) {
+                for (var detailsByFile : report.mainReport().implementationDetails()) {
                     String filename = detailsByFile.filename() != null ? detailsByFile.filename() : "(unknown file)";
                     sb.append("#### ").append(filename).append("\n\n");
                     if (detailsByFile.details() != null && !detailsByFile.details().isEmpty()) {
@@ -210,10 +218,10 @@ public class CodeReviewService {
             }
 
             sb.append("## Issues\n\n");
-            if (reviewResult.issues() != null && !reviewResult.issues().isEmpty()) {
+            if (report.mainReport().issues() != null && !report.mainReport().issues().isEmpty()) {
                 sb.append("| Type | Title | Location | Detail |\n");
                 sb.append("|------|-------|----------|--------|\n");
-                for (Issue issue : reviewResult.issues()) {
+                for (Issue issue : report.mainReport().issues()) {
                     String location = issue.location() != null ? issue.location() : "";
                     String type = issue.type() != null ? issue.type() : "";
                     sb.append("| ").append(type)
@@ -226,6 +234,35 @@ public class CodeReviewService {
             }
         } else {
             sb.append("_No summary available._\n\n");
+        }
+
+        // Appendix with interpretation results
+        sb.append("---\n\n");
+        sb.append("# Appendix: Original Interpretation Results\n\n");
+        if (report != null && report.interpretation() != null) {
+            InterpretationAgentOutput interpretation = report.interpretation();
+            if (interpretation.changeDescription() != null) {
+                sb.append("### Change Description\n\n");
+                sb.append(interpretation.changeDescription()).append("\n\n");
+            }
+            if (interpretation.changeMotivation() != null) {
+                sb.append("### Change Motivation\n\n");
+                sb.append(interpretation.changeMotivation()).append("\n\n");
+            }
+        } else {
+            sb.append("_No interpretation results available._\n\n");
+        }
+
+        // Appendix with detailed checklist item answers
+        sb.append("---\n\n");
+        sb.append("# Appendix: Detailed Checklist Item Answers\n\n");
+        if (report != null && report.itemAnswers() != null && !report.itemAnswers().isEmpty()) {
+            for (ItemAnswer itemAnswer : report.itemAnswers()) {
+                sb.append("### Checklist Item: ").append(itemAnswer.checklistItemTitle()).append("\n\n");
+                sb.append(itemAnswer.answer()).append("\n\n");
+            }
+        } else {
+            sb.append("_No checklist item answers available._\n\n");
         }
 
         return sb.toString();

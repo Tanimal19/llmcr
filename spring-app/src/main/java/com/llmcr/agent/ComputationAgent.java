@@ -78,6 +78,8 @@ public class ComputationAgent
                 "dataQuery": "Please provide ..."
             }
 
+            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure.
+
             Checklist item:
             <checklist_description>
 
