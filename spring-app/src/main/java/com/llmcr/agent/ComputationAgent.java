@@ -150,7 +150,12 @@ public class ComputationAgent
         }
         String retrievalResult = retrievalAgent.execute(response.dataQuery());
         return "You requested additional data with the following query: " + response.dataQuery()
-                + "\nThe retrieved data is: " + retrievalResult;
+                + "\nThe retrieval result is: " + retrievalResult;
+    }
+
+    @Override
+    protected String getFinalMessage() {
+        return "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.";
     }
 
     @Override

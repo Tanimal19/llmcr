@@ -108,6 +108,11 @@ public class QuestionAnswerAgent extends
     }
 
     @Override
+    protected String getFinalMessage() {
+        return "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best answer based on the available information, but clearly state the limitations of your answer due to missing information.";
+    }
+
+    @Override
     protected String convertModelResponse(ModelResponse response) {
         if (response.answer() != null && !response.answer().isBlank()) {
             return response.answer();

@@ -22,6 +22,7 @@ import com.llmcr.agent.PlanningAgent;
 import com.llmcr.agent.SummaryAgent;
 import com.llmcr.agent.ComputationAgent.ComputationAgentInput;
 import com.llmcr.agent.ComputationAgent.ComputationAgentOutput;
+import com.llmcr.agent.ComputationAgent.EvidenceItem;
 import com.llmcr.agent.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
 import com.llmcr.agent.PlanningAgent.PlanningAgentInput;
@@ -242,7 +243,12 @@ public class CodeReviewService {
         if (report != null && report.itemAnswers() != null && !report.itemAnswers().isEmpty()) {
             for (ItemAnswer itemAnswer : report.itemAnswers()) {
                 sb.append("### Checklist Item: ").append(itemAnswer.checklistItemTitle()).append("\n\n");
-                sb.append(itemAnswer.answer()).append("\n\n");
+                sb.append(itemAnswer.answer().finalAnswer()).append("\n");
+                sb.append(itemAnswer.answer().analysis()).append("\n");
+                for (EvidenceItem evdience : itemAnswer.answer().evidence()) {
+                    sb.append("- ").append(evdience.file()).append("(lines:").append(evdience.lines()).append(")\n");
+                    sb.append("    - ").append(evdience.reason()).append("\n");
+                }
             }
         } else {
             sb.append("_No checklist item answers available._\n\n");

@@ -24,6 +24,8 @@ public abstract class RecursiveAgent<I, R, O> extends Agent<I, R, O> {
 
     protected abstract String getNextMessage(R response);
 
+    protected abstract String getFinalMessage();
+
     protected int maxIterations() {
         return 5;
     }
@@ -43,6 +45,10 @@ public abstract class RecursiveAgent<I, R, O> extends Agent<I, R, O> {
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId));
 
             if (modelResponse != null) {
+                String nextMessage = getNextMessage(modelResponse);
+                if (iteration == maxIterations() - 1) {
+                    nextMessage = nextMessage + "\n" + getFinalMessage();
+                }
                 requestSpec = requestSpec.user(getNextMessage(modelResponse));
             }
 
