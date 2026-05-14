@@ -50,6 +50,8 @@ public class ReloadChunkRunner implements CommandLineRunner {
         for (ChunkCollection chunkCollection : chunkCollections) {
             String collectionName = chunkCollection.getName();
 
+            vectorStore.removeCollection(collectionName);
+
             List<Chunk> chunksToLoad = chunkCollection.getChunks().stream()
                     .filter(chunk -> chunk.getEmbedding() != null && chunk.getEmbedding().length > 0)
                     .toList();

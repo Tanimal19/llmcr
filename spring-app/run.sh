@@ -9,6 +9,8 @@ usage() {
     echo ""
     echo "  sync: synchronize database with local datasets."
     echo ""
+    echo "  reload: reload all embedding into vector database."
+    echo ""
     echo "  review: review code changes based on a diff file."
     echo "    ./run.sh review <diff-file-path>"
     echo "    ./run.sh review --use-mock"
