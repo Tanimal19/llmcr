@@ -1,5 +1,6 @@
 package com.llmcr.agent;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -43,7 +44,8 @@ public abstract class Agent<I, R, O> {
     protected abstract Map<String, Object> getPromptVariables(I input);
 
     protected String buildPrompt(I input) {
-        Map<String, Object> variables = getPromptVariables(input);
+        Map<String, Object> variables = new HashMap<>();
+        variables.putAll(getPromptVariables(input));
         variables.put("format_instructions", outputConverter.getFormat());
 
         return PromptTemplate.builder()

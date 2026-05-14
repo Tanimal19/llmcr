@@ -1,5 +1,6 @@
 package com.llmcr.service;
 
+import com.google.genai.Client;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -25,6 +26,9 @@ public class ModelClientFactory {
     @Value("${spring.ai.openai.base-url}")
     private String OPENAI_BASE_URL;
 
+    @Value("${spring.ai.google.genai.api-key}")
+    private String GEMINI_API_KEY;
+
     private final OpenAiApi baseOpenAiApi;
     private final RetryTemplate retryTemplate;
 
@@ -42,12 +46,14 @@ public class ModelClientFactory {
         if (provider.equalsIgnoreCase("google")) {
             return ChatClient.builder(GoogleGenAiChatModel
                     .builder()
+                    .genAiClient(Client.builder().apiKey(GEMINI_API_KEY).build())
                     .defaultOptions(GoogleGenAiChatOptions.builder().model(model).build())
                     .build())
                     .build();
         } else if (provider.equalsIgnoreCase("openai")) {
             return ChatClient.builder(OpenAiChatModel
                     .builder()
+                    .openAiApi(baseOpenAiApi)
                     .defaultOptions(OpenAiChatOptions.builder().model(model).build())
                     .retryTemplate(retryTemplate)
                     .build())
