@@ -8,7 +8,6 @@ import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
-
 import com.llmcr.agent.logging.AgentContextHolder;
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.service.ModelClientFactory;
@@ -28,6 +27,7 @@ public abstract class Agent<I, R, O> {
     protected final String chatModelName;
     protected final ChatClient chatClient;
     protected final BeanOutputConverter<R> outputConverter;
+    protected static final int MAX_RETRY_COUNT = 3;
 
     /**
      * If outputConverter is provided, the agent will use it to convert the raw
@@ -69,8 +69,27 @@ public abstract class Agent<I, R, O> {
 
     @SuppressWarnings("unchecked")
     protected R convertRawResponse(String rawResponse) {
-        String cleaned = StringUtils.cleanMarkdownCodeBlocks(rawResponse);
-        return outputConverter != null ? outputConverter.convert(cleaned) : (R) cleaned;
+
+        int attempt = 0;
+        while (true) {
+            try {
+                String cleaned = StringUtils.cleanMarkdownCodeBlocks(rawResponse);
+                return outputConverter != null ? outputConverter.convert(cleaned) : (R) cleaned;
+            } catch (Exception e) {
+                attempt++;
+                if (attempt >= MAX_RETRY_COUNT) {
+                    break;
+                }
+
+                ChatClientRequestSpec retryRequest = chatClient
+                        .prompt("Fix this invalid JSON. Return ONLY valid JSON.")
+                        .advisors(new AgentLoggerAdvisor("OutputFixAgent"));
+
+                retryRequest.user(rawResponse);
+                rawResponse = retryRequest.call().content();
+            }
+        }
+        throw new RuntimeException("Failed to convert model response after " + MAX_RETRY_COUNT + " attempts");
     }
 
     protected abstract O convertModelResponse(R modelResponse);
