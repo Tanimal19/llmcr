@@ -20,7 +20,7 @@ public class RetrievalAgent extends SingleCallAgent<String, String> {
     private static final String SYSTEM_PROMPT = """
             You are a retrieval assistant.
             Your task is to retrieve information relevant to the user's query by using the provided tools. The information you retrieve will be used to answer the user's query, so it's important to find as much relevant information as possible.
-            NEVER answer the user's query directly, only find relevant information that could help answer the query. You MUST only return the retrieved information as the output without any additional explanation.
+            You don't need to answer the user's query directly, instead, return the retrieved information as the output without any additional explanation.
             NEVER make up any information. If you can't find any relevant information, just return "unable to find any relevant information".
             """;
 
