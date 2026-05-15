@@ -1,4 +1,4 @@
-# Intelligent Code Review Application
+# Intelligent Code Review Application: LLMCR
 
 Project for Software Engineering Lab.
 
