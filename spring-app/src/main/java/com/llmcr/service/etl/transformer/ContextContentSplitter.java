@@ -30,7 +30,7 @@ public class ContextContentSplitter implements ContextSplitter {
                 .build();
 
         // split the content into chunks
-        List<Chunk> contentChunks = splitter.split(new Document(StringUtils.stringFilter(context.getContent())))
+        List<Chunk> contentChunks = splitter.split(new Document(StringUtils.clean(context.getContent())))
                 .stream()
                 .map(doc -> new Chunk(doc.getText()))
                 .toList();

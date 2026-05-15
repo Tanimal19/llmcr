@@ -2,6 +2,7 @@
 
 Project for Software Engineering Lab.
 
+
 ## Project Structure
 ```
 llmcr/
@@ -101,7 +102,7 @@ llmcr/
 ETL pipeline and RAG workflow illustration. The ETL pipeline is responsible for extracting data from various sources, processing it into `Context`, and storing it in the vector database as `Chunk`. The RAG workflow retrieves relevant `Chunk` from the vector database based on the input query, and use them as additional context for agents to generate answer.
 
 
-# Setup
+# Quick Start
 Prerequisites:
 - Java 17+
 - Docker and Docker Compose
@@ -110,13 +111,12 @@ Prerequisites:
 ## Configuration
 - Set FAISS and MariaDB configurations in `docker-compose.yml`.
   - The index file of FAISS is stored in `faiss_service/app/data`.
-  - The database data is stored in docker volume, you can backup it via:
-    ```sh
-    docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql
-    ```
+  - The database data is stored in docker volume
 - Set spring app properties at `spring-app/src/main/resources/application.properties`.
 - Set datasets and code review configurations at `spring-app/src/main/resources/application.yml`.
-- Download and place .gguf model files under `models/` folder.
+- Download and place `.gguf` model files under `models/` folder.
+  - Reasoning SLM: [LFM2.5-1.2B-Thinking](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/blob/main/LFM2.5-1.2B-Thinking-Q8_0.gguf)
+  - Embedding Model: [harrier-oss-v1-0.6b](https://huggingface.co/mradermacher/harrier-oss-v1-0.6b-GGUF/blob/main/harrier-oss-v1-0.6b.Q4_K_M.gguf)
 - Set llama-swap configuration at `llama-swap.yml`.
 - Set environment variables at `.env` file.
   ```sh
@@ -127,21 +127,36 @@ Prerequisites:
 
 ## Run the Application
 Follow these steps:
-- Make sure llama.cpp and llama-swap is installed.
-- Start llama-swap `llama-swap -config llama-swap.yml -listen localhost:8080`.
-- Start the FAISS and MariaDB services using `docker-compose up -d`.
-- Run the application using `./run.sh`.
+- Make sure [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-swap](https://github.com/mostlygeek/llama-swap) is installed.
+- Start llama-swap
+```bash
+llama-swap -config llama-swap.yml -listen localhost:8080
+```
+- Start the FAISS and MariaDB services
+```
+docker-compose up -d
+```
+- Then `cd spring-app/` and run the following shell scripts:
+  - `run.sh`: Run the application with specified runner.
+  - `review.sh`: Run the code review service.
 
 > [!NOTE]
-> You can use the pre-extracted test data at `_backups/` to run the RAG application without running the ETL pipeline.  
-> Place `.index` file under `./faiss_service/app/data` and import `.sql` file to MariaDB.  
-> For example, run the following to import DB.  
-> ```sh
-> docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql
-> ```
+> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1zy6l341eKZVn6dqB9GpuedcZ8ga2hvyZ/view?usp=drive_link) to run the application without running the ETL pipeline.  
+> 
+> You will see `.index` files under `faiss/` and an `ragdb_backup.sql`
+> 1. Import `ragdb_backup.sql` file to MariaDB use `docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql`
+> 2. Place `.index` file under `./faiss_service/app/data`
+> or you can run the `runner/ReloadChunkRunner` to reload all index to FAISS service.
+> 
+> You can backup the database via: `docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql`
+
+> [!Warning]
+> If you want to run the ETL pipeline with the pre-extracted data, download the datasets in section [Datasets used](#datasets-used). And place the unzipped files under `./_datasets/` folder, and make sure the path configuration in `application.yml` is correct.
 
 
 # Datasets used
+[Download Datasets](https://drive.google.com/file/d/1CJLv8RLnf7EOtlpXyMEK07S8RFMN3Wk1/view?usp=drive_link)
+
 - Project Context: Spring AI [release 2.0.0-M1](https://github.com/spring-projects/spring-ai/releases/tag/v2.0.0-M1)
 - Review Guidelines:
   - https://google.github.io/eng-practices/review/reviewer/standard.html
@@ -150,7 +165,6 @@ Follow these steps:
 - Use Cases: 
   - Use GPT-5.5 to generate example computation responses from selected pull requests, validated by myself
     - https://github.com/spring-projects/spring-ai/pull/5934
-    - https://github.com/spring-projects/spring-ai/pull/4274
   - Total 14 usecase
     - 4 need additional data, 4 with Yes final answer, 6 with No final answer
 - Tool Definitions:

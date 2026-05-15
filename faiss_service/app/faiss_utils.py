@@ -1,7 +1,7 @@
 import faiss
 import os
 import numpy as np
-from typing import List
+from typing import Any, List
 
 DATA_DIR = "./app/data"
 
@@ -104,3 +104,35 @@ def remove_index(index_name: str) -> None:
         print(f"Index '{index_name}' removed.")
     else:
         print(f"Index '{index_name}' does not exist.")
+
+
+def list_indexes_with_counts() -> List[dict[str, Any]]:
+    indexes = []
+
+    if not os.path.isdir(DATA_DIR):
+        return indexes
+
+    for filename in sorted(os.listdir(DATA_DIR)):
+        if not filename.endswith(".index"):
+            continue
+
+        index_name = filename.removesuffix(".index")
+        index_count = None
+        error = None
+
+        try:
+            index = load_index(index_name)
+            index_count = int(index.ntotal) if index is not None else 0
+        except Exception as exc:
+            error = str(exc)
+
+        indexes.append(
+            {
+                "file": filename,
+                "index_name": index_name,
+                "count": index_count,
+                "error": error,
+            }
+        )
+
+    return indexes

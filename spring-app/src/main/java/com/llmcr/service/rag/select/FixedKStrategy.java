@@ -1,8 +1,8 @@
-package com.llmcr.rag.retrieval.select;
+package com.llmcr.service.rag.select;
 
 import java.util.List;
 
-import com.llmcr.rag.retrieval.QueryContextRetriever.ContextScorePair;
+import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 
 public class FixedKStrategy implements TopKSelectionStrategy {
     public List<ContextScorePair> select(List<ContextScorePair> context, int topK) {

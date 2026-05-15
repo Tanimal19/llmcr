@@ -40,7 +40,7 @@ public class ClassNodeExtractor implements SourceExtractor {
     @Override
     public List<Context> apply(Source source) {
 
-        if (source.getPath().equals("package-info.java")) {
+        if (source.getPath().endsWith("package-info.java")) {
             return List.of();
         }
 

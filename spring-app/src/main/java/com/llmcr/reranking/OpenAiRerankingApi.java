@@ -1,4 +1,4 @@
-package com.llmcr.client.reranking;
+package com.llmcr.reranking;
 
 import java.time.Duration;
 import java.util.List;

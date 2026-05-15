@@ -83,22 +83,24 @@ models:
   "Phi-4-Mini":
     cmd: >
       llama-server
-      -m ${model_dir}/Phi-4-mini-reasoning-Q4_K_M.gguf
+      -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
+      --temp 0.5
       --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "Phi-4-Mini"
 
-  "SmolLM3-3b":
+  "LFM2.5-1.2B":
     cmd: >
       llama-server
-      -m ${model_dir}/SmolLM3-Q8_0.gguf
+      -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      --repeat-penalty 1.1
       --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "SmolLM3-3b"
+    name: "LFM2.5-1.2B"
 
   "Harrier-0.6b":
     cmd: >
@@ -132,10 +134,10 @@ matrix:
   # - used to keep set DSL logic short and easier to read
   # - sets and evict_costs only use identifiers defined in vars
   vars:
+    lm: LFM2.5-1.2B
     pm: Phi-4-Mini
-    sm: SmolLM3-3b
     he: Harrier-0.6b
     qr: Qwen3-Reranker-0.6b
 
   sets:
-    standard: "(pm | sm) & he"
+    standard: "(lm | pm) & he"

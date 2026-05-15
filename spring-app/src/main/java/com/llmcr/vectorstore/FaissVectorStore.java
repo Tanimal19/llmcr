@@ -4,27 +4,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import com.llmcr.client.EmbeddingClient;
 import com.llmcr.entity.Chunk;
-import com.llmcr.rag.retrieval.QueryContextRetriever.ChunkIdScorePair;
 import com.llmcr.service.FaissService;
+import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsResponse;
+import com.llmcr.service.rag.QueryContextRetriever.ChunkIdScorePair;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {
 
-    private static final int MAX_QUERY_LENGTH = 8192;
-
     private final FaissService faissService;
-    private final EmbeddingClient embeddingModel;
+    private final EmbeddingModel embeddingModel;
 
-    public FaissVectorStore(FaissService faissService, EmbeddingClient embeddingModel) {
+    public FaissVectorStore(
+            @Value("${llmcr.embedding.provider}") String embeddingProviderName,
+            @Value("${llmcr.embedding.model}") String embeddingModelName,
+            FaissService faissService,
+            ModelClientFactory modelClientFactory) {
         this.faissService = faissService;
-        this.embeddingModel = embeddingModel;
+        this.embeddingModel = modelClientFactory.createEmbeddingModel(embeddingProviderName, embeddingModelName);
     }
 
     public void addChunks(List<Chunk> chunks, String collectionName) {
@@ -46,7 +50,7 @@ public class FaissVectorStore extends MyVectorStore {
     }
 
     protected List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName) {
-        float[] queryVector = embeddingModel.embed(truncateQuery(query));
+        float[] queryVector = embeddingModel.embed(query);
         SearchVectorsResponse res = faissService.searchVectors(
                 new SearchVectorsRequest(collectionName, queryVector, topK));
 
@@ -58,14 +62,6 @@ public class FaissVectorStore extends MyVectorStore {
         }
 
         return chunks;
-    }
-
-    private String truncateQuery(String query) {
-        if (query == null || query.length() <= MAX_QUERY_LENGTH) {
-            return query;
-        }
-        String truncated = query.substring(0, MAX_QUERY_LENGTH);
-        return truncated;
     }
 
     public void removeCollection(String collectionName) {

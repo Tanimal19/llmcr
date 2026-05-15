@@ -14,6 +14,7 @@ import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
 import com.llmcr.entity.Source;
 
+@Deprecated
 @Component
 public class UsecaseExtractor implements SourceExtractor {
 

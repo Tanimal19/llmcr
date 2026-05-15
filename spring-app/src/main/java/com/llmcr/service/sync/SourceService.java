@@ -39,11 +39,12 @@ import com.llmcr.repository.SourceRepository;
 @Service
 public class SourceService {
 
-    private static final Logger log = LoggerFactory.getLogger(SourceService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SourceService.class);
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
     private final MyVectorStore vectorStore;
+    private final Path PROJECT_ROOT = Path.of("").toAbsolutePath().normalize();
 
     public SourceService(TrackRootRepository trackRootRepository, SourceRepository sourceRepository,
             MyVectorStore vectorStore) {
@@ -71,7 +72,7 @@ public class SourceService {
         List<Source> sourcesToRemove = new ArrayList<>();
         for (Source dbSource : dbSources) {
             if (!localPaths.contains(dbSource.getPath())) {
-                log.info("Source no longer exists locally, removing: " + dbSource.getPath());
+                logger.info("Source no longer exists locally, removing: " + dbSource.getPath());
                 sourcesToRemove.add(dbSource);
             }
         }
@@ -83,6 +84,7 @@ public class SourceService {
 
             // insert new source
             if (existing == null) {
+                logger.info("New source found, adding: " + localSource.getPath());
                 localSource.setTrackRoot(trackRoot);
                 sourceRepository.save(localSource);
                 continue;
@@ -110,14 +112,14 @@ public class SourceService {
 
         Path sourcePath = Path.of(source.getPath());
         if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
-            log.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
+            logger.warn("Source path does not exist or is not a regular file, remove source: " + sourcePath);
             removeSource(source);
             return;
         }
 
         String currentHash = computeContentHash(sourcePath);
         if (!Objects.equals(source.getContentHash(), currentHash)) {
-            log.info("Source content changed: " + sourcePath);
+            logger.info("Source content changed: " + sourcePath);
             source.setContentHash(currentHash);
             cleanupSourceChunks(source);
             source.getContexts().clear();
@@ -128,6 +130,7 @@ public class SourceService {
     }
 
     private void removeSource(Source source) {
+        logger.info("Removing source: " + source.getPath());
         cleanupSourceChunks(source);
         sourceRepository.delete(source);
     }
@@ -184,19 +187,19 @@ public class SourceService {
 
     private List<Source> loadLocalSources(TrackRoot trackRoot) {
         if (trackRoot == null || trackRoot.getPath() == null || trackRoot.getPath().isBlank()) {
-            log.warn("TrackRoot or its path is null/blank: " + trackRoot);
+            logger.warn("TrackRoot or its path is null/blank: " + trackRoot);
             return List.of();
         }
 
         Path rootPath = Path.of(trackRoot.getPath());
         if (!Files.exists(rootPath)) {
-            log.warn("TrackRoot path does not exist: " + rootPath);
+            logger.warn("TrackRoot path does not exist: " + rootPath);
             return List.of();
         }
 
         Set<SourceType> configuredTypes = trackRoot.getAllowedSourceTypes();
         if (configuredTypes == null || configuredTypes.isEmpty()) {
-            log.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
+            logger.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
             configuredTypes = Set.of(SourceType.values());
         }
         final Set<SourceType> allowedTypes = configuredTypes;
@@ -224,24 +227,23 @@ public class SourceService {
             return sources;
         }
 
-        log.warn("TrackRoot path is not a file or directory: " + rootPath);
+        logger.warn("TrackRoot path is not a file or directory: " + rootPath);
         return List.of();
     }
 
     private Source createSource(Path path, Set<SourceType> allowedTypes) {
         SourceType sType = resolveSourceType(path);
         if (sType == null) {
-            log.warn("Unrecognized file type for source, Dropped: " + path);
+            logger.debug("Unrecognized file type for source, Dropped: " + path);
             return null;
         }
 
         if (!allowedTypes.contains(sType)) {
-            log.info("Source type not allowed by track root config, Dropped: " + path);
+            logger.debug("Source type not allowed by track root config, Dropped: " + path);
             return null;
         }
 
-        // set dummy hash to trigger sync for new sources
-        return new Source(path.toAbsolutePath().normalize().toString(), sType);
+        return new Source(absoluteToRelativePath(path), sType);
     }
 
     private SourceType resolveSourceType(Path path) {
@@ -288,5 +290,10 @@ public class SourceService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available", e);
         }
+    }
+
+    public String absoluteToRelativePath(Path absolute) {
+        absolute = absolute.toAbsolutePath().normalize();
+        return PROJECT_ROOT.relativize(absolute).toString();
     }
 }
