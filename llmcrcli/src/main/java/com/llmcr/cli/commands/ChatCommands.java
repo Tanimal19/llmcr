@@ -1,73 +1,104 @@
 package com.llmcr.cli.commands;
 
-import org.jline.reader.EndOfFileException;
-// import com.llmcr.service.ChatService;
+import java.io.File;
+import java.io.FileWriter;
+
 import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
+import org.springframework.shell.standard.ShellOption;
 
-import com.llmcr.cli.configs.CLISignalHandler;
-import com.llmcr.cli.services.CommandListService;
-
-import java.io.IOException;
+import com.llmcr.cli.services.IBackendService;
 
 @ShellComponent
 public class ChatCommands {
 
-    // @Autowired
-    // private ChatService chatService; // 後端：處理 Ollama 對話
+    @Autowired
+    private IBackendService backendService;
 
     @Autowired
-    private CLISignalHandler signalHandler; // 注入
+    @Lazy
+    private LineReader lineReader;
 
-    @ShellMethod(key = "chat", value = "進入與 LM 的互動聊天模式 (輸入 exit 或 /quit 離開)")
+    @ShellMethod(key = "chat", value = "進入與大型語言模型的互動聊天模式")
     public void chat() {
-        System.out.println("\n🤖 進入聊天模式 (輸入 exit /quit 或 Ctrl+C 返回主選單)");
-        System.out.println("=".repeat(65));
+        System.out.println("Entering chat mode. Type 'exit' or 'quit' to return to main menu.");
+        System.out.println("────────────────────────────────────────────────────────────────");
 
-        try (Terminal terminal = TerminalBuilder.builder()
-                .system(true)
-                .nativeSignals(true)           // 關鍵：啟用原生 signal
-                .build()) {
+        while (true) {
+            // 模仿 Ollama 的提示字元
+            String input = lineReader.readLine(">>> ");
 
-            LineReader reader = LineReaderBuilder.builder()
-                    .terminal(terminal)
-                    .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
-                    .build();
-
-            while (true) {
-                try {
-                    String line = reader.readLine("You > ").trim();
-
-                    if (line.isEmpty()) continue;
-                    if ("exit".equalsIgnoreCase(line) || "/quit".equalsIgnoreCase(line)) {
-                        break;
-                    }
-
-                    // String response = chatService.sendMessage(line);
-                    String response = "Mock AI Response";
-                    System.out.println("AI  > " + response);
-
-                } catch (UserInterruptException e) {
-                    // Ctrl + C 被成功捕捉
-                    System.out.println("\n👋 已中斷聊天模式 (Ctrl+C)");
-                    break;
-                } catch (EndOfFileException e) {
-                    break;
-                } catch (Exception e) {
-                    System.out.println("❌ 錯誤: " + e.getMessage());
-                }
+            if (input == null || input.trim().equalsIgnoreCase("exit") || input.trim().equalsIgnoreCase("quit")) {
+                System.out.println("Leaving chat mode.");
+                break;
             }
-        } catch (Exception e) {
-            System.out.println("❌ 終端初始化失敗: " + e.getMessage());
-        } finally {
-            // 無論如何都回到主列表
-            CommandListService.printCommandList();
+
+            if (input.trim().isEmpty()) {
+                continue;
+            }
+
+            try {
+                // 呼叫後端接頭
+                String response = backendService.chat(input);
+                System.out.println(response);
+                System.out.println();
+            } catch (Exception e) {
+                System.out.println("❌ Error: " + e.getMessage());
+            }
         }
+    }
+
+    @ShellMethod(key = "review", value = "執行 Code Review。用法: review [diff_filepath]")
+    public void review(@ShellOption(value = "filePath") String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            System.out.println("❌ Error: File not found at " + filePath);
+            return;
+        }
+
+        try {
+            // 1. 模擬進度條動畫
+            simulateProgressBar();
+
+            // 2. 呼叫後端產生 Review 內容
+            String reviewContent = backendService.generateReview(file);
+
+            // 3. 寫入到產生的檔案 (.review.md)
+            String outputFilePath = filePath + ".review.md";
+            try (FileWriter writer = new FileWriter(outputFilePath)) {
+                writer.write(reviewContent);
+            }
+
+            // 4. 印出成功訊息與 Preview
+            System.out.println("✅ Review generated at " + outputFilePath);
+            System.out.println("\nPreview:");
+            System.out.println("────────────────────────");
+            System.out.println(reviewContent);
+            System.out.println();
+
+        } catch (Exception e) {
+            System.out.println("\n❌ Error message: " + e.getMessage());
+        }
+    }
+
+    // 輔助方法：製作用戶要求的進度條動畫
+    private void simulateProgressBar() throws InterruptedException {
+        int total = 100;
+        int barLength = 20;
+        for (int i = 0; i <= total; i += 25) { // 每次跳 25% 模擬進度
+            StringBuilder bar = new StringBuilder();
+            int filledLength = (int) ((double) i / total * barLength);
+
+            bar.append("█".repeat(filledLength));
+            bar.append("░".repeat(barLength - filledLength));
+
+            // \r 可以讓游標回到行首，達到刷新同一行的效果
+            System.out.print("\rGenerating review: |" + bar + "| " + i + "%/100%");
+            Thread.sleep(300); // 停頓模擬運算
+        }
+        System.out.println(); // 換行
     }
 }
