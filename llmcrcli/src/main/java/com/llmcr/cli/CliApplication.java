@@ -1,0 +1,14 @@
+package com.llmcr.cli;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class CliApplication {
+
+    public static void main(String[] args) {
+        // 強制進入 interactive mode
+        System.setProperty("spring.shell.interactive.enabled", "true");
+        SpringApplication.run(CliApplication.class, args);
+    }
+}
