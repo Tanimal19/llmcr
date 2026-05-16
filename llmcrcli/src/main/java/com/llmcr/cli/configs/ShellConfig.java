@@ -11,6 +11,6 @@ public class ShellConfig {
 
     @Bean
     public PromptProvider promptProvider() {
-        return () -> new AttributedString("cli> ", AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN));
+        return () -> new AttributedString("> ", AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN));
     }
 }

@@ -33,6 +33,13 @@
             <artifactId>jline-terminal-jna</artifactId>
             <version>3.26.3</version>
         </dependency>
+
+        <!-- Ctrl+C攔截 -->
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+            <version>3.26.3</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -40,6 +47,18 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.3.4</version>   <!-- 改成穩定版，不要用 RC -->
+                <configuration>
+                    <mainClass>com.llmcr.cli.CliApplication</mainClass>  <!-- 改成你實際的主類別完整路徑 -->
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
