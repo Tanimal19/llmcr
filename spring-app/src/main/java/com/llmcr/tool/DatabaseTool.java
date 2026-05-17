@@ -10,7 +10,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.Context;
-import com.llmcr.entity.Context.ContextType;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -24,7 +23,6 @@ public class DatabaseTool {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseTool.class);
 
     private static final int MAX_RESULT_ROWS = 20;
-    private static final int MAX_CELL_CHARS = 500;
 
     private final ContextRepository contextRepository;
     private final QueryContextRetriever queryContextRetriever;
@@ -34,36 +32,9 @@ public class DatabaseTool {
         this.queryContextRetriever = queryContextRetriever;
     }
 
-    @Tool(description = "Get documents information relevant to a query. Use this when the user query is about non-code information, such as design docs, api docs, etc. Return a list of (id, document name), you should call getFullContentById tool to get the full content of a document by id.")
-    public String searchDocumentByQuery(
-            @ToolParam(required = true) String query) {
-        logger.info("[ToolCall] tool=getDocumentByQuery query={}", query);
-        return retrievePreviewByQuery(query, "docs");
-    }
-
-    @Tool(description = "Search relevant classes based on a query. Use this when the user query is about code information, such as implementation of a feature, usage of a library, etc. Return a list of (id, class name), you should call getFullContentById tool to get the full content of a class by id.")
-    public String searchClassByQuery(
-            @ToolParam(description = "A query to search classes.", required = true) String query) {
-        logger.info("[ToolCall] tool=getClassByQuery query={}", query);
-        return retrievePreviewByQuery(query, "project-code");
-    }
-
-    @Tool(description = "Return the full content of a context with the given id.")
-    public String getFullContentById(
-            @ToolParam(description = "The exact id of the context to retrieve.", required = true) Long id) {
-        logger.info("[ToolCall] tool=getFullContentById id={}", id);
-
-        return contextRepository.findById(id)
-                .map(c -> {
-                    String content = c.getContent() == null ? "NULL" : c.getContent();
-                    return "id: " + c.getId() + "\n"
-                            + "name: " + c.getName() + "\n"
-                            + "content:\n" + content;
-                })
-                .orElse("No context found with id: " + id);
-    }
-
-    private String retrievePreviewByQuery(String query, String collectionName) {
+    @Tool(description = """
+            Get documents relevant to a query. Use this when you don't know what documents relevant to the user query. Return only the id and name of the documents, you should call getDocumentById with the id to get the full content of the document.""")
+    public String similaritySearch(@ToolParam(required = true) String query) {
         if (query == null || query.isBlank()) {
             return "(tool error: query must not be blank)";
         }
@@ -71,7 +42,7 @@ public class DatabaseTool {
         ContextRetrievalConfiguration retrievalConfiguration = new ContextRetrievalConfiguration(
                 MAX_RESULT_ROWS,
                 new FixedKStrategy(),
-                collectionName,
+                "all",
                 false);
         ContextRetrievalRequest request = new ContextRetrievalRequest(List.of(query.trim()), retrievalConfiguration);
         List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(request);
@@ -107,6 +78,21 @@ public class DatabaseTool {
         }
 
         return output.toString();
+    }
+
+    @Tool(description = "Return the full content of a document with the given id. Use this tool when you already have the id of the document and you think the content of the document is relevant to the user query.")
+    public String getDocumentById(
+            @ToolParam(description = "The exact id of the context to retrieve.", required = true) Long id) {
+        logger.info("[ToolCall] tool=getFullContentById id={}", id);
+
+        return contextRepository.findById(id)
+                .map(c -> {
+                    String content = c.getContent() == null ? "NULL" : c.getContent();
+                    return "id: " + c.getId() + "\n"
+                            + "name: " + c.getName() + "\n"
+                            + "content:\n" + content;
+                })
+                .orElse("No context found with id: " + id);
     }
 
 }

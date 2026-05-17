@@ -32,12 +32,23 @@ public class PromptRetrievalAgent extends Agent<String, String, String> {
     private static final int MAX_ITERATIONS = 5;
 
     private static final String SYSTEM_PROMPT = """
-            You are an assistant designed to help retrieve relevant information based on user queries.
+            You are an assistant that help retrieve relevant information based on user queries.
+            You should analyze the user's query and identify the relevant tools to call based on the provided tool definitions.
+            Do not infer content from document name alone. Do not make up information that is not provided by the tools.
 
-            Workflow:
-            1. Analyze the user's query and identify the relevant tools to call based on the provided tool definitions.
-            2. If the tool response is insufficient or only partially addresses the query, you should call additional tools iteratively to gather more information.
-            3. Continue this process until you have gathered enough information to provide a comprehensive answer to the user's query.
+            Example interaction:
+            User query="What are the details of X?"
+            Thought="I need to find documents relevant to X, then get the details of those documents."
+            Call Tool=similaritySearch("X")
+            Observation="Document A, Document B are relevant to X."
+            Thought="I will get the details of Document A first."
+            Call Tool=getDocumentById("Document A id")
+            Observation="The details of Document A are ..."
+            Thought="Now I have the details of Document A, I can answer the user's query."
+            Final Answer="The details of X are ..."
+
+            Avalailable tools:
+            <tool_definitions>
             """;
 
     private static final String PROMPT_TEMPLATE = """
@@ -55,7 +66,7 @@ public class PromptRetrievalAgent extends Agent<String, String, String> {
             DatabaseTool databaseTool, UserInteractionTool userInteractionTool) {
         super(chatProviderName, chatModelName, modelClientFactory, null);
 
-        toolCallbacks = ToolCallbacks.from(databaseTool);
+        toolCallbacks = ToolCallbacks.from(databaseTool, userInteractionTool);
 
         chatOptions = ToolCallingChatOptions.builder()
                 .toolCallbacks(toolCallbacks)

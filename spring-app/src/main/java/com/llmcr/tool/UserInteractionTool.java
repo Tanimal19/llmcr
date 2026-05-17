@@ -23,7 +23,7 @@ public class UserInteractionTool {
     private final BufferedReader stdinReader = new BufferedReader(
             new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
-    @Tool(description = "Ask human developer a question. Use this when the query needs human clarification or when you have exhausted all other tools but still cannot find relevant information to answer the query.")
+    @Tool(description = "Ask human developer a question. Use this only when you have exhausted all available tools and still cannot get the information needed to answer the user's query.")
     public String askUserQuestion(
             @ToolParam(description = "The exact question to ask. Provide context for easy understanding.") String question) {
         logger.info("[ToolCall] tool=askUserQuestion question={}", question);
