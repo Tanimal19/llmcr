@@ -30,8 +30,8 @@ llmcr/
 │       │   ├── review/              # Code review service
 │       │   ├── sync/                # Sync service
 │       ├── tool/                    # Tools for agent tool calling
-│       ├── util/      
-│       └── vectorstore/             # Vector database          
+│       ├── util/
+│       └── vectorstore/             # Vector database
 ├── _datasets/
 └── _backups/                  # Pre-built index & DB dump
 ```
@@ -80,7 +80,7 @@ llmcr/
 
 ## Data Schema
 - `TrackRoot`: represents a specific folder or file that we want to track.
-  - A `TrackRoot` can be configure with `allowed_source_types` defines what type of data source to be included when tracking. 
+  - A `TrackRoot` can be configure with `allowed_source_types` defines what type of data source to be included when tracking.
 - `Source`: represents a specific file that we want to extract data from.
 - A `Context` is a paragraph of meaningful text.
   - It can be an entire Java class, a paragraph in a document, or some defined structure.
@@ -115,6 +115,7 @@ Prerequisites:
 - Set spring app properties at `spring-app/src/main/resources/application.properties`.
 - Set datasets and code review configurations at `spring-app/src/main/resources/application.yml`.
 - Download and place `.gguf` model files under `models/` folder.
+  - [Phi-4-mini-instruct](https://huggingface.co/aathaval/Phi-4-mini-instruct-Q6_K-GGUF/blob/main/phi-4-mini-instruct-q6_k.gguf)
   - Reasoning SLM: [LFM2.5-1.2B-Thinking](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/blob/main/LFM2.5-1.2B-Thinking-Q8_0.gguf)
   - Embedding Model: [harrier-oss-v1-0.6b](https://huggingface.co/mradermacher/harrier-oss-v1-0.6b-GGUF/blob/main/harrier-oss-v1-0.6b.Q4_K_M.gguf)
 - Set llama-swap configuration at `llama-swap.yml`.
@@ -141,13 +142,13 @@ docker-compose up -d
   - `review.sh`: Run the code review service.
 
 > [!NOTE]
-> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1zy6l341eKZVn6dqB9GpuedcZ8ga2hvyZ/view?usp=drive_link) to run the application without running the ETL pipeline.  
-> 
+> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1zy6l341eKZVn6dqB9GpuedcZ8ga2hvyZ/view?usp=drive_link) to run the application without running the ETL pipeline.
+>
 > You will see `.index` files under `faiss/` and an `ragdb_backup.sql`
 > 1. Import `ragdb_backup.sql` file to MariaDB use `docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql`
 > 2. Place `.index` file under `./faiss_service/app/data`
 > or you can run the `runner/ReloadChunkRunner` to reload all index to FAISS service.
-> 
+>
 > You can backup the database via: `docker exec mariadb mariadb-dump -u root -proot123 ragdb > ragdb_backup.sql`
 
 > [!Warning]
@@ -162,7 +163,7 @@ docker-compose up -d
   - https://google.github.io/eng-practices/review/reviewer/standard.html
   - https://docs.gitlab.com/development/code_review/
   - Some handwritten documents
-- Use Cases: 
+- Use Cases:
   - Use GPT-5.5 to generate example computation responses from selected pull requests, validated by myself
     - https://github.com/spring-projects/spring-ai/pull/5934
   - Total 14 usecase
