@@ -26,7 +26,7 @@ public class AgentLoggingService {
 
     private final Path agentLogFilePath;
 
-    public AgentLoggingService(@Value("${llmcr.agent.log.file:#{null}}") String agentLogFile) {
+    public AgentLoggingService(@Value("${llmcr.agent.log.file}") String agentLogFile) {
         this.agentLogFilePath = agentLogFile != null && !agentLogFile.isBlank() ? Paths.get(agentLogFile) : null;
     }
 

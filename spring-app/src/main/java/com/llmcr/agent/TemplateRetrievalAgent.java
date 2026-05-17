@@ -15,7 +15,7 @@ import com.llmcr.tool.DatabaseTool;
 import com.llmcr.tool.UserInteractionTool;
 
 @Component
-public class RetrievalAgent extends SingleCallAgent<String, String> {
+public class TemplateRetrievalAgent extends SingleCallAgent<String, String> {
 
     private static final String SYSTEM_PROMPT = """
             You are a retrieval assistant.
@@ -30,7 +30,7 @@ public class RetrievalAgent extends SingleCallAgent<String, String> {
 
     private final ToolCallbackProvider toolProvider;
 
-    public RetrievalAgent(
+    public TemplateRetrievalAgent(
             @Value("${llmcr.agent.retrieval.chat.provider}") String chatProviderName,
             @Value("${llmcr.agent.retrieval.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,

@@ -16,7 +16,7 @@ public abstract class RecursiveAgent<I, R, O> extends Agent<I, R, O> {
     protected RecursiveAgent(String chatProviderName, String chatModelName,
             ModelClientFactory modelClientFactory, BeanOutputConverter<R> outputConverter) {
         super(chatProviderName, chatModelName, modelClientFactory, outputConverter);
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder().maxMessages(6).build();
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder().maxMessages(10).build();
         this.memoryAdvisor = MessageChatMemoryAdvisor.builder(memory).build();
     }
 
@@ -49,7 +49,7 @@ public abstract class RecursiveAgent<I, R, O> extends Agent<I, R, O> {
                 if (iteration == maxIterations() - 1) {
                     nextMessage = nextMessage + "\n" + getFinalMessage();
                 }
-                requestSpec = requestSpec.user(getNextMessage(modelResponse));
+                requestSpec = requestSpec.user(nextMessage);
             }
 
             String rawResponse = requestSpec.call().content();

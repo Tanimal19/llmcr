@@ -109,13 +109,13 @@ public class ComputationAgent
             <code_changes>
             """;
 
-    private final RetrievalAgent retrievalAgent;
+    private final PromptRetrievalAgent retrievalAgent;
 
     public ComputationAgent(
             @Value("${llmcr.agent.computation.chat.provider}") String chatProviderName,
             @Value("${llmcr.agent.computation.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,
-            RetrievalAgent retrievalAgent) {
+            PromptRetrievalAgent retrievalAgent) {
         super(chatProviderName, chatModelName, modelClientFactory,
                 new BeanOutputConverter<>(ModelResponse.class));
         this.retrievalAgent = retrievalAgent;
