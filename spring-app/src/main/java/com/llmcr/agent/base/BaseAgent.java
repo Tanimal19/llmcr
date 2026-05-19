@@ -32,7 +32,7 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
     protected final ChatClient chatClient;
     protected final BeanOutputConverter<R> outputConverter;
     private static final int DEFAULT_MAX_RETRY = 3;
-    private static final int DEFAULT_MAX_ITERATIONS = 6;
+    private static final int DEFAULT_MAX_ITERATIONS = 5;
 
     private List<Message> conversationHistory;
 
