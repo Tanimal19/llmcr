@@ -166,7 +166,7 @@ public class ComputationAgent
 
         String retrievalResult = retrievalAgent.execute(response.dataQuery());
         return new UserMessage(
-                "The agent requested additional data with the following query: " + response.dataQuery()
+                "You requested additional data with the following query: " + response.dataQuery()
                         + "\nThe retrieval result is: " + retrievalResult
                         + "\nPlease use this information to continue your analysis.");
     }

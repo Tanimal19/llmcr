@@ -8,9 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 
+import com.llmcr.util.StringUtils;
+
 public class MyToolCallingManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(DatabaseTool.class);
+    private static final Logger logger = LoggerFactory.getLogger(MyToolCallingManager.class);
     private final Map<String, ToolCallback> avaliableToolCallbacks;
 
     public record ToolCall(
@@ -42,7 +44,7 @@ public class MyToolCallingManager {
 
         logger.info("[ToolCall] tool={} arguments={}", toolCall.toolName(), toolCall.arguments());
 
-        return callback.call(toolCall.arguments().toString());
+        return callback.call(StringUtils.jsonString(toolCall.arguments()));
     }
 
 }

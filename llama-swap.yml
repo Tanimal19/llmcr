@@ -84,24 +84,34 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
-      --temp 0.5
+      --temp 0.2
       --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
     name: "Phi-4-Mini"
 
-  "LFM2.5-1.2B":
+  "Nemotron-3-4B":
     cmd: >
       llama-server
-      -m ${model_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      -m ${model_dir}/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf
       --temp 0.2
-      --repeat-penalty 1.1
       --ctx-size 32768
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "LFM2.5-1.2B"
+    name: "Nemotron-3-4B"
+
+  "Llama-3.1-8B":
+    cmd: >
+      llama-server
+      -m ${model_dir}/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
+      --temp 0.2
+      --ctx-size 32768
+      --no-webui
+      --port ${PORT}
+    checkEndpoint: /v1/models
+    name: "Llama-3.1-8B"
 
   "Harrier-0.6b":
     cmd: >
@@ -135,10 +145,11 @@ matrix:
   # - used to keep set DSL logic short and easier to read
   # - sets and evict_costs only use identifiers defined in vars
   vars:
-    lm: LFM2.5-1.2B
+    lm: Llama-3.1-8B
     pm: Phi-4-Mini
+    nm: Nemotron-3-4B
     he: Harrier-0.6b
     qr: Qwen3-Reranker-0.6b
 
   sets:
-    standard: "(lm | pm) & he"
+    standard: "(lm | pm | nm) & he"

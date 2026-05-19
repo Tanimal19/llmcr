@@ -9,7 +9,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -31,10 +30,9 @@ public class DatabaseTool {
         this.queryContextRetriever = queryContextRetriever;
     }
 
-    @Tool(description = """
-                Search the knowledge base for documents relevant to a query. Use this tool when you need to identify potentially relevant documents before reading their full contents. Use concise semantic queries. Prefer domain keywords over natural language questions. Returns only document ids and names.
-            """)
-    public String similaritySearch(@ToolParam(required = true) String query) {
+    @Tool(description = "Find documents by semantic query and return matching document ids.")
+    public String findDocuments(
+            @ToolParam(description = "A concise semantic queries. Prefer domain keywords over natural language questions.", required = true) String query) {
         if (query == null || query.isBlank()) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "query must not be blank");
@@ -55,32 +53,12 @@ public class DatabaseTool {
             return StringUtils.jsonString(emptyResponse);
         }
 
-        List<Context> orderedContexts = new ArrayList<>();
-        for (ContextScorePair contextScore : retrievedContexts) {
-            Context context = contextScore.context();
-            if (context == null) {
-                continue;
-            }
-
-            boolean alreadyAdded = orderedContexts.stream()
-                    .anyMatch(existing -> existing.getId().equals(context.getId()));
-            if (!alreadyAdded) {
-                orderedContexts.add(context);
-            }
-        }
-
-        if (orderedContexts.isEmpty()) {
-            Map<String, Object> emptyResponse = new HashMap<>();
-            emptyResponse.put("results", List.of());
-            emptyResponse.put("message", "Query returned empty results");
-            return StringUtils.jsonString(emptyResponse);
-        }
-
         List<Map<String, Object>> results = new ArrayList<>();
-        for (Context context : orderedContexts) {
+        for (ContextScorePair context : retrievedContexts) {
             Map<String, Object> item = new HashMap<>();
-            item.put("id", context.getId());
-            item.put("name", context.getName());
+            item.put("id", context.context().getId());
+            item.put("name", context.context().getName().split("::")[1]);
+            item.put("relevanceScore", context.score());
             results.add(item);
         }
 
@@ -90,11 +68,9 @@ public class DatabaseTool {
         return StringUtils.jsonString(response);
     }
 
-    @Tool(description = """
-                Retrieve the full content of a document by its id. Use this tool after you have identified relevant document ids using similaritySearch() and want to inspect their contents.
-            """)
-    public String getDocumentById(
-            @ToolParam(description = "The exact id of the document to retrieve.", required = true) Long id) {
+    @Tool(description = "Fetch full document content using an exact integer document id. NEVER use this tool when you are not sure about the exact document id.")
+    public String fetchDocumentcontent(
+            @ToolParam(description = "The exact integer id of the document to retrieve.", required = true) Long id) {
         return contextRepository.findById(id)
                 .map(c -> {
                     Map<String, Object> response = new HashMap<>();

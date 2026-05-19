@@ -1,5 +1,7 @@
 package com.llmcr.agent;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
@@ -20,26 +22,25 @@ import com.llmcr.tool.MyToolCallingManager.ToolCall;
 public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalModelResponse, String> {
 
     public record RetrievalModelResponse(
-            String finalAnswer,
             boolean hasToolCall,
             ToolCall toolCall) {
     }
 
-    private static final String SYSTEM_PROMPT = """
-            You are an assistant that help retrieve information relevant to the user's query.
-            You will be given a set of tools that you can call, your task is to call the appropriate tools with appropriate arguments to retrieve relevant information to answer the user's query.
-            You could only call one tool each time, after you call the tool, you will get the tool execution result as input for next iteration, you can then decide to call another tool or provide the final answer to the user.
+    private String SYSTEM_PROMPT = """
+            You are a retrieval planning agent.
+            Your task is to determine the next best action based on the user's query and previous tool results.
+            You do NOT answer the user's query directly.
 
-            Output format (JSON only):
-            {
-                "finalAnswer": "Your final answer to the user's query",
-                "hasToolCall": false,
-                "toolCall": null
-            }
+            You may:
+            1. Call a tool
+            2. Finish the retrieval process
 
-            When you want to call a tool:
+            You can only call one tool at a time.
+            After each tool call, you will receive the tool result in the next iteration.
+            Use tool calls to progressively refine or retrieve more specific information if needed.
+
+            If you want to call a tool, output the following JSON:
             {
-                "finalAnswer": null,
                 "hasToolCall": true,
                 "toolCall": {
                     "toolName": "the name of the tool you want to call, must be one of the available tools",
@@ -50,18 +51,26 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
                 }
             }
 
-            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
-            """;
+            If you want to finish the retrieval process and provide a final answer, output the following JSON:
+            {
+                "hasToolCall": false,
+                "toolCall": null
+            }
 
-    private String INITIAL_USER_MESSAGE_TEMPLATE = """
+            Return JSON only.
+
             Available tools:
             {tool_definitions}
+            """;
 
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             User Query:
             <query>
             """;
 
     private final MyToolCallingManager toolCallingManager;
+
+    private List<String> toolResults;
 
     public RetrievalAgent(
             @Value("${llmcr.agent.retrieval.chat.provider}") String chatProviderName,
@@ -78,7 +87,7 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
         for (ToolCallback callback : toolCallbacks) {
             toolDefBuilder.append(callback.getToolDefinition()).append("\n----\n");
         }
-        this.INITIAL_USER_MESSAGE_TEMPLATE = this.INITIAL_USER_MESSAGE_TEMPLATE.replace("{tool_definitions}",
+        this.SYSTEM_PROMPT = this.SYSTEM_PROMPT.replace("{tool_definitions}",
                 toolDefBuilder.toString());
     }
 
@@ -109,11 +118,20 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
         return new UserMessage(
                 "You have called a tool: " + response.toolCall().toString()
                         + "\nThe tool returned the following result:\n"
-                        + toolResult);
+                        + toolResult
+                        + "\nUse above information to determine your next action.");
     }
 
     @Override
     protected String buildFinalResponse(RetrievalModelResponse response) {
-        return response.finalAnswer();
+        return toolResults.isEmpty() ? "No information was retrieved."
+                : toolResults.get(toolResults.size() - 1);
     }
+
+    @Override
+    protected String doExecute(String input) {
+        this.toolResults = new ArrayList<>();
+        return super.doExecute(input);
+    }
+
 }
