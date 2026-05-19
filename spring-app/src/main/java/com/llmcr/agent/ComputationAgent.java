@@ -5,22 +5,18 @@ import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.agent.base.Agent;
+import com.llmcr.agent.base.BaseAgent;
 import com.llmcr.service.ModelClientFactory;
-import com.llmcr.tool.InteractionTool.Interactable;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
 public class ComputationAgent
         extends
-        Agent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ComputationAgent.ComputationAgentOutput>
-        implements Interactable {
+        BaseAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ComputationAgent.ComputationAgentOutput> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -61,7 +57,7 @@ public class ComputationAgent
         }
     }
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are an experienced code reviewer.
             Your task is to analyze the provided code change strictly based on the checklist item.
             You MUST only use information explicitly present in the provided code change and context.
@@ -107,7 +103,9 @@ public class ComputationAgent
             }
 
             You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
+            """;
 
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Checklist item:
             <checklist_description>
 
@@ -128,8 +126,13 @@ public class ComputationAgent
     }
 
     @Override
-    protected String buildInitialMessageTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
+    }
+
+    @Override
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
     }
 
     @Override
@@ -145,51 +148,31 @@ public class ComputationAgent
     }
 
     @Override
-    protected boolean shouldTerminate(ChatResponse chatResponse, ComputationModelResponse response) {
+    protected boolean shouldTerminate(ComputationModelResponse response) {
         return !response.needsAdditionalData();
     }
 
     @Override
-    protected List<Message> buildNextMessages(Prompt prompt, ChatResponse chatResponse,
-            ComputationModelResponse response) {
-        if (response.dataQuery() == null) {
-            return List.of(new UserMessage(
-                    "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information."));
+    protected Message buildNextUserMessage(int iteration, ComputationModelResponse response) {
+        if (iteration >= getMaxIterations() - 1) {
+            return new UserMessage(
+                    "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.");
         }
-        String retrievalResult = retrievalAgent.execute(
-                new RetrievalAgent.RetrievalAgentInput(response.dataQuery(), this));
-        return List.of(new UserMessage(
+
+        if (response.dataQuery() == null) {
+            return new UserMessage(
+                    "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.");
+        }
+
+        String retrievalResult = retrievalAgent.execute(response.dataQuery());
+        return new UserMessage(
                 "The agent requested additional data with the following query: " + response.dataQuery()
                         + "\nThe retrieval result is: " + retrievalResult
-                        + "\nPlease use this information to continue your analysis."));
+                        + "\nPlease use this information to continue your analysis.");
     }
 
     @Override
-    protected Message buildFinalMessage() {
-        return new UserMessage(
-                "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.");
-    }
-
-    @Override
-    protected ComputationAgentOutput convertModelResponse(ComputationModelResponse response) {
+    protected ComputationAgentOutput buildFinalResponse(ComputationModelResponse response) {
         return new ComputationAgentOutput(response.finalAnswer(), response.analysis(), response.evidence());
-    }
-
-    @Override
-    public String askFollowUp(String question) {
-        List<Message> currentConversation = getConversationHistoryCopy();
-        currentConversation.add(new UserMessage(
-                """
-                        Here is a follow-up question respond by the tool. Please answer this question to clarify the needed addtional data.
-                        Question: <question>
-                        """
-                        .replace("<question>", question)));
-
-        Prompt prompt = Prompt.builder().messages(currentConversation).build();
-        ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
-        return chatResponse.getResults().stream()
-                .map(g -> g.getOutput().getText())
-                .findFirst()
-                .orElse("(tool error: no response from model)");
     }
 }

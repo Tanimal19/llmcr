@@ -1,10 +1,6 @@
 package com.llmcr.agent.base;
 
-import java.util.List;
-
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 
 import com.llmcr.service.ModelClientFactory;
@@ -12,7 +8,7 @@ import com.llmcr.service.ModelClientFactory;
 /**
  * Base class for agents that only need to make a single call to the LLM.
  */
-public abstract class SingleCallAgent<I, O> extends Agent<I, O, O> {
+public abstract class SingleCallAgent<I, O> extends BaseAgent<I, O, O> {
 
     protected SingleCallAgent(String chatProviderName, String chatModelName,
             ModelClientFactory modelClientFactory, BeanOutputConverter<O> outputConverter) {
@@ -20,25 +16,19 @@ public abstract class SingleCallAgent<I, O> extends Agent<I, O, O> {
     }
 
     @Override
-    protected boolean shouldTerminate(ChatResponse chatResponse, O response) {
+    protected boolean shouldTerminate(O response) {
         // only run one iteration, so always terminate after the first response
         return true;
     }
 
     @Override
-    protected List<Message> buildNextMessages(Prompt prompt, ChatResponse chatResponse, O response) {
-        // should never reach here
-        return List.of();
-    }
-
-    @Override
-    protected Message buildFinalMessage() {
+    protected Message buildNextUserMessage(int iteration, O response) {
         // should never reach here
         return null;
     }
 
     @Override
-    protected O convertModelResponse(O modelResponse) {
+    protected O buildFinalResponse(O modelResponse) {
         return modelResponse;
     }
 }

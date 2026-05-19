@@ -24,12 +24,8 @@ public class TestRunner implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        String query = "Please provide details on how to embed documents into vector database using the project's code.";
-        RetrievalAgent.RetrievalAgentInput input = new RetrievalAgent.RetrievalAgentInput(
-                query,
-                new com.llmcr.tool.CLIInteractable());
-
-        agent.execute(input);
+        String query = "Give me the content of VectorStoreDocumentRetriever.";
+        agent.execute(query);
     }
 
 }

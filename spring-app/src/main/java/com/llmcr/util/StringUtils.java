@@ -1,6 +1,13 @@
 package com.llmcr.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class StringUtils {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     public static String clean(String text) {
         if (text == null) {
             return "";
@@ -18,6 +25,20 @@ public class StringUtils {
                 // collapse 3+ consecutive blank lines into 2
                 .replaceAll("(\\r?\\n){3,}", "\n\n")
                 .strip();
+    }
+
+    public static String jsonString(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error converting response to JSON");
+            try {
+                return objectMapper.writeValueAsString(errorResponse);
+            } catch (Exception ex) {
+                return "{\"error\":\"Failed to serialize response\"}";
+            }
+        }
     }
 
     /**

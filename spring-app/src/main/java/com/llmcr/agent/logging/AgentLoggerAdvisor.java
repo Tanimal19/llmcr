@@ -24,8 +24,9 @@ public class AgentLoggerAdvisor implements BaseAdvisor {
 
     @Override
     public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-        logger.info("[{}] Input: {}", agentName, chatClientRequest.prompt().getUserMessage().getText());
-        AgentContextHolder.beginIteration(chatClientRequest.prompt());
+        logger.info("[{}] Input: {}", agentName,
+                chatClientRequest.prompt().getLastUserOrToolResponseMessage().getText());
+        AgentContextHolder.beginIteration(chatClientRequest.prompt().getInstructions());
         return chatClientRequest;
     }
 

@@ -18,12 +18,14 @@ import com.llmcr.service.rag.select.AdaptiveKStrategy;
 public class QuestionAnswerAgent extends
         SingleCallAgent<String, String> {
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are a software engineering assistant.
 
             Your task is to answer the user's query using the provided project context.
             Do not make any assumptions or use any information that is not included in the provided context, even if it seems obvious to you as a software engineer. If the answer cannot be found in the provided context, say you don't know instead of trying to infer or guess.
+            """;
 
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             User query:
             <query>
 
@@ -48,19 +50,19 @@ public class QuestionAnswerAgent extends
     }
 
     @Override
-    protected String buildInitialMessageTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
+    }
+
+    @Override
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
     }
 
     @Override
     protected Map<String, Object> buildInputVariables(String query) {
         String contextText = retrieveContext(query);
         return Map.of("query", query, "context", contextText);
-    }
-
-    @Override
-    protected String convertModelResponse(String response) {
-        return response.trim();
     }
 
     private String retrieveContext(String query) {

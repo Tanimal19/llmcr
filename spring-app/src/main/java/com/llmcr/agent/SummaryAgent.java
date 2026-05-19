@@ -40,7 +40,7 @@ public class SummaryAgent extends
             List<Issue> issues) {
     }
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are now a senior reviewer writing a final code review report.
             Your task is to write a comprehensive code review report based on the code change, static analysis results, and checklist item answers provided by the junior reviewer. The report will be used by the author to understand the review feedback and improve the code change.
 
@@ -55,6 +55,10 @@ public class SummaryAgent extends
 
             You will be given code changes, static analysis results, and checklist item answers. You should make use of all provided information to write a comprehensive review report. Avoid making any assumption beyond the provided information.
 
+            Think step by step internally before generating the code review report.
+            """;
+
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Code changes:
             <code_changes>
 
@@ -63,8 +67,6 @@ public class SummaryAgent extends
 
             Checklist item answers:
             <item_answers>
-
-            Think step by step internally before generating the code review report.
 
             <format_instructions>
             """;
@@ -78,8 +80,13 @@ public class SummaryAgent extends
     }
 
     @Override
-    protected String buildInitialMessageTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
+    }
+
+    @Override
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
     }
 
     @Override

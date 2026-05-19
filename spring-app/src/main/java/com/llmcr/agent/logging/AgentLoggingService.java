@@ -11,8 +11,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 
 import jakarta.annotation.PostConstruct;
 
@@ -20,9 +27,34 @@ import jakarta.annotation.PostConstruct;
 public class AgentLoggingService {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentLoggingService.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-            .disable(SerializationFeature.INDENT_OUTPUT)
-            .findAndRegisterModules();
+    private static final ObjectMapper objectMapper = buildObjectMapper();
+
+    private static ObjectMapper buildObjectMapper() {
+        SimpleModule fallbackModule = new SimpleModule();
+        fallbackModule.setSerializerModifier(new BeanSerializerModifier() {
+            @Override
+            public JsonSerializer<?> modifySerializer(SerializationConfig config,
+                    BeanDescription beanDesc, JsonSerializer<?> serializer) {
+                // If the bean has no serializable properties, fall back to toString()
+                if (serializer.getClass().getName().contains("UnknownSerializer")) {
+                    return new JsonSerializer<Object>() {
+                        @Override
+                        public void serialize(Object value, JsonGenerator gen,
+                                SerializerProvider provider) throws java.io.IOException {
+                            gen.writeString(value.getClass().getSimpleName() + "(" + value + ")");
+                        }
+                    };
+                }
+                return serializer;
+            }
+        });
+
+        return new ObjectMapper()
+                .disable(SerializationFeature.INDENT_OUTPUT)
+                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                .findAndRegisterModules()
+                .registerModule(fallbackModule);
+    }
 
     private final Path agentLogFilePath;
 

@@ -1,105 +1,119 @@
 package com.llmcr.agent;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.agent.base.Agent;
+import com.llmcr.agent.base.BaseAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.tool.DatabaseTool;
-import com.llmcr.tool.InteractionTool;
+import com.llmcr.tool.MyToolCallingManager;
+import com.llmcr.tool.MyToolCallingManager.ToolCall;
 
 @Component
-public class RetrievalAgent extends Agent<RetrievalAgent.RetrievalAgentInput, String, String> {
+public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalModelResponse, String> {
 
-    public record RetrievalAgentInput(String query, InteractionTool.Interactable caller) {
+    public record RetrievalModelResponse(
+            String finalAnswer,
+            boolean hasToolCall,
+            ToolCall toolCall) {
     }
 
-    private static final String PROMPT_TEMPLATE = """
-            You are an assistant that help retrieve relevant information based on user queries.
+    private static final String SYSTEM_PROMPT = """
+            You are an assistant that help retrieve information relevant to the user's query.
+            You will be given a set of tools that you can call, your task is to call the appropriate tools with appropriate arguments to retrieve relevant information to answer the user's query.
+            You could only call one tool each time, after you call the tool, you will get the tool execution result as input for next iteration, you can then decide to call another tool or provide the final answer to the user.
 
-            Rules:
-            - Do not infer content from document name alone.
-            - Do not make up information that is not provided by the tools.
+            Output format (JSON only):
+            {
+                "finalAnswer": "Your final answer to the user's query",
+                "hasToolCall": false,
+                "toolCall": null
+            }
 
-            Avalailable tools:
-            <tool_definitions>
+            When you want to call a tool:
+            {
+                "finalAnswer": null,
+                "hasToolCall": true,
+                "toolCall": {
+                    "toolName": "the name of the tool you want to call, must be one of the available tools",
+                    "arguments": {
+                        "arg1": "value1",
+                        "arg2": "value2"
+                    }
+                }
+            }
+
+            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
+            """;
+
+    private String INITIAL_USER_MESSAGE_TEMPLATE = """
+            Available tools:
+            {tool_definitions}
 
             User Query:
             <query>
             """;
 
-    private final ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
-    private final ToolCallback[] toolCallbacks;
+    private final MyToolCallingManager toolCallingManager;
 
     public RetrievalAgent(
             @Value("${llmcr.agent.retrieval.chat.provider}") String chatProviderName,
             @Value("${llmcr.agent.retrieval.chat.model}") String chatModelName,
             ModelClientFactory modelClientFactory,
-            DatabaseTool databaseTool, InteractionTool interactionTool) {
-        super(chatProviderName, chatModelName, modelClientFactory, null);
-        toolCallbacks = ToolCallbacks.from(databaseTool, interactionTool);
-    }
+            DatabaseTool databaseTool) {
+        super(chatProviderName, chatModelName, modelClientFactory,
+                new BeanOutputConverter<>(RetrievalModelResponse.class));
 
-    @Override
-    protected ChatOptions buildChatOptions(RetrievalAgentInput input) {
-        return ToolCallingChatOptions.builder()
-                .toolCallbacks(toolCallbacks)
-                .toolContext(Map.of("caller", input.caller()))
-                .internalToolExecutionEnabled(false)
-                .build();
-    }
+        ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool);
+        this.toolCallingManager = new MyToolCallingManager(toolCallbacks);
 
-    @Override
-    protected String buildInitialMessageTemplate() {
-        return PROMPT_TEMPLATE;
-    }
-
-    @Override
-    protected Map<String, Object> buildInputVariables(RetrievalAgentInput input) {
-        StringBuilder toolDefinitionsBuilder = new StringBuilder();
-        for (ToolCallback toolCallback : toolCallbacks) {
-            ToolDefinition def = toolCallback.getToolDefinition();
-            toolDefinitionsBuilder.append("name: ").append(def.name()).append("\n");
-            toolDefinitionsBuilder.append("description: ").append(def.description()).append("\n");
-            toolDefinitionsBuilder.append("input schema: ").append(def.inputSchema()).append("\n");
-            toolDefinitionsBuilder.append("-----\n");
+        StringBuilder toolDefBuilder = new StringBuilder();
+        for (ToolCallback callback : toolCallbacks) {
+            toolDefBuilder.append(callback.getToolDefinition()).append("\n----\n");
         }
-        return Map.of("<tool_definitions>", toolDefinitionsBuilder.toString(), "query", input.query());
+        this.INITIAL_USER_MESSAGE_TEMPLATE = this.INITIAL_USER_MESSAGE_TEMPLATE.replace("{tool_definitions}",
+                toolDefBuilder.toString());
     }
 
     @Override
-    protected boolean shouldTerminate(ChatResponse chatResponse, String response) {
-        return !chatResponse.hasToolCalls();
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
     }
 
     @Override
-    protected List<Message> buildNextMessages(Prompt prompt, ChatResponse chatResponse, String response) {
-        ToolExecutionResult toolResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
-        return toolResult.conversationHistory();
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
     }
 
     @Override
-    protected Message buildFinalMessage() {
+    protected Map<String, Object> buildInputVariables(String input) {
+        return Map.of("query", input);
+    }
+
+    @Override
+    protected boolean shouldTerminate(RetrievalModelResponse response) {
+        return !response.hasToolCall();
+    }
+
+    @Override
+    protected Message buildNextUserMessage(int iteration, RetrievalModelResponse response) {
+        String toolResult = toolCallingManager.executeToolCall(response.toolCall());
+
         return new UserMessage(
-                "THIS IS YOUR FINAL ITERATION. You can't call more tools. Please provide your best possible answer based on the available information, but clearly state the limitations of your answer due to missing information.");
+                "You have called a tool: " + response.toolCall().toString()
+                        + "\nThe tool returned the following result:\n"
+                        + toolResult);
     }
 
     @Override
-    protected String convertModelResponse(String rawResponse) {
-        return rawResponse.trim();
+    protected String buildFinalResponse(RetrievalModelResponse response) {
+        return response.finalAnswer();
     }
 }
