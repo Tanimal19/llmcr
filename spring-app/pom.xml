@@ -125,11 +125,11 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 		</dependency>
-        <dependency>
+        <!-- <dependency>
 	        <groupId>org.springframework.shell</groupId>
 	        <artifactId>spring-shell-starter</artifactId>
 	        <version>3.4.0</version>
-	    </dependency>
+	    </dependency> -->
 	</dependencies>
 	<build>
 		<plugins>

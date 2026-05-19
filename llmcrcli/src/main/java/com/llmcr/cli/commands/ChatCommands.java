@@ -3,17 +3,26 @@ package com.llmcr.cli.commands;
 import java.io.File;
 import java.io.FileWriter;
 
+import org.jline.terminal.Terminal;
 import org.jline.reader.LineReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import com.llmcr.cli.services.IBackendService;
+import com.llmcr.cli.ui.InteractiveSelector;;
 
 @ShellComponent
 public class ChatCommands {
+
+    // 注入 Spring Boot 自動配置好的 Terminal
+    @Autowired
+    private Terminal terminal;
 
     @Autowired
     private IBackendService backendService;
@@ -21,6 +30,13 @@ public class ChatCommands {
     @Autowired
     @Lazy
     private LineReader lineReader;
+
+    private final List<String> mockDbClasses = Arrays.asList(
+            "ClassNodeExtractor",
+            "DataSource",
+            "ClassNode         (unsynced)",
+            "UserConfig"
+    );
 
     @ShellMethod(key = "chat", value = "進入與大型語言模型的互動聊天模式")
     public void chat() {
@@ -100,5 +116,41 @@ public class ChatCommands {
             Thread.sleep(300); // 停頓模擬運算
         }
         System.out.println(); // 換行
+    }
+
+    @ShellMethod(key = "sync", value = "同步資料庫")
+    public void sync(@ShellOption(defaultValue = ".") String path) {
+        System.out.println("Syncing database: |░░░░░░░░░░░░░░░░░░░░| 0%/100%");
+        try {
+            // 模擬進度條
+            for (int i = 0; i <= 100; i += 25) {
+                String bar = "█".repeat(i / 5) + "░".repeat(20 - (i / 5));
+                System.out.print("\rSyncing database: |" + bar + "| " + i + "%/100%");
+                Thread.sleep(300);
+            }
+            System.out.println("\n✅ Sync Complete.\n");
+        } catch (InterruptedException e) {
+            System.out.println("\n❌ Sync Interrupted.");
+        }
+    }
+
+    @ShellMethod(key = "lsdb", value = "瀏覽資料庫結構")
+    public void lsdb() throws IOException {
+        InteractiveSelector selector = new InteractiveSelector(terminal, mockDbClasses, false);
+        // 這會卡住並處理輸入，直到 Enter 或 Ctrl-C
+        selector.select();
+        // 結束後會自動回到 Spring Shell 的大廳
+    }
+
+    @ShellMethod(key = "setrag", value = "修改 RAG 影響範圍")
+    public void setrag() throws IOException {
+        InteractiveSelector selector = new InteractiveSelector(terminal, mockDbClasses, true);
+        List<Integer> selected = selector.select();
+
+        if (selected != null) {
+            System.out.println("已成功更新 RAG 範圍，選中項目索引為: " + selected);
+        } else {
+            System.out.println("已取消操作。");
+        }
     }
 }
