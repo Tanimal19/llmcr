@@ -50,6 +50,28 @@ public class ChatCommands extends AbstractShellComponent {
             "ClassNode         (unsynced)",
             "UserConfig");
 
+    // 💡 建立一個乾淨的擴充類別，專門用來覆蓋被官方吞掉的 Enter 鍵
+    public static class ActionListView extends ListView<String> {
+        private final Runnable onEnter;
+
+        public ActionListView(List<String> items, ItemStyle itemStyle, Runnable onEnter) {
+            super(items, itemStyle);
+            this.onEnter = onEnter;
+        }
+
+        @Override
+        protected void initInternal() {
+            super.initInternal(); // 1. 先保留官方原生的上下鍵與空白鍵邏輯
+
+            // 2. 強行覆蓋官方的 Enter 鍵 (底層代碼 1048580)，讓它執行我們的結束確認邏輯
+            this.registerKeyBinding(1048580, () -> {
+                if (onEnter != null) {
+                    onEnter.run();
+                }
+            });
+        }
+    }
+
     @ShellMethod(key = "chat", value = "進入與大型語言模型的互動聊天模式")
     public void chat() {
         System.out.println("Entering chat mode. Type 'exit' or 'quit' to return to main menu.");
@@ -142,16 +164,15 @@ public class ChatCommands extends AbstractShellComponent {
     public void lsdb() {
         TerminalUI ui = new TerminalUI(terminal);
 
-        // 💡 調整 1：改用 NOCHECK 模式，這代表純瀏覽、不需要單選按 Enter 確定的效果
-        ListView<String> listView = new ListView<>(ItemStyle.NOCHECK);
-        listView.setItems(mockDbClasses);
-        listView.setTitle("JavaClass / (↑↓ 鍵滾動, Q 退出)");
+        // 💡 調整 1：遵循需求，改用 NOCHECK 模式，這代表純瀏覽、沒有任何單選/多選按鈕的干擾
+        ListView<String> listView = new ListView<>(mockDbClasses, ItemStyle.NOCHECK);
+        listView.setTitle("JavaClass / (↑↓ 鍵滾動瀏覽, Q 退出)");
 
         ui.configure(listView);
         ui.setRoot(listView, true);
 
         EventLoop eventLoop = ui.getEventLoop();
-        // 💡 調整 2：不攔截 Enter，只保留 Q 退出，讓使用者只能看和滾動
+        // 只保留 Q 退出，Enter 在此模式下預設不綁定任何破壞畫面的行為
         eventLoop.keyEvents().subscribe(event -> {
             if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
                 eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
@@ -169,18 +190,18 @@ public class ChatCommands extends AbstractShellComponent {
     @ShellMethod(key = "setrag", value = "修改 RAG 影響範圍（多選模式）")
     public void setrag() {
         TerminalUI ui = new TerminalUI(terminal);
+        EventLoop eventLoop = ui.getEventLoop();
 
-        // 使用原生官方的 ListView，不覆寫任何鍵盤綁定，確保原生 Space 勾選渲染正常
-        ListView<String> listView = new ListView<>(ItemStyle.CHECKED);
-        listView.setItems(mockDbClasses);
-        listView.setTitle("JavaClass / (Space 勾選, Enter 確認, Q 退出)");
-
-        // 💡 調整 3：建立一個我們自己用來收集打勾狀態的集合
         Set<String> checkedSet = new HashSet<>();
+        final boolean[] isConfirmed = new boolean[]{false};
 
-        // 💡 調整 4：利用官方文件提及的 CellFactory 機制，自訂 Cell 渲染
-        // 當使用者按下 Space 時，ListView 會調用 c.setSelected(...) 更新儲存格狀態。
-        // 我們在這個回呼裡實時攔截狀態，同步到我們的 checkedSet 中！
+        // 💡 調整 2：使用我們自訂的 ActionListView，並在建構子直接傳入當 Enter 被按下時要執行的邏輯
+        ActionListView listView = new ActionListView(mockDbClasses, ItemStyle.CHECKED, () -> {
+            isConfirmed[0] = true;
+            eventLoop.dispatch(ShellMessageBuilder.ofInterrupt()); // 成功中斷並退出 UI 迴圈！
+        });
+
+        // 💡 調整 3：搭配 CellFactory 即時連動勾選狀態，這讓原生空白鍵完美工作
         listView.setCellFactory((list, item) -> new AbstractListCell<String>(item) {
             @Override
             public void setSelected(boolean selected) {
@@ -196,7 +217,6 @@ public class ChatCommands extends AbstractShellComponent {
             public void draw(Screen screen) {
                 Rectangle rect = getRect();
                 Writer writer = screen.writerBuilder().style(getStyle()).build();
-                // 依據是否被選中，前方繪製核取方塊樣式 [x] 或 [ ]
                 String prefix = isSelected() ? "[x] " : "[ ] ";
                 writer.text(prefix + getItem(), rect.x(), rect.y());
                 writer.background(rect, getBackgroundColor());
@@ -206,15 +226,9 @@ public class ChatCommands extends AbstractShellComponent {
         ui.configure(listView);
         ui.setRoot(listView, true);
 
-        List<String> selectedResult = new ArrayList<>();
-        final boolean[] isConfirmed = new boolean[]{false};
-        EventLoop eventLoop = ui.getEventLoop();
-
+        // 依然保留 Q 鍵作為隨時取消的手段
         eventLoop.keyEvents().subscribe(event -> {
-            if (event.getPlainKey() == Key.Enter) {
-                isConfirmed[0] = true;
-                eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
-            } else if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
+            if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
                 eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
             }
         });
@@ -222,9 +236,7 @@ public class ChatCommands extends AbstractShellComponent {
         try {
             ui.run();
             if (isConfirmed[0]) {
-                // 💡 調整 5：直接從我們即時同步的 checkedSet 撈資料，完全不需要反射與 get 方法！
-                selectedResult.addAll(checkedSet);
-
+                List<String> selectedResult = new ArrayList<>(checkedSet);
                 if (!selectedResult.isEmpty()) {
                     System.out.println("✅ 已成功更新 RAG 範圍: " + selectedResult);
                 } else {
