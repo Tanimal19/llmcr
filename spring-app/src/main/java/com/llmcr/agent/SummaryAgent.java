@@ -78,12 +78,12 @@ public class SummaryAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
+    protected String buildInitialMessageTemplate() {
         return PROMPT_TEMPLATE;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(SummaryAgentInput input) {
+    protected Map<String, Object> buildInputVariables(SummaryAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());

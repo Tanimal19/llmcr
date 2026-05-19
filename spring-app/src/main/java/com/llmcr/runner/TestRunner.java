@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.agent.PromptRetrievalAgent;
+import com.llmcr.agent.RetrievalAgent;
 
 /**
  * This is a test runner that could be modify to run some quick tests on the
@@ -15,16 +15,21 @@ import com.llmcr.agent.PromptRetrievalAgent;
 @ConditionalOnProperty(name = "app.mode", havingValue = "test")
 public class TestRunner implements CommandLineRunner {
 
-    private final PromptRetrievalAgent agent;
+    private final RetrievalAgent agent;
 
-    public TestRunner(PromptRetrievalAgent agent) {
+    public TestRunner(RetrievalAgent agent) {
         this.agent = agent;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        String query = "Please provide details on the concurrent streaming scenarios and how the AtomicBoolean variables are accessed and modified within the specific context of the provided code changes.";
-        agent.execute(query);
+        String query = "Please provide details on how to embed documents into vector database using the project's code.";
+        RetrievalAgent.RetrievalAgentInput input = new RetrievalAgent.RetrievalAgentInput(
+                query,
+                new com.llmcr.tool.CLIInteractable());
+
+        agent.execute(input);
     }
+
 }

@@ -79,12 +79,12 @@ public class ClassNodeEnrichAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
+    protected String buildInitialMessageTemplate() {
         return PROMPT_TEMPLATE;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(ClassNodeEnrichInput input) {
+    protected Map<String, Object> buildInputVariables(ClassNodeEnrichInput input) {
         String contextText = retrieveContext(input);
         return Map.of(
                 "class_content", input.classContent(),

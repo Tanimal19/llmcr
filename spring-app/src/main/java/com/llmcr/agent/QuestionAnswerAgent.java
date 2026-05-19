@@ -48,12 +48,12 @@ public class QuestionAnswerAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
+    protected String buildInitialMessageTemplate() {
         return PROMPT_TEMPLATE;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(String query) {
+    protected Map<String, Object> buildInputVariables(String query) {
         String contextText = retrieveContext(query);
         return Map.of("query", query, "context", contextText);
     }

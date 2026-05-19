@@ -33,11 +33,17 @@ public class DatabaseTool {
     }
 
     @Tool(description = """
-            Get documents relevant to a query. Use this when you don't know what documents relevant to the user query. Return only the id and name of the documents, you should call getDocumentById with the id to get the full content of the document.""")
+                Search the knowledge base for documents relevant to a query.
+                Use this tool when you need to identify potentially relevant documents before reading their full contents.
+                Use concise semantic queries. Prefer domain keywords over natural language questions.
+                Returns only document ids and names.
+                Call getDocumentById() afterward to inspect documents.
+            """)
     public String similaritySearch(@ToolParam(required = true) String query) {
         if (query == null || query.isBlank()) {
             return "(tool error: query must not be blank)";
         }
+        logger.info("[ToolCall] tool=similaritySearch query={}", query);
 
         ContextRetrievalConfiguration retrievalConfiguration = new ContextRetrievalConfiguration(
                 MAX_RESULT_ROWS,
@@ -80,9 +86,12 @@ public class DatabaseTool {
         return output.toString();
     }
 
-    @Tool(description = "Return the full content of a document with the given id. Use this tool when you already have the id of the document and you think the content of the document is relevant to the user query.")
+    @Tool(description = """
+                Retrieve the full content of a document by its id.
+                Use this tool after you have identified relevant documents using similaritySearch() and want to inspect their contents.
+            """)
     public String getDocumentById(
-            @ToolParam(description = "The exact id of the context to retrieve.", required = true) Long id) {
+            @ToolParam(description = "The exact id of the document to retrieve.", required = true) Long id) {
         logger.info("[ToolCall] tool=getFullContentById id={}", id);
 
         return contextRepository.findById(id)

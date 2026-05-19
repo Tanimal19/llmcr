@@ -79,12 +79,12 @@ public class PlanningAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
+    protected String buildInitialMessageTemplate() {
         return PROMPT_TEMPLATE;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(PlanningAgentInput input) {
+    protected Map<String, Object> buildInputVariables(PlanningAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());

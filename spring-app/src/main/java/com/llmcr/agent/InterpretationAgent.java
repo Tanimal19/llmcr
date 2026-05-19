@@ -58,12 +58,12 @@ public class InterpretationAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
+    protected String buildInitialMessageTemplate() {
         return PROMPT_TEMPLATE;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(InterpretationAgentInput input) {
+    protected Map<String, Object> buildInputVariables(InterpretationAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
