@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jline.terminal.Terminal;
 import org.jline.reader.LineReader;
@@ -15,12 +17,16 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.shell.standard.AbstractShellComponent;
 
-// 引入 Spring Shell TUI 核心元件 (移除會報錯的 BorderType)
+// TUI 核心元件
 import org.springframework.shell.component.view.TerminalUI;
 import org.springframework.shell.component.view.control.ListView;
 import org.springframework.shell.component.view.control.ListView.ItemStyle;
+import org.springframework.shell.component.view.control.cell.AbstractListCell;
 import org.springframework.shell.component.view.event.EventLoop;
 import org.springframework.shell.component.view.event.KeyEvent.Key;
+import org.springframework.shell.component.view.screen.Screen;
+import org.springframework.shell.component.view.screen.Screen.Writer;
+import org.springframework.shell.geom.Rectangle;
 import org.springframework.shell.component.message.ShellMessageBuilder;
 
 import com.llmcr.cli.services.IBackendService;
@@ -67,7 +73,6 @@ public class ChatCommands extends AbstractShellComponent {
                 System.out.println();
 
             } catch (Exception e) {
-                // 攔截 Ctrl+C 或其他異常
                 System.out.println("\nLeaving chat mode.");
                 break;
             }
@@ -112,7 +117,6 @@ public class ChatCommands extends AbstractShellComponent {
             bar.append("█".repeat(filledLength));
             bar.append("░".repeat(barLength - filledLength));
 
-            // \r 可以讓游標回到行首，達到刷新同一行的效果
             System.out.print("\rGenerating review: |" + bar + "| " + i + "%/100%");
             Thread.sleep(300);
         }
@@ -134,58 +138,81 @@ public class ChatCommands extends AbstractShellComponent {
         }
     }
 
-    @ShellMethod(key = "lsdb", value = "瀏覽資料庫結構（單選模式 - TUI 上下鍵）")
+    @ShellMethod(key = "lsdb", value = "瀏覽資料庫結構（純滾動模式）")
     public void lsdb() {
         TerminalUI ui = new TerminalUI(terminal);
-        ListView<String> listView = new ListView<>(ItemStyle.RADIO);
+
+        // 💡 調整 1：改用 NOCHECK 模式，這代表純瀏覽、不需要單選按 Enter 確定的效果
+        ListView<String> listView = new ListView<>(ItemStyle.NOCHECK);
         listView.setItems(mockDbClasses);
-        listView.setTitle("JavaClass / (Enter 確認, Q 退出)");
+        listView.setTitle("JavaClass / (↑↓ 鍵滾動, Q 退出)");
 
         ui.configure(listView);
         ui.setRoot(listView, true);
 
-        final String[] selectedResult = new String[1];
         EventLoop eventLoop = ui.getEventLoop();
-
+        // 💡 調整 2：不攔截 Enter，只保留 Q 退出，讓使用者只能看和滾動
         eventLoop.keyEvents().subscribe(event -> {
-            if (event.getPlainKey() == Key.Enter) {
-                // 使用反射暴力繞過編譯器檢查，直接取得當前選項
-                selectedResult[0] = getSelectedItemDynamically(listView, mockDbClasses);
-                eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
-            } else if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
+            if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
                 eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
             }
         });
 
         try {
             ui.run();
-            if (selectedResult[0] != null) {
-                System.out.println("Selected: " + selectedResult[0]);
-            } else {
-                System.out.println("\n[lsdb] 操作已取消。");
-            }
+            System.out.println("\n[lsdb] 瀏覽結束。");
         } catch (Throwable t) {
             System.out.println("\n[lsdb] 操作已取消。");
         }
     }
 
-    @ShellMethod(key = "setrag", value = "修改 RAG 影響範圍（多選模式 - TUI 上下鍵與空白鍵）")
+    @ShellMethod(key = "setrag", value = "修改 RAG 影響範圍（多選模式）")
     public void setrag() {
         TerminalUI ui = new TerminalUI(terminal);
+
+        // 使用原生官方的 ListView，不覆寫任何鍵盤綁定，確保原生 Space 勾選渲染正常
         ListView<String> listView = new ListView<>(ItemStyle.CHECKED);
         listView.setItems(mockDbClasses);
         listView.setTitle("JavaClass / (Space 勾選, Enter 確認, Q 退出)");
+
+        // 💡 調整 3：建立一個我們自己用來收集打勾狀態的集合
+        Set<String> checkedSet = new HashSet<>();
+
+        // 💡 調整 4：利用官方文件提及的 CellFactory 機制，自訂 Cell 渲染
+        // 當使用者按下 Space 時，ListView 會調用 c.setSelected(...) 更新儲存格狀態。
+        // 我們在這個回呼裡實時攔截狀態，同步到我們的 checkedSet 中！
+        listView.setCellFactory((list, item) -> new AbstractListCell<String>(item) {
+            @Override
+            public void setSelected(boolean selected) {
+                super.setSelected(selected);
+                if (selected) {
+                    checkedSet.add(item);
+                } else {
+                    checkedSet.remove(item);
+                }
+            }
+
+            @Override
+            public void draw(Screen screen) {
+                Rectangle rect = getRect();
+                Writer writer = screen.writerBuilder().style(getStyle()).build();
+                // 依據是否被選中，前方繪製核取方塊樣式 [x] 或 [ ]
+                String prefix = isSelected() ? "[x] " : "[ ] ";
+                writer.text(prefix + getItem(), rect.x(), rect.y());
+                writer.background(rect, getBackgroundColor());
+            }
+        });
 
         ui.configure(listView);
         ui.setRoot(listView, true);
 
         List<String> selectedResult = new ArrayList<>();
+        final boolean[] isConfirmed = new boolean[]{false};
         EventLoop eventLoop = ui.getEventLoop();
 
         eventLoop.keyEvents().subscribe(event -> {
             if (event.getPlainKey() == Key.Enter) {
-                // 使用反射暴力取得所有被打勾的項目
-                selectedResult.addAll(getCheckedItemsDynamically(listView, mockDbClasses));
+                isConfirmed[0] = true;
                 eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
             } else if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
                 eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
@@ -194,81 +221,20 @@ public class ChatCommands extends AbstractShellComponent {
 
         try {
             ui.run();
-            if (!selectedResult.isEmpty()) {
-                System.out.println("✅ 已成功更新 RAG 範圍: " + selectedResult);
+            if (isConfirmed[0]) {
+                // 💡 調整 5：直接從我們即時同步的 checkedSet 撈資料，完全不需要反射與 get 方法！
+                selectedResult.addAll(checkedSet);
+
+                if (!selectedResult.isEmpty()) {
+                    System.out.println("✅ 已成功更新 RAG 範圍: " + selectedResult);
+                } else {
+                    System.out.println("\n[setrag] 未選取任何項目。");
+                }
             } else {
-                System.out.println("\n[setrag] 操作已取消，或未選取任何項目。");
+                System.out.println("\n[setrag] 操作已取消。");
             }
         } catch (Throwable t) {
             System.out.println("\n[setrag] 操作已取消。");
         }
-    }
-
-    // ======================================================================
-    // 萬無一失的 Reflection (反射) 工具區：徹底繞過 Spring Shell 3.3.2 封閉的 API
-    // ======================================================================
-
-    /**
-     * 動態獲取單選模式下的當前選項
-     */
-    private String getSelectedItemDynamically(ListView<String> listView, List<String> originalItems) {
-        try {
-            // 嘗試尋找底層紀錄游標的變數 (通常是第一個 int 屬性，例如 activeIndex)
-            for (java.lang.reflect.Field field : listView.getClass().getDeclaredFields()) {
-                if (field.getType() == int.class) {
-                    field.setAccessible(true);
-                    int index = field.getInt(listView);
-                    if (index >= 0 && index < originalItems.size()) {
-                        return originalItems.get(index);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // 忽略例外
-        }
-        return originalItems.get(0); // 防呆機制
-    }
-
-    /**
-     * 動態獲取多選模式下所有被打勾的選項
-     */
-    private List<String> getCheckedItemsDynamically(ListView<String> listView, List<String> originalItems) {
-        List<String> checked = new ArrayList<>();
-        try {
-            // 方法一：測試 3.3.x 隱藏的 isItemChecked 方法
-            try {
-                java.lang.reflect.Method m = listView.getClass().getMethod("isItemChecked", Object.class);
-                for (String item : originalItems) {
-                    Boolean isChecked = (Boolean) m.invoke(listView, item);
-                    if (Boolean.TRUE.equals(isChecked)) {
-                        checked.add(item);
-                    }
-                }
-                if (!checked.isEmpty()) return checked;
-            } catch (NoSuchMethodException e) {
-                // 如果沒有此方法，進行方法二
-            }
-
-            // 方法二：直接去抓底層用來存打勾狀態的 Set
-            for (java.lang.reflect.Field field : listView.getClass().getDeclaredFields()) {
-                if (java.util.Set.class.isAssignableFrom(field.getType())) {
-                    field.setAccessible(true);
-                    java.util.Set<?> set = (java.util.Set<?>) field.get(listView);
-                    if (set != null) {
-                        for (Object obj : set) {
-                            if (obj instanceof Integer) { // 紀錄的是索引
-                                int idx = (Integer) obj;
-                                if (idx >= 0 && idx < originalItems.size()) checked.add(originalItems.get(idx));
-                            } else if (obj instanceof String) { // 紀錄的是字串
-                                checked.add((String) obj);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // 忽略例外
-        }
-        return checked;
     }
 }
