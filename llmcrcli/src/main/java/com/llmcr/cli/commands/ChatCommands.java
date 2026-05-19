@@ -2,6 +2,11 @@ package com.llmcr.cli.commands;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.jline.terminal.Terminal;
 import org.jline.reader.LineReader;
@@ -10,17 +15,18 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.shell.component.MultiItemSelector;
+import org.springframework.shell.component.MultiItemSelector.MultiItemSelectorContext;
+import org.springframework.shell.component.SingleItemSelector;
+import org.springframework.shell.component.SingleItemSelector.SingleItemSelectorContext;
+import org.springframework.shell.component.support.SelectorItem;
+import org.springframework.shell.standard.AbstractShellComponent;
 
 import com.llmcr.cli.services.IBackendService;
-import com.llmcr.cli.ui.InteractiveSelector;;
 
 @ShellComponent
-public class ChatCommands {
+public class ChatCommands extends AbstractShellComponent {
 
-    // 注入 Spring Boot 自動配置好的 Terminal
     @Autowired
     private Terminal terminal;
 
@@ -100,11 +106,10 @@ public class ChatCommands {
         }
     }
 
-    // 輔助方法：製作用戶要求的進度條動畫
     private void simulateProgressBar() throws InterruptedException {
         int total = 100;
         int barLength = 20;
-        for (int i = 0; i <= total; i += 25) { // 每次跳 25% 模擬進度
+        for (int i = 0; i <= total; i += 25) {
             StringBuilder bar = new StringBuilder();
             int filledLength = (int) ((double) i / total * barLength);
 
@@ -113,9 +118,9 @@ public class ChatCommands {
 
             // \r 可以讓游標回到行首，達到刷新同一行的效果
             System.out.print("\rGenerating review: |" + bar + "| " + i + "%/100%");
-            Thread.sleep(300); // 停頓模擬運算
+            Thread.sleep(300);
         }
-        System.out.println(); // 換行
+        System.out.println();
     }
 
     @ShellMethod(key = "sync", value = "同步資料庫")
@@ -134,23 +139,58 @@ public class ChatCommands {
         }
     }
 
-    @ShellMethod(key = "lsdb", value = "瀏覽資料庫結構")
-    public void lsdb() throws IOException {
-        InteractiveSelector selector = new InteractiveSelector(terminal, mockDbClasses, false);
-        // 這會卡住並處理輸入，直到 Enter 或 Ctrl-C
-        selector.select();
-        // 結束後會自動回到 Spring Shell 的大廳
+    @ShellMethod(key = "lsdb", value = "瀏覽資料庫結構（單選/瀏覽模式）")
+    public void lsdb() {
+        List<SelectorItem<String>> items = mockDbClasses.stream()
+                .map(name -> SelectorItem.of(name, name))
+                .collect(Collectors.toList());
+
+        SingleItemSelector<String, SelectorItem<String>> component =
+                new SingleItemSelector<>(terminal, items, "JaveClass/", null);
+
+        component.setResourceLoader(getResourceLoader());
+        component.setTemplateExecutor(getTemplateExecutor());
+        component.setMaxItems(10);
+
+        try {
+            SingleItemSelectorContext<String, SelectorItem<String>> context =
+                    component.run(SingleItemSelectorContext.empty());
+
+            Optional<SelectorItem<String>> resultItem = context.getResultItem();
+            resultItem.ifPresent(item -> System.out.println("Selected: " + item.getItem()));
+
+        } catch (Throwable t) {
+            // 關鍵修改：捕獲 Throwable（包含 IOError），防止 Ctrl-C 導致 JVM 崩潰
+            System.out.println("\n[lsdb] 操作已取消。");
+        }
     }
 
-    @ShellMethod(key = "setrag", value = "修改 RAG 影響範圍")
-    public void setrag() throws IOException {
-        InteractiveSelector selector = new InteractiveSelector(terminal, mockDbClasses, true);
-        List<Integer> selected = selector.select();
+    @ShellMethod(key = "setrag", value = "修改 RAG 影響範圍（多選模式）")
+    public void setrag() {
+        List<SelectorItem<String>> items = mockDbClasses.stream()
+                .map(name -> SelectorItem.of(name, name))
+                .collect(Collectors.toList());
 
-        if (selected != null) {
-            System.out.println("已成功更新 RAG 範圍，選中項目索引為: " + selected);
-        } else {
-            System.out.println("已取消操作。");
+        MultiItemSelector<String, SelectorItem<String>> component =
+                new MultiItemSelector<>(terminal, items, "JaveClass/", null);
+
+        component.setResourceLoader(getResourceLoader());
+        component.setTemplateExecutor(getTemplateExecutor());
+        component.setMaxItems(10);
+
+        try {
+            MultiItemSelectorContext<String, SelectorItem<String>> context =
+                    component.run(MultiItemSelectorContext.empty());
+
+            List<String> selectedItems = context.getResultItems().stream()
+                    .map(SelectorItem::getItem)
+                    .collect(Collectors.toList());
+
+            System.out.println("✅ 已成功更新 RAG 範圍: " + selectedItems);
+
+        } catch (Throwable t) {
+            // 關鍵修改：捕獲 Throwable（包含 IOError），防止 Ctrl-C 導致 JVM 崩潰
+            System.out.println("\n[setrag] 操作已取消。");
         }
     }
 }
