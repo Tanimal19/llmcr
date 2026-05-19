@@ -1,6 +1,8 @@
 package com.llmcr.runner;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.repository.ChunkCollectionRepository;
+import com.llmcr.repository.ContextRepository;
 import com.llmcr.vectorstore.MyVectorStore;
 
 /**
@@ -26,18 +29,43 @@ public class ReloadChunkRunner implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(ReloadChunkRunner.class);
 
     private final ChunkCollectionRepository chunkCollectionRepository;
+    private final ContextRepository contextRepository;
     private final MyVectorStore vectorStore;
 
-    public ReloadChunkRunner(ChunkCollectionRepository chunkCollectionRepository, MyVectorStore vectorStore) {
+    public ReloadChunkRunner(
+            ChunkCollectionRepository chunkCollectionRepository,
+            ContextRepository contextRepository,
+            MyVectorStore vectorStore) {
         this.chunkCollectionRepository = chunkCollectionRepository;
+        this.contextRepository = contextRepository;
         this.vectorStore = vectorStore;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        logger.info("Starting vector store reload test runner");
+        logger.info("Starting vector store reload runner");
 
+        logger.info("Recompute chunk in chunkCollection");
+        contextRepository.findAll().forEach(context -> {
+            Set<ChunkCollection> inCollections = context.getSource().getTrackRoot().getInCollections();
+            if (inCollections.isEmpty()) {
+                inCollections = new HashSet<>(chunkCollectionRepository.findAll());
+            }
+
+            for (ChunkCollection chunkCollection : inCollections) {
+                List<Chunk> chunks = context.getChunks();
+                List<Chunk> chunksToAdd = chunks.stream()
+                        .filter(chunk -> chunk.getChunkCollections().stream()
+                                .noneMatch(c -> c.getId().equals(chunkCollection.getId())))
+                        .toList();
+                chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
+            }
+
+            contextRepository.save(context);
+        });
+
+        logger.info("Reloading chunks into vector store");
         List<ChunkCollection> chunkCollections = chunkCollectionRepository.findAll();
         if (chunkCollections.isEmpty()) {
             logger.info("No chunk collections found, skipping reload");

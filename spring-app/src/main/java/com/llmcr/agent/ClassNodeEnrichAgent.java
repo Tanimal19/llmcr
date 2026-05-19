@@ -38,7 +38,7 @@ public class ClassNodeEnrichAgent extends
     public record ClassNodeEnrichOutput(String functional, String relationship, String usage) {
     }
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are a knowledgeable java engineer. Your task is to generate a concise and clear summary for the given data: raw code of a Java class, and its related documentation contents.
             You should generate below information for enrichment:
             - **functional**: What does this class do?
@@ -46,7 +46,9 @@ public class ClassNodeEnrichAgent extends
             - **usage**: A example that show the most important usage scenario of this class, illustrate the one most important example in natural language rather than code.
 
             Do not make assumptions beyond the provided code and documentation.
+            """;
 
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Raw code at below.
             ```java
             <class_content>
@@ -79,12 +81,17 @@ public class ClassNodeEnrichAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(ClassNodeEnrichInput input) {
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> buildInputVariables(ClassNodeEnrichInput input) {
         String contextText = retrieveContext(input);
         return Map.of(
                 "class_content", input.classContent(),

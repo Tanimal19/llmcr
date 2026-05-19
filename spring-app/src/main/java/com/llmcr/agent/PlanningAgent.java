@@ -30,7 +30,7 @@ public class PlanningAgent extends
     public record PlanningAgentOutput(String innerThought, List<String> checklistItems) {
     }
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are now a software engineer experienced at Java and Spring Framework.
 
             Your task is to generate a checklist for code review. Here are aspects you should consider, including but not limited to:
@@ -46,6 +46,10 @@ public class PlanningAgent extends
 
             You will be given code changes, a change interpretation, static analysis outputs, and review guidelines. Do not make assumptions beyond the provided information.
 
+            Think step by step internally before answering.
+            """;
+
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Below is the code change:
             <code_changes>
 
@@ -57,8 +61,6 @@ public class PlanningAgent extends
 
             Below is a list of review guideline to be used as reference when creating the checklist:
             <context>
-
-            Think step by step internally before answering.
 
             <format_instructions>
             """;
@@ -79,12 +81,17 @@ public class PlanningAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(PlanningAgentInput input) {
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> buildInputVariables(PlanningAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());

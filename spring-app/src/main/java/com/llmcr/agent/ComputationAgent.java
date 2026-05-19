@@ -3,18 +3,20 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.agent.base.RecursiveAgent;
+import com.llmcr.agent.base.BaseAgent;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.GitDiffParser.CodeChange;
 
 @Component
 public class ComputationAgent
         extends
-        RecursiveAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ModelResponse, ComputationAgent.ComputationAgentOutput> {
+        BaseAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ComputationAgent.ComputationAgentOutput> {
 
     public record ComputationAgentInput(
             List<CodeChange> codeChanges,
@@ -27,7 +29,7 @@ public class ComputationAgent
             String reason) {
     }
 
-    public record ModelResponse(
+    public record ComputationModelResponse(
             List<EvidenceItem> evidence,
             String analysis,
             String finalAnswer,
@@ -55,7 +57,7 @@ public class ComputationAgent
         }
     }
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are an experienced code reviewer.
             Your task is to analyze the provided code change strictly based on the checklist item.
             You MUST only use information explicitly present in the provided code change and context.
@@ -101,7 +103,9 @@ public class ComputationAgent
             }
 
             You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
+            """;
 
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Checklist item:
             <checklist_description>
 
@@ -117,17 +121,22 @@ public class ComputationAgent
             ModelClientFactory modelClientFactory,
             RetrievalAgent retrievalAgent) {
         super(chatProviderName, chatModelName, modelClientFactory,
-                new BeanOutputConverter<>(ModelResponse.class));
+                new BeanOutputConverter<>(ComputationModelResponse.class));
         this.retrievalAgent = retrievalAgent;
     }
 
     @Override
-    protected String getPromptTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(ComputationAgentInput input) {
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> buildInputVariables(ComputationAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());
@@ -139,27 +148,31 @@ public class ComputationAgent
     }
 
     @Override
-    protected boolean shouldTerminate(ModelResponse response) {
+    protected boolean shouldTerminate(ComputationModelResponse response) {
         return !response.needsAdditionalData();
     }
 
     @Override
-    protected String getNextMessage(ModelResponse response) {
-        if (response.dataQuery() == null) {
-            return "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.";
+    protected Message buildNextUserMessage(int iteration, ComputationModelResponse response) {
+        if (iteration >= getMaxIterations() - 1) {
+            return new UserMessage(
+                    "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.");
         }
+
+        if (response.dataQuery() == null) {
+            return new UserMessage(
+                    "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.");
+        }
+
         String retrievalResult = retrievalAgent.execute(response.dataQuery());
-        return "You requested additional data with the following query: " + response.dataQuery()
-                + "\nThe retrieval result is: " + retrievalResult;
+        return new UserMessage(
+                "You requested additional data with the following query: " + response.dataQuery()
+                        + "\nThe retrieval result is: " + retrievalResult
+                        + "\nPlease use this information to continue your analysis.");
     }
 
     @Override
-    protected String getFinalMessage() {
-        return "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.";
-    }
-
-    @Override
-    protected ComputationAgentOutput convertModelResponse(ModelResponse response) {
+    protected ComputationAgentOutput buildFinalResponse(ComputationModelResponse response) {
         return new ComputationAgentOutput(response.finalAnswer(), response.analysis(), response.evidence());
     }
 }
