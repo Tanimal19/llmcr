@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.base.BaseAgent;
 import com.llmcr.service.ModelClientFactory;
-import com.llmcr.util.GitDiffParser.CodeChange;
+import com.llmcr.service.review.CodeReviewService.CodeChange;
 
 @Component
 public class ComputationAgent

@@ -31,8 +31,7 @@ import com.llmcr.agent.SummaryAgent.Issue;
 import com.llmcr.agent.SummaryAgent.ItemAnswer;
 import com.llmcr.agent.SummaryAgent.SummaryAgentInput;
 import com.llmcr.agent.SummaryAgent.SummaryAgentOutput;
-import com.llmcr.util.GitDiffParser;
-import com.llmcr.util.GitDiffParser.CodeChange;
+import com.llmcr.service.review.PullRequestParser.PullRequestData;
 
 @Service
 public class CodeReviewService {
@@ -59,6 +58,9 @@ public class CodeReviewService {
         this.summaryAgent = summaryAgent;
     }
 
+    public record CodeChange(String filePath, String diffContent) {
+    }
+
     public record CodeReviewReport(
             SummaryAgentOutput mainReport,
             InterpretationAgentOutput interpretation,
@@ -67,20 +69,17 @@ public class CodeReviewService {
 
     /**
      * Run a full code review for the given git diff file and persist the report.
-     *
-     * @param diffFilePath absolute or relative path to the {@code .diff} file.
-     * @return path of the written JSON report file.
      */
-    public Path review(String diffFilePath, boolean useMockData) {
+    public Path review(String jsonFilePath, boolean useMockData) {
+
+        PullRequestData prData = PullRequestParser.parseJsonFile(jsonFilePath);
+        logger.info("review start for PR: {} (id={})", prData.title(), prData.prId());
+
+        List<CodeChange> codeChanges = prData.changedFiles().stream()
+                .map(file -> new CodeChange(file.path(), file.patch()))
+                .toList();
 
         try {
-            if (useMockData) {
-                diffFilePath = MockReviewData.MOCK_DIFFPATH;
-            }
-
-            logger.info("parsing diff file={}", diffFilePath);
-            List<CodeChange> codeChanges = GitDiffParser.parseDiffFile(diffFilePath);
-
             // TODO: integrate static analysis tool and populate codeAnalysis
             String codeAnalysis = null;
 
@@ -112,11 +111,11 @@ public class CodeReviewService {
             SummaryAgentOutput reviewResult = summaryAgent.execute(
                     new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
 
-            Path reportPath = writeReport(diffFilePath,
+            Path reportPath = writeReport(prData,
                     new CodeReviewReport(reviewResult, interpretation, itemAnswers));
 
             logger.info("code review for {} completed. Report written to: {}",
-                    diffFilePath,
+                    prData,
                     reportPath.toAbsolutePath());
 
             return reportPath;
@@ -125,15 +124,13 @@ public class CodeReviewService {
         }
     }
 
-    private Path writeReport(String diffFilePath, CodeReviewReport report) {
+    private Path writeReport(PullRequestData prData, CodeReviewReport report) {
         try {
             Path dir = Paths.get(outputDir);
             Files.createDirectories(dir);
 
-            String baseName = Paths.get(diffFilePath).getFileName().toString()
-                    .replaceAll("\\.diff$", "");
             String timestamp = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
-            String fileName = baseName + "_" + timestamp + ".md";
+            String fileName = "PR" + prData.prId() + "_" + timestamp + ".md";
             Path reportPath = dir.resolve(fileName);
 
             String markdown = buildMarkdownReport(report);

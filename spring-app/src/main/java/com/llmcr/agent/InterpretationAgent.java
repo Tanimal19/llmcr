@@ -1,5 +1,6 @@
 package com.llmcr.agent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +15,7 @@ import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
 import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 import com.llmcr.service.rag.select.AdaptiveKStrategy;
-import com.llmcr.util.GitDiffParser.CodeChange;
+import com.llmcr.service.review.CodeReviewService.CodeChange;
 
 @Component
 public class InterpretationAgent extends
@@ -79,9 +80,12 @@ public class InterpretationAgent extends
     }
 
     private String retrieveContext(InterpretationAgentInput input) {
-        List<String> queries = input.codeChanges().stream()
-                .map(change -> change.filePath() + "\n" + change.diffContent())
-                .toList();
+        List<String> queries = new ArrayList<>();
+        for (CodeChange change : input.codeChanges()) {
+            queries.add(change.filePath());
+            queries.add(change.diffContent());
+        }
+
         List<ContextScorePair> retrievedContexts = queryContextRetriever
                 .retrieve(new ContextRetrievalRequest(queries, RETRIEVAL_CONFIGURATION));
         return String.join("\n---\n", retrievedContexts.stream()

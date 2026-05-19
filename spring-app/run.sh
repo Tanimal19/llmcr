@@ -11,8 +11,8 @@ usage() {
     echo ""
     echo "  reload: reload all embedding into vector database."
     echo ""
-    echo "  review: review code changes based on a diff file."
-    echo "    ./run.sh review <diff-file-path>"
+    echo "  review: review code changes based on a pull request json file."
+    echo "    ./run.sh review <pr-file-path>"
     echo "    ./run.sh review --use-mock"
     echo ""
     echo "Global options:"
@@ -68,7 +68,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$MODE" == "review" ]]; then
-    DIFF_FILE=""
+    PR_FILE=""
     USE_MOCK=false
 
     for arg in "${MODE_ARGS[@]}"; do
@@ -81,24 +81,24 @@ if [[ "$MODE" == "review" ]]; then
                 exit 0
                 ;;
             *)
-                if [[ -n "$DIFF_FILE" ]]; then
-                    echo "Error: only one diff file path is allowed in review mode."
+                if [[ -n "$PR_FILE" ]]; then
+                    echo "Error: only one pr file path is allowed in review mode."
                     usage
                     exit 1
                 fi
-                DIFF_FILE="$arg"
+                PR_FILE="$arg"
                 ;;
         esac
     done
 
-    if [[ "$USE_MOCK" != true && -z "$DIFF_FILE" ]]; then
-        echo "Error: review mode requires a diff file path, or use --use-mock."
+    if [[ "$USE_MOCK" != true && -z "$PR_FILE" ]]; then
+        echo "Error: review mode requires a pr file path, or use --use-mock."
         usage
         exit 1
     fi
 
-    if [[ -n "$DIFF_FILE" ]]; then
-        APP_ARGS+=("$DIFF_FILE")
+    if [[ -n "$PR_FILE" ]]; then
+        APP_ARGS+=("$PR_FILE")
     fi
     if [[ "$USE_MOCK" == true ]]; then
         APP_ARGS+=("--use-mock")

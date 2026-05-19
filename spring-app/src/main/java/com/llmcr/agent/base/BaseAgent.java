@@ -97,7 +97,8 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
                 }
 
                 ChatClientRequestSpec retryRequest = chatClient
-                        .prompt("Fix this invalid JSON. Return ONLY valid JSON.")
+                        .prompt("Fix this invalid JSON. Return ONLY valid JSON. DO NOT modify the content, only fix the format: "
+                                + rawResponse)
                         .advisors(new AgentLoggerAdvisor("OutputFixAgent"));
 
                 retryRequest.user(rawResponse);
