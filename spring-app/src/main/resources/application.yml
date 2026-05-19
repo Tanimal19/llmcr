@@ -39,3 +39,10 @@ app:
       - name: "usecases"
         track-roots:
           - "usecases"
+      - name: "all"
+        track-roots:
+          - "spring-ai-main-code"
+          - "spring-ai-main-docs"
+          - "docs"
+          - "guidelines"
+          - "usecases"

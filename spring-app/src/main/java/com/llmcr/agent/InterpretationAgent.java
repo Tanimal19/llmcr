@@ -26,13 +26,15 @@ public class InterpretationAgent extends
     public record InterpretationAgentOutput(String changeDescription, String changeMotivation) {
     }
 
-    private static final String PROMPT_TEMPLATE = """
+    private static final String SYSTEM_PROMPT = """
             You are now a software engineer experienced at Java and Spring Framework.
 
             Your task is to interpret the code change by describing what was changed, and the movitation of the changes. For the motivation, you should consider why the original code was insufficient and what problem the change is trying to solve.
 
             You will be given code changes and project context retrieved based on the code changes. The project context may include information such as related code snippets, documentation, discussions, etc. You should make use of the project context when interpreting the code change. Do not make assumptions beyond the provided information. Focus on analyzing the code change based on the given context.
+            """;
 
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Below is a list of project context:
             <context>
 
@@ -58,12 +60,17 @@ public class InterpretationAgent extends
     }
 
     @Override
-    protected String getPromptTemplate() {
-        return PROMPT_TEMPLATE;
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
     }
 
     @Override
-    protected Map<String, Object> getPromptVariables(InterpretationAgentInput input) {
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> buildInputVariables(InterpretationAgentInput input) {
         String codeChangesText = String.join("\n----\n", input.codeChanges().stream()
                 .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                 .toList());

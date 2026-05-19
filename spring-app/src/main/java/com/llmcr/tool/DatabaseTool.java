@@ -1,33 +1,26 @@
 package com.llmcr.tool;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.entity.Context;
-import com.llmcr.entity.Context.ContextType;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
 import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 import com.llmcr.service.rag.select.FixedKStrategy;
+import com.llmcr.util.StringUtils;
 
 @Component
 public class DatabaseTool {
 
-    private static final Logger logger = LoggerFactory.getLogger(DatabaseTool.class);
-
-    private static final int MAX_RESULT_ROWS = 10;
-    private static final int MAX_CELL_CHARS = 800;
-
-    private static final Set<String> ALLOWED_COLLECTIONS = Set.of("project-code", "docs");
+    private static final int MAX_RESULT_ROWS = 20;
 
     private final ContextRepository contextRepository;
     private final QueryContextRetriever queryContextRetriever;
@@ -37,91 +30,59 @@ public class DatabaseTool {
         this.queryContextRetriever = queryContextRetriever;
     }
 
-    @Tool(description = """
-                Get an overview of most relevant code or document content based on a query. Use this when you want to find relevant information but don't have a specific id.
-
-                Available collections for retrieval:
-                - project-code: Use this collection for queries related to project source code and APIs.
-                - docs: Use this collection for queries related to understanding software best pratices and other information.
-            """)
-    public String retrieveDocumentContentByQuery(
-            @ToolParam(description = "A query to search for content.", required = true) String query,
-            @ToolParam(description = "The collection to be search.", required = true) String collectionName) {
-        logger.info("[ToolCall] tool=retrieveDocumentContentByQuery collection={} query={}",
-                collectionName, query);
-
+    @Tool(description = "Find documents by semantic query and return matching document ids.")
+    public String findDocuments(
+            @ToolParam(description = "A concise semantic queries. Prefer domain keywords over natural language questions.", required = true) String query) {
         if (query == null || query.isBlank()) {
-            return "(tool error: query must not be blank)";
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "query must not be blank");
+            return StringUtils.jsonString(errorResponse);
         }
-
-        if (!ALLOWED_COLLECTIONS.contains(collectionName)) {
-            return "(tool error: invalid collectionName '" + collectionName + "'. Allowed values: "
-                    + ALLOWED_COLLECTIONS + ")";
-        }
-
         ContextRetrievalConfiguration retrievalConfiguration = new ContextRetrievalConfiguration(
                 MAX_RESULT_ROWS,
                 new FixedKStrategy(),
-                collectionName,
+                "all",
                 false);
         ContextRetrievalRequest request = new ContextRetrievalRequest(List.of(query.trim()), retrievalConfiguration);
         List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(request);
 
         if (retrievedContexts.isEmpty()) {
-            return "Query returned no results.";
+            Map<String, Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("results", List.of());
+            emptyResponse.put("message", "Query returned no results");
+            return StringUtils.jsonString(emptyResponse);
         }
 
-        List<Context> orderedDocuments = new ArrayList<>();
-        for (ContextScorePair contextScore : retrievedContexts) {
-            Context context = contextScore.context();
-            if (context == null || context.getType() != ContextType.DOCUMENT) {
-                continue;
-            }
-
-            boolean alreadyAdded = orderedDocuments.stream()
-                    .anyMatch(existing -> existing.getId().equals(context.getId()));
-            if (!alreadyAdded) {
-                orderedDocuments.add(context);
-            }
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (ContextScorePair context : retrievedContexts) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", context.context().getId());
+            item.put("name", context.context().getName().split("::")[1]);
+            item.put("relevanceScore", context.score());
+            results.add(item);
         }
 
-        if (orderedDocuments.isEmpty()) {
-            return "Query returned no document results.";
-        }
-
-        StringBuilder output = new StringBuilder();
-        output.append("Query returned ").append(orderedDocuments.size()).append(" document(s).\n");
-
-        for (int i = 0; i < orderedDocuments.size(); i++) {
-            Context document = orderedDocuments.get(i);
-            String content = document.getContent() == null ? "NULL" : document.getContent();
-            if (content.length() > MAX_CELL_CHARS) {
-                content = content.substring(0, MAX_CELL_CHARS) + "...(truncated)";
-            }
-            output.append("\n### Document ").append(i + 1).append("\n")
-                    .append("- id: ").append(document.getId()).append("\n")
-                    .append("- name: ").append(document.getName()).append("\n")
-                    .append("- type: ").append(document.getType()).append("\n")
-                    .append("- content:\n").append(content).append("\n");
-        }
-
-        return output.toString();
+        Map<String, Object> response = new HashMap<>();
+        response.put("results", results);
+        response.put("count", results.size());
+        return StringUtils.jsonString(response);
     }
 
-    @Tool(description = "Retrieve code or document content by exact id. Use this when you have a specific id from previous retrieval and want to get the full content.")
-    public String retrieveContextById(
-            @ToolParam(description = "The exact id of the context to retrieve.", required = true) Long id) {
-        logger.info("[ToolCall] tool=retrieveContextById id={}", id);
-
+    @Tool(description = "Fetch full document content using an exact integer document id. NEVER use this tool when you are not sure about the exact document id.")
+    public String fetchDocumentcontent(
+            @ToolParam(description = "The exact integer id of the document to retrieve.", required = true) Long id) {
         return contextRepository.findById(id)
                 .map(c -> {
-                    String content = c.getContent() == null ? "NULL" : c.getContent();
-                    return "id: " + c.getId() + "\n"
-                            + "name: " + c.getName() + "\n"
-                            + "type: " + c.getType() + "\n"
-                            + "content:\n" + content;
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("id", c.getId());
+                    response.put("name", c.getName());
+                    response.put("content", c.getContent() == null ? "" : c.getContent());
+                    return StringUtils.jsonString(response);
                 })
-                .orElse("No context found with id: " + id);
+                .orElseGet(() -> {
+                    Map<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("error", "No context found with id: " + id);
+                    return StringUtils.jsonString(errorResponse);
+                });
     }
-
 }
