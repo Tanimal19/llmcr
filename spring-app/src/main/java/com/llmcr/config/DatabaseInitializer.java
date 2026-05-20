@@ -74,12 +74,18 @@ public class DatabaseInitializer {
     private void initDefaultCollections() {
         Set<TrackRoot> allTrackRoots = new HashSet<>(trackRootRepository.findAll());
 
-        ChunkCollection allCollection = chunkCollectionRepository.findByName("all").orElse(null);
+        ChunkCollection allCollection = chunkCollectionRepository.findByNameWithTrackRoots("all").orElse(null);
         if (allCollection == null) {
             chunkCollectionRepository.save(new ChunkCollection("all", allTrackRoots));
         } else {
-            Set<TrackRoot> currentTrackRoots = allCollection.getTrackRoots();
-            if (currentTrackRoots.addAll(allTrackRoots)) {
+            boolean modified = false;
+            for (TrackRoot tr : allTrackRoots) {
+                if (!allCollection.getTrackRoots().contains(tr)) {
+                    allCollection.addTrackRoot(tr);
+                    modified = true;
+                }
+            }
+            if (modified) {
                 chunkCollectionRepository.save(allCollection);
             }
         }
