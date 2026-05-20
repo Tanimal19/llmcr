@@ -30,12 +30,6 @@ public class ExtractService {
         this.sourceRepository = sourceRepository;
         this.contextRepository = contextRepository;
         this.extractors = extractors;
-
-        logger.info("ExtractService initialized with {} extractors: {}",
-                extractors.size(),
-                extractors.stream()
-                        .map(e -> e.getClass().getSimpleName())
-                        .toList());
     }
 
     @Transactional

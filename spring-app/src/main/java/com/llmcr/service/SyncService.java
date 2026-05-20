@@ -21,10 +21,10 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Source;
@@ -45,6 +45,7 @@ public class SyncService {
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
     private final MyVectorStore vectorStore;
+    private final SyncService self;
 
     public record TrackRootPreview(Long id, String path, Boolean isSynced, LocalDateTime lastSyncTime,
             List<SourcePreview> sources) {
@@ -65,19 +66,22 @@ public class SyncService {
     public SyncService(
             TrackRootRepository trackRootRepository,
             SourceRepository sourceRepository,
-            MyVectorStore vectorStore) {
+            MyVectorStore vectorStore,
+            @Lazy SyncService self) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
         this.vectorStore = vectorStore;
+        this.self = self;
     }
 
     public List<TrackRootPreview> getAllTrackRootPreview() {
-        return trackRootRepository.findAllIds().stream().map(trackRootId -> getTrackRootPreview(trackRootId)).toList();
+        return trackRootRepository.findAllIds().stream().map(trackRootId -> self.getTrackRootPreview(trackRootId))
+                .toList();
     }
 
     public void syncAllTrackRoot() {
         trackRootRepository.findAllIds().stream().forEach(trackRootId -> {
-            syncTrackRoot(trackRootId);
+            self.syncTrackRoot(trackRootId);
         });
     }
 
@@ -102,6 +106,8 @@ public class SyncService {
 
         TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
                 .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
+
+        logger.info("Generating track root preview for TrackRoot:" + trackRoot.getPath());
 
         List<Source> localSources = getLocalSources(trackRoot);
         List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
@@ -149,6 +155,8 @@ public class SyncService {
                 trackRoot.getLastSyncTime(), sourcePreviews);
         trackRootPreviewCache.put(trackRootId, trackRootPreview);
 
+        logger.info("Track root preview generated with {} sources", sourcePreviews.size());
+
         return trackRootPreview;
     }
 
@@ -166,7 +174,7 @@ public class SyncService {
 
         Set<SourceType> configuredTypes = trackRoot.getAllowedSourceTypes();
         if (configuredTypes == null || configuredTypes.isEmpty()) {
-            logger.warn("TrackRoot has no allowed source types defined, defaulting to all types: " + trackRoot);
+            logger.warn("TrackRoot has no allowed source types defined, defaulting to all types.");
             configuredTypes = Set.of(SourceType.values());
         }
         final Set<SourceType> allowedTypes = configuredTypes;
@@ -269,11 +277,14 @@ public class SyncService {
         TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
                 .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
 
+        logger.info("Start syncing TrackRoot:" + trackRoot.getPath());
+
         TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
         if (trackRootPreview == null) {
             trackRootPreview = getTrackRootPreview(trackRootId);
         }
         if (trackRootPreview.isSynced()) {
+            logger.info("TrackRoot is already synced, no action needed.");
             return;
         }
 

@@ -1,7 +1,6 @@
 package com.llmcr.service;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 import com.llmcr.agent.QuestionAnswerAgent;
 import com.llmcr.service.SyncService.TrackRootPreview;
@@ -14,9 +13,6 @@ import com.llmcr.service.review.CodeReviewService.CodeReviewOutput;
  * In production, frontend should directly call each service components.
  */
 public class MockAPIService {
-
-    @SuppressWarnings("preview")
-    public static final ScopedValue<Consumer<LoadingState>> onUpdate = ScopedValue.newInstance();
 
     public record LoadingState(String stage, String message, Integer progress) {
     }
