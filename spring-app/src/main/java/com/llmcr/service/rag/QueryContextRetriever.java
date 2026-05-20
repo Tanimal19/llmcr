@@ -42,14 +42,11 @@ public class QueryContextRetriever {
 
     /**
      * @param topK                  the number of contexts to return after retrieval
-     *                              and
-     *                              reranking.
+     *                              and reranking.
      * @param topKSelectionStrategy the strategy to select topK contexts from the
-     *                              ranked
-     *                              contexts.
+     *                              ranked contexts.
      * @param collectionName        the name of the vector store collection to
-     *                              search for
-     *                              relevant chunks.
+     *                              search for relevant chunks.
      * @param useReranker           whether to use the reranking model to rerank the
      *                              retrieved contexts.
      */

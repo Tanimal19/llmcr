@@ -34,7 +34,7 @@ public class MockAPIService {
         return questionAnswerAgent.execute(message);
     }
 
-    public void setchat(String configJson) {
+    public void setChatRetrievalScope(String collectionName) {
         // TODO: implement this method to allow user to configure chatbot
     }
 

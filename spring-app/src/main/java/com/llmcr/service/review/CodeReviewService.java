@@ -198,6 +198,10 @@ public class CodeReviewService {
 
     public CodeReviewOutput review(String jsonFilePath, boolean useMockData) {
 
+        if (useMockData) {
+            jsonFilePath = MockReviewData.MOCK_PULL_REQUEST_JSON_PATH;
+        }
+
         PullRequestData prData = PullRequestParser.parseJsonFile(jsonFilePath);
         logger.info("review start for PR: {} (id={})", prData.title(), prData.prId());
 

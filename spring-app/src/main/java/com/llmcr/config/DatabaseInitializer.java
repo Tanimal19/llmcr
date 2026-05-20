@@ -28,6 +28,7 @@ public class DatabaseInitializer {
 
         initTrackRoots();
         initCollections();
+        initDefaultCollections();
     }
 
     private void initTrackRoots() {
@@ -67,6 +68,25 @@ public class DatabaseInitializer {
                     .collect(Collectors.toSet());
             ChunkCollection collection = new ChunkCollection(collectionName, trackRoots);
             chunkCollectionRepository.save(collection);
+        }
+    }
+
+    private void initDefaultCollections() {
+        Set<TrackRoot> allTrackRoots = new HashSet<>(trackRootRepository.findAll());
+
+        ChunkCollection allCollection = chunkCollectionRepository.findByName("all").orElse(null);
+        if (allCollection == null) {
+            chunkCollectionRepository.save(new ChunkCollection("all", allTrackRoots));
+        } else {
+            Set<TrackRoot> currentTrackRoots = allCollection.getTrackRoots();
+            if (currentTrackRoots.addAll(allTrackRoots)) {
+                chunkCollectionRepository.save(allCollection);
+            }
+        }
+
+        ChunkCollection chatCollection = chunkCollectionRepository.findByName("chat").orElse(null);
+        if (chatCollection == null) {
+            chunkCollectionRepository.save(new ChunkCollection("chat", allTrackRoots));
         }
     }
 }

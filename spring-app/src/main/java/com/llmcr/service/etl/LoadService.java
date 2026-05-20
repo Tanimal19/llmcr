@@ -88,4 +88,64 @@ public class LoadService {
         context.setChunkLoaded(true);
         contextRepository.save(context);
     }
+
+    /**
+     * This method is used to reload all chunks into vector store. This is useful
+     * when there are changes in chunkCollections.
+     */
+    @Transactional
+    public void reloadAll() {
+        logger.info("Start reloading chunks to vector store");
+
+        List<ChunkCollection> chunkCollections = chunkCollectionRepository.findAll();
+        if (chunkCollections.isEmpty()) {
+            logger.info("No chunk collections found, skipping reload");
+            return;
+        }
+
+        contextRepository.findAll().forEach(context -> {
+            Set<ChunkCollection> inCollections = context.getSource().getTrackRoot().getInCollections();
+            if (inCollections.isEmpty()) {
+                inCollections = new HashSet<>(chunkCollectionRepository.findAll());
+            }
+
+            for (ChunkCollection chunkCollection : inCollections) {
+                List<Chunk> chunks = context.getChunks();
+                List<Chunk> chunksToAdd = chunks.stream()
+                        .filter(chunk -> chunk.getChunkCollections().stream()
+                                .noneMatch(c -> c.getId().equals(chunkCollection.getId())))
+                        .toList();
+                chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
+            }
+
+            contextRepository.save(context);
+        });
+
+        logger.info("Reloading chunks into vector store");
+        int totalAdded = 0;
+        int totalSkippedMissingEmbedding = 0;
+        for (ChunkCollection chunkCollection : chunkCollections) {
+            String collectionName = chunkCollection.getName();
+
+            vectorStore.removeCollection(collectionName);
+
+            List<Chunk> chunksToLoad = chunkCollection.getChunks().stream()
+                    .filter(chunk -> chunk.getEmbedding() != null && chunk.getEmbedding().length > 0)
+                    .toList();
+
+            int skippedMissingEmbedding = chunkCollection.getChunks().size() - chunksToLoad.size();
+            if (!chunksToLoad.isEmpty()) {
+                vectorStore.addChunks(chunksToLoad, collectionName);
+            }
+
+            totalAdded += chunksToLoad.size();
+            totalSkippedMissingEmbedding += skippedMissingEmbedding;
+
+            logger.info("Loaded {} chunks into collection '{}', skipped {} chunks without embedding",
+                    chunksToLoad.size(), collectionName, skippedMissingEmbedding);
+        }
+
+        logger.info("Vector store reload complete. Added {} chunks, skipped {} chunks without embedding",
+                totalAdded, totalSkippedMissingEmbedding);
+    }
 }
