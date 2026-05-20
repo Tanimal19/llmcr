@@ -13,13 +13,12 @@ llmcr/
 ├── models/                     # .gguf files
 ├── logs/
 ├── spring-app/
+│   ├── config.default.yml           # Default user application config
 │   ├── resources/
-│   │   ├── application.properties   # Application config
-│   │   └── application.yml          # ETL input data config
+│   │   └── application.properties   # spring application config 
 │   └── java/com/llmcr/
 │       ├── LlmcrApplication.java
 │       ├── agent/                   # Agents
-│       ├── client/                  # LLM, embedding, reranking clients
 │       ├── config/
 │       ├── entity/                  # JPA entities
 │       ├── rag/                     # RAG components
@@ -108,16 +107,15 @@ Prerequisites:
 - Docker and Docker Compose
 - llama.cpp and llama-swap
 
-## Configuration
+## Setup Configuration
 - Set FAISS and MariaDB configurations in `docker-compose.yml`.
   - The index file of FAISS is stored in `faiss_service/app/data`.
   - The database data is stored in docker volume
-- Set spring app properties at `spring-app/src/main/resources/application.properties`.
-- Set datasets and code review configurations at `spring-app/src/main/resources/application.yml`.
-- Download and place `.gguf` model files under `models/` folder.
-  - [Phi-4-mini-instruct](https://huggingface.co/aathaval/Phi-4-mini-instruct-Q6_K-GGUF/blob/main/phi-4-mini-instruct-q6_k.gguf)
-  - Reasoning SLM: [LFM2.5-1.2B-Thinking](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/blob/main/LFM2.5-1.2B-Thinking-Q8_0.gguf)
+- Create `spring-app/config.yml` using the default configuration file (`spring-app/config.default.yml`)
+- Download and place `.gguf` model files under `models/` folder
+  - Reasoning SLM: [Nemotron-Nano-4B](https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF/blob/main/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf)
   - Embedding Model: [harrier-oss-v1-0.6b](https://huggingface.co/mradermacher/harrier-oss-v1-0.6b-GGUF/blob/main/harrier-oss-v1-0.6b.Q4_K_M.gguf)
+
 - Set llama-swap configuration at `llama-swap.yml`.
 - Set environment variables at `.env` file.
   ```sh
@@ -137,12 +135,10 @@ llama-swap -config llama-swap.yml -listen localhost:8080
 ```
 docker-compose up -d
 ```
-- Then `cd spring-app/` and run the following shell scripts:
-  - `run.sh`: Run the application with specified runner.
-  - `review.sh`: Run the code review service.
+- Then `cd spring-app/` and run `run.sh`.
 
 > [!NOTE]
-> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1zy6l341eKZVn6dqB9GpuedcZ8ga2hvyZ/view?usp=drive_link) to run the application without running the ETL pipeline.
+> You can access the pre-extracted test data [HERE](https://drive.google.com/file/d/1KgTYZ9RJBENwh-C7m8Bf6HJEc2Sb5YzY/view?usp=drive_link) to run the application without running the ETL pipeline.
 >
 > You will see `.index` files under `faiss/` and an `ragdb_backup.sql`
 > 1. Import `ragdb_backup.sql` file to MariaDB use `docker exec -i mariadb mariadb -u user -p123 ragdb < ragdb_backup.sql`
@@ -156,7 +152,7 @@ docker-compose up -d
 
 
 # Datasets used
-[Download Datasets](https://drive.google.com/file/d/1CJLv8RLnf7EOtlpXyMEK07S8RFMN3Wk1/view?usp=drive_link)
+[Download Datasets](https://drive.google.com/file/d/1N2ZCtnLa7jt6w4i-FOr_kE1YLtJBT6FY/view?usp=drive_link)
 
 - Project Context: Spring AI [release 2.0.0-M1](https://github.com/spring-projects/spring-ai/releases/tag/v2.0.0-M1)
 - Review Guidelines:

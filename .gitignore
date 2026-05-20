@@ -15,6 +15,7 @@
 .idea/
 .vscode/
 
-
 **/.venv/
 **/__pycache__/
+
+spring-app/config.yml
