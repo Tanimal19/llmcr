@@ -1,39 +1,34 @@
 package com.llmcr.runner;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.llmcr.config.DatabaseInitializer;
-import com.llmcr.service.sync.SyncService;
+import com.llmcr.service.SyncService;
+import com.llmcr.service.etl.ETLService;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "sync")
 public class SyncRunner implements CommandLineRunner {
-    @Autowired
-    private final DatabaseInitializer databaseInitializer;
-
-    @Autowired
     private final SyncService syncService;
-
-    @Autowired
+    private final ETLService etlService;
     private final JdbcTemplate jdbcTemplate;
 
     public SyncRunner(
-            DatabaseInitializer databaseInitializer,
             SyncService syncService,
+            ETLService etlService,
             JdbcTemplate jdbcTemplate) {
-        this.databaseInitializer = databaseInitializer;
         this.syncService = syncService;
+        this.etlService = etlService;
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        databaseInitializer.init();
-        syncService.sync();
+        syncService.syncAllTrackRoot();
+        // etlService.run();
     }
 
     private void resetEntityTables() {

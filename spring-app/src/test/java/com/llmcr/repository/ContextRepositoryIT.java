@@ -24,8 +24,7 @@ import jakarta.transaction.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
-public class ContextRepositoryIT extends BaseIntegrationTest
-{
+public class ContextRepositoryIT extends BaseIntegrationTest {
     @Autowired
     private ContextRepository contextRepository;
 
@@ -42,10 +41,9 @@ public class ContextRepositoryIT extends BaseIntegrationTest
     private Context contextB;
 
     @BeforeEach
-    private void setup(TestInfo testInfo)
-    {
+    private void setup(TestInfo testInfo) {
         logger.info("Ready to test: {}", testInfo.getDisplayName());
-        testSource = new Source("./test/path/dummy.pdf", SourceType.PDF);
+        testSource = new Source("./test/path/dummy.pdf", "0", SourceType.PDF);
         testSource.setExtracted(false);
         entityManager.persist(testSource);
 
@@ -74,8 +72,7 @@ public class ContextRepositoryIT extends BaseIntegrationTest
 
     @Test
     @DisplayName("Test findAllIds: Should successfully retrieve the ID list of all Contexts")
-    void testFindAllIds()
-    {
+    void testFindAllIds() {
         List<Long> ids = contextRepository.findAllIds();
         assertThat(ids).hasSize(2);
         assertThat(ids).contains(contextA.getId(), contextB.getId());
@@ -83,8 +80,7 @@ public class ContextRepositoryIT extends BaseIntegrationTest
 
     @Test
     @DisplayName("Test findAllIdsBySourceId: Should be able to retrieve the ID list of all Contexts under a Source ID")
-    void testFindAllIdsBySource()
-    {
+    void testFindAllIdsBySource() {
         List<Long> ids = contextRepository.findAllIdsBySourceId(testSource.getId());
         assertThat(ids).hasSize(2);
         assertThat(ids).contains(contextA.getId(), contextB.getId());
@@ -92,8 +88,7 @@ public class ContextRepositoryIT extends BaseIntegrationTest
 
     @Test
     @DisplayName("Test status filter query: Should correctly filter out unloaded, unsplitted, and unenriched Context IDs")
-    void testStatusFilters()
-    {
+    void testStatusFilters() {
         List<Long> unloadedIds = contextRepository.findAllUnloadedIds();
         assertThat(unloadedIds).containsOnly(contextB.getId());
 
@@ -106,8 +101,7 @@ public class ContextRepositoryIT extends BaseIntegrationTest
 
     @Test
     @DisplayName("Test findByChunkId: Should be able to reverse lookup the corresponding Context via a single Chunk ID")
-    void testFindByChunkId()
-    {
+    void testFindByChunkId() {
         Context foundContext = contextRepository.findByChunkId(chunkA.getId());
         assertThat(foundContext).isNotNull();
         assertThat(foundContext.getId()).isEqualTo(contextA.getId());
@@ -116,8 +110,7 @@ public class ContextRepositoryIT extends BaseIntegrationTest
 
     @Test
     @DisplayName("Test findAllByChunkIds: When passing multiple Chunk IDs, it should return a deduplicated Context list")
-    void testFindAllByChunkIds()
-    {
+    void testFindAllByChunkIds() {
         List<Long> chunkIds = Arrays.asList(chunkA.getId(), chunkB.getId(), chunkC.getId());
         List<Context> contexts = contextRepository.findAllByChunkIds(chunkIds);
         assertThat(contexts).hasSize(2);
@@ -126,8 +119,7 @@ public class ContextRepositoryIT extends BaseIntegrationTest
 
     @Test
     @DisplayName("Test findByFilter: Mixed condition dynamic query and pagination")
-    void testFindByFilter()
-    {
+    void testFindByFilter() {
         Pageable pageable = PageRequest.of(0, 10);
 
         // All Empty

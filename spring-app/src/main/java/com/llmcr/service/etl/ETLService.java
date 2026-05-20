@@ -7,9 +7,9 @@ import com.llmcr.repository.ContextRepository;
 import com.llmcr.repository.SourceRepository;
 
 @Service
-public class ETLPipeline {
+public class ETLService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ETLPipeline.class);
+    private static final Logger logger = LoggerFactory.getLogger(ETLService.class);
 
     private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
@@ -18,7 +18,7 @@ public class ETLPipeline {
     private final EnrichService enrichService;
     private final LoadService loadService;
 
-    public ETLPipeline(
+    public ETLService(
             SourceRepository sourceRepository,
             ContextRepository contextRepository,
             ExtractService extractService,

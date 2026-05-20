@@ -1,5 +1,6 @@
 package com.llmcr.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Set;
 import org.hibernate.Hibernate;
 
 import com.llmcr.entity.Source.SourceType;
+import com.llmcr.util.PathUtils;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -35,6 +37,9 @@ public class TrackRoot {
 
     @Column(nullable = false, unique = true, length = 1024)
     private String path;
+
+    @Column(name = "last_sync_time")
+    private LocalDateTime lastSyncTime;
 
     /**
      * Allowed source types for this track root. Source others than these types will
@@ -67,7 +72,7 @@ public class TrackRoot {
     }
 
     public TrackRoot(String path, Set<SourceType> allowedSourceTypes) {
-        this.path = path;
+        this.path = PathUtils.toRelativePath(path);
         this.allowedSourceTypes = allowedSourceTypes;
     }
 
@@ -81,6 +86,14 @@ public class TrackRoot {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public LocalDateTime getLastSyncTime() {
+        return lastSyncTime;
+    }
+
+    public void setLastSyncTime(LocalDateTime lastSyncTime) {
+        this.lastSyncTime = lastSyncTime;
     }
 
     public Set<SourceType> getAllowedSourceTypes() {

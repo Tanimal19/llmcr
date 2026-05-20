@@ -63,15 +63,140 @@ public class CodeReviewService {
     }
 
     public record CodeReviewReport(
+            int prId,
+            String prTitle,
             SummaryAgentOutput mainReport,
             InterpretationAgentOutput interpretation,
             List<ItemAnswer> itemAnswers) {
+
+        public String toString() {
+            return buildMarkdownReport(this);
+        }
+
+        private static String buildMarkdownReport(CodeReviewReport report) {
+            StringBuilder sb = new StringBuilder();
+
+            // Summary Report section
+            sb.append("# Code Review Report\n\n");
+            sb.append("**PR ID:** ").append(report.prId()).append("\n\n");
+            sb.append("**PR Title:** ").append(report.prTitle()).append("\n\n");
+
+            if (report != null && report.mainReport() != null) {
+                sb.append("## Motivation\n\n");
+                if (report.mainReport().motivation() != null && !report.mainReport().motivation().isBlank()) {
+                    sb.append(report.mainReport().motivation()).append("\n\n");
+                } else {
+                    sb.append("_No motivation provided._\n\n");
+                }
+
+                sb.append("## Good Points\n\n");
+                if (report.mainReport().goodPoints() != null && !report.mainReport().goodPoints().isEmpty()) {
+                    for (String point : report.mainReport().goodPoints()) {
+                        sb.append("- ").append(point).append("\n");
+                    }
+                    sb.append("\n");
+                } else {
+                    sb.append("_No good points provided._\n\n");
+                }
+
+                sb.append("## Bad Points\n\n");
+                if (report.mainReport().badPoints() != null && !report.mainReport().badPoints().isEmpty()) {
+                    for (String point : report.mainReport().badPoints()) {
+                        sb.append("- ").append(point).append("\n");
+                    }
+                    sb.append("\n");
+                } else {
+                    sb.append("_No bad points provided._\n\n");
+                }
+
+                sb.append("## Suggestion\n\n");
+                if (report.mainReport().suggestion() != null && !report.mainReport().suggestion().isBlank()) {
+                    sb.append(report.mainReport().suggestion()).append("\n\n");
+                } else {
+                    sb.append("_No suggestion provided._\n\n");
+                }
+
+                sb.append("## Implementation Details\n\n");
+                if (report.mainReport().implementationDetails() != null
+                        && !report.mainReport().implementationDetails().isEmpty()) {
+                    for (var detailsByFile : report.mainReport().implementationDetails()) {
+                        String filename = detailsByFile.filename() != null ? detailsByFile.filename()
+                                : "(unknown file)";
+                        sb.append("#### ").append(filename).append("\n\n");
+                        if (detailsByFile.details() != null && !detailsByFile.details().isEmpty()) {
+                            for (String detail : detailsByFile.details()) {
+                                sb.append("- ").append(detail).append("\n");
+                            }
+                        } else {
+                            sb.append("- _No details provided._\n");
+                        }
+                        sb.append("\n");
+                    }
+                }
+
+                sb.append("## Issues\n\n");
+                if (report.mainReport().issues() != null && !report.mainReport().issues().isEmpty()) {
+                    sb.append("| Type | Title | Location | Detail |\n");
+                    sb.append("|------|-------|----------|--------|\n");
+                    for (Issue issue : report.mainReport().issues()) {
+                        String location = issue.location() != null ? issue.location() : "";
+                        String type = issue.type() != null ? issue.type() : "";
+                        sb.append("| ").append(type)
+                                .append(" | ").append(issue.title())
+                                .append(" | ").append(location)
+                                .append(" | ").append(issue.detail())
+                                .append(" |\n");
+                    }
+                    sb.append("\n");
+                }
+            } else {
+                sb.append("_No summary available._\n\n");
+            }
+
+            // Appendix with interpretation results
+            sb.append("\n\n");
+            sb.append("# Appendix: Original Interpretation Results\n\n");
+            if (report != null && report.interpretation() != null) {
+                InterpretationAgentOutput interpretation = report.interpretation();
+                if (interpretation.changeDescription() != null) {
+                    sb.append("### Change Description\n\n");
+                    sb.append(interpretation.changeDescription()).append("\n\n");
+                }
+                if (interpretation.changeMotivation() != null) {
+                    sb.append("### Change Motivation\n\n");
+                    sb.append(interpretation.changeMotivation()).append("\n\n");
+                }
+            } else {
+                sb.append("_No interpretation results available._\n\n");
+            }
+
+            // Appendix with detailed checklist item answers
+            sb.append("\n\n");
+            sb.append("# Appendix: Detailed Checklist Item Answers\n\n");
+            if (report != null && report.itemAnswers() != null && !report.itemAnswers().isEmpty()) {
+                for (ItemAnswer itemAnswer : report.itemAnswers()) {
+                    sb.append("### ").append(itemAnswer.checklistItemTitle()).append("\n\n");
+                    sb.append(itemAnswer.answer().finalAnswer()).append("\n");
+                    sb.append(itemAnswer.answer().analysis()).append("\n");
+                    for (EvidenceItem evdience : itemAnswer.answer().evidence()) {
+                        sb.append("- ").append(evdience.file()).append(":::").append(evdience.lines()).append(":::")
+                                .append(evdience.reason()).append("\n");
+                    }
+                }
+            } else {
+                sb.append("_No checklist item answers available._\n\n");
+            }
+
+            return sb.toString();
+        }
     }
 
-    /**
-     * Run a full code review for the given git diff file and persist the report.
-     */
-    public Path review(String jsonFilePath, boolean useMockData) {
+    public record CodeReviewOutput(
+            CodeReviewReport reviewReport,
+            Path reportPath) {
+    }
+
+    public CodeReviewOutput review(String jsonFilePath, boolean useMockData) {
 
         PullRequestData prData = PullRequestParser.parseJsonFile(jsonFilePath);
         logger.info("review start for PR: {} (id={})", prData.title(), prData.prId());
@@ -112,146 +237,30 @@ public class CodeReviewService {
             SummaryAgentOutput reviewResult = summaryAgent.execute(
                     new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
 
-            Path reportPath = writeReport(prData,
-                    new CodeReviewReport(reviewResult, interpretation, itemAnswers));
+            CodeReviewReport review = new CodeReviewReport(
+                    prData.prId(), prData.title(), reviewResult, interpretation, itemAnswers);
+            Path reportPath = writeReport(review);
 
-            logger.info("code review for {} completed. Report written to: {}",
-                    prData,
-                    reportPath.toAbsolutePath());
+            logger.info("code review completed. Report written to: {}", reportPath);
 
-            return reportPath;
+            return new CodeReviewOutput(review, reportPath);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
-    private Path writeReport(PullRequestData prData, CodeReviewReport report) {
+    private Path writeReport(CodeReviewReport report) {
         try {
             Path dir = Paths.get(outputDir);
             Files.createDirectories(dir);
-
             String timestamp = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
-            String fileName = "PR" + prData.prId() + "_" + timestamp + ".md";
+            String fileName = "PR" + report.prId() + "_" + timestamp + ".md";
             Path reportPath = dir.resolve(fileName);
-
-            String markdown = buildMarkdownReport(report);
-            Files.writeString(reportPath, markdown);
+            Files.writeString(reportPath, report.toString());
             return reportPath;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write review report", e);
         }
     }
 
-    private String buildMarkdownReport(CodeReviewReport report) {
-        StringBuilder sb = new StringBuilder();
-
-        // Summary Report section
-        sb.append("# Code Review Report\n\n");
-        if (report != null && report.mainReport() != null) {
-            sb.append("## Motivation\n\n");
-            if (report.mainReport().motivation() != null && !report.mainReport().motivation().isBlank()) {
-                sb.append(report.mainReport().motivation()).append("\n\n");
-            } else {
-                sb.append("_No motivation provided._\n\n");
-            }
-
-            sb.append("## Good Points\n\n");
-            if (report.mainReport().goodPoints() != null && !report.mainReport().goodPoints().isEmpty()) {
-                for (String point : report.mainReport().goodPoints()) {
-                    sb.append("- ").append(point).append("\n");
-                }
-                sb.append("\n");
-            } else {
-                sb.append("_No good points provided._\n\n");
-            }
-
-            sb.append("## Bad Points\n\n");
-            if (report.mainReport().badPoints() != null && !report.mainReport().badPoints().isEmpty()) {
-                for (String point : report.mainReport().badPoints()) {
-                    sb.append("- ").append(point).append("\n");
-                }
-                sb.append("\n");
-            } else {
-                sb.append("_No bad points provided._\n\n");
-            }
-
-            sb.append("## Suggestion\n\n");
-            if (report.mainReport().suggestion() != null && !report.mainReport().suggestion().isBlank()) {
-                sb.append(report.mainReport().suggestion()).append("\n\n");
-            } else {
-                sb.append("_No suggestion provided._\n\n");
-            }
-
-            sb.append("## Implementation Details\n\n");
-            if (report.mainReport().implementationDetails() != null
-                    && !report.mainReport().implementationDetails().isEmpty()) {
-                for (var detailsByFile : report.mainReport().implementationDetails()) {
-                    String filename = detailsByFile.filename() != null ? detailsByFile.filename() : "(unknown file)";
-                    sb.append("#### ").append(filename).append("\n\n");
-                    if (detailsByFile.details() != null && !detailsByFile.details().isEmpty()) {
-                        for (String detail : detailsByFile.details()) {
-                            sb.append("- ").append(detail).append("\n");
-                        }
-                    } else {
-                        sb.append("- _No details provided._\n");
-                    }
-                    sb.append("\n");
-                }
-            }
-
-            sb.append("## Issues\n\n");
-            if (report.mainReport().issues() != null && !report.mainReport().issues().isEmpty()) {
-                sb.append("| Type | Title | Location | Detail |\n");
-                sb.append("|------|-------|----------|--------|\n");
-                for (Issue issue : report.mainReport().issues()) {
-                    String location = issue.location() != null ? issue.location() : "";
-                    String type = issue.type() != null ? issue.type() : "";
-                    sb.append("| ").append(type)
-                            .append(" | ").append(issue.title())
-                            .append(" | ").append(location)
-                            .append(" | ").append(issue.detail())
-                            .append(" |\n");
-                }
-                sb.append("\n");
-            }
-        } else {
-            sb.append("_No summary available._\n\n");
-        }
-
-        // Appendix with interpretation results
-        sb.append("\n\n");
-        sb.append("# Appendix: Original Interpretation Results\n\n");
-        if (report != null && report.interpretation() != null) {
-            InterpretationAgentOutput interpretation = report.interpretation();
-            if (interpretation.changeDescription() != null) {
-                sb.append("### Change Description\n\n");
-                sb.append(interpretation.changeDescription()).append("\n\n");
-            }
-            if (interpretation.changeMotivation() != null) {
-                sb.append("### Change Motivation\n\n");
-                sb.append(interpretation.changeMotivation()).append("\n\n");
-            }
-        } else {
-            sb.append("_No interpretation results available._\n\n");
-        }
-
-        // Appendix with detailed checklist item answers
-        sb.append("\n\n");
-        sb.append("# Appendix: Detailed Checklist Item Answers\n\n");
-        if (report != null && report.itemAnswers() != null && !report.itemAnswers().isEmpty()) {
-            for (ItemAnswer itemAnswer : report.itemAnswers()) {
-                sb.append("### ").append(itemAnswer.checklistItemTitle()).append("\n\n");
-                sb.append(itemAnswer.answer().finalAnswer()).append("\n");
-                sb.append(itemAnswer.answer().analysis()).append("\n");
-                for (EvidenceItem evdience : itemAnswer.answer().evidence()) {
-                    sb.append("- ").append(evdience.file()).append(":::").append(evdience.lines()).append(":::")
-                            .append(evdience.reason()).append("\n");
-                }
-            }
-        } else {
-            sb.append("_No checklist item answers available._\n\n");
-        }
-
-        return sb.toString();
-    }
 }

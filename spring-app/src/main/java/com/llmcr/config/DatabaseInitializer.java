@@ -1,13 +1,10 @@
 package com.llmcr.config;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.entity.ChunkCollection;
@@ -18,13 +15,8 @@ import com.llmcr.repository.TrackRootRepository;
 @Component
 public class DatabaseInitializer {
 
-    @Autowired
     private final TrackRootRepository trackRootRepository;
-
-    @Autowired
     private final ChunkCollectionRepository chunkCollectionRepository;
-
-    @Autowired
     private final ApplicationProperties properties;
 
     public DatabaseInitializer(TrackRootRepository trackRootRepository,
@@ -33,25 +25,24 @@ public class DatabaseInitializer {
         this.trackRootRepository = trackRootRepository;
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.properties = properties;
+
+        initTrackRoots();
+        initCollections();
     }
 
-    public List<TrackRoot> initTrackRoots() {
-        List<TrackRoot> result = new ArrayList<>();
+    private void initTrackRoots() {
         for (ApplicationProperties.TrackRootProperties config : properties.getTrackRoots()) {
             TrackRoot existing = trackRootRepository.findByPath(config.getPath());
             if (existing != null) {
-                result.add(existing);
                 continue;
             }
             TrackRoot trackRoot = new TrackRoot(config.getPath(),
                     new HashSet<>(config.getAllowedSourceTypes()));
             trackRootRepository.save(trackRoot);
-            result.add(trackRoot);
         }
-        return result;
     }
 
-    public void initCollections() {
+    private void initCollections() {
         Map<String, TrackRoot> trackRootById = properties.getTrackRoots().stream()
                 .filter(c -> c.getId() != null)
                 .collect(Collectors.toMap(
@@ -77,35 +68,5 @@ public class DatabaseInitializer {
             ChunkCollection collection = new ChunkCollection(collectionName, trackRoots);
             chunkCollectionRepository.save(collection);
         }
-
-        ensureAllCollectionContainsAllTrackRoots();
-    }
-
-    private void ensureAllCollectionContainsAllTrackRoots() {
-        Set<TrackRoot> allTrackRoots = new HashSet<>(trackRootRepository.findAll());
-        ChunkCollection allCollection = chunkCollectionRepository.findByName("all").orElse(null);
-
-        if (allCollection == null) {
-            ChunkCollection collection = new ChunkCollection("all", allTrackRoots);
-            chunkCollectionRepository.save(collection);
-            return;
-        }
-
-        boolean changed = false;
-        for (TrackRoot trackRoot : allTrackRoots) {
-            if (!allCollection.getTrackRoots().contains(trackRoot)) {
-                allCollection.addTrackRoot(trackRoot);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            chunkCollectionRepository.save(allCollection);
-        }
-    }
-
-    public void init() {
-        initTrackRoots();
-        initCollections();
     }
 }

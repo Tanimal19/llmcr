@@ -1,10 +1,11 @@
 package com.llmcr.entity;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Hibernate;
+
+import com.llmcr.util.PathUtils;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -49,11 +50,11 @@ public class Source {
     @Column(name = "type", nullable = false, length = 32)
     private SourceType type;
 
-    @Column(name = "last_sync_time")
-    private LocalDateTime lastSyncTime;
-
+    /**
+     * Whether the source has been extracted into contexts.
+     */
     @Column(name = "extracted", nullable = false)
-    private boolean extracted = false;
+    private boolean extracted;
 
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Context> contexts = new ArrayList<>();
@@ -73,10 +74,11 @@ public class Source {
     protected Source() {
     }
 
-    public Source(String path, SourceType type) {
-        this.path = path;
-        this.contentHash = "0"; // default dummy hash to trigger sync for new sources
+    public Source(String path, String contentHash, SourceType type) {
+        this.path = PathUtils.toRelativePath(path);
+        this.contentHash = contentHash;
         this.type = type;
+        this.extracted = false;
     }
 
     public Long getId() {
@@ -119,14 +121,6 @@ public class Source {
         this.type = type;
     }
 
-    public LocalDateTime getLastSyncTime() {
-        return lastSyncTime;
-    }
-
-    public void setLastSyncTime(LocalDateTime lastSyncTime) {
-        this.lastSyncTime = lastSyncTime;
-    }
-
     public boolean isExtracted() {
         return extracted;
     }
@@ -156,29 +150,6 @@ public class Source {
         }
     }
 
-    public TrackRoot getTrackRoot() {
-        return trackRoot;
-    }
-
-    public void setTrackRoot(TrackRoot trackRoot) {
-        if (this.trackRoot == trackRoot) {
-            return;
-        }
-
-        TrackRoot oldTrackRoot = this.trackRoot;
-        this.trackRoot = null;
-        if (oldTrackRoot != null) {
-            oldTrackRoot.removeSource(this);
-        }
-
-        this.trackRoot = trackRoot;
-        if (trackRoot != null
-                && Hibernate.isInitialized(trackRoot.getSources())
-                && !trackRoot.getSources().contains(this)) {
-            trackRoot.getSources().add(this);
-        }
-    }
-
     public void addContext(Context context) {
         if (context == null) {
             return;
@@ -204,6 +175,30 @@ public class Source {
 
         if (context.getSource() == this) {
             context.setSource(null);
+        }
+    }
+
+    public TrackRoot getTrackRoot() {
+        return trackRoot;
+    }
+
+    // package-private to prevent external call
+    void setTrackRoot(TrackRoot trackRoot) {
+        if (this.trackRoot == trackRoot) {
+            return;
+        }
+
+        TrackRoot oldTrackRoot = this.trackRoot;
+        this.trackRoot = null;
+        if (oldTrackRoot != null) {
+            oldTrackRoot.removeSource(this);
+        }
+
+        this.trackRoot = trackRoot;
+        if (trackRoot != null
+                && Hibernate.isInitialized(trackRoot.getSources())
+                && !trackRoot.getSources().contains(this)) {
+            trackRoot.getSources().add(this);
         }
     }
 

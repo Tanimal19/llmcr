@@ -125,7 +125,8 @@ public class Context {
         return source;
     }
 
-    public void setSource(Source source) {
+    // package-private to prevent external call
+    void setSource(Source source) {
         if (this.source == source) {
             return;
         }

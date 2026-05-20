@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -23,10 +23,10 @@ import com.llmcr.config.ApplicationProperties;
 
 import jakarta.annotation.PostConstruct;
 
-@Service
-public class AgentLoggingService {
+@Component
+public class AgentContextLogger {
 
-    private static final Logger logger = LoggerFactory.getLogger(AgentLoggingService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AgentContextLogger.class);
     private static final ObjectMapper objectMapper = buildObjectMapper();
 
     private static ObjectMapper buildObjectMapper() {
@@ -58,7 +58,7 @@ public class AgentLoggingService {
 
     private final Path agentLogFilePath;
 
-    public AgentLoggingService(ApplicationProperties applicationProperties) {
+    public AgentContextLogger(ApplicationProperties applicationProperties) {
         this.agentLogFilePath = Paths
                 .get(applicationProperties.getLogging().getReviewOutputDir() + "/agent_logs.json");
     }
