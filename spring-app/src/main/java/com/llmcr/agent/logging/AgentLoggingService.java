@@ -8,7 +8,6 @@ import java.nio.file.StandardOpenOption;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -20,6 +19,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
+import com.llmcr.config.ApplicationProperties;
 
 import jakarta.annotation.PostConstruct;
 
@@ -58,8 +58,9 @@ public class AgentLoggingService {
 
     private final Path agentLogFilePath;
 
-    public AgentLoggingService(@Value("${llmcr.agent.log.file}") String agentLogFile) {
-        this.agentLogFilePath = agentLogFile != null && !agentLogFile.isBlank() ? Paths.get(agentLogFile) : null;
+    public AgentLoggingService(ApplicationProperties applicationProperties) {
+        this.agentLogFilePath = Paths
+                .get(applicationProperties.getLogging().getReviewOutputDir() + "/agent_logs.json");
     }
 
     @PostConstruct

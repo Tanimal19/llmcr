@@ -7,10 +7,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Context;
@@ -32,8 +32,7 @@ public class LoadService {
     private final EmbeddingModel embeddingClient;
 
     public LoadService(
-            @Value("${llmcr.embedding.provider}") String embeddingProviderName,
-            @Value("${llmcr.embedding.model}") String embeddingModelName,
+            ApplicationProperties applicationProperties,
             ChunkCollectionRepository chunkCollectionRepository,
             ContextRepository contextRepository,
             ChunkRepository chunkRepository,
@@ -43,7 +42,9 @@ public class LoadService {
         this.contextRepository = contextRepository;
         this.chunkRepository = chunkRepository;
         this.vectorStore = vectorStore;
-        this.embeddingClient = modelClientFactory.createEmbeddingModel(embeddingProviderName, embeddingModelName);
+        this.embeddingClient = modelClientFactory.createEmbeddingModel(
+                applicationProperties.getEmbeddingModel().getProvider(),
+                applicationProperties.getEmbeddingModel().getName());
     }
 
     @Transactional

@@ -58,9 +58,9 @@ public class ConfigReader {
             config.setAgents(agents);
         }
 
-        Map<String, ApplicationProperties.ModelProperties> models = config.getModels();
-        if (models == null) {
-            models = Map.of();
+        Map<String, ApplicationProperties.ModelProperties> chatModels = config.getChatModels();
+        if (chatModels == null) {
+            chatModels = Map.of();
         }
 
         for (Map.Entry<String, JsonNode> agentEntry : agentsNode.properties()) {
@@ -73,7 +73,7 @@ public class ConfigReader {
             }
 
             String modelKey = chatNode.asText();
-            ApplicationProperties.ModelProperties modelConfig = models.get(modelKey);
+            ApplicationProperties.ModelProperties modelConfig = chatModels.get(modelKey);
             if (modelConfig == null) {
                 continue;
             }
@@ -90,7 +90,9 @@ public class ConfigReader {
 
         root.put("track-roots", config.getTrackRoots());
         root.put("collections", config.getCollections());
-        root.put("models", config.getModels());
+        root.put("chat-models", config.getChatModels());
+        root.put("embedding-model", config.getEmbeddingModel());
+        root.put("reranking-model", config.getRerankingModel());
         root.put("agents", buildAgentsYaml(config));
         root.put("logging", config.getLogging());
 
@@ -109,7 +111,7 @@ public class ConfigReader {
             ApplicationProperties.AgentProperties agentConfig = entry.getValue();
             Map<String, Object> agentYaml = new LinkedHashMap<>();
 
-            String modelKey = resolveModelKey(config.getModels(), agentConfig.getChatModelProperties());
+            String modelKey = resolveModelKey(config.getChatModels(), agentConfig.getChatModelProperties());
             if (modelKey != null) {
                 agentYaml.put("chat", modelKey);
             }

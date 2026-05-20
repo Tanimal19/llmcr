@@ -7,9 +7,9 @@ import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.Context;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.reranking.RerankingModel;
@@ -73,13 +73,14 @@ public class QueryContextRetriever {
     private final RerankingModel rerankingModel;
 
     public QueryContextRetriever(
-            @Value("${llmcr.reranking.provider}") String rerankingProviderName,
-            @Value("${llmcr.reranking.model}") String rerankingModelName,
+            ApplicationProperties applicationProperties,
             MyVectorStore vectorStore, ContextRepository contextRepository,
             ModelClientFactory modelClientFactory) {
         this.vectorStore = vectorStore;
         this.contextRepository = contextRepository;
-        this.rerankingModel = modelClientFactory.createRerankingModel(rerankingProviderName, rerankingModelName);
+        this.rerankingModel = modelClientFactory.createRerankingModel(
+                applicationProperties.getRerankingModel().getProvider(),
+                applicationProperties.getRerankingModel().getName());
     }
 
     public List<ContextScorePair> retrieve(ContextRetrievalRequest request) {

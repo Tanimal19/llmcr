@@ -44,14 +44,19 @@ class ConfigReaderTest {
                 List.of("spring-ai-main-code", "spring-ai-main-docs"),
                 config.getCollections().get("project-context").getTrackRoots());
 
-        assertNotNull(config.getModels());
-        assertEquals(5, config.getModels().size());
-        assertEquals("openai", config.getModels().get("nemotron-3-4b").getProvider());
-        assertEquals(
-                ApplicationProperties.ModelType.CHAT_MODEL,
-                config.getModels().get("nemotron-3-4b").getType());
+        assertNotNull(config.getChatModels());
+        assertEquals(3, config.getChatModels().size());
+        assertEquals("openai", config.getChatModels().get("nemotron-3-4b").getProvider());
 
-        ApplicationProperties.ModelProperties expectedModel = config.getModels().get("nemotron-3-4b");
+        assertNotNull(config.getEmbeddingModel());
+        assertEquals("harrier-0.6b", config.getEmbeddingModel().getName());
+        assertEquals("openai", config.getEmbeddingModel().getProvider());
+
+        assertNotNull(config.getRerankingModel());
+        assertEquals("qwen3-reranker-0.6b", config.getRerankingModel().getName());
+        assertEquals("openai", config.getRerankingModel().getProvider());
+
+        ApplicationProperties.ModelProperties expectedModel = config.getChatModels().get("nemotron-3-4b");
         ApplicationProperties.AgentProperties qaAgent = config.getAgents().get("questionAnswering");
         ApplicationProperties.AgentProperties interpretationAgent = config.getAgents().get("interpretation");
 
@@ -63,7 +68,7 @@ class ConfigReaderTest {
         assertEquals("all", qaAgent.getCollection());
 
         assertNotNull(interpretationAgent);
-        assertSame(config.getModels().get("gemini-2.5-flash-lite"), interpretationAgent.getChatModelProperties());
+        assertSame(config.getChatModels().get("gemini-2.5-flash-lite"), interpretationAgent.getChatModelProperties());
         assertEquals("project-context", interpretationAgent.getCollection());
 
         assertNotNull(config.getLogging());
@@ -83,11 +88,11 @@ class ConfigReaderTest {
 
         config.getCollections().get("project-code").setTrackRoots(List.of("spring-ai-main-docs"));
 
-        config.getModels().get("phi-4-mini").setProvider("azure-openai");
-        config.getModels().get("qwen3-reranker-0.6b").setType(ApplicationProperties.ModelType.CHAT_MODEL);
+        config.getChatModels().get("phi-4-mini").setProvider("azure-openai");
+        config.getRerankingModel().setProvider("azure-openai");
 
         config.getAgents().get("questionAnswering")
-                .setChatModelProperties(config.getModels().get("gemini-2.5-flash-lite"));
+                .setChatModelProperties(config.getChatModels().get("gemini-2.5-flash-lite"));
         config.getAgents().get("questionAnswering").setCollection("guidelines");
 
         config.getLogging().setReviewOutputDir("/tmp/reviews");
@@ -101,12 +106,10 @@ class ConfigReaderTest {
         assertEquals(
                 List.of("spring-ai-main-docs"),
                 reloaded.getCollections().get("project-code").getTrackRoots());
-        assertEquals("azure-openai", reloaded.getModels().get("phi-4-mini").getProvider());
-        assertEquals(
-                ApplicationProperties.ModelType.CHAT_MODEL,
-                reloaded.getModels().get("qwen3-reranker-0.6b").getType());
+        assertEquals("azure-openai", reloaded.getChatModels().get("phi-4-mini").getProvider());
+        assertEquals("azure-openai", reloaded.getRerankingModel().getProvider());
         assertSame(
-                reloaded.getModels().get("gemini-2.5-flash-lite"),
+                reloaded.getChatModels().get("gemini-2.5-flash-lite"),
                 reloaded.getAgents().get("questionAnswering").getChatModelProperties());
         assertEquals("guidelines", reloaded.getAgents().get("questionAnswering").getCollection());
         assertEquals("/tmp/reviews", reloaded.getLogging().getReviewOutputDir());
@@ -121,7 +124,7 @@ class ConfigReaderTest {
         ApplicationProperties config = reader.applicationConfiguration();
 
         config.getAgents().get("questionAnswering")
-                .setChatModelProperties(config.getModels().get("gemini-2.5-flash-lite"));
+                .setChatModelProperties(config.getChatModels().get("gemini-2.5-flash-lite"));
 
         reader.save(config);
 
@@ -134,7 +137,7 @@ class ConfigReaderTest {
 
         ApplicationProperties reloaded = reader.applicationConfiguration();
         assertSame(
-                reloaded.getModels().get("gemini-2.5-flash-lite"),
+                reloaded.getChatModels().get("gemini-2.5-flash-lite"),
                 reloaded.getAgents().get("questionAnswering").getChatModelProperties());
     }
 
@@ -166,32 +169,26 @@ class ConfigReaderTest {
                       - "spring-ai-main-docs"
                       - "docs"
 
-
-                models:
+                chat-models:
                   "nemotron-3-4b":
                     name: "nemotron-3-4b"
                     provider: "openai"
-                    type: "CHAT_MODEL"
 
                   "phi-4-mini":
                     name: "phi-4-mini"
                     provider: "openai"
-                    type: "CHAT_MODEL"
 
                   "gemini-2.5-flash-lite":
                     name: "gemini-2.5-flash-lite"
                     provider: "google"
-                    type: "CHAT_MODEL"
 
-                  "harrier-0.6b":
-                    name: "harrier-0.6b"
-                    provider: "openai"
-                    type: "EMBEDDING_MODEL"
+                embedding-model:
+                  name: "harrier-0.6b"
+                  provider: "openai"
 
-                  "qwen3-reranker-0.6b":
-                    name: "qwen3-reranker-0.6b"
-                    provider: "openai"
-                    type: "RERANKING_MODEL"
+                reranking-model:
+                  name: "qwen3-reranker-0.6b"
+                  provider: "openai"
 
                 agents:
                   questionAnswering:

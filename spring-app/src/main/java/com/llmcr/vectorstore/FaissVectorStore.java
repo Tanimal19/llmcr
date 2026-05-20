@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.Chunk;
 import com.llmcr.service.FaissService;
 import com.llmcr.service.ModelClientFactory;
@@ -23,12 +23,13 @@ public class FaissVectorStore extends MyVectorStore {
     private final EmbeddingModel embeddingModel;
 
     public FaissVectorStore(
-            @Value("${llmcr.embedding.provider}") String embeddingProviderName,
-            @Value("${llmcr.embedding.model}") String embeddingModelName,
+            ApplicationProperties applicationProperties,
             FaissService faissService,
             ModelClientFactory modelClientFactory) {
         this.faissService = faissService;
-        this.embeddingModel = modelClientFactory.createEmbeddingModel(embeddingProviderName, embeddingModelName);
+        this.embeddingModel = modelClientFactory.createEmbeddingModel(
+                applicationProperties.getEmbeddingModel().getProvider(),
+                applicationProperties.getEmbeddingModel().getName());
     }
 
     public void addChunks(List<Chunk> chunks, String collectionName) {

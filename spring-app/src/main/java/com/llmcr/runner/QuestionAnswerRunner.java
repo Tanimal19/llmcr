@@ -36,7 +36,6 @@ public class QuestionAnswerRunner implements CommandLineRunner {
         }
 
         logger.info("Running question-answer agent for query: {}", query);
-        String answer = questionAnswerAgent.execute(query);
-        logger.info("\nFinal Answer:\n" + answer);
+        questionAnswerAgent.execute(query);
     }
 }

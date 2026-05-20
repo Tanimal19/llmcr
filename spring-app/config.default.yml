@@ -55,36 +55,30 @@ collections:
       - "usecases"
 
 # Each model has a unique name, a provider, and a type.
-models:
+chat-models:
   "nemotron-3-4b":
     name: "nemotron-3-4b"
     provider: "openai"
-    type: "CHAT_MODEL"
 
   "phi-4-mini":
     name: "phi-4-mini"
     provider: "openai"
-    type: "CHAT_MODEL"
 
   "llama-3.1-8b":
     name: "llama-3.1-8b"
     provider: "openai"
-    type: "CHAT_MODEL"
 
   "gemini-2.5-flash-lite":
     name: "gemini-2.5-flash-lite"
     provider: "google"
-    type: "CHAT_MODEL"
 
-  "harrier-0.6b":
-    name: "harrier-0.6b"
-    provider: "openai"
-    type: "EMBEDDING_MODEL"
+embedding-model:
+  name: "harrier-0.6b"
+  provider: "openai"
 
-  "qwen3-reranker-0.6b":
-    name: "qwen3-reranker-0.6b"
-    provider: "openai"
-    type: "RERANKING_MODEL"
+reranking-model:
+  name: "qwen3-reranker-0.6b"
+  provider: "openai"
 
 # Set each agent's chat model
 agents:
@@ -114,4 +108,4 @@ agents:
     chat: "gemini-2.5-flash-lite"
 
 logging:
-  review-output-dir: "/reviews"
+  review-output-dir: "../reviews"

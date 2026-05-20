@@ -2,6 +2,7 @@ package com.llmcr.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,8 +75,7 @@ class DatabaseInitializerTest {
 
         databaseInitializer.initCollections();
 
-        verify(chunkCollectionRepository).save(collectionCaptor.capture());
-        verify(chunkCollectionRepository).save(collectionCaptor.capture());
+        verify(chunkCollectionRepository, times(2)).save(collectionCaptor.capture());
 
         List<ChunkCollection> savedCollections = collectionCaptor.getAllValues();
         assertEquals(2, savedCollections.size());
@@ -114,6 +114,8 @@ class DatabaseInitializerTest {
         when(properties.getTrackRoots()).thenReturn(List.of(rootA, rootB));
         when(properties.getCollections()).thenReturn(Map.of());
 
+        when(trackRootRepository.findByPath("/data/a")).thenReturn(trackRootA);
+        when(trackRootRepository.findByPath("/data/b")).thenReturn(trackRootB);
         when(trackRootRepository.findAll()).thenReturn(List.of(trackRootA, trackRootB));
         when(chunkCollectionRepository.findByName("all")).thenReturn(Optional.of(existingAll));
 

@@ -24,7 +24,7 @@ public class AgentLoggerAdvisor implements BaseAdvisor {
 
     @Override
     public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-        logger.info("[{}] Input: {}", agentName,
+        logger.info("{} input: {}", agentName,
                 chatClientRequest.prompt().getLastUserOrToolResponseMessage().getText());
         AgentContextHolder.beginIteration(chatClientRequest.prompt().getInstructions());
         return chatClientRequest;
@@ -34,7 +34,7 @@ public class AgentLoggerAdvisor implements BaseAdvisor {
     public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
         String responseText = extractText(chatClientResponse.chatResponse());
         if (responseText != null && !responseText.isBlank()) {
-            logger.info("[{}] Output: {}", agentName, responseText);
+            logger.info("{} output: {}", agentName, responseText);
         }
 
         AgentContextHolder.completeIteration(responseText != null ? responseText : chatClientResponse.chatResponse());

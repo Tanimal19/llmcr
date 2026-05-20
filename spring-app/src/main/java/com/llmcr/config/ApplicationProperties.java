@@ -15,7 +15,14 @@ public class ApplicationProperties {
 
     private Map<String, CollectionProperties> collections = new LinkedHashMap<>();
 
-    private Map<String, ModelProperties> models = new LinkedHashMap<>();
+    @JsonProperty("chat-models")
+    private Map<String, ModelProperties> chatModels = new LinkedHashMap<>();
+
+    @JsonProperty("embedding-model")
+    private ModelProperties embeddingModel = new ModelProperties();
+
+    @JsonProperty("reranking-model")
+    private ModelProperties rerankingModel = new ModelProperties();
 
     private Map<String, AgentProperties> agents = new LinkedHashMap<>();
 
@@ -39,12 +46,28 @@ public class ApplicationProperties {
         this.collections = collections;
     }
 
-    public Map<String, ModelProperties> getModels() {
-        return models;
+    public Map<String, ModelProperties> getChatModels() {
+        return chatModels;
     }
 
-    public void setModels(Map<String, ModelProperties> models) {
-        this.models = models;
+    public void setChatModels(Map<String, ModelProperties> chatModels) {
+        this.chatModels = chatModels;
+    }
+
+    public ModelProperties getEmbeddingModel() {
+        return embeddingModel;
+    }
+
+    public void setEmbeddingModel(ModelProperties embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
+    public ModelProperties getRerankingModel() {
+        return rerankingModel;
+    }
+
+    public void setRerankingModel(ModelProperties rerankingModel) {
+        this.rerankingModel = rerankingModel;
     }
 
     public Map<String, AgentProperties> getAgents() {
@@ -118,7 +141,6 @@ public class ApplicationProperties {
 
         private String name;
         private String provider;
-        private ModelType type;
 
         public String getName() {
             return name;
@@ -135,20 +157,6 @@ public class ApplicationProperties {
         public void setProvider(String provider) {
             this.provider = provider;
         }
-
-        public ModelType getType() {
-            return type;
-        }
-
-        public void setType(ModelType type) {
-            this.type = type;
-        }
-    }
-
-    public enum ModelType {
-        CHAT_MODEL,
-        EMBEDDING_MODEL,
-        RERANKING_MODEL,
     }
 
     public static class AgentProperties {

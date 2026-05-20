@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.llmcr.agent.ComputationAgent;
@@ -31,6 +30,7 @@ import com.llmcr.agent.SummaryAgent.Issue;
 import com.llmcr.agent.SummaryAgent.ItemAnswer;
 import com.llmcr.agent.SummaryAgent.SummaryAgentInput;
 import com.llmcr.agent.SummaryAgent.SummaryAgentOutput;
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.review.PullRequestParser.PullRequestData;
 
 @Service
@@ -44,14 +44,15 @@ public class CodeReviewService {
     private final ComputationAgent computationAgent;
     private final SummaryAgent summaryAgent;
 
-    @Value("${llmcr.review.output-dir}")
     private String outputDir;
 
     public CodeReviewService(
+            ApplicationProperties applicationProperties,
             InterpretationAgent interpretationAgent,
             PlanningAgent planningAgent,
             ComputationAgent computationAgent,
             SummaryAgent summaryAgent) {
+        this.outputDir = applicationProperties.getLogging().getReviewOutputDir();
         this.interpretationAgent = interpretationAgent;
         this.planningAgent = planningAgent;
         this.computationAgent = computationAgent;
