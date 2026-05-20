@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.base.SingleCallAgent;
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -45,19 +45,23 @@ public class InterpretationAgent extends
             <format_instructions>
             """;
 
-    private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
-            10, new AdaptiveKStrategy(), "project-context", false);
-
-    private final QueryContextRetriever queryContextRetriever;
+    private static final String AGENT_NAME = "interpretation";
+    private final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION;
+    private final QueryContextRetriever QUERY_CONTEXT_RETRIEVER;
 
     public InterpretationAgent(
-            @Value("${llmcr.agent.interpretation.chat.provider}") String chatProviderName,
-            @Value("${llmcr.agent.interpretation.chat.model}") String chatModelName,
+            ApplicationProperties applicationProperties,
             ModelClientFactory modelClientFactory,
             QueryContextRetriever queryContextRetriever) {
-        super(chatProviderName, chatModelName, modelClientFactory,
+        super(AGENT_NAME, applicationProperties, modelClientFactory,
                 new BeanOutputConverter<>(InterpretationAgentOutput.class));
-        this.queryContextRetriever = queryContextRetriever;
+
+        this.RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
+                10,
+                new AdaptiveKStrategy(),
+                applicationProperties.getAgents().get(AGENT_NAME).getCollection(),
+                false);
+        this.QUERY_CONTEXT_RETRIEVER = queryContextRetriever;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class InterpretationAgent extends
             queries.add(change.diffContent());
         }
 
-        List<ContextScorePair> retrievedContexts = queryContextRetriever
+        List<ContextScorePair> retrievedContexts = QUERY_CONTEXT_RETRIEVER
                 .retrieve(new ContextRetrievalRequest(queries, RETRIEVAL_CONFIGURATION));
         return String.join("\n---\n", retrievedContexts.stream()
                 .map(pair -> pair.context().getContent())

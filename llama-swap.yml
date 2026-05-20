@@ -80,7 +80,7 @@ macros:
 # - the model's ID is available in the ${MODEL_ID} macro, also available in macros defined above
 # - below are examples of the all the settings a model can have
 models:
-  "Phi-4-Mini":
+  "phi-4-mini":
     cmd: >
       llama-server
       -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
@@ -89,9 +89,9 @@ models:
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "Phi-4-Mini"
+    name: "phi-4-mini"
 
-  "Nemotron-3-4B":
+  "nemotron-3-4b":
     cmd: >
       llama-server
       -m ${model_dir}/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf
@@ -100,9 +100,9 @@ models:
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "Nemotron-3-4B"
+    name: "nemotron-3-4b"
 
-  "Llama-3.1-8B":
+  "llama-3.1-8b":
     cmd: >
       llama-server
       -m ${model_dir}/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
@@ -111,9 +111,9 @@ models:
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "Llama-3.1-8B"
+    name: "llama-3.1-8b"
 
-  "Harrier-0.6b":
+  "harrier-0.6b":
     cmd: >
       llama-server
       -m ${model_dir}/harrier-oss-v1-0.6b.Q4_K_M.gguf
@@ -125,9 +125,9 @@ models:
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "Harrier-0.6b"
+    name: "harrier-0.6b"
 
-  "Qwen3-Reranker-0.6b":
+  "qwen3-reranker-0.6b":
     cmd: >
       llama-server
       -m ${model_dir}/qwen3-reranker-0.6b-q8_0.gguf
@@ -136,7 +136,7 @@ models:
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
-    name: "Qwen3-Reranker-0.6b"
+    name: "qwen3-reranker-0.6b"
 
 matrix:
   # vars: short names for models (alphanumeric, 1-8 chars)
@@ -145,11 +145,11 @@ matrix:
   # - used to keep set DSL logic short and easier to read
   # - sets and evict_costs only use identifiers defined in vars
   vars:
-    lm: Llama-3.1-8B
-    pm: Phi-4-Mini
-    nm: Nemotron-3-4B
-    he: Harrier-0.6b
-    qr: Qwen3-Reranker-0.6b
+    lm: llama-3.1-8b
+    pm: phi-4-mini
+    nm: nemotron-3-4b
+    he: harrier-0.6b
+    qr: qwen3-reranker-0.6b
 
   sets:
     standard: "(lm | pm | nm) & he"

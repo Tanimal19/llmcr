@@ -18,6 +18,8 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import com.llmcr.agent.logging.AgentContextHolder;
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
+import com.llmcr.config.ApplicationProperties;
+import com.llmcr.config.ApplicationProperties.ModelProperties;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.util.StringUtils;
 
@@ -41,10 +43,14 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
      * model response to type R. If outputConverter is null, the raw response will
      * be cast to R (which may cause a ClassCastException if R is not String).
      */
-    protected BaseAgent(String chatProviderName, String chatModelName,
-            ModelClientFactory modelClientFactory, BeanOutputConverter<R> outputConverter) {
-        this.chatProviderName = chatProviderName;
-        this.chatModelName = chatModelName;
+    protected BaseAgent(
+            String agentName,
+            ApplicationProperties applicationProperties,
+            ModelClientFactory modelClientFactory,
+            BeanOutputConverter<R> outputConverter) {
+        ModelProperties chatConfig = applicationProperties.getAgents().get(agentName).getChatModelProperties();
+        this.chatProviderName = chatConfig.getProvider();
+        this.chatModelName = chatConfig.getName();
         this.chatClient = modelClientFactory.createChatClient(chatProviderName, chatModelName);
         this.outputConverter = outputConverter;
     }

@@ -9,10 +9,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.base.BaseAgent;
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.tool.DatabaseTool;
 import com.llmcr.tool.MyToolCallingManager;
@@ -67,17 +67,17 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
             User Query:
             <query>
             """;
+    private static final String AGENT_NAME = "retrieval";
 
     private final MyToolCallingManager toolCallingManager;
 
     private List<String> toolResults;
 
     public RetrievalAgent(
-            @Value("${llmcr.agent.retrieval.chat.provider}") String chatProviderName,
-            @Value("${llmcr.agent.retrieval.chat.model}") String chatModelName,
+            ApplicationProperties applicationProperties,
             ModelClientFactory modelClientFactory,
             DatabaseTool databaseTool) {
-        super(chatProviderName, chatModelName, modelClientFactory,
+        super(AGENT_NAME, applicationProperties, modelClientFactory,
                 new BeanOutputConverter<>(RetrievalModelResponse.class));
 
         ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool);

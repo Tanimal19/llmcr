@@ -3,10 +3,10 @@ package com.llmcr.agent;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.base.SingleCallAgent;
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -35,18 +35,22 @@ public class QuestionAnswerAgent extends
             Answer:
             """;
 
-    private static final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
-            10, new AdaptiveKStrategy(), "all", false);
-
-    private final QueryContextRetriever queryContextRetriever;
+    private static final String AGENT_NAME = "questionAnswering";
+    private final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION;
+    private final QueryContextRetriever QUERY_CONTEXT_RETRIEVER;
 
     public QuestionAnswerAgent(
-            @Value("${llmcr.agent.question-answer.chat.provider}") String chatProviderName,
-            @Value("${llmcr.agent.question-answer.chat.model}") String chatModelName,
+            ApplicationProperties applicationProperties,
             ModelClientFactory modelClientFactory,
             QueryContextRetriever queryContextRetriever) {
-        super(chatProviderName, chatModelName, modelClientFactory, null);
-        this.queryContextRetriever = queryContextRetriever;
+        super(AGENT_NAME, applicationProperties, modelClientFactory, null);
+
+        this.RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
+                10,
+                new AdaptiveKStrategy(),
+                applicationProperties.getAgents().get(AGENT_NAME).getCollection(),
+                false);
+        this.QUERY_CONTEXT_RETRIEVER = queryContextRetriever;
     }
 
     @Override
@@ -70,7 +74,7 @@ public class QuestionAnswerAgent extends
             return "(no query provided)";
         }
 
-        List<ContextScorePair> retrievedContexts = queryContextRetriever
+        List<ContextScorePair> retrievedContexts = QUERY_CONTEXT_RETRIEVER
                 .retrieve(new ContextRetrievalRequest(List.of(query), RETRIEVAL_CONFIGURATION));
 
         if (retrievedContexts.isEmpty()) {

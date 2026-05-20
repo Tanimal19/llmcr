@@ -292,7 +292,7 @@ public class SourceService {
         }
     }
 
-    public String absoluteToRelativePath(Path absolute) {
+    private String absoluteToRelativePath(Path absolute) {
         absolute = absolute.toAbsolutePath().normalize();
         return PROJECT_ROOT.relativize(absolute).toString();
     }

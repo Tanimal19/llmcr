@@ -25,11 +25,11 @@ public class DatabaseInitializer {
     private final ChunkCollectionRepository chunkCollectionRepository;
 
     @Autowired
-    private final DatabaseInitProperties properties;
+    private final ApplicationProperties properties;
 
     public DatabaseInitializer(TrackRootRepository trackRootRepository,
             ChunkCollectionRepository chunkCollectionRepository,
-            DatabaseInitProperties properties) {
+            ApplicationProperties properties) {
         this.trackRootRepository = trackRootRepository;
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.properties = properties;
@@ -37,7 +37,7 @@ public class DatabaseInitializer {
 
     public List<TrackRoot> initTrackRoots() {
         List<TrackRoot> result = new ArrayList<>();
-        for (DatabaseInitProperties.TrackRootConfig config : properties.getTrackRoots()) {
+        for (ApplicationProperties.TrackRootProperties config : properties.getTrackRoots()) {
             TrackRoot existing = trackRootRepository.findByPath(config.getPath());
             if (existing != null) {
                 result.add(existing);
@@ -55,14 +55,18 @@ public class DatabaseInitializer {
         Map<String, TrackRoot> trackRootById = properties.getTrackRoots().stream()
                 .filter(c -> c.getId() != null)
                 .collect(Collectors.toMap(
-                        DatabaseInitProperties.TrackRootConfig::getId,
+                        ApplicationProperties.TrackRootProperties::getId,
                         c -> {
                             TrackRoot t = trackRootRepository.findByPath(c.getPath());
                             return t;
                         }));
 
-        for (DatabaseInitProperties.CollectionConfig config : properties.getCollections()) {
-            ChunkCollection existing = chunkCollectionRepository.findByName(config.getName()).orElse(null);
+        for (Map.Entry<String, ApplicationProperties.CollectionProperties> entry : properties.getCollections()
+                .entrySet()) {
+            String collectionName = entry.getKey();
+            ApplicationProperties.CollectionProperties config = entry.getValue();
+
+            ChunkCollection existing = chunkCollectionRepository.findByName(collectionName).orElse(null);
             if (existing != null) {
                 continue;
             }
@@ -70,8 +74,33 @@ public class DatabaseInitializer {
                     .map(trackRootById::get)
                     .filter(t -> t != null)
                     .collect(Collectors.toSet());
-            ChunkCollection collection = new ChunkCollection(config.getName(), trackRoots);
+            ChunkCollection collection = new ChunkCollection(collectionName, trackRoots);
             chunkCollectionRepository.save(collection);
+        }
+
+        ensureAllCollectionContainsAllTrackRoots();
+    }
+
+    private void ensureAllCollectionContainsAllTrackRoots() {
+        Set<TrackRoot> allTrackRoots = new HashSet<>(trackRootRepository.findAll());
+        ChunkCollection allCollection = chunkCollectionRepository.findByName("all").orElse(null);
+
+        if (allCollection == null) {
+            ChunkCollection collection = new ChunkCollection("all", allTrackRoots);
+            chunkCollectionRepository.save(collection);
+            return;
+        }
+
+        boolean changed = false;
+        for (TrackRoot trackRoot : allTrackRoots) {
+            if (!allCollection.getTrackRoots().contains(trackRoot)) {
+                allCollection.addTrackRoot(trackRoot);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            chunkCollectionRepository.save(allCollection);
         }
     }
 

@@ -6,10 +6,10 @@ import java.util.Map;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.llmcr.agent.base.BaseAgent;
+import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.review.CodeReviewService.CodeChange;
 
@@ -112,15 +112,15 @@ public class ComputationAgent
             Code changes:
             <code_changes>
             """;
+    private static final String AGENT_NAME = "computation";
 
     private final RetrievalAgent retrievalAgent;
 
     public ComputationAgent(
-            @Value("${llmcr.agent.computation.chat.provider}") String chatProviderName,
-            @Value("${llmcr.agent.computation.chat.model}") String chatModelName,
+            ApplicationProperties applicationProperties,
             ModelClientFactory modelClientFactory,
             RetrievalAgent retrievalAgent) {
-        super(chatProviderName, chatModelName, modelClientFactory,
+        super(AGENT_NAME, applicationProperties, modelClientFactory,
                 new BeanOutputConverter<>(ComputationModelResponse.class));
         this.retrievalAgent = retrievalAgent;
     }
