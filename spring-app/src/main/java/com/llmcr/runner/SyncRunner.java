@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.llmcr.config.DatabaseInitializer;
 import com.llmcr.service.SyncService;
 import com.llmcr.service.etl.ETLService;
 
