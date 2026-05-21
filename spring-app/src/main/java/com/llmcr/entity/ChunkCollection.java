@@ -98,24 +98,15 @@ public class ChunkCollection {
             return;
         }
 
-        if (Hibernate.isInitialized(havedTrackRoots)) {
-            havedTrackRoots.remove(trackRoot);
-        }
-
-        if (Hibernate.isInitialized(trackRoot.getInCollections())) {
-            trackRoot.getInCollections().remove(this);
-        }
+        havedTrackRoots.remove(trackRoot);
+        trackRoot.getInCollections().remove(this);
     }
 
     public void clearTrackRoots() {
-        if (Hibernate.isInitialized(havedTrackRoots)) {
-            for (TrackRoot trackRoot : havedTrackRoots) {
-                if (Hibernate.isInitialized(trackRoot.getInCollections())) {
-                    trackRoot.getInCollections().remove(this);
-                }
-            }
-            havedTrackRoots.clear();
+        for (TrackRoot trackRoot : new HashSet<>(havedTrackRoots)) {
+            trackRoot.getInCollections().remove(this);
         }
+        havedTrackRoots.clear();
     }
 
     public void addChunks(Set<Chunk> chunks) {
@@ -151,18 +142,6 @@ public class ChunkCollection {
         }
     }
 
-    public void clearChunks() {
-        if (Hibernate.isInitialized(havedChunks)) {
-            for (Chunk chunk : havedChunks) {
-                if (Hibernate.isInitialized(chunk.getChunkCollections())) {
-                    chunk.getChunkCollections().remove(this);
-                }
-            }
-            havedChunks.clear();
-        }
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;

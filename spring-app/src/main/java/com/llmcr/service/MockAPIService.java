@@ -4,10 +4,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.llmcr.service.SourceSyncService.TrackRootPreview;
 import com.llmcr.service.etl.ETLService;
 import com.llmcr.service.review.CodeReviewService;
 import com.llmcr.service.review.CodeReviewService.CodeReviewOutput;
+import com.llmcr.service.sync.SourceSyncService;
+import com.llmcr.service.sync.SourceSyncService.TrackRootPreview;
 
 /**
  * This is a mock API service that simulates interactions with frontend and

@@ -156,7 +156,7 @@ public class TrackRoot {
 
     @PreRemove
     private void preRemove() {
-        for (ChunkCollection collection : inCollections) {
+        for (ChunkCollection collection : new HashSet<>(inCollections)) {
             collection.removeTrackRoot(this);
         }
     }

@@ -19,10 +19,16 @@ import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.vectorstore.MyVectorStore;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Component
 public class LoadService {
 
     private static final Logger logger = LoggerFactory.getLogger(LoadService.class);
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final ContextRepository contextRepository;
@@ -102,7 +108,7 @@ public class LoadService {
      */
     @Transactional
     public void reloadAllChunks() {
-        logger.info("Start reloading chunks to vector store");
+        logger.info("Start reloading chunks to vector store...");
 
         List<ChunkCollection> chunkCollections = chunkCollectionRepository.findAll();
         if (chunkCollections.isEmpty()) {
@@ -112,21 +118,11 @@ public class LoadService {
 
         // reset collections in both database and vector store
         chunkCollections.forEach(collection -> {
-            collection.clearChunks();
             vectorStore.removeCollection(collection.getName());
-        });
-        chunkCollectionRepository.saveAll(chunkCollections);
-
-        // recompute chunks in collections based on track roots
-        contextRepository.findAll().forEach(context -> {
-            Set<ChunkCollection> inCollections = context.getSource().getTrackRoot().getInCollections();
-            for (ChunkCollection chunkCollection : inCollections) {
-                chunkCollection.addChunks(context.getChunks());
-            }
-            chunkCollectionRepository.saveAll(inCollections);
+            logger.info("Cleared collection '{}' from vectorstore", collection.getName());
         });
 
-        logger.info("Reloading chunks into vector store");
+        logger.info("Reloading chunks into vector store...");
         int totalAdded = 0;
         int totalSkippedMissingEmbedding = 0;
         for (ChunkCollection chunkCollection : chunkCollections) {
@@ -151,5 +147,33 @@ public class LoadService {
 
         logger.info("Vector store reload complete. Added {} chunks, skipped {} chunks without embedding",
                 totalAdded, totalSkippedMissingEmbedding);
+    }
+
+    @Transactional
+    public int rebuildCollectionChunkMapping() {
+        logger.info("Rebuilding collection-chunk mapping...");
+
+        entityManager.createNativeQuery("DELETE FROM collection_have_chunks")
+                .executeUpdate();
+
+        String sql = """
+                INSERT INTO collection_have_chunks (chunk_collection_id, chunk_id)
+                SELECT DISTINCT
+                    ctr.chunk_collection_id,
+                    ch.id
+                FROM collection_have_track_roots ctr
+                JOIN source s
+                    ON s.track_root_id = ctr.track_root_id
+                JOIN context c
+                    ON c.source_id = s.id
+                JOIN chunk ch
+                    ON ch.context_id = c.id
+                """;
+
+        int inserted = entityManager.createNativeQuery(sql).executeUpdate();
+
+        entityManager.flush();
+
+        return inserted;
     }
 }
