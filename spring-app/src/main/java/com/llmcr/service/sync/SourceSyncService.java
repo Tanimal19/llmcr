@@ -79,9 +79,9 @@ public class SourceSyncService {
                 .toList();
     }
 
-    public void syncAllTrackRoot() {
+    public void syncAllTrackRootSource() {
         trackRootRepository.findAllIds().stream().forEach(trackRootId -> {
-            self.syncTrackRoot(trackRootId);
+            self.syncTrackRootSource(trackRootId);
         });
     }
 
@@ -273,7 +273,7 @@ public class SourceSyncService {
      * Only ADDED, MODIFIED sources will need to be re-extracted.
      */
     @Transactional
-    public void syncTrackRoot(Long trackRootId) {
+    public void syncTrackRootSource(Long trackRootId) {
         TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
                 .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
 

@@ -97,7 +97,7 @@ public class MockAPIService {
      * Synchronizes all tracked source roots.
      */
     public void sync() {
-        sourceSyncService.syncAllTrackRoot();
+        sourceSyncService.syncAllTrackRootSource();
         if (ENABLE_ETL) {
             etlService.run();
         }
@@ -109,7 +109,7 @@ public class MockAPIService {
      * @param trackRootId identifier of the tracked root
      */
     public void sync(Long trackRootId) {
-        sourceSyncService.syncTrackRoot(trackRootId);
+        sourceSyncService.syncTrackRootSource(trackRootId);
         if (ENABLE_ETL) {
             etlService.run();
         }
