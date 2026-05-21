@@ -1,5 +1,6 @@
 package com.llmcr.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.config.ApplicationProperties;
-import com.llmcr.config.ConfigReader;
+import com.llmcr.entity.ChunkCollection;
+import com.llmcr.entity.TrackRoot;
+import com.llmcr.repository.ChunkCollectionRepository;
+import com.llmcr.repository.TrackRootRepository;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
@@ -53,22 +57,29 @@ public class ChatService {
 
     private final ApplicationProperties applicationProperties;
     private final ModelClientFactory modelClientFactory;
+    private final ChunkCollectionRepository chunkCollectionRepository;
+    private final TrackRootRepository trackRootRepository;
+    private final QueryContextRetriever queryContextRetriever;
+
     private final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION;
-    private final QueryContextRetriever QUERY_CONTEXT_RETRIEVER;
 
     public ChatService(
             ApplicationProperties applicationProperties,
-            ConfigReader configReader,
             ModelClientFactory modelClientFactory,
+            ChunkCollectionRepository chunkCollectionRepository,
+            TrackRootRepository trackRootRepository,
             QueryContextRetriever queryContextRetriever) {
         this.applicationProperties = applicationProperties;
         this.modelClientFactory = modelClientFactory;
+        this.chunkCollectionRepository = chunkCollectionRepository;
+        this.trackRootRepository = trackRootRepository;
+
         this.RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
                 10,
                 new AdaptiveKStrategy(),
                 COLLECTION_NAME,
                 false);
-        this.QUERY_CONTEXT_RETRIEVER = queryContextRetriever;
+        this.queryContextRetriever = queryContextRetriever;
     }
 
     public String chat(String query) {
@@ -95,7 +106,7 @@ public class ChatService {
             return "(no query provided)";
         }
 
-        List<ContextScorePair> retrievedContexts = QUERY_CONTEXT_RETRIEVER
+        List<ContextScorePair> retrievedContexts = queryContextRetriever
                 .retrieve(new ContextRetrievalRequest(List.of(query), RETRIEVAL_CONFIGURATION));
 
         if (retrievedContexts.isEmpty()) {
@@ -107,4 +118,23 @@ public class ChatService {
                 .toList());
     }
 
+    public Set<String> getRagScope() {
+        ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
+        if (collection == null) {
+            return new HashSet<>();
+        }
+        return collection.getTrackRoots().stream().map(TrackRoot::getPath).collect(java.util.stream.Collectors.toSet());
+    }
+
+    public void setRagScope(Set<String> trackRootPaths) {
+        Set<TrackRoot> trackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
+        ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
+        if (collection == null) {
+            collection = new ChunkCollection(COLLECTION_NAME, trackRoots);
+            collection.setName(COLLECTION_NAME);
+        } else {
+            collection.clearTrackRoots();
+            collection.addTrackRoots(trackRoots);
+        }
+    }
 }
