@@ -62,7 +62,7 @@ public class ClassNodeEnrichAgent extends
             <format_instructions>
             """;
 
-    private static final String AGENT_NAME = "classNodeEnrich";
+    private static final String AGENT_NAME = "class-node-enrich";
     private final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION;
     private final QueryContextRetriever QUERY_CONTEXT_RETRIEVER;
 

@@ -3,16 +3,17 @@ package com.llmcr.config;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.llmcr.entity.Source.SourceType;
 
 @Component
 public class ConfigReader {
@@ -29,133 +30,99 @@ public class ConfigReader {
     @Bean
     public ApplicationProperties applicationConfiguration() {
         try {
-            JsonNode root = objectMapper.readTree(new File(configFilePath));
-            ApplicationProperties config = objectMapper.treeToValue(root, ApplicationProperties.class);
-            bindAgentChatModelConfig(root, config);
-            return config;
+            ApplicationProperties raw = objectMapper.readValue(new File(configFilePath), ApplicationProperties.class);
+            return normalize(raw);
         } catch (IOException e) {
             throw new RuntimeException("Unable to read config: " + configFilePath, e);
         }
     }
 
-    public void save(ApplicationProperties config) {
-        try {
-            objectMapper.writeValue(new File(configFilePath), toYamlMap(config));
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to save config: " + configFilePath, e);
-        }
+    private ApplicationProperties normalize(ApplicationProperties raw) {
+        Map<String, ApplicationProperties.TrackRootProperties> trackRoots = normalizeTrackRoots(raw.trackRoots());
+        Map<String, ApplicationProperties.CollectionProperties> collections = normalizeCollections(raw.collections());
+        Map<String, ApplicationProperties.ModelProperties> chatModels = normalizeChatModels(raw.chatModels());
+        ApplicationProperties.ModelProperties embeddingModel = normalizeModel(raw.embeddingModel());
+        ApplicationProperties.ModelProperties rerankingModel = normalizeModel(raw.rerankingModel());
+        Map<String, ApplicationProperties.AgentProperties> agents = normalizeAgents(raw.agents(), chatModels);
+        ApplicationProperties.LoggingProperties logging = raw.logging() == null
+                ? new ApplicationProperties.LoggingProperties(null)
+                : raw.logging();
+
+        return new ApplicationProperties(
+                trackRoots,
+                collections,
+                chatModels,
+                embeddingModel,
+                rerankingModel,
+                agents,
+                logging);
     }
 
-    private void bindAgentChatModelConfig(JsonNode root, ApplicationProperties config) {
-        JsonNode agentsNode = root.path("agents");
-        if (!agentsNode.isObject()) {
-            return;
+    private Map<String, ApplicationProperties.TrackRootProperties> normalizeTrackRoots(
+            Map<String, ApplicationProperties.TrackRootProperties> trackRoots) {
+        Map<String, ApplicationProperties.TrackRootProperties> normalized = new LinkedHashMap<>();
+        for (Map.Entry<String, ApplicationProperties.TrackRootProperties> entry : defaultMap(trackRoots).entrySet()) {
+            String id = entry.getKey();
+            ApplicationProperties.TrackRootProperties value = entry.getValue();
+            String path = value == null ? null : value.path();
+            List<SourceType> allowedSourceTypes = value == null ? List.of() : defaultList(value.allowedSourceTypes());
+            normalized.put(id, new ApplicationProperties.TrackRootProperties(id, path, allowedSourceTypes));
         }
-
-        Map<String, ApplicationProperties.AgentProperties> agents = config.getAgents();
-        if (agents == null) {
-            agents = new LinkedHashMap<>();
-            config.setAgents(agents);
-        }
-
-        Map<String, ApplicationProperties.ModelProperties> chatModels = config.getChatModels();
-        if (chatModels == null) {
-            chatModels = Map.of();
-        }
-
-        for (Map.Entry<String, JsonNode> agentEntry : agentsNode.properties()) {
-            String agentName = agentEntry.getKey();
-            JsonNode agentNode = agentEntry.getValue();
-
-            JsonNode chatNode = agentNode.path("chat");
-            if (!chatNode.isTextual()) {
-                continue;
-            }
-
-            String modelKey = chatNode.asText();
-            ApplicationProperties.ModelProperties modelConfig = chatModels.get(modelKey);
-            if (modelConfig == null) {
-                continue;
-            }
-
-            ApplicationProperties.AgentProperties agentConfig = agents.computeIfAbsent(
-                    agentName,
-                    key -> new ApplicationProperties.AgentProperties());
-            agentConfig.setChatModelProperties(modelConfig);
-        }
+        return Map.copyOf(normalized);
     }
 
-    private Map<String, Object> toYamlMap(ApplicationProperties config) {
-        Map<String, Object> root = new LinkedHashMap<>();
-
-        root.put("track-roots", config.getTrackRoots());
-        root.put("collections", config.getCollections());
-        root.put("chat-models", config.getChatModels());
-        root.put("embedding-model", config.getEmbeddingModel());
-        root.put("reranking-model", config.getRerankingModel());
-        root.put("agents", buildAgentsYaml(config));
-        root.put("logging", config.getLogging());
-
-        return root;
+    private Map<String, ApplicationProperties.CollectionProperties> normalizeCollections(
+            Map<String, ApplicationProperties.CollectionProperties> collections) {
+        Map<String, ApplicationProperties.CollectionProperties> normalized = new LinkedHashMap<>();
+        for (Map.Entry<String, ApplicationProperties.CollectionProperties> entry : defaultMap(collections).entrySet()) {
+            ApplicationProperties.CollectionProperties value = entry.getValue();
+            List<String> trackRoots = value == null ? List.of() : defaultList(value.trackRoots());
+            normalized.put(entry.getKey(), new ApplicationProperties.CollectionProperties(trackRoots));
+        }
+        return Map.copyOf(normalized);
     }
 
-    private Map<String, Object> buildAgentsYaml(ApplicationProperties config) {
-        Map<String, Object> agentsYaml = new LinkedHashMap<>();
-        Map<String, ApplicationProperties.AgentProperties> agents = config.getAgents();
-        if (agents == null) {
-            return agentsYaml;
+    private Map<String, ApplicationProperties.ModelProperties> normalizeChatModels(
+            Map<String, ApplicationProperties.ModelProperties> chatModels) {
+        Map<String, ApplicationProperties.ModelProperties> normalized = new LinkedHashMap<>();
+        for (Map.Entry<String, ApplicationProperties.ModelProperties> entry : defaultMap(chatModels).entrySet()) {
+            normalized.put(entry.getKey(), normalizeModel(entry.getValue()));
         }
-
-        for (Map.Entry<String, ApplicationProperties.AgentProperties> entry : agents.entrySet()) {
-            String agentName = entry.getKey();
-            ApplicationProperties.AgentProperties agentConfig = entry.getValue();
-            Map<String, Object> agentYaml = new LinkedHashMap<>();
-
-            String modelKey = resolveModelKey(config.getChatModels(), agentConfig.getChatModelProperties());
-            if (modelKey != null) {
-                agentYaml.put("chat", modelKey);
-            }
-
-            String collection = agentConfig.getCollection();
-            if (collection != null) {
-                agentYaml.put("collection", collection);
-            }
-
-            agentsYaml.put(agentName, agentYaml);
-        }
-
-        return agentsYaml;
+        return Map.copyOf(normalized);
     }
 
-    private String resolveModelKey(
-            Map<String, ApplicationProperties.ModelProperties> models,
-            ApplicationProperties.ModelProperties targetModel) {
-        if (models == null || targetModel == null) {
-            return null;
-        }
-
-        for (Map.Entry<String, ApplicationProperties.ModelProperties> entry : models.entrySet()) {
-            if (entry.getValue() == targetModel) {
-                return entry.getKey();
+    private Map<String, ApplicationProperties.AgentProperties> normalizeAgents(
+            Map<String, ApplicationProperties.AgentProperties> agents,
+            Map<String, ApplicationProperties.ModelProperties> chatModels) {
+        Map<String, ApplicationProperties.AgentProperties> normalized = new LinkedHashMap<>();
+        for (Map.Entry<String, ApplicationProperties.AgentProperties> entry : defaultMap(agents).entrySet()) {
+            ApplicationProperties.AgentProperties value = entry.getValue();
+            String chatModelKey = value == null ? null : value.chat();
+            ApplicationProperties.ModelProperties modelProperties = chatModels.get(chatModelKey);
+            if (modelProperties == null) {
+                modelProperties = new ApplicationProperties.ModelProperties(null, null);
             }
+
+            normalized.put(
+                    entry.getKey(),
+                    new ApplicationProperties.AgentProperties(
+                            chatModelKey,
+                            modelProperties,
+                            value == null ? null : value.collection()));
         }
 
-        String targetName = targetModel.getName();
-        if (targetName == null) {
-            return null;
-        }
+        return Map.copyOf(normalized);
+    }
 
-        if (models.containsKey(targetName)) {
-            return targetName;
-        }
+    private ApplicationProperties.ModelProperties normalizeModel(ApplicationProperties.ModelProperties model) {
+        return model == null ? new ApplicationProperties.ModelProperties(null, null) : model;
+    }
 
-        for (Map.Entry<String, ApplicationProperties.ModelProperties> entry : models.entrySet()) {
-            ApplicationProperties.ModelProperties model = entry.getValue();
-            if (targetName.equals(model.getName())) {
-                return entry.getKey();
-            }
-        }
+    private <T> Map<String, T> defaultMap(Map<String, T> value) {
+        return value == null ? Map.of() : value;
+    }
 
-        return null;
+    private <T> List<T> defaultList(List<T> value) {
+        return value == null ? List.of() : List.copyOf(value);
     }
 }

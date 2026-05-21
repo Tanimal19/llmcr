@@ -24,8 +24,8 @@ public class TestRunner implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        String query = "Give me the content of VectorStoreDocumentRetriever.";
-        agent.execute(query);
+        // String query = "Give me the content of VectorStoreDocumentRetriever.";
+        // agent.execute(query);
     }
 
 }

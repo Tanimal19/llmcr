@@ -1,7 +1,7 @@
 package com.llmcr.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.Hibernate;
 
@@ -82,11 +82,11 @@ public class Context {
     private ContextType type;
 
     /**
-     * A list of chunk that represent the context in vector store. This is used for
+     * A set of chunk that represent the context in vector store. This is used for
      * retrieval-augmented generation (RAG).
      */
     @OneToMany(mappedBy = "context", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Chunk> chunks = new ArrayList<>();
+    private Set<Chunk> chunks = new HashSet<>();
 
     /**
      * Current number of chunks attached to this context.
@@ -201,13 +201,13 @@ public class Context {
         this.type = type;
     }
 
-    public List<Chunk> getChunks() {
+    public Set<Chunk> getChunks() {
         return chunks;
     }
 
-    public void setChunks(List<Chunk> chunks) {
+    public void setChunks(Set<Chunk> chunks) {
         if (Hibernate.isInitialized(this.chunks)) {
-            List<Chunk> currentChunks = new ArrayList<>(this.chunks);
+            Set<Chunk> currentChunks = new HashSet<>(this.chunks);
             for (Chunk chunk : currentChunks) {
                 removeChunk(chunk);
             }

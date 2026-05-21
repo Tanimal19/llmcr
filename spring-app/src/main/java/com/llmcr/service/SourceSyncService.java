@@ -38,14 +38,14 @@ import com.llmcr.repository.SourceRepository;
  * Service for managing data sources (files)
  */
 @Service
-public class SyncService {
+public class SourceSyncService {
 
-    private static final Logger logger = LoggerFactory.getLogger(SyncService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SourceSyncService.class);
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
     private final MyVectorStore vectorStore;
-    private final SyncService self;
+    private final SourceSyncService self;
 
     public record TrackRootPreview(Long id, String path, Boolean isSynced, LocalDateTime lastSyncTime,
             List<SourcePreview> sources) {
@@ -63,11 +63,11 @@ public class SyncService {
 
     private Map<Long, TrackRootPreview> trackRootPreviewCache = new HashMap<>();
 
-    public SyncService(
+    public SourceSyncService(
             TrackRootRepository trackRootRepository,
             SourceRepository sourceRepository,
             MyVectorStore vectorStore,
-            @Lazy SyncService self) {
+            @Lazy SourceSyncService self) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
         this.vectorStore = vectorStore;

@@ -72,6 +72,12 @@ public class ChunkCollection {
         return havedTrackRoots;
     }
 
+    public void addTrackRoots(Set<TrackRoot> trackRoots) {
+        for (TrackRoot trackRoot : trackRoots) {
+            addTrackRoot(trackRoot);
+        }
+    }
+
     public void addTrackRoot(TrackRoot trackRoot) {
         if (trackRoot == null) {
             return;
@@ -101,6 +107,23 @@ public class ChunkCollection {
         }
     }
 
+    public void clearTrackRoots() {
+        if (Hibernate.isInitialized(havedTrackRoots)) {
+            for (TrackRoot trackRoot : havedTrackRoots) {
+                if (Hibernate.isInitialized(trackRoot.getInCollections())) {
+                    trackRoot.getInCollections().remove(this);
+                }
+            }
+            havedTrackRoots.clear();
+        }
+    }
+
+    public void addChunks(Set<Chunk> chunks) {
+        for (Chunk chunk : chunks) {
+            addChunk(chunk);
+        }
+    }
+
     public void addChunk(Chunk chunk) {
         if (chunk == null) {
             return;
@@ -125,6 +148,17 @@ public class ChunkCollection {
 
         if (Hibernate.isInitialized(chunk.getChunkCollections())) {
             chunk.getChunkCollections().remove(this);
+        }
+    }
+
+    public void clearChunks() {
+        if (Hibernate.isInitialized(havedChunks)) {
+            for (Chunk chunk : havedChunks) {
+                if (Hibernate.isInitialized(chunk.getChunkCollections())) {
+                    chunk.getChunkCollections().remove(this);
+                }
+            }
+            havedChunks.clear();
         }
     }
 

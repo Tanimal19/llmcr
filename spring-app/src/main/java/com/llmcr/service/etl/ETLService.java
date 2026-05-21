@@ -46,7 +46,7 @@ public class ETLService {
         logger.info("Split completed in {} ms", System.currentTimeMillis() - t1);
 
         long t2 = System.currentTimeMillis();
-        contextRepository.findAllUnloadedIds().forEach(id -> loadService.load(id));
+        contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContextChunks(id));
         logger.info("Load after split completed in {} ms", System.currentTimeMillis() - t2);
 
         // enrich must be performed on all contexts after splitting, since the
@@ -56,7 +56,7 @@ public class ETLService {
         logger.info("Enrich completed in {} ms", System.currentTimeMillis() - t3);
 
         long t4 = System.currentTimeMillis();
-        contextRepository.findAllUnloadedIds().forEach(id -> loadService.load(id));
+        contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContextChunks(id));
         logger.info("Load after enrich completed in {} ms", System.currentTimeMillis() - t4);
 
         logger.info("ETL pipeline finished in {} ms", System.currentTimeMillis() - t0);

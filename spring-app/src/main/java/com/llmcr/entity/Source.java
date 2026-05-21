@@ -1,7 +1,7 @@
 package com.llmcr.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.Hibernate;
 
@@ -57,7 +57,7 @@ public class Source {
     private boolean extracted;
 
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Context> contexts = new ArrayList<>();
+    private Set<Context> contexts = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "track_root_id")
@@ -129,13 +129,13 @@ public class Source {
         this.extracted = extracted;
     }
 
-    public List<Context> getContexts() {
+    public Set<Context> getContexts() {
         return contexts;
     }
 
-    public void setContexts(List<Context> contexts) {
+    public void setContexts(Set<Context> contexts) {
         if (Hibernate.isInitialized(this.contexts)) {
-            List<Context> currentContexts = new ArrayList<>(this.contexts);
+            Set<Context> currentContexts = new HashSet<>(this.contexts);
             for (Context context : currentContexts) {
                 removeContext(context);
             }

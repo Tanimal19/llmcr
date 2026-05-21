@@ -5,18 +5,18 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.llmcr.service.SyncService;
+import com.llmcr.service.SourceSyncService;
 import com.llmcr.service.etl.ETLService;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "sync")
 public class SyncRunner implements CommandLineRunner {
-    private final SyncService syncService;
+    private final SourceSyncService syncService;
     private final ETLService etlService;
     private final JdbcTemplate jdbcTemplate;
 
     public SyncRunner(
-            SyncService syncService,
+            SourceSyncService syncService,
             ETLService etlService,
             JdbcTemplate jdbcTemplate) {
         this.syncService = syncService;

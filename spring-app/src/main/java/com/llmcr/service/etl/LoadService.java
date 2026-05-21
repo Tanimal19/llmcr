@@ -1,6 +1,5 @@
 package com.llmcr.service.etl;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -47,8 +46,15 @@ public class LoadService {
                 applicationProperties.getEmbeddingModel().getName());
     }
 
+    /**
+     * This method do the following:
+     * 1. Generate embeddings for all chunks of the context if not exist
+     * 2. Save them to the database
+     * 3. Add the chunks to the vector store under the collections defined by the
+     * track root of the context's source.
+     */
     @Transactional
-    public void load(Long contextId) {
+    public void loadContextChunks(Long contextId) {
         Context context = contextRepository.findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isChunkLoaded()) {
@@ -56,13 +62,8 @@ public class LoadService {
             return;
         }
 
-        Set<ChunkCollection> inCollections = context.getSource().getTrackRoot().getInCollections();
-        if (inCollections.isEmpty()) {
-            inCollections = new HashSet<>(chunkCollectionRepository.findAll());
-        }
-
         // generate embeddings for chunks if not exist
-        List<Chunk> chunks = context.getChunks();
+        Set<Chunk> chunks = context.getChunks();
         for (Chunk chunk : chunks) {
             if (chunk.getEmbedding() == null || chunk.getEmbedding().length == 0) {
                 chunk.setEmbedding(embeddingClient.embed(chunk.getContent()));
@@ -70,19 +71,21 @@ public class LoadService {
             chunkRepository.save(chunk);
         }
 
-        for (ChunkCollection chunkCollection : inCollections) {
-            // Only add chunks that are not already in the collection to avoid duplicates in
-            // the vector store.
+        // load chunks into vector store
+        Set<ChunkCollection> targetCollections = context.getSource().getTrackRoot().getInCollections();
+        for (ChunkCollection chunkCollection : targetCollections) {
+            // only load chunks that are not already in the collection to avoid duplication
+            // in vector store
+            Set<Chunk> collectionChunks = chunkCollection.getChunks();
             List<Chunk> chunksToAdd = chunks.stream()
-                    .filter(chunk -> chunk.getChunkCollections().stream()
-                            .noneMatch(c -> c.getId().equals(chunkCollection.getId())))
+                    .filter(chunk -> collectionChunks.contains(chunk))
                     .toList();
 
-            vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
-            chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
-            chunkCollectionRepository.save(chunkCollection);
-            logger.info("Loaded '{}' new chunks of '{}' into collection '{}'.", chunksToAdd.size(),
-                    context.getName(), chunkCollection.getName());
+            if (!chunksToAdd.isEmpty()) {
+                vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
+                logger.info("Loaded {} chunks of context '{}' to collection '{}'", chunksToAdd.size(),
+                        context.getName(), chunkCollection.getName());
+            }
         }
 
         context.setChunkLoaded(true);
@@ -90,11 +93,15 @@ public class LoadService {
     }
 
     /**
-     * This method is used to reload all chunks into vector store. This is useful
-     * when there are changes in chunkCollections.
+     * This method do the following:
+     * 1. Recompute what chunks should be in the collection based on the track roots
+     * in the collection and the contexts related to those track roots.
+     * 2. Reload the chunks into the vector store by removing all existing chunks of
+     * the collection from the vector store and adding the new chunks to the vector
+     * store.
      */
     @Transactional
-    public void reloadAll() {
+    public void reloadAllChunks() {
         logger.info("Start reloading chunks to vector store");
 
         List<ChunkCollection> chunkCollections = chunkCollectionRepository.findAll();
@@ -103,22 +110,20 @@ public class LoadService {
             return;
         }
 
+        // reset collections in both database and vector store
+        chunkCollections.forEach(collection -> {
+            collection.clearChunks();
+            vectorStore.removeCollection(collection.getName());
+        });
+        chunkCollectionRepository.saveAll(chunkCollections);
+
+        // recompute chunks in collections based on track roots
         contextRepository.findAll().forEach(context -> {
             Set<ChunkCollection> inCollections = context.getSource().getTrackRoot().getInCollections();
-            if (inCollections.isEmpty()) {
-                inCollections = new HashSet<>(chunkCollectionRepository.findAll());
-            }
-
             for (ChunkCollection chunkCollection : inCollections) {
-                List<Chunk> chunks = context.getChunks();
-                List<Chunk> chunksToAdd = chunks.stream()
-                        .filter(chunk -> chunk.getChunkCollections().stream()
-                                .noneMatch(c -> c.getId().equals(chunkCollection.getId())))
-                        .toList();
-                chunksToAdd.forEach(chunk -> chunkCollection.addChunk(chunk));
+                chunkCollection.addChunks(context.getChunks());
             }
-
-            contextRepository.save(context);
+            chunkCollectionRepository.saveAll(inCollections);
         });
 
         logger.info("Reloading chunks into vector store");
@@ -127,13 +132,12 @@ public class LoadService {
         for (ChunkCollection chunkCollection : chunkCollections) {
             String collectionName = chunkCollection.getName();
 
-            vectorStore.removeCollection(collectionName);
-
-            List<Chunk> chunksToLoad = chunkCollection.getChunks().stream()
+            Set<Chunk> collectionChunks = chunkCollection.getChunks();
+            List<Chunk> chunksToLoad = collectionChunks.stream()
                     .filter(chunk -> chunk.getEmbedding() != null && chunk.getEmbedding().length > 0)
                     .toList();
 
-            int skippedMissingEmbedding = chunkCollection.getChunks().size() - chunksToLoad.size();
+            int skippedMissingEmbedding = collectionChunks.size() - chunksToLoad.size();
             if (!chunksToLoad.isEmpty()) {
                 vectorStore.addChunks(chunksToLoad, collectionName);
             }

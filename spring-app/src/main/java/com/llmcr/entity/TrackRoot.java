@@ -25,6 +25,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
 
 @Entity
@@ -65,10 +66,6 @@ public class TrackRoot {
     private List<Source> sources = new ArrayList<>();
 
     protected TrackRoot() {
-    }
-
-    public TrackRoot(String path) {
-        this.path = path;
     }
 
     public TrackRoot(String path, Set<SourceType> allowedSourceTypes) {
@@ -154,6 +151,13 @@ public class TrackRoot {
 
         if (source.getTrackRoot() == this) {
             source.setTrackRoot(null);
+        }
+    }
+
+    @PreRemove
+    private void preRemove() {
+        for (ChunkCollection collection : inCollections) {
+            collection.removeTrackRoot(this);
         }
     }
 }
