@@ -132,7 +132,7 @@ public class QueryContextRetriever {
         if (rankedContexts.size() <= config.topK()) {
             return rankedContexts;
         }
-
+        logger.info("Retrive contest: {}", rankedContexts);
         return config.topKSelectionStrategy.select(rankedContexts, config.topK());
     }
 
