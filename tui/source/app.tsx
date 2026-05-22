@@ -81,7 +81,7 @@ const ChatScreen = ({ onBack }: { onBack: () => void }) => {
 				))}
 			</Box>
 			<Box>
-				<Text color="green">👉 &gt </Text>
+				<Text color="green">&gt; </Text>
 				{/* 移除 value 和 onChange，改用 key 控制 */}
 				<TextInput key={inputKey} placeholder="請輸入訊息..." onSubmit={handleSubmit} />
 			</Box>
