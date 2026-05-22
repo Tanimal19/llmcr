@@ -3,11 +3,9 @@ package com.llmcr.service.rag;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.mock;
-
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -66,7 +64,14 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
 
     private EmbeddingModel embeddingModel;
 
-    private final TopKSelectionStrategy mockTopStrategy = (contexts, k) -> contexts.stream().limit(k).toList();
+    private final TopKSelectionStrategy mockTopStrategy = spy(new TopKSelectionStrategy() 
+    {
+        @Override
+        public List<ContextScorePair> select(List<ContextScorePair> contexts, int k)
+        {
+            return contexts.stream().limit(k).toList();
+        }
+    });
 
     private static final Logger logger = LoggerFactory.getLogger(ContextRepositoryIT.class);
     
@@ -78,6 +83,9 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
 
         embeddingModel = mock(EmbeddingModel.class);
         ReflectionTestUtils.setField(vectorStore, "embeddingModel", embeddingModel);
+
+        // rerankingModel = mock(RerankingModel.class);
+        // ReflectionTestUtils.setField(queryContextRetriever, "rerankingModel", rerankingModel);
     }
 
     private Long setupMockDataAndGetChunkId(String contextName) {
@@ -92,9 +100,10 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
         return chunk.getId();
     }
 
+    /* Doesn't test the case with reranking option on */
     @Test
     @DisplayName("S3-1-1: Successful RAG")
-    void testS3_1_1_SuccessfulRAG()
+    void testS3_1_1()
     {
         Long chunkId = setupMockDataAndGetChunkId("contextA");
 
@@ -111,5 +120,68 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
         assertThat(results).isNotEmpty();
         assertThat(results).hasSize(1);
         assertThat(results.get(0).score()).isEqualTo(0.95f);
+    }
+
+    // @Test
+    // @DisplayName("S3-1-2: Successful RAG with verbose")
+    // void test_1_2_SuccessfullRAGWithVerbose()
+    // {
+
+    // }
+
+    /*Doesn't test with multiple queries */
+    @Test
+    @DisplayName("S3-2-1:  Number of data chunks is less than K")
+    void testS3_2_1()
+    {
+        Long chunkId1 = setupMockDataAndGetChunkId("contextA");
+        Long chunkId2 = setupMockDataAndGetChunkId("contextB");
+
+        int expectedk = 10;
+        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(expectedk, mockTopStrategy, "text_collection", false);
+        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
+
+        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f});
+        when(faissService.searchVectors(any())).thenReturn(new SearchVectorsResponse(List.of(chunkId1, chunkId2), List.of(0.9f, 0.8f)));
+
+        List<ContextScorePair> results = queryContextRetriever.retrieve(request);
+        
+        assertThat(results).hasSize(2);
+        verify(mockTopStrategy, never()).select(anyList(), anyInt());
+    }
+
+    // @Test
+    // @DisplayName("S3-2-2: Number of data chunks is less than K with verbose")
+    // void test_1_2_SuccessfullRAGWithVerbose()
+    // {
+
+    // }
+
+
+    /*Need to be improved by testing error catch */
+    @Test
+    @DisplayName("S3-3-1: Query Embedding fails")
+    void testS3_3_1()
+    {
+        when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("Api Error during query embedding"));
+
+        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(5, mockTopStrategy, "text_collection", false);
+        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
+        assertThatThrownBy(() -> queryContextRetriever.retrieve(request)).isInstanceOf(RuntimeException.class).hasMessageContaining("embedding");
+    }
+
+    /*Need to be improved by testing error catch */
+    @Test
+    @DisplayName("S3-4-1: Retrieval fails")
+    void testS3_4_1()
+    {
+        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f});
+        when(faissService.searchVectors(any())).thenThrow(new RuntimeException("Database connection timeout during data retrieval"));
+
+        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(5, mockTopStrategy, "text_collection", false);
+        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
+
+        assertThatThrownBy(() -> queryContextRetriever.retrieve(request)).isInstanceOf(RuntimeException.class).hasMessageContaining("retrieval");
+        
     }
 }
