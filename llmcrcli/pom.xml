@@ -20,18 +20,21 @@
             <version>3.5.7</version>
         </dependency>
 
-        <!-- 現代 JLine 核心 (包含 terminal 與 reader) -->
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>3.26.3</version>
+            <groupId>com.googlecode.lanterna</groupId>
+            <artifactId>lanterna</artifactId>
+            <version>3.1.2</version>
         </dependency>
 
-        <!-- 現代 Console 互動元件 (包含 ConsolePrompt) -->
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-console</artifactId>
-            <version>3.26.3</version>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.14.0</version>
         </dependency>
     </dependencies>
 
@@ -40,9 +43,21 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.3.4</version>   <!-- 改成穩定版，不要用 RC -->
+                <version>3.3.4</version>
                 <configuration>
-                    <mainClass>com.llmcr.cli.CliApplication</mainClass>  <!-- 改成你實際的主類別完整路徑 -->
+                    <mainClass>com.llmcr.cli.CliApplication</mainClass>
+
+                    <requiresUnpack>
+                        <dependency>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna-platform</artifactId>
+                        </dependency>
+                    </requiresUnpack>
+
                 </configuration>
                 <executions>
                     <execution>
