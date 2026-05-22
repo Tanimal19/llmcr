@@ -27,7 +27,7 @@ public class SyncRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         syncService.syncAllTrackRootSource();
-        // etlService.run();
+        etlService.run();
     }
 
     private void resetEntityTables() {

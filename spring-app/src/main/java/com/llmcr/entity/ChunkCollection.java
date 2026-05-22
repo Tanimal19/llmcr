@@ -142,6 +142,13 @@ public class ChunkCollection {
         }
     }
 
+    public void clearChunks() {
+        for (Chunk chunk : new HashSet<>(havedChunks)) {
+            chunk.getChunkCollections().remove(this);
+        }
+        havedChunks.clear();
+    }
+
     public boolean equals(Object o) {
         if (this == o)
             return true;

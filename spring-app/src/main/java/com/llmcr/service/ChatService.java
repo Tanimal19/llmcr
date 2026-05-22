@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
@@ -17,6 +18,7 @@ import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.TrackRoot;
 import com.llmcr.repository.ChunkCollectionRepository;
 import com.llmcr.repository.TrackRootRepository;
+import com.llmcr.service.etl.LoadService;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
@@ -43,15 +45,6 @@ public class ChatService {
             Answer:
             """;
 
-    /**
-     * @param providerName   The name of the model provider to use.
-     * @param modelName      The name of the model to use.
-     * @param TrackRootNames The set of track root names that define the scope of
-     *                       the context to retrieve for this chat service.
-     */
-    public record ChatServiceConfiguration(String providerName, String modelName, Set<String> TrackRootNames) {
-    }
-
     public static final String AGENT_NAME = "question-answer";
     public static final String COLLECTION_NAME = "question-answer";
 
@@ -59,6 +52,7 @@ public class ChatService {
     private final ModelClientFactory modelClientFactory;
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final TrackRootRepository trackRootRepository;
+    private final LoadService loadService;
     private final QueryContextRetriever queryContextRetriever;
 
     private final ContextRetrievalConfiguration RETRIEVAL_CONFIGURATION;
@@ -68,11 +62,13 @@ public class ChatService {
             ModelClientFactory modelClientFactory,
             ChunkCollectionRepository chunkCollectionRepository,
             TrackRootRepository trackRootRepository,
+            LoadService loadService,
             QueryContextRetriever queryContextRetriever) {
         this.applicationProperties = applicationProperties;
         this.modelClientFactory = modelClientFactory;
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.trackRootRepository = trackRootRepository;
+        this.loadService = loadService;
 
         this.RETRIEVAL_CONFIGURATION = new ContextRetrievalConfiguration(
                 10,
@@ -82,12 +78,26 @@ public class ChatService {
         this.queryContextRetriever = queryContextRetriever;
     }
 
-    public String chat(String query) {
+    public record ChatResponse(String answer, Map<String, Float> retrievedContexts) {
+    }
+
+    public ChatResponse chat(String query) {
+        if (query == null || query.isBlank()) {
+            return new ChatResponse("(no query provided)", Map.of());
+        }
+
+        List<ContextScorePair> retrievedContexts = queryContextRetriever
+                .retrieve(new ContextRetrievalRequest(List.of(query), RETRIEVAL_CONFIGURATION));
+
+        String contextString = String.join("\n---\n", retrievedContexts.stream()
+                .map(pair -> pair.context().getContent())
+                .toList());
+
         String userMessage = PromptTemplate.builder()
                 .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
                 .template(USER_MESSAGE_TEMPLATE)
                 .build()
-                .render(Map.of("query", query, "context", retrieveContext(query)));
+                .render(Map.of("query", query, "context", contextString));
 
         ChatClient chatClient = modelClientFactory.createChatClient(
                 applicationProperties.getAgents().get(AGENT_NAME).getChatModelProperties().getProvider(),
@@ -98,32 +108,28 @@ public class ChatService {
                 .user(userMessage)
                 .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
 
-        return requestSpec.call().content();
+        String answer = requestSpec.call().content();
+        Map<String, Float> retrievedContextMap = retrievedContexts.stream()
+                .collect(Collectors.toMap(pair -> pair.context().getName(), ContextScorePair::score));
+        return new ChatResponse(answer, retrievedContextMap);
     }
 
-    private String retrieveContext(String query) {
-        if (query == null || query.isBlank()) {
-            return "(no query provided)";
-        }
-
-        List<ContextScorePair> retrievedContexts = queryContextRetriever
-                .retrieve(new ContextRetrievalRequest(List.of(query), RETRIEVAL_CONFIGURATION));
-
-        if (retrievedContexts.isEmpty()) {
-            return "(no relevant context retrieved)";
-        }
-
-        return String.join("\n---\n", retrievedContexts.stream()
-                .map(pair -> pair.context().getContent())
-                .toList());
-    }
-
-    public Set<String> getRagScope() {
+    /**
+     * Return all track root paths with true/false indicating whether they are
+     * included in the RAG scope.
+     */
+    public Map<String, Boolean> getRagScope() {
+        List<String> allTrackRoots = trackRootRepository.findAll().stream()
+                .map(TrackRoot::getPath)
+                .toList();
         ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
         if (collection == null) {
-            return new HashSet<>();
+            return allTrackRoots.stream().collect(Collectors.toMap(path -> path, path -> false));
         }
-        return collection.getTrackRoots().stream().map(TrackRoot::getPath).collect(java.util.stream.Collectors.toSet());
+        Set<String> includedTrackRootPaths = collection.getTrackRoots().stream()
+                .map(TrackRoot::getPath)
+                .collect(Collectors.toSet());
+        return allTrackRoots.stream().collect(Collectors.toMap(path -> path, includedTrackRootPaths::contains));
     }
 
     public void setRagScope(Set<String> trackRootPaths) {
@@ -136,5 +142,7 @@ public class ChatService {
             collection.clearTrackRoots();
             collection.addTrackRoots(trackRoots);
         }
+        chunkCollectionRepository.save(collection);
+        loadService.reloadChunkCollections(COLLECTION_NAME);
     }
 }

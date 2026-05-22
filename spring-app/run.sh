@@ -4,12 +4,13 @@ usage() {
     echo "Usage: ./run.sh [mode] [mode-specific-arguments] -a [additional-properties-file]"
     echo ""
     echo "Modes:"
-    echo "  question_answer: ask questions about the datasets."
-    echo "    ./run.sh question_answer <query>"
+    echo "  chat: run ChatRunner."
+    echo "    ./run.sh chat"
+    echo ""
+    echo "  api: run API server and keep listening for requests."
+    echo "    ./run.sh api"
     echo ""
     echo "  sync: synchronize database with local datasets."
-    echo ""
-    echo "  reload: reload all embedding into vector database."
     echo ""
     echo "  review: review code changes based on a pull request json file."
     echo "    ./run.sh review <pr-file-path>"
@@ -35,6 +36,16 @@ if [[ -z "$MODE" ]]; then
     usage
     exit 1
 fi
+
+case "$MODE" in
+    chat|sync|review|api)
+        ;;
+    *)
+        echo "Error: unsupported mode '$MODE'. Supported modes: chat, sync, review, api."
+        usage
+        exit 1
+        ;;
+esac
 
 APP_ARGS=()
 MODE_ARGS=()

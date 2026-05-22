@@ -1,5 +1,6 @@
 package com.llmcr.service.etl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -96,6 +97,25 @@ public class LoadService {
 
         context.setChunkLoaded(true);
         contextRepository.save(context);
+    }
+
+    @Transactional
+    public void reloadChunkCollections(String collectionName) {
+        logger.info("Reloading chunk collection '{}'...", collectionName);
+        ChunkCollection collection = chunkCollectionRepository.findByName(collectionName)
+                .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
+        collection.clearChunks();
+        vectorStore.removeCollection(collectionName);
+
+        Set<Chunk> chunks = collection.getTrackRoots().stream()
+                .flatMap(trackRoot -> trackRoot.getSources().stream())
+                .flatMap(source -> source.getContexts().stream())
+                .flatMap(context -> context.getChunks().stream())
+                .collect(java.util.stream.Collectors.toSet());
+
+        collection.addChunks(chunks);
+        vectorStore.addChunks(new ArrayList<>(chunks), collectionName);
+        logger.info("Reloaded chunk collection '{}', total {} chunks", collectionName, chunks.size());
     }
 
     /**
