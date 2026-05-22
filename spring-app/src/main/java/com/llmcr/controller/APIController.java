@@ -80,8 +80,10 @@ public class APIController {
 
     @PostMapping("/chat")
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        logger.info("[APIService] Chat request received: {}", request.query());
-        return chatService.chat(request.query());
+        String query = request == null ? null : request.query();
+        requireNonBlank(query, "query must not be blank");
+        logger.info("[APIService] Chat request received: {}", query);
+        return chatService.chat(query);
     }
 
     @GetMapping("/rag-scope")
@@ -93,14 +95,18 @@ public class APIController {
     @PostMapping("/rag-scope")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void setRagScope(@RequestBody RagScopeRequest request) {
-        logger.info("[APIService] Set RAG scope request received: {}", request.trackRootPaths());
-        chatService.setRagScope(request.trackRootPaths());
+        Set<String> trackRootPaths = request == null ? null : request.trackRootPaths();
+        requireNonEmpty(trackRootPaths, "trackRootPaths must not be empty");
+        logger.info("[APIService] Set RAG scope request received: {}", trackRootPaths);
+        chatService.setRagScope(trackRootPaths);
     }
 
     @PostMapping("/review")
     public CodeReviewOutput review(@RequestBody ReviewRequest request) {
-        logger.info("[APIService] Code review request received: {}", request.pullRequestJsonPath());
-        return codeReviewService.review(request.pullRequestJsonPath(), false);
+        String pullRequestJsonPath = request == null ? null : request.pullRequestJsonPath();
+        requireNonBlank(pullRequestJsonPath, "pullRequestJsonPath must not be blank");
+        logger.info("[APIService] Code review request received: {}", pullRequestJsonPath);
+        return codeReviewService.review(pullRequestJsonPath, false);
     }
 
     @GetMapping("/lsdb")
@@ -126,6 +132,18 @@ public class APIController {
         sourceSyncService.syncTrackRootSource(trackRootId);
         if (ENABLE_ETL) {
             etlService.run();
+        }
+    }
+
+    private static void requireNonBlank(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private static void requireNonEmpty(Set<String> values, String message) {
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException(message);
         }
     }
 }
