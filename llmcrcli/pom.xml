@@ -20,28 +20,19 @@
             <version>3.5.7</version>
         </dependency>
 
-        <!-- Spring Shell -->
+        <!-- 現代 JLine 核心 (包含 terminal 與 reader) -->
         <dependency>
-            <groupId>org.springframework.shell</groupId>
-            <artifactId>spring-shell-starter-jna</artifactId>
-            <version>4.0.1</version> <!-- 確認與 Spring Boot 相容 -->
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>3.26.3</version>
         </dependency>
 
+        <!-- 現代 Console 互動元件 (包含 ConsolePrompt) -->
         <dependency>
-            <groupId>org.springframework.shell</groupId>
-            <artifactId>spring-shell-jline</artifactId>
-            <version>4.0.1</version>
-            <optional>true</optional>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-console</artifactId>
+            <version>3.26.3</version>
         </dependency>
-
-		<!-- Test dependencies -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<version>4.0.1</version>
-			<scope>test</scope>
-		</dependency>
-
     </dependencies>
 
     <build>
