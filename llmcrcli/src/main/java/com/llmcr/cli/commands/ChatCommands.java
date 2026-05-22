@@ -192,43 +192,50 @@ public class ChatCommands extends AbstractShellComponent {
         TerminalUI ui = new TerminalUI(terminal);
         EventLoop eventLoop = ui.getEventLoop();
 
+        // 用來真正儲存打勾項目的集合
         Set<String> checkedSet = new HashSet<>();
         final boolean[] isConfirmed = new boolean[]{false};
 
-        // 💡 調整 2：使用我們自訂的 ActionListView，並在建構子直接傳入當 Enter 被按下時要執行的邏輯
+        // 側錄計數器：用來追蹤目前游標停在第幾個 index（與原生 UI 同步）
+        final int[] currentActiveIndex = {0};
+        int totalItems = mockDbClasses.size();
+
+        // 💡 調整：移除重複且出錯的 setCellFactory，交給 Spring Shell 原生渲染最正確的 Checkbox 畫面
         ActionListView listView = new ActionListView(mockDbClasses, ItemStyle.CHECKED, () -> {
             isConfirmed[0] = true;
             eventLoop.dispatch(ShellMessageBuilder.ofInterrupt()); // 成功中斷並退出 UI 迴圈！
         });
 
-        // 💡 調整 3：搭配 CellFactory 即時連動勾選狀態，這讓原生空白鍵完美工作
-        listView.setCellFactory((list, item) -> new AbstractListCell<String>(item) {
-            @Override
-            public void setSelected(boolean selected) {
-                super.setSelected(selected);
-                if (selected) {
-                    checkedSet.add(item);
-                } else {
-                    checkedSet.remove(item);
-                }
-            }
-
-            @Override
-            public void draw(Screen screen) {
-                Rectangle rect = getRect();
-                Writer writer = screen.writerBuilder().style(getStyle()).build();
-                String prefix = isSelected() ? "[x] " : "[ ] ";
-                writer.text(prefix + getItem(), rect.x(), rect.y());
-                writer.background(rect, getBackgroundColor());
-            }
-        });
-
         ui.configure(listView);
         ui.setRoot(listView, true);
 
-        // 依然保留 Q 鍵作為隨時取消的手段
+        // 💡 調整：透過 EventLoop 被動監聽，不破壞、不覆蓋原生的上下滾動與空白鍵打勾功能
         eventLoop.keyEvents().subscribe(event -> {
-            if (event.getPlainKey() == Key.q || event.getPlainKey() == Key.Q) {
+            int plainKey = event.getPlainKey();
+
+            // 1. 側錄 Up 鍵 (1048576)：原生 ListView 到頂 (0) 就不會再往上，故同步限制邊界
+            if (plainKey == 1048576) {
+                if (currentActiveIndex[0] > 0) {
+                    currentActiveIndex[0]--;
+                }
+            }
+            // 2. 側錄 Down 鍵 (1048577)：原生 ListView 到底 (size - 1) 就不會再往下
+            else if (plainKey == 1048577) {
+                if (currentActiveIndex[0] < totalItems - 1) {
+                    currentActiveIndex[0]++;
+                }
+            }
+            // 3. 側錄 Space 空白鍵 (32)：當使用者在該行按下空白鍵，同步更新我們的 checkedSet
+            else if (plainKey == 32) {
+                String currentItem = mockDbClasses.get(currentActiveIndex[0]);
+                if (checkedSet.contains(currentItem)) {
+                    checkedSet.remove(currentItem);
+                } else {
+                    checkedSet.add(currentItem);
+                }
+            }
+            // 4. 保留 Q 鍵隨時取消
+            else if (plainKey == Key.q || plainKey == Key.Q) {
                 eventLoop.dispatch(ShellMessageBuilder.ofInterrupt());
             }
         });

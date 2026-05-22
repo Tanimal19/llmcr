@@ -23,8 +23,8 @@
         <!-- Spring Shell -->
         <dependency>
             <groupId>org.springframework.shell</groupId>
-            <artifactId>spring-shell-starter-jna</artifactId>
-            <version>3.4.1</version> <!-- 確認與 Spring Boot 相容 -->
+            <artifactId>spring-shell-starter</artifactId>
+            <version>4.0.1</version> <!-- 確認與 Spring Boot 相容 -->
         </dependency>
 
         <!-- 進度條與美化（可選但推薦） -->
