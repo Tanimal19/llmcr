@@ -4,21 +4,17 @@ usage() {
     echo "Usage: ./run.sh [mode] [mode-specific-arguments] -a [additional-properties-file]"
     echo ""
     echo "Modes:"
-    echo "  chat: run ChatRunner."
-    echo "    ./run.sh chat"
-    echo ""
     echo "  api: run API server and keep listening for requests."
     echo "    ./run.sh api"
+    echo ""
+    echo "  chat: run ChatRunner."
+    echo "    ./run.sh chat"
     echo ""
     echo "  sync: synchronize database with local datasets."
     echo ""
     echo "  review: review code changes based on a pull request json file."
     echo "    ./run.sh review <pr-file-path>"
     echo "    ./run.sh review --use-mock"
-    echo ""
-    echo "Global options:"
-    echo "  -a, --additional-properties-file <file-path>"
-    echo "    Load extra Spring properties file for overrides."
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -49,24 +45,9 @@ esac
 
 APP_ARGS=()
 MODE_ARGS=()
-ADDITIONAL_PROPERTIES_FILE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -a|--additional-properties-file)
-            if [[ -n "$ADDITIONAL_PROPERTIES_FILE" ]]; then
-                echo "Error: only one additional properties file can be specified."
-                usage
-                exit 1
-            fi
-            if [[ -z "${2:-}" ]]; then
-                echo "Error: -a/--additional-properties-file requires a file path."
-                usage
-                exit 1
-            fi
-            ADDITIONAL_PROPERTIES_FILE="$2"
-            shift 2
-            ;;
         -h|--help)
             usage
             exit 0
@@ -124,8 +105,11 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # Construct arguments: first --app.mode, then application-specific arguments
 ALL_ARGUMENTS="--app.mode=$MODE"
+if [[ "$MODE" != "api" ]]; then
+    ALL_ARGUMENTS="$ALL_ARGUMENTS --spring.main.web-application-type=none"
+fi
 if [[ -n "$ADDITIONAL_PROPERTIES_FILE" ]]; then
-    ALL_ARGUMENTS="$ALL_ARGUMENTS --spring.config.additional-location=file:$ADDITIONAL_PROPERTIES_FILE"
+    ALL_ARGUMENTS="$ALL_ARGUMENTS"
 fi
 
 APP_ARGUMENTS="${APP_ARGS[*]}"
