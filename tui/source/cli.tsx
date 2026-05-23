@@ -6,23 +6,24 @@ import App from './app.js';
 const cli = meow(
 	`
 	Usage
-	  $ tui
+      $ tui                     - 進入互動式主畫面
+	  $ tui --chat "<question>"      - 單次詢問 LLM 並直接返回終端機
 
 	Options
-		--name  Your name
+		--chat, -c   單次執行對話，回答完後立刻結束程式
 
 	Examples
-	  $ tui --name=Jane
-	  Hello, Jane
+	  $ tui --chat "What is the repo name?"
 `,
 	{
 		importMeta: import.meta,
 		flags: {
-			name: {
+			chat: {
 				type: 'string',
+			    shortFlag: 'c', // 支援短指令 -c
 			},
 		},
 	},
 );
 
-render(<App name={cli.flags.name} />);
+render(<App oneShotChat={cli.flags.chat} />);

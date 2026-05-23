@@ -3,6 +3,51 @@ import { Box, Text, useInput, useApp } from 'ink';
 import { TextInput } from '@inkjs/ui';
 
 // ==========================================
+// 新增：0. 單次執行 Chat 組件 (One-shot Mode)
+// ==========================================
+const OneShotChatScreen = ({ question }: { question: string }) => {
+	const [answer, setAnswer] = useState<string | null>(null);
+	const { exit } = useApp();
+
+	useEffect(() => {
+		// 模擬呼叫 LLM (如 Ollama / OpenAI) 的非同步延遲
+		const timer = setTimeout(() => {
+			setAnswer(
+				`🤖 LLM 模擬回答：\n關於你問的「${question}」，這是一個單次執行的回應。實際開發時，你可以在這裡使用 fetch 或 sdk 呼叫本地的 Ollama API！`
+			);
+		}, 1200); // 模擬 1.2 秒的思考時間
+
+		return () => clearTimeout(timer);
+	}, [question]);
+
+	// 當答案出來後，通知 Ink 結束程式
+	useEffect(() => {
+		if (answer) {
+			exit();
+			// 💡 知識點：Ink 的 exit() 會停止 React 渲染循環，
+			// 但會把最後一次渲染的畫面「留」在終端機上，這完全符合單次執行的預期！
+		}
+	}, [answer, exit]);
+
+	if (!answer) {
+		return (
+			<Box padding={1}>
+				<Text color="yellow" bold>⏳ 正在思考中... 請稍候...</Text>
+			</Box>
+		);
+	}
+
+	return (
+		<Box flexDirection="column" padding={1}>
+			<Text color="cyan" bold>詢問：{question}</Text>
+			<Box marginTop={1} paddingLeft={2}>
+				<Text color="white">{answer}</Text>
+			</Box>
+		</Box>
+	);
+};
+
+// ==========================================
 // 1. 主畫面（指令選擇選單）
 // ==========================================
 const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
@@ -182,11 +227,13 @@ const SetRagScreen = ({ onBack }: { onBack: () => void }) => {
 // ==========================================
 // 5. 總路由控制中心 (App Root)
 // ==========================================
-// 加上型別定義，允許接收腳手架傳進來的 name 屬性 (解決 Error 5)
-export default function App({ name: _name }: { name?: string }) {
-	const [currentScreen, setCurrentScreen] = useState('menu');
+export default function App({ oneShotChat }: { oneShotChat?: string }) {
+	// 關鍵分流點：如果初始化時收到了 oneShotChat 參數，直接進入 'oneshot' 畫面，否則預設進入 'menu'
+	const [currentScreen, setCurrentScreen] = useState(() => oneShotChat ? 'oneshot' : 'menu');
 
 	switch (currentScreen) {
+		case 'oneshot':
+			return <OneShotChatScreen question={oneShotChat ?? ''} />;
 		case 'menu':
 			return <MainMenu onSelect={setCurrentScreen} />;
 		case 'chat':
