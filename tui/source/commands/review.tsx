@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Box, Text, useApp } from 'ink';
+import { Box, Text, useApp, useInput } from 'ink';
 import { CommandProps } from '../types.js'; // 引入我們定義的共同介面
 
 export const ReviewCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 	const [progress, setProgress] = useState(0);
 	const { exit } = useApp();
-	const isOneShot = oneShotArgs !== undefined;
+    const isOneShot = oneShotArgs !== undefined;
+
+    // 💡 新增：允許使用者在互動模式下，按 ESC 中斷任務並返回
+	useInput((_, key) => {
+		if (!isOneShot && key.escape) {
+			onBack();
+		}
+	});
 
 	useEffect(() => {
 		const timer = setInterval(() => {

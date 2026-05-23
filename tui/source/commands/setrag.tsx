@@ -39,7 +39,13 @@ export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 
 	// --- 3. 滾動演算法按鍵監聽 ---
 	useInput((input, key) => {
-		if (statusMsg) return;
+        if (statusMsg) return;
+
+        // 💡 新增：在選單選到一半時，按 ESC 鍵可以直接放棄並返回主選單
+        if (!isOneShot && key.escape) {
+            onBack();
+            return;
+        }
 
 		// 往下移動
 		if (key.downArrow) {
