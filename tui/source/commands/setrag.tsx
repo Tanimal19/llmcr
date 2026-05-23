@@ -2,71 +2,138 @@ import { useState } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { CommandProps } from '../types.js';
 
+// 設定可視範圍的大小（滑動視窗高度）
+const PAGE_SIZE = 5;
+
 export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 	const { exit } = useApp();
-	// 💡 因為在 cli.tsx 改成了 boolean，這裡直接判斷是否為 true
 	const isOneShot = oneShotArgs === true;
 
-	// --- 狀態定義（兩模式共用） ---
+	// --- 1. 擴充模擬數據，方便測試滾動效果 ---
 	const [items, setItems] = useState([
 		{ id: '1', label: '知識庫_產品說明書.pdf', checked: false },
 		{ id: '2', label: '知識庫_公司常見問答.txt', checked: true },
 		{ id: '3', label: '知識庫_2026財務報表.xlsx', checked: false },
+		{ id: '4', label: '核心演算法演練.md', checked: false },
+		{ id: '5', label: '部署指南_Docker.yaml', checked: false },
+		{ id: '6', label: 'API_V2_規格書.json', checked: true },
+		{ id: '7', label: '環境變數範本.env', checked: false },
+		{ id: '8', label: '客戶隱私條款_2026.docx', checked: false },
+		{ id: '9', label: '測試測資數據_大模型.csv', checked: false },
+		{ id: '10', label: 'README_開發必看.md', checked: false },
 	]);
+
+	// --- 2. 視窗滾動核心狀態 ---
 	const [activeIndex, setActiveIndex] = useState(0);
+	const [windowStart, setWindowStart] = useState(0); // 目前視窗從哪一個 Index 開始顯示
 	const [statusMsg, setStatusMsg] = useState('');
 
-	// --- 監聽按鍵（兩模式共用） ---
-	useInput((input, key) => {
-		if (statusMsg) return; // 如果正在讀秒退出，鎖定按鍵不讓使用者亂動
+	// 計算當前視窗結束的 Index
+	const windowEnd = windowStart + PAGE_SIZE;
+	// 擷取當前要顯示的子陣列（滑動視窗範圍）
+	const visibleItems = items.slice(windowStart, windowEnd);
 
-		if (key.upArrow) {
-			setActiveIndex(prev => Math.max(0, prev - 1));
-		}
+	// 計算上方與下方各別還埋了多少個檔案未顯示
+	const remainingAbove = windowStart;
+	const remainingBelow = items.length - windowEnd;
+
+	// --- 3. 滾動演算法按鍵監聽 ---
+	useInput((input, key) => {
+		if (statusMsg) return;
+
+		// 往下移動
 		if (key.downArrow) {
-			setActiveIndex(prev => Math.min(items.length - 1, prev + 1));
+			setActiveIndex(prev => {
+				const next = Math.min(items.length - 1, prev + 1);
+				// 🧠 滑動視窗邏輯：如果下一行超出了目前可視窗的底部，視窗往下滾一格
+				if (next >= windowStart + PAGE_SIZE) {
+					setWindowStart(next - PAGE_SIZE + 1);
+				}
+				return next;
+			});
 		}
+
+		// 往上移動
+		if (key.upArrow) {
+			setActiveIndex(prev => {
+				const next = Math.max(0, prev - 1);
+				// 🧠 滑動視窗邏輯：如果上一行高於目前可視窗的頂部，視窗往上滾一格
+				if (next < windowStart) {
+					setWindowStart(next);
+				}
+				return next;
+			});
+		}
+
+		// 空白鍵勾選
 		if (input === ' ') {
 			setItems(prev => prev.map((item, idx) =>
 				idx === activeIndex ? { ...item, checked: !item.checked } : item
 			));
 		}
+
+		// Enter 送出
 		if (key.return) {
 			const selectedLabels = items.filter(i => i.checked).map(i => i.label);
-
-			// 💡 關鍵分流點：根據進入管道決定結束後的去處
 			if (isOneShot) {
-				setStatusMsg(`已成功配置 ${selectedLabels.length} 個檔案！正在同步向量庫並退出...`);
-				setTimeout(exit, 1000); // 捷徑模式：直接關閉整個 TUI 程式
+				setStatusMsg(`已變更設定！成功配置 ${selectedLabels.length} 個檔案，正在關閉...`);
+				setTimeout(exit, 1000);
 			} else {
-				setStatusMsg(`已成功配置 ${selectedLabels.length} 個檔案！正在返回主選單...`);
-				setTimeout(onBack, 1000); // 選單模式：退回上一頁
+				setStatusMsg(`已變更設定！成功配置 ${selectedLabels.length} 個檔案，正在返回...`);
+				setTimeout(onBack, 1000);
 			}
 		}
 	});
 
 	return (
 		<Box flexDirection="column" padding={1}>
-			{/* 提示小標頭優化 */}
 			<Text color="blue" bold>
 				{isOneShot ? '⚡ [捷徑直達] ' : '⚙️ '}RAG 文件配置模式
+				<Text color="gray"> ({activeIndex + 1}/{items.length})</Text>
 			</Text>
 			<Text color="gray">
-				使用 ⬆️⬇️ 移動，[空白鍵] 勾選/取消，[Enter] 儲存並{isOneShot ? '退出' : '返回'}
+				使用 ⬆️⬇️ 移動，[空白鍵] 勾選/取消，[Enter] 儲存
 			</Text>
 
-			<Box flexDirection="column" marginY={1}>
-				{items.map((item, idx) => {
-					const isCurrent = idx === activeIndex;
-					const checkbox = item.checked ? '[𝘅]' : '[ ]';
-					return (
-						<Text key={item.id} color={isCurrent ? 'cyan' : 'white'}>
-							{isCurrent ? '👉 ' : '   '}
-							<Text color={item.checked ? 'green' : 'gray'}>{checkbox}</Text> {item.label}
-						</Text>
-					);
-				})}
+			{/* 顯示選單核心區域 */}
+			<Box flexDirection="column" marginY={1} borderStyle="round" borderColor="gray" paddingX={1}>
+
+				{/* 頂部邊界提示：如果上面還有檔案，印出 ▴ 提示 */}
+				<Box height={1}>
+					{remainingAbove > 0 ? (
+						<Text color="yellow" dimColor>▴ 還有 {remainingAbove} 個檔案...</Text>
+					) : (
+						<Text color="gray" dimColor>--- 列表頂端 ---</Text>
+					)}
+				</Box>
+
+				{/* 渲染滑動視窗內部的檔案 */}
+				<Box flexDirection="column" marginY={1}>
+					{visibleItems.map((item, visibleIdx) => {
+						// 💡 注意：因為 items 被 slice 了，當前的絕對 index 必須加上 windowStart
+						const absoluteIdx = windowStart + visibleIdx;
+						const isCurrent = absoluteIdx === activeIndex;
+						const checkbox = item.checked ? '[𝘅]' : '[ ]';
+
+						return (
+							<Text key={item.id} color={isCurrent ? 'cyan' : 'white'}>
+								{isCurrent ? '👉 ' : '   '}
+								<Text color={item.checked ? 'green' : 'gray'}>{checkbox}</Text> {item.label}
+							</Text>
+						);
+					})}
+				</Box>
+
+				{/* 底部邊界提示：如果下面還有檔案，印出 ▾ 提示 */}
+				<Box height={1}>
+					{remainingBelow > 0 ? (
+						<Text color="yellow" dimColor>▾ 還有 {remainingBelow} 個檔案...</Text>
+					) : (
+						<Text color="gray" dimColor>--- 列表末端 ---</Text>
+					)}
+				</Box>
 			</Box>
+
 			{statusMsg ? <Text color="yellow">{statusMsg}</Text> : null}
 		</Box>
 	);
