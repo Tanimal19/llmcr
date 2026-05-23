@@ -14,7 +14,6 @@ import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsResponse;
-import com.llmcr.service.rag.QueryContextRetriever.ChunkIdScorePair;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {

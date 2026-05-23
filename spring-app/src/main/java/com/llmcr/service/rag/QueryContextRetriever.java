@@ -19,6 +19,7 @@ import com.llmcr.service.rag.fusion.FusionStrategy;
 import com.llmcr.service.rag.fusion.RankFusionStrategy;
 import com.llmcr.service.rag.select.TopKSelectionStrategy;
 import com.llmcr.vectorstore.MyVectorStore;
+import com.llmcr.vectorstore.MyVectorStore.ChunkIdScorePair;
 
 /**
  * Retrieve relevant contexts for the query. The retrieval process includes
@@ -52,9 +53,6 @@ public class QueryContextRetriever {
      */
     public record ContextRetrievalConfiguration(int topK, TopKSelectionStrategy topKSelectionStrategy,
             String collectionName, boolean useReranker) {
-    }
-
-    public record ChunkIdScorePair(Long chunkId, float score) {
     }
 
     public record ContextScorePair(Context context, float score) {

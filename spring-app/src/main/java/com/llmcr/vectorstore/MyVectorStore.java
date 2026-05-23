@@ -3,7 +3,6 @@ package com.llmcr.vectorstore;
 import java.util.List;
 
 import com.llmcr.entity.Chunk;
-import com.llmcr.service.rag.QueryContextRetriever.ChunkIdScorePair;
 
 /**
  * This abstract class defines the interface for a vector store that can be used
@@ -14,6 +13,9 @@ import com.llmcr.service.rag.QueryContextRetriever.ChunkIdScorePair;
  * needed.
  */
 public abstract class MyVectorStore {
+
+    public record ChunkIdScorePair(Long chunkId, float score) {
+    }
 
     /**
      * Add chunks to a collection.
