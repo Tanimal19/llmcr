@@ -17,7 +17,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
     { cmd: 'sync', desc: 'Sync project data to database', value: 'sync_flow' },
     { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
-    { cmd: 'help', desc: 'Show this command list', value: 'help' }
+    { cmd: 'help', desc: 'Show this command list', value: 'help' },
   ];
 
   useInput((input, key) => {
@@ -36,13 +36,17 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
     <Box flexDirection="column" paddingX={2} paddingTop={1}>
       {/* 頂部圓角資訊外框 (不設固定寬度，改由內容與外層彈性撐開) */}
       <Box borderStyle="round" borderColor="gray" flexDirection="column" paddingX={1}>
-        <Text bold color="cyan">LLM-CR v0.0.1</Text>
+        <Text bold color="cyan">
+          LLM-CR v0.0.1
+        </Text>
         <Text color="gray">Select a command to get started.</Text>
       </Box>
 
       {/* 可用指令列表區段 */}
       <Box flexDirection="column" marginTop={1}>
-        <Text bold color="white">● Available Commands:</Text>
+        <Text bold color="white">
+          ● Available Commands:
+        </Text>
         <Box flexDirection="column" marginTop={0}>
           {options.map((opt, idx) => {
             const isSelected = idx === activeIndex;
@@ -60,9 +64,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
                   </Text>
                 </Box>
                 <Box>
-                  <Text color={isSelected ? 'white' : 'gray'}>
-                    {opt.desc}
-                  </Text>
+                  <Text color={isSelected ? 'white' : 'gray'}>{opt.desc}</Text>
                 </Box>
               </Box>
             );
@@ -73,10 +75,12 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
       {/* 項目狀況中繼資料 */}
       <Box flexDirection="column" marginTop={1}>
         <Text>
-          <Text color="green">●</Text> <Text color="white">Project loaded:</Text> <Text color="gray">C:/example_project/</Text>
+          <Text color="green">●</Text> <Text color="white">Project loaded:</Text>{' '}
+          <Text color="gray">C:/example_project/</Text>
         </Text>
         <Text>
-          <Text color="green">●</Text> <Text color="white">Last synced:</Text> <Text color="gray">2026/04/17 22:04</Text>
+          <Text color="green">●</Text> <Text color="white">Last synced:</Text>{' '}
+          <Text color="gray">2026/04/17 22:04</Text>
         </Text>
       </Box>
 
@@ -134,13 +138,20 @@ const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => 
 
   return (
     <Box flexDirection="column" paddingX={2} paddingTop={1}>
-      <Text bold color="cyan">📝 {title}</Text>
+      <Text bold color="cyan">
+        📝 {title}
+      </Text>
 
       <Box borderStyle="round" borderColor="green" paddingX={1} marginY={1}>
         {inputValue ? (
-          <Text color="white" bold>{inputValue}<Text color="green">┃</Text></Text>
+          <Text color="white" bold>
+            {inputValue}
+            <Text color="green">┃</Text>
+          </Text>
         ) : (
-          <Text color="gray" dimColor>{placeholder} (直接按 Enter 使用此預設值)</Text>
+          <Text color="gray" dimColor>
+            {placeholder} (直接按 Enter 使用此預設值)
+          </Text>
         )}
       </Box>
 
@@ -179,35 +190,35 @@ export default function App() {
     case 'menu':
       return <MainMenu onSelect={setCurrentScreen} />;
 
-      case 'review_flow':
-        return (
-          <ArgInput
-            title="請輸入要進行 Code Review 的 Diff 檔案路徑"
-            placeholder="./staged.diff"
-            onCancel={handleBack}
-            onSubmit={(value) => {
-              setReviewArg(value);
-              setCurrentScreen('review');
-            }}
-          />
-        );
+    case 'review_flow':
+      return (
+        <ArgInput
+          title="請輸入要進行 Code Review 的 Diff 檔案路徑"
+          placeholder="./staged.diff"
+          onCancel={handleBack}
+          onSubmit={value => {
+            setReviewArg(value);
+            setCurrentScreen('review');
+          }}
+        />
+      );
     case 'review':
-        return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
+      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
 
-      case 'sync_flow':
-        return (
-          <ArgInput
-            title="請輸入專案根目錄路徑 (Project Root)"
-            placeholder="C:/example_project/"
-            onCancel={handleBack}
-            onSubmit={(value) => {
-              setSyncArg(value);
-              setCurrentScreen('sync');
-            }}
-          />
-        );
+    case 'sync_flow':
+      return (
+        <ArgInput
+          title="請輸入專案根目錄路徑 (Project Root)"
+          placeholder="C:/example_project/"
+          onCancel={handleBack}
+          onSubmit={value => {
+            setSyncArg(value);
+            setCurrentScreen('sync');
+          }}
+        />
+      );
     case 'sync':
-        return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
+      return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
     case 'chat':
       return <ChatCommand onBack={handleBack} />;
     case 'setrag':
@@ -218,7 +229,9 @@ export default function App() {
     case 'help':
       return (
         <Box flexDirection="column" padding={2}>
-          <Text color="cyan" bold>💡 LLM-CR 系統幫助手冊</Text>
+          <Text color="cyan" bold>
+            💡 LLM-CR 系統幫助手冊
+          </Text>
           <Text color="white">這是一個基於 Ink 驅動的自動化本地程式碼審查與動態 RAG 知識庫檢索終端介面。</Text>
           <Text color="gray">按 [Esc] 鍵安全返回極簡主選單</Text>
           <PlaceholderBackKey onBack={handleBack} />

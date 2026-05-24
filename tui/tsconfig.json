@@ -2,9 +2,9 @@
   "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
     "outDir": "dist",
-        "rootDir": "source",
-        "jsx": "react-jsx",
-        "types": ["node"]
+    "rootDir": "source",
+    "jsx": "react-jsx",
+    "types": ["node"],
   },
-  "include": ["source"]
+  "include": ["source"],
 }

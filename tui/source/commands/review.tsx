@@ -9,7 +9,7 @@ interface ReviewCommandProps extends CommandProps {
 export const ReviewCommand = ({ onBack, diffPath }: ReviewCommandProps) => {
   const [progress, setProgress] = useState(0);
 
-    // 💡 新增：允許使用者在互動模式下，按 ESC 中斷任務並返回
+  // 💡 新增：允許使用者在互動模式下，按 ESC 中斷任務並返回
   useInput((_, key) => {
     if (key.escape) {
       onBack();
@@ -40,9 +40,7 @@ export const ReviewCommand = ({ onBack, diffPath }: ReviewCommandProps) => {
       <Text color="magenta" bold>
         📊 正在執行 Review 進度審查...
       </Text>
-      {diffPath && (
-        <Text color="gray">Diff path: {diffPath}</Text>
-      )}
+      {diffPath && <Text color="gray">Diff path: {diffPath}</Text>}
       <Box marginTop={1}>
         <Text color="green">[{progressBar}] </Text>
         <Text>{progress}%</Text>

@@ -9,7 +9,6 @@ function toLabel(path: string): string {
 }
 
 export const LsDbCommand = ({ onBack }: CommandProps) => {
-
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
   const [tableKeys, setTableKeys] = useState<string[]>([]);
@@ -90,13 +89,8 @@ export const LsDbCommand = ({ onBack }: CommandProps) => {
       errorText={errorMsg}
       errorEnterAction="escape"
       escapeHint={'back'}
-      leftHelpLines={[
-        'shift+tab switch track root',
-        'up/down move'
-      ]}
-      rightHelpLines={[
-        'esc back'
-      ]}
+      leftHelpLines={['shift+tab switch track root', 'up/down move']}
+      rightHelpLines={['esc back']}
       onEscape={leave}
       onEnter={() => {}}
       onSwitchTable={() => {

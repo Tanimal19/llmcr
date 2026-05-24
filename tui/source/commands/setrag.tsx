@@ -9,7 +9,6 @@ function toLabel(path: string): string {
 }
 
 export const SetRagCommand = ({ onBack }: CommandProps) => {
-
   const [items, setItems] = useState<TableBrowserItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -98,30 +97,25 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
       errorEnterAction="clear"
       statusText={statusMsg}
       escapeHint={'back'}
-      leftHelpLines={[
-        'up/down move',
-        'space toggle',
-        'shift+A toggle all',
-      ]}
-      rightHelpLines={[
-        'enter save',
-        'esc back',
-      ]}
+      leftHelpLines={['up/down move', 'space toggle', 'shift+A toggle all']}
+      rightHelpLines={['enter save', 'esc back']}
       onEscape={leave}
       onEnter={() => {
         void saveScope();
       }}
       onToggleCurrent={index => {
-        setItems(previous => previous.map((item, itemIndex) => (
-          itemIndex === index ? { ...item, checked: !item.checked } : item
-        )));
+        setItems(previous =>
+          previous.map((item, itemIndex) => (itemIndex === index ? { ...item, checked: !item.checked } : item)),
+        );
       }}
       onToggleAll={() => {
         const isAllChecked = items.every(item => item.checked);
-        setItems(previous => previous.map(item => ({
-          ...item,
-          checked: !isAllChecked,
-        })));
+        setItems(previous =>
+          previous.map(item => ({
+            ...item,
+            checked: !isAllChecked,
+          })),
+        );
       }}
       onClearError={() => {
         setErrorMsg(undefined);
