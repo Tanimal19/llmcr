@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +46,7 @@ public class APIController {
     private final CodeReviewService codeReviewService;
     private final SourceSyncService sourceSyncService;
     private final ETLService etlService;
+    private final ConcurrentMap<String, ReviewTaskContext> reviewTasks = new ConcurrentHashMap<>();
 
     private static final boolean ENABLE_ETL = false;
 
@@ -75,6 +80,9 @@ public class APIController {
     }
 
     public record ReviewErrorEvent(String code, String message) {
+    }
+
+    public record ReviewTaskEvent(String taskId) {
     }
 
     public record RagScopeRequest(Set<String> trackRootPaths) {
@@ -117,18 +125,29 @@ public class APIController {
         logger.info("[APIService] Code review request received: {}", request.pullRequestJsonPath());
 
         SseEmitter emitter = new SseEmitter(0L);
-        emitter.onTimeout(() -> logger.warn("[APIService] review SSE timeout: {}", request.pullRequestJsonPath()));
-        emitter.onCompletion(() -> logger.info("[APIService] review SSE completed: {}", request.pullRequestJsonPath()));
+        String taskId = UUID.randomUUID().toString();
+        ReviewTaskContext taskContext = new ReviewTaskContext();
+        reviewTasks.put(taskId, taskContext);
 
-        CompletableFuture.runAsync(() -> {
+        emitter.onTimeout(() -> {
+            logger.warn("[APIService] review SSE timeout: taskId={} path={}", taskId, request.pullRequestJsonPath());
+            requestCancellation(taskId, "timeout");
+        });
+        emitter.onCompletion(() -> logger.info("[APIService] review SSE completed: taskId={} path={}", taskId,
+                request.pullRequestJsonPath()));
+
+        sendSseEvent(emitter, "task", new ReviewTaskEvent(taskId));
+
+        CompletableFuture<Void> reviewFuture = CompletableFuture.runAsync(() -> {
             try {
                 sendSseEvent(emitter, "progress", new ReviewStageProgress(
-                        "PIPELINE", "STARTED", 0, 6, "Review request accepted"));
+                        "PIPELINE", "STARTED", "Review request accepted"));
 
                 CodeReviewOutput output = codeReviewService.review(
                         request.pullRequestJsonPath(),
                         request.useMock(),
-                        progress -> sendSseEvent(emitter, "progress", progress));
+                        progress -> sendSseEvent(emitter, "progress", progress),
+                        taskContext::isCancellationRequested);
 
                 sendSseEvent(emitter, "result", output);
                 emitter.complete();
@@ -144,10 +163,20 @@ public class APIController {
                             ex.getMessage()));
                 }
                 emitter.complete();
+            } finally {
+                reviewTasks.remove(taskId);
             }
         });
+        taskContext.setFuture(reviewFuture);
 
         return emitter;
+    }
+
+    @PostMapping("/review/{taskId}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelReview(@PathVariable String taskId) {
+        requireNonBlank(taskId, "taskId must not be blank");
+        requestCancellation(taskId, "client_request");
     }
 
     @GetMapping("/lsdb")
@@ -193,6 +222,41 @@ public class APIController {
             emitter.send(SseEmitter.event().name(eventName).data(data));
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to emit SSE event: " + eventName, ex);
+        }
+    }
+
+    private void requestCancellation(String taskId, String reason) {
+        ReviewTaskContext taskContext = reviewTasks.get(taskId);
+        if (taskContext == null) {
+            logger.info("[APIService] cancel ignored (task not found): taskId={} reason={}", taskId, reason);
+            return;
+        }
+
+        taskContext.requestCancellation();
+        logger.info("[APIService] cancellation requested: taskId={} reason={}", taskId, reason);
+    }
+
+    private static final class ReviewTaskContext {
+        private final AtomicBoolean cancellationRequested = new AtomicBoolean(false);
+        private volatile CompletableFuture<Void> future;
+
+        private boolean isCancellationRequested() {
+            return cancellationRequested.get();
+        }
+
+        private void setFuture(CompletableFuture<Void> future) {
+            this.future = future;
+            if (cancellationRequested.get()) {
+                future.cancel(true);
+            }
+        }
+
+        private void requestCancellation() {
+            cancellationRequested.set(true);
+            CompletableFuture<Void> currentFuture = future;
+            if (currentFuture != null) {
+                currentFuture.cancel(true);
+            }
         }
     }
 }

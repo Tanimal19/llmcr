@@ -99,16 +99,15 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
       >
         <Box justifyContent="space-between">
           <Text color="gray">⇅ scroll</Text>
-          <Text color="gray">enter select</Text>
+          <Text color="gray">q/esc exit</Text>
         </Box>
         <Box justifyContent="space-between">
-          <Text color="gray">q/esc exit</Text>
+          <Text color="gray">enter select</Text>
         </Box>
       </Box>
     </Box>
   );
 };
-
 
 // 核心路由器
 export default function App() {
@@ -135,24 +134,24 @@ export default function App() {
           placeholder="./example.diff (leave empty to use mock data)"
           usePlaceholderOnEmpty={false}
           onCancel={handleBack}
-          onSubmit={(value) => {
+          onSubmit={value => {
             setReviewArg(value);
             setReviewUseMock(value.length === 0);
             setCurrentScreen('review');
           }}
         />
       );
-      
+
     case 'review':
       return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
 
     case 'sync_flow':
       return (
         <ArgInput
-          title="請輸入專案根目錄路徑 (Project Root)"
+          title="Please Project Root)"
           placeholder="C:/example_project/"
           onCancel={handleBack}
-          onSubmit={(value) => {
+          onSubmit={value => {
             setSyncArg(value);
             setCurrentScreen('sync');
           }}
@@ -160,7 +159,7 @@ export default function App() {
       );
 
     case 'sync':
-        return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
+      return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
 
     case 'chat':
       return <ChatCommand onBack={handleBack} />;

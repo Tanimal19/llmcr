@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { CommandProps } from '../types.js';
 import { chat, type ChatResponse } from '../api.js';
+import { ThinkingSpinner } from '../components/thinkingSpinner.js';
 
 // ─── 1. 歷史訊息型態宣告 ───
 interface Message {
@@ -11,26 +12,7 @@ interface Message {
   prefix?: string; // 💡 顯式指定前綴（如 '>>> ' 或 '... '），讓渲染層徹底與邏輯解耦
 }
 
-// ─── 2. 獨立的高質感動態轉圈圈組件 ───
-const ThinkingSpinner = () => {
-  const [frameIndex, setFrameIndex] = useState(0);
-  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setFrameIndex(prev => (prev + 1) % frames.length);
-    }, 80);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <Box>
-      <Text color="gray">{frames[frameIndex]} Thinking...</Text>
-    </Box>
-  );
-};
-
-// ─── 3. 主對話控制核心 ───
+// ─── 2. 主對話控制核心 ───
 export const ChatCommand = ({ onBack }: CommandProps) => {
   // ─── 狀態群組管理 ───
   const [messages, setMessages] = useState<Message[]>([]);
@@ -183,7 +165,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
 
       {/* 底層動態輸入輸入列 */}
       {isLoading ? (
-        <ThinkingSpinner />
+        <ThinkingSpinner intervalMs={80} message="Thinking..." />
       ) : (
         <Box flexDirection="row">
           <Text color="white">{isMultiline ? '... ' : '>>> '}</Text>
