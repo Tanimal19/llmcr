@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, type Key } from 'ink';
 
 const DEFAULT_PAGE_SIZE = 15;
 const CURSOR_SYMBOL = '-> ';
@@ -78,6 +78,54 @@ export const TableBrowser = ({
   const visibleItems = useMemo(() => items.slice(windowStart, windowEnd), [items, windowStart, windowEnd]);
   const helpRowCount = Math.max(leftHelpLines.length, rightHelpLines.length);
 
+  // 🎯 抽離子函數 1：處理上下方向鍵導覽，降低主體複雜度
+  const handleArrowKeys = (key: Key): boolean => {
+    if (key.upArrow) {
+      setActiveIndex(previous => {
+        const next = Math.max(0, previous - 1);
+        if (next < windowStart) {
+          setWindowStart(next);
+        }
+
+        return next;
+      });
+      return true;
+    }
+
+    if (key.downArrow) {
+      setActiveIndex(previous => {
+        const next = Math.min(items.length - 1, previous + 1);
+        if (next >= windowStart + pageSize) {
+          setWindowStart(next - pageSize + 1);
+        }
+
+        return next;
+      });
+      return true;
+    }
+
+    return false;
+  };
+
+  // 🎯 抽離子函數 2：處理多選核取方塊的熱鍵觸發
+  const handleCheckboxInput = (input: string): boolean => {
+    if (!showCheckbox) {
+      return false;
+    }
+
+    if (input === ' ') {
+      onToggleCurrent?.(activeIndex);
+      return true;
+    }
+
+    if (input === 'A') {
+      onToggleAll?.();
+      return true;
+    }
+
+    return false;
+  };
+
   useInput((input, key) => {
     if (key.escape) {
       onEscape();
@@ -92,15 +140,15 @@ export const TableBrowser = ({
       if (key.return) {
         if (errorEnterAction === 'clear') {
           onClearError?.();
-          return;
+        } else {
+          onEscape();
         }
-
-        onEscape();
       }
 
       return;
     }
 
+    // '\u001B[Z' is the combination of Shift + Tab
     if ((key.tab && key.shift) || input === '\u001B[Z') {
       onSwitchTable?.();
       setActiveIndex(0);
@@ -116,37 +164,8 @@ export const TableBrowser = ({
       return;
     }
 
-    if (key.upArrow) {
-      setActiveIndex(previous => {
-        const next = Math.max(0, previous - 1);
-        if (next < windowStart) {
-          setWindowStart(next);
-        }
-
-        return next;
-      });
-      return;
-    }
-
-    if (key.downArrow) {
-      setActiveIndex(previous => {
-        const next = Math.min(items.length - 1, previous + 1);
-        if (next >= windowStart + pageSize) {
-          setWindowStart(next - pageSize + 1);
-        }
-
-        return next;
-      });
-      return;
-    }
-
-    if (showCheckbox && input === ' ') {
-      onToggleCurrent?.(activeIndex);
-      return;
-    }
-
-    if (showCheckbox && input === 'A') {
-      onToggleAll?.();
+    // 呼叫被抽離的分流處理器
+    if (handleArrowKeys(key) || handleCheckboxInput(input)) {
       return;
     }
 

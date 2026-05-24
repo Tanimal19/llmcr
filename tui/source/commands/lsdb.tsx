@@ -4,7 +4,8 @@ import { TableBrowser, type TableBrowserItem } from '../components/table-browser
 import { type CommandProps } from '../types.js';
 
 function toLabel(path: string): string {
-  const segments = path.split(/[/\\]/);
+  // 修正點：為正則表達式加上 v 旗標
+  const segments = path.split(/[\/\\\\]/v);
   return segments.at(-1) ?? path;
 }
 
@@ -90,10 +91,9 @@ export const LsDbCommand = ({ onBack }: CommandProps) => {
       errorEnterAction="escape"
       escapeHint={'back'}
       leftHelpLines={['shift+tab switch track root', 'up/down move']}
-      rightHelpLines={['esc back']}
+      rightHelpLines={['enter/esc back']}
       onEscape={leave}
-      onEnter={() => {
-}}
+      onEnter={leave}
       onSwitchTable={() => {
         if (tableKeys.length === 0) {
           return;

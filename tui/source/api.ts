@@ -2,7 +2,8 @@ import process from 'node:process';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8081/api';
 
-export const API_BASE_URL = (process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL).replace(/\/+$/, '');
+// 修正點：為正則表達式加上 v 旗標以符合 require-unicode-regexp
+export const API_BASE_URL = (process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL).replace(/\/+$/v, '');
 
 export type ChatResponse = {
   answer: string;
@@ -151,14 +152,17 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (response.status === 204) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return undefined as T;
   }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return (await response.json()) as T;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return (await response.text()) as T;
 }
 
@@ -219,7 +223,8 @@ export async function reviewWithProgress(
   let finalResult: CodeReviewOutput | undefined;
 
   const parseSseEvent = (rawEvent: string): { event: string; data: string } => {
-    const lines = rawEvent.split(/\r?\n/);
+    // 修正點：加上 v 旗標
+    const lines = rawEvent.split(/\r?\n/v);
     let eventName = 'message';
     const dataLines: string[] = [];
 
@@ -251,22 +256,26 @@ export async function reviewWithProgress(
 
   const handleEvent = (eventName: string, payload: unknown): void => {
     if (eventName === 'task') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onTask?.(payload as ReviewTaskEvent);
       return;
     }
 
     if (eventName === 'progress') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onProgress?.(payload as ReviewStageProgress);
       return;
     }
 
     if (eventName === 'result') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       finalResult = payload as CodeReviewOutput;
       handlers.onResult?.(finalResult);
       return;
     }
 
     if (eventName === 'error') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const errorEvent = (payload as ReviewErrorEvent) ?? {
         code: 'REVIEW_PIPELINE_FAILED',
         message: 'Unknown review SSE error',
@@ -277,13 +286,15 @@ export async function reviewWithProgress(
   };
 
   while (true) {
+    // eslint-disable-next-line no-await-in-loop
     const { value, done } = await reader.read();
     if (done) {
       break;
     }
 
     buffer += decoder.decode(value, { stream: true });
-    const chunks = buffer.split(/\r?\n\r?\n/);
+    // 修正點：加上 v 旗標
+    const chunks = buffer.split(/\r?\n\r?\n/v);
     buffer = chunks.pop() ?? '';
 
     for (const chunk of chunks) {

@@ -48,7 +48,8 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
 
       const taskId = reviewTaskIdRef.current;
       if (taskId) {
-        void cancelReviewTask(taskId).catch(error => {
+        // 🎯 修正點 1：將 catch 回呼參數型別調整為安全且顯式的 unknown
+        void cancelReviewTask(taskId).catch((error: unknown) => {
           appendLog(
             `[WARN] Failed to cancel review task on backend: ${error instanceof Error ? error.message : String(error)}`,
           );
@@ -121,7 +122,8 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
         appendLog('[DONE] Review completed successfully');
       },
       signal: abortController.signal,
-    }).catch(error => {
+    }).catch((error: unknown) => {
+      // 🎯 修正點 2：將 catch 回呼參數型別調整為安全且顯式的 unknown
       if (abortController.signal.aborted) {
         setStatus('error');
         setErrorMessage(undefined);
