@@ -2,7 +2,6 @@ package com.llmcr.service.sync;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -25,6 +24,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.llmcr.api.APIServiceException;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Source;
@@ -75,14 +75,28 @@ public class SourceSyncService {
     }
 
     public List<TrackRootPreview> getAllTrackRootPreview() {
-        return trackRootRepository.findAllIds().stream().map(trackRootId -> self.getTrackRootPreview(trackRootId))
-                .toList();
+        logger.info("[SOURCE_SYNC] previewAll:start");
+        try {
+            List<TrackRootPreview> previews = trackRootRepository.findAllIds().stream()
+                    .map(trackRootId -> self.getTrackRootPreview(trackRootId))
+                    .toList();
+            logger.info("[SOURCE_SYNC] previewAll:done count={}", previews.size());
+            return previews;
+        } catch (Exception ex) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED,
+                    "Failed to list track root previews", ex);
+        }
     }
 
     public void syncAllTrackRootSource() {
-        trackRootRepository.findAllIds().stream().forEach(trackRootId -> {
-            self.syncTrackRootSource(trackRootId);
-        });
+        logger.info("[SOURCE_SYNC] syncAll:start");
+        try {
+            trackRootRepository.findAllIds().forEach(trackRootId -> self.syncTrackRootSource(trackRootId));
+            logger.info("[SOURCE_SYNC] syncAll:done");
+        } catch (Exception ex) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_ALL_FAILED,
+                    "Failed to sync all track roots", ex);
+        }
     }
 
     /**
@@ -99,65 +113,75 @@ public class SourceSyncService {
      */
     @Transactional
     public TrackRootPreview getTrackRootPreview(Long trackRootId) {
-        TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
-        if (trackRootPreview != null) {
+        try {
+            TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
+            if (trackRootPreview != null) {
+                return trackRootPreview;
+            }
+
+            TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
+                    .orElseThrow(() -> new APIServiceException(APIServiceException.ErrorCode.INVALID_REQUEST,
+                            "TrackRoot not found: " + trackRootId));
+
+            logger.info("[SOURCE_SYNC] preview:start trackRoot={}", trackRoot.getPath());
+
+            List<Source> localSources = getLocalSources(trackRoot);
+            List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
+
+            Map<String, Source> localSourcesByPath = localSources.stream()
+                    .collect(Collectors.toMap(Source::getPath, source -> source));
+            Map<String, Source> dbSourcesByPath = dbSources.stream()
+                    .collect(Collectors.toMap(Source::getPath, source -> source));
+
+            List<SourcePreview> sourcePreviews = new ArrayList<>();
+
+            boolean hasChanges = false;
+            for (Source dbSource : dbSources) {
+                Source localSource = localSourcesByPath.get(dbSource.getPath());
+                if (localSource == null) {
+                    logger.debug("[SOURCE_SYNC] preview:removed path={}", dbSource.getPath());
+                    sourcePreviews.add(new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(),
+                            SyncStatus.REMOVED));
+                    hasChanges = true;
+                    continue;
+                }
+
+                SyncStatus syncStatus = Objects.equals(dbSource.getContentHash(), localSource.getContentHash())
+                        ? SyncStatus.SYNCED
+                        : SyncStatus.MODIFIED;
+                if (syncStatus != SyncStatus.SYNCED) {
+                    logger.debug("[SOURCE_SYNC] preview:modified path={}", dbSource.getPath());
+                    hasChanges = true;
+                }
+                sourcePreviews
+                        .add(new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(), syncStatus));
+            }
+
+            for (Source localSource : localSources) {
+                if (dbSourcesByPath.containsKey(localSource.getPath())) {
+                    continue;
+                }
+
+                logger.debug("[SOURCE_SYNC] preview:added path={}", localSource.getPath());
+                sourcePreviews.add(new SourcePreview(localSource.getId(), localSource.getPath(), localSource.getType(),
+                        SyncStatus.ADDED));
+                hasChanges = true;
+            }
+
+            trackRootPreview = new TrackRootPreview(trackRoot.getId(), trackRoot.getPath(), !hasChanges,
+                    trackRoot.getLastSyncTime(), sourcePreviews);
+            trackRootPreviewCache.put(trackRootId, trackRootPreview);
+
+            logger.info("[SOURCE_SYNC] preview:done trackRoot={} sourceCount={} synced={}",
+                    trackRoot.getPath(), sourcePreviews.size(), !hasChanges);
+
             return trackRootPreview;
+        } catch (APIServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_FAILED,
+                    "Failed to generate track root preview", ex);
         }
-
-        TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
-                .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
-
-        logger.info("Generating track root preview for TrackRoot:" + trackRoot.getPath());
-
-        List<Source> localSources = getLocalSources(trackRoot);
-        List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
-
-        Map<String, Source> localSourcesByPath = localSources.stream()
-                .collect(Collectors.toMap(Source::getPath, source -> source));
-        Map<String, Source> dbSourcesByPath = dbSources.stream()
-                .collect(Collectors.toMap(Source::getPath, source -> source));
-
-        List<SourcePreview> sourcePreviews = new ArrayList<>();
-
-        boolean hasChanges = false;
-        for (Source dbSource : dbSources) {
-            Source localSource = localSourcesByPath.get(dbSource.getPath());
-            if (localSource == null) {
-                logger.info("Source no longer exists locally, marked as removed: " + dbSource.getPath());
-                sourcePreviews.add(new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(),
-                        SyncStatus.REMOVED));
-                hasChanges = true;
-                continue;
-            }
-
-            SyncStatus syncStatus = Objects.equals(dbSource.getContentHash(), localSource.getContentHash())
-                    ? SyncStatus.SYNCED
-                    : SyncStatus.MODIFIED;
-            if (syncStatus != SyncStatus.SYNCED) {
-                logger.info("Source content changed, marked as modified: " + dbSource.getPath());
-                hasChanges = true;
-            }
-            sourcePreviews.add(new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(), syncStatus));
-        }
-
-        for (Source localSource : localSources) {
-            if (dbSourcesByPath.containsKey(localSource.getPath())) {
-                continue;
-            }
-
-            logger.info("New source found, marked as added: " + localSource.getPath());
-            sourcePreviews.add(new SourcePreview(localSource.getId(), localSource.getPath(), localSource.getType(),
-                    SyncStatus.ADDED));
-            hasChanges = true;
-        }
-
-        trackRootPreview = new TrackRootPreview(trackRoot.getId(), trackRoot.getPath(), !hasChanges,
-                trackRoot.getLastSyncTime(), sourcePreviews);
-        trackRootPreviewCache.put(trackRootId, trackRootPreview);
-
-        logger.info("Track root preview generated with {} sources", sourcePreviews.size());
-
-        return trackRootPreview;
     }
 
     private List<Source> getLocalSources(TrackRoot trackRoot) {
@@ -197,7 +221,8 @@ public class SourceSyncService {
                         .filter(Objects::nonNull)
                         .forEach(sources::add);
             } catch (IOException e) {
-                throw new UncheckedIOException("Failed to walk track root: " + trackRoot.getPath(), e);
+                throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_LOCAL_SCAN_FAILED,
+                        "Failed to walk track root: " + trackRoot.getPath(), e);
             }
             return sources;
         }
@@ -261,9 +286,11 @@ public class SourceSyncService {
             }
             return hex.toString();
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read file for hashing: " + path, e);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED,
+                    "Failed to read file for hashing: " + path, e);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED,
+                    "SHA-256 is not available", e);
         }
     }
 
@@ -274,55 +301,75 @@ public class SourceSyncService {
      */
     @Transactional
     public void syncTrackRootSource(Long trackRootId) {
-        TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
-                .orElseThrow(() -> new IllegalStateException("TrackRoot not found: " + trackRootId));
+        try {
+            TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
+                    .orElseThrow(() -> new APIServiceException(APIServiceException.ErrorCode.INVALID_REQUEST,
+                            "TrackRoot not found: " + trackRootId));
 
-        logger.info("Start syncing TrackRoot:" + trackRoot.getPath());
+            logger.info("[SOURCE_SYNC] trackRoot:start path={}", trackRoot.getPath());
 
-        TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
-        if (trackRootPreview == null) {
-            trackRootPreview = getTrackRootPreview(trackRootId);
-        }
-        if (trackRootPreview.isSynced()) {
-            logger.info("TrackRoot is already synced, no action needed.");
-            return;
-        }
-
-        List<Source> sourcesToRemove = new ArrayList<>();
-        for (SourcePreview sourcePreview : trackRootPreview.sources()) {
-            SyncStatus syncStatus = sourcePreview.syncStatus();
-
-            switch (syncStatus) {
-                case ADDED -> {
-                    Source newSource = new Source(sourcePreview.path(),
-                            computeContentHash(Path.of(sourcePreview.path())),
-                            sourcePreview.type());
-                    trackRoot.addSource(newSource);
-                    sourceRepository.save(newSource);
-                }
-                case REMOVED -> {
-                    sourcesToRemove.add(resolveExistingSource(sourcePreview));
-                }
-                case MODIFIED -> {
-                    Source existingSource = resolveExistingSource(sourcePreview);
-                    existingSource.setContentHash(computeContentHash(Path.of(sourcePreview.path())));
-                    existingSource.getContexts().clear();
-                    existingSource.setExtracted(false);
-                    sourceRepository.save(existingSource);
-                }
-                case SYNCED -> {
-                    // no action needed
-                }
-                default -> throw new IllegalStateException("Unhandled sync status: " + syncStatus);
+            TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
+            if (trackRootPreview == null) {
+                trackRootPreview = getTrackRootPreview(trackRootId);
             }
+            if (trackRootPreview.isSynced()) {
+                logger.info("[SOURCE_SYNC] trackRoot:skip path={} reason=already_synced", trackRoot.getPath());
+                return;
+            }
+
+            List<Source> sourcesToRemove = new ArrayList<>();
+            for (SourcePreview sourcePreview : trackRootPreview.sources()) {
+                SyncStatus syncStatus = sourcePreview.syncStatus();
+
+                switch (syncStatus) {
+                    case ADDED -> {
+                        Source newSource = new Source(sourcePreview.path(),
+                                computeContentHash(Path.of(sourcePreview.path())),
+                                sourcePreview.type());
+                        trackRoot.addSource(newSource);
+                        sourceRepository.save(newSource);
+                    }
+                    case REMOVED -> {
+                        sourcesToRemove.add(requireExistingSource(sourcePreview));
+                    }
+                    case MODIFIED -> {
+                        Source existingSource = requireExistingSource(sourcePreview);
+                        existingSource.setContentHash(computeContentHash(Path.of(sourcePreview.path())));
+                        existingSource.getContexts().clear();
+                        existingSource.setExtracted(false);
+                        sourceRepository.save(existingSource);
+                    }
+                    case SYNCED -> {
+                        // no action needed
+                    }
+                    default ->
+                        throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
+                                "Unhandled sync status: " + syncStatus);
+                }
+            }
+
+            batchRemoveSources(sourcesToRemove);
+
+            trackRoot.setLastSyncTime(LocalDateTime.now());
+            trackRootRepository.save(trackRoot);
+
+            trackRootPreviewCache.remove(trackRootId);
+            logger.info("[SOURCE_SYNC] trackRoot:done path={}", trackRoot.getPath());
+        } catch (APIServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
+                    "Failed to sync track root sources", ex);
         }
+    }
 
-        batchRemoveSources(sourcesToRemove);
-
-        trackRoot.setLastSyncTime(LocalDateTime.now());
-        trackRootRepository.save(trackRoot);
-
-        trackRootPreviewCache.remove(trackRootId);
+    private Source requireExistingSource(SourcePreview preview) {
+        Source source = resolveExistingSource(preview);
+        if (source == null) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
+                    "Source not found: " + preview.path());
+        }
+        return source;
     }
 
     private Source resolveExistingSource(SourcePreview preview) {
@@ -341,41 +388,44 @@ public class SourceSyncService {
     }
 
     private void batchRemoveSourceChunks(List<Source> sources) {
-        List<Chunk> chunks = sources.stream()
-                .flatMap(source -> source.getContexts().stream())
-                .flatMap(context -> context.getChunks().stream())
-                .toList();
+        try {
+            List<Chunk> chunks = sources.stream()
+                    .flatMap(source -> source.getContexts().stream())
+                    .flatMap(context -> context.getChunks().stream())
+                    .toList();
 
-        if (chunks.isEmpty()) {
-            return;
-        }
-
-        // get information of each chunk belong to which collections, so that we can
-        // remove them from vector store accordingly
-        Map<String, Set<Long>> collectionToChunkIds = new HashMap<>();
-        for (Chunk chunk : chunks) {
-            Long chunkId = chunk.getId();
-            if (chunkId == null) {
-                continue;
+            if (chunks.isEmpty()) {
+                return;
             }
 
-            for (ChunkCollection chunkCollection : chunk.getChunkCollections()) {
-                String collectionName = chunkCollection.getName();
-                if (collectionName == null) {
+            Map<String, Set<Long>> collectionToChunkIds = new HashMap<>();
+            for (Chunk chunk : chunks) {
+                Long chunkId = chunk.getId();
+                if (chunkId == null) {
                     continue;
                 }
-                collectionToChunkIds.computeIfAbsent(collectionName, key -> new HashSet<>()).add(chunkId);
-            }
-        }
 
-        for (Map.Entry<String, Set<Long>> entry : collectionToChunkIds.entrySet()) {
-            vectorStore.removeChunks(new ArrayList<>(entry.getValue()), entry.getKey());
-        }
-
-        for (Chunk chunk : chunks) {
-            for (ChunkCollection chunkCollection : new ArrayList<>(chunk.getChunkCollections())) {
-                chunkCollection.removeChunk(chunk);
+                for (ChunkCollection chunkCollection : chunk.getChunkCollections()) {
+                    String collectionName = chunkCollection.getName();
+                    if (collectionName == null) {
+                        continue;
+                    }
+                    collectionToChunkIds.computeIfAbsent(collectionName, key -> new HashSet<>()).add(chunkId);
+                }
             }
+
+            for (Map.Entry<String, Set<Long>> entry : collectionToChunkIds.entrySet()) {
+                vectorStore.removeChunks(new ArrayList<>(entry.getValue()), entry.getKey());
+            }
+
+            for (Chunk chunk : chunks) {
+                for (ChunkCollection chunkCollection : new ArrayList<>(chunk.getChunkCollections())) {
+                    chunkCollection.removeChunk(chunk);
+                }
+            }
+        } catch (Exception ex) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_REMOVE_CHUNKS_FAILED,
+                    "Failed to remove chunks from vector store", ex);
         }
     }
 }

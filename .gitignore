@@ -19,3 +19,6 @@
 **/__pycache__/
 
 spring-app/config.yml
+
+*/dist/
+*/node_modules/
