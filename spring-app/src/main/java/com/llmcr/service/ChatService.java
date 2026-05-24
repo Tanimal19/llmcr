@@ -12,6 +12,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.stereotype.Service;
 
+import com.llmcr.api.APIServiceException;
+import com.llmcr.api.APIServiceException.ErrorCode;
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.ChunkCollection;
@@ -119,30 +121,44 @@ public class ChatService {
      * included in the RAG scope.
      */
     public Map<String, Boolean> getRagScope() {
-        List<String> allTrackRoots = trackRootRepository.findAll().stream()
-                .map(TrackRoot::getPath)
-                .toList();
-        ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
-        if (collection == null) {
-            return allTrackRoots.stream().collect(Collectors.toMap(path -> path, path -> false));
+        try
+        {
+            List<String> allTrackRoots = trackRootRepository.findAll().stream()
+                    .map(TrackRoot::getPath)
+                    .toList();
+            ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
+            if (collection == null) {
+                return allTrackRoots.stream().collect(Collectors.toMap(path -> path, path -> false));
+            }
+            Set<String> includedTrackRootPaths = collection.getTrackRoots().stream()
+                    .map(TrackRoot::getPath)
+                    .collect(Collectors.toSet());
+            return allTrackRoots.stream().collect(Collectors.toMap(path -> path, includedTrackRootPaths::contains));
         }
-        Set<String> includedTrackRootPaths = collection.getTrackRoots().stream()
-                .map(TrackRoot::getPath)
-                .collect(Collectors.toSet());
-        return allTrackRoots.stream().collect(Collectors.toMap(path -> path, includedTrackRootPaths::contains));
+        catch(Exception ex)
+        {
+            throw new APIServiceException(ErrorCode.RAG_SCOPE_GET_FAILED, "Failed to get RAG scope", ex);
+        }
     }
 
     public void setRagScope(Set<String> trackRootPaths) {
-        Set<TrackRoot> trackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
-        ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
-        if (collection == null) {
-            collection = new ChunkCollection(COLLECTION_NAME, trackRoots);
-            collection.setName(COLLECTION_NAME);
-        } else {
-            collection.clearTrackRoots();
-            collection.addTrackRoots(trackRoots);
+        try
+        {
+            Set<TrackRoot> trackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
+            ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
+            if (collection == null) {
+                collection = new ChunkCollection(COLLECTION_NAME, trackRoots);
+                collection.setName(COLLECTION_NAME);
+            } else {
+                collection.clearTrackRoots();
+                collection.addTrackRoots(trackRoots);
+            }
+            chunkCollectionRepository.save(collection);
+            loadService.reloadCollection(COLLECTION_NAME);
         }
-        chunkCollectionRepository.save(collection);
-        loadService.reloadCollection(COLLECTION_NAME);
+        catch(Exception ex)
+        {
+            throw new APIServiceException(ErrorCode.RAG_SCOPE_SET_FAILED, "Faild to set RAG scope", ex);
+        }
     }
 }

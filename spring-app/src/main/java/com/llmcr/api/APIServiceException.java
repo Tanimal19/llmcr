@@ -8,6 +8,8 @@ public class APIServiceException extends RuntimeException {
         INVALID_REQUEST("invalidrequest", "Invalid request payload or parameters", HttpStatus.INTERNAL_SERVER_ERROR),
 
         RAG_RETRIEVAL_FAILED("ragretrievalfailed", "Failed to retrieve contexts", HttpStatus.INTERNAL_SERVER_ERROR),
+        RAG_SCOPE_GET_FAILED("ragscopegetfailed", "Failed to get RAG scope", HttpStatus.INTERNAL_SERVER_ERROR),
+        RAG_SCOPE_SET_FAILED("ragscopesetfailed", "Failed to set RAG scope", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_VECTOR_SEARCH_FAILED("ragvectorsearchfailed", "Vector search failed", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_RERANK_FAILED("ragrerankfailed", "Reranking failed", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_CONTEXT_MERGE_FAILED("ragcontextmergefailed", "Failed to merge retrieved contexts",
