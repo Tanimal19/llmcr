@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,6 @@ import com.llmcr.entity.Context.ContextType;
 import com.llmcr.entity.Source.SourceType;
 
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

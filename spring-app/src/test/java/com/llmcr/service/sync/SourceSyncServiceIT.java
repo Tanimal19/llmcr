@@ -22,7 +22,6 @@ import com.llmcr.api.APIServiceException;
 import com.llmcr.api.APIServiceException.ErrorCode;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
-import com.llmcr.repository.ContextRepositoryIT;
 import com.llmcr.repository.TrackRootRepository;
 import com.llmcr.service.sync.SourceSyncService.TrackRootPreview;
 
@@ -35,7 +34,7 @@ public class SourceSyncServiceIT extends BaseIntegrationTest
     @MockitoBean
     TrackRootRepository trackRootRepository;
 
-    private static final Logger logger = LoggerFactory.getLogger(ContextRepositoryIT.class);
+    private static final Logger logger = LoggerFactory.getLogger(SourceSyncServiceIT.class);
 
     @BeforeEach
     private void setup(TestInfo testInfo)
