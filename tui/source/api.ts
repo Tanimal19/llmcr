@@ -1,6 +1,6 @@
 const DEFAULT_API_BASE_URL = 'http://localhost:8080/api';
 
-export const API_BASE_URL = (process.env.LLMCR_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, '');
+export const API_BASE_URL = (process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL).replace(/\/+$/, '');
 
 export interface ChatResponse {
 	[key: string]: unknown;
