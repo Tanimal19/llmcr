@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { type CommandProps } from '../types.js';
-import { ThinkingSpinner } from '../components/thinkingSpinner.js';
+import { ThinkingSpinner } from '../components/thinking-spinner.js';
 import {
   cancelReviewTask,
   type CodeReviewOutput,
