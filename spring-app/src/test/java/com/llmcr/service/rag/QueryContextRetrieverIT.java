@@ -20,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.BaseIntegrationTest;
+import com.llmcr.api.APIServiceException.ErrorCode;
 import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.repository.ContextRepositoryIT;
@@ -35,8 +36,6 @@ import com.llmcr.vectorstore.MyVectorStore;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Source;
-import com.llmcr.entity.Context.ContextType;
-import com.llmcr.entity.Source.SourceType;
 
 @Transactional
 public class QueryContextRetrieverIT extends BaseIntegrationTest
@@ -157,8 +156,6 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
 
     // }
 
-
-    /*Need to be improved by testing error catch */
     @Test
     @DisplayName("S3-3-1: Query Embedding fails")
     void testS3_3_1()
@@ -167,10 +164,9 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
 
         ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(5, mockTopStrategy, "text_collection", false);
         ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
-        assertThatThrownBy(() -> queryContextRetriever.retrieve(request)).isInstanceOf(RuntimeException.class).hasMessageContaining("embedding");
+        assertThatThrownBy(() -> queryContextRetriever.retrieve(request)).isInstanceOf(RuntimeException.class).hasMessage(ErrorCode.RAG_VECTOR_SEARCH_FAILED.defaultMessage());
     }
 
-    /*Need to be improved by testing error catch */
     @Test
     @DisplayName("S3-4-1: Retrieval fails")
     void testS3_4_1()
@@ -181,7 +177,6 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest
         ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(5, mockTopStrategy, "text_collection", false);
         ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
 
-        assertThatThrownBy(() -> queryContextRetriever.retrieve(request)).isInstanceOf(RuntimeException.class).hasMessageContaining("retrieval");
-        
+        assertThatThrownBy(() -> queryContextRetriever.retrieve(request)).isInstanceOf(RuntimeException.class).hasMessage(ErrorCode.RAG_VECTOR_SEARCH_FAILED.defaultMessage());
     }
 }
