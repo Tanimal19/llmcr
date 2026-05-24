@@ -6,13 +6,13 @@ import App from './app.js';
 const cli = meow(
   `
   使用說明:
-  $ tui                     - 進入互動式主選單
+  $ llmcr                     - 進入互動式主選單
 
   單次/捷徑指令 (Shortcut Mode):
-  $ tui --chat, -c "<question>" - 單次詢問 LLM 並退出
-  $ tui --review, -r            - 直接跑完進度條並退出
-  $ tui --setrag, -s            - 直接進入 RAG 檔案勾選畫面並退出
-  $ tui --lsdb, -l              - 查看目前知識庫檔案清單並退出
+  $ llmcr --chat, -c "<question>" - 單次詢問 LLM 並退出
+  $ llmcr --review, -r            - 直接跑完進度條並退出
+  $ llmcr --setrag, -s            - 直接進入 RAG 檔案勾選畫面並退出
+  $ llmcr --lsdb, -l              - 查看目前知識庫檔案清單並退出
 `,
   {
     importMeta: import.meta,
