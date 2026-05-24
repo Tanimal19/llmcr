@@ -54,7 +54,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
       const response: ChatResponse = await chat(queryText);
       setMessages(prev => [...prev, { role: 'assistant', text: response.answer }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: "❌ 系統異常：與遠端 Java 服務中斷連線。" }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: '❌ 系統異常：與遠端 Java 服務中斷連線。' }]);
     } finally {
       setIsLoading(false);
     }
@@ -136,22 +136,25 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
 
       if (trimmed === '/?' || trimmed === '/help') {
         const helpMenu = [
-          "Available Commands:",
-          "  /clear          Clear session context",
-          "  /q, /exit       Exit",
-          "  /?, /help       Help",
-          "",
-          "Use \"\"\" to begin a multi-line message."
+          'Available Commands:',
+          '  /clear          Clear session context',
+          '  /q, /exit       Exit',
+          '  /?, /help       Help',
+          '',
+          'Use """ to begin a multi-line message.',
         ].join('\n');
 
         setMessages(prev => [...prev, { role: 'assistant', text: helpMenu }]);
         return;
       }
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: `Unknown command '${value}'. Type /? for help`
-      }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: `Unknown command '${value}'. Type /? for help`,
+        },
+      ]);
       return;
     }
 
@@ -186,7 +189,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
           <Text color="white">{isMultiline ? '... ' : '>>> '}</Text>
           <TextInput
             key={inputKey}
-            placeholder={isMultiline ? "" : "Send a message (/? for help)"}
+            placeholder={isMultiline ? '' : 'Send a message (/? for help)'}
             onSubmit={handleInteractiveSubmit}
           />
         </Box>

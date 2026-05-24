@@ -154,7 +154,9 @@ export const TableBrowser = ({
   if (loading) {
     return (
       <Box flexDirection="column" paddingX={1} paddingTop={1}>
-        <Text color="white" bold>{loadingText}</Text>
+        <Text color="white" bold>
+          {loadingText}
+        </Text>
         <Text color="gray">Press esc to {escapeHint}.</Text>
       </Box>
     );
@@ -163,7 +165,9 @@ export const TableBrowser = ({
   if (errorText && errorEnterAction === 'escape') {
     return (
       <Box flexDirection="column" paddingX={1} paddingTop={1}>
-        <Text color="red" bold>Failed to load data</Text>
+        <Text color="red" bold>
+          Failed to load data
+        </Text>
         <Text color="gray">{errorText}</Text>
         <Text color="gray">Press enter or esc to {escapeHint}.</Text>
       </Box>
@@ -172,7 +176,9 @@ export const TableBrowser = ({
 
   return (
     <Box flexDirection="column" paddingX={1} paddingTop={1}>
-      <Text color="white" bold>{title}</Text>
+      <Text color="white" bold>
+        {title}
+      </Text>
       {subtitle ? <Text color="gray">{subtitle}</Text> : null}
 
       <Box
@@ -189,14 +195,8 @@ export const TableBrowser = ({
         {visibleItems.map((item, visibleIndex) => {
           const absoluteIndex = windowStart + visibleIndex;
           const isCurrent = absoluteIndex === activeIndex;
-          const rowColor = isCurrent
-            ? THEME_COLOR
-            : (showCheckbox
-              ? (item.checked ? 'white' : 'gray')
-              : 'white');
-          const checkboxPrefix = showCheckbox
-            ? (item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL)
-            : '';
+          const rowColor = isCurrent ? THEME_COLOR : showCheckbox ? (item.checked ? 'white' : 'gray') : 'white';
+          const checkboxPrefix = showCheckbox ? (item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL) : '';
           const rightText = item.rightText ? ` ${item.rightText}` : '';
           return (
             <Box key={item.id}>
@@ -227,13 +227,17 @@ export const TableBrowser = ({
 
       {errorText ? (
         <Box marginTop={1}>
-          <Text color="red" bold>{errorText}</Text>
+          <Text color="red" bold>
+            {errorText}
+          </Text>
         </Box>
       ) : null}
 
       {statusText ? (
         <Box marginTop={1}>
-          <Text color="green" bold>{statusText}</Text>
+          <Text color="green" bold>
+            {statusText}
+          </Text>
         </Box>
       ) : null}
     </Box>

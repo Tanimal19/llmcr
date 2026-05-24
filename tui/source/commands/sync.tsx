@@ -51,14 +51,16 @@ export const SyncCommand = ({ onBack, targetPath = 'C:/example_project/' }: Sync
   return (
     <Box flexDirection="column" paddingX={2} paddingTop={1}>
       {/* 標題欄 */}
-      <Text bold color="yellow">🔄 Synchronizing Project Data</Text>
-      <Text color="gray">
-        目標目錄: <Text color="cyan" bold>{targetPath}</Text>
+      <Text bold color="yellow">
+        🔄 Synchronizing Project Data
       </Text>
+      {/* prettier-ignore */}
+      <Text color="gray">目標目錄: <Text color="cyan" bold>{targetPath}</Text></Text>
 
       {/* 💡 進度條本體 */}
       <Box flexDirection="row">
         <Text color="green">[{barString}] </Text>
+        {/* prettier-ignore */}
         <Text bold color="green">{progress}%</Text>
       </Box>
 
