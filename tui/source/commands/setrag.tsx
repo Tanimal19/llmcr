@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useApp } from 'ink';
 import { getRagScope, setRagScope } from '../api.js';
 import { TableBrowser, type TableBrowserItem } from '../components/tableBrowser.js';
 import { CommandProps } from '../types.js';
@@ -9,9 +8,7 @@ function toLabel(path: string): string {
 	return segments.at(-1) ?? path;
 }
 
-export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
-	const { exit } = useApp();
-	const isOneShot = oneShotArgs === true;
+export const SetRagCommand = ({ onBack }: CommandProps) => {
 
 	const [items, setItems] = useState<TableBrowserItem[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -22,11 +19,6 @@ export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 	const selectedCount = useMemo(() => items.filter(item => item.checked).length, [items]);
 
 	const leave = () => {
-		if (isOneShot) {
-			exit();
-			return;
-		}
-
 		onBack();
 	};
 
@@ -46,7 +38,6 @@ export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 						label: toLabel(path),
 						checked,
 						rightText: path,
-						rightColor: 'gray' as const,
 					}))
 					.sort((a, b) => a.id.localeCompare(b.id));
 
@@ -84,8 +75,9 @@ export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 		setErrorMsg(undefined);
 
 		try {
+      setStatusMsg(`Saved ${selectedPaths.length} track root(s)...`);
 			await setRagScope(selectedPaths);
-			setStatusMsg(`Saved ${selectedPaths.length} track root(s). ${isOneShot ? 'Exiting' : 'Going back'}...`);
+			setStatusMsg(`Complete. Going back...`);
 			setTimeout(leave, 700);
 		} catch (error) {
 			setErrorMsg(error instanceof Error ? error.message : String(error));
@@ -99,24 +91,22 @@ export const SetRagCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 			title="RAG Scope"
 			subtitle={`Selected: ${selectedCount}/${items.length}`}
 			items={items}
-			themeColor="cyan"
 			showCheckbox={true}
-			showLineNumbers={true}
 			loading={isLoading}
 			loadingText="Loading RAG scope..."
 			errorText={errorMsg}
 			errorEnterAction="clear"
 			statusText={statusMsg}
-			escapeHint={isOneShot ? 'exit' : 'back'}
+			escapeHint={'back'}
 			leftHelpLines={[
 				'up/down move',
 				'space toggle',
 				'shift+A toggle all',
 			]}
 			rightHelpLines={[
-        'enter save',
-				`esc ${isOneShot ? 'exit' : 'back'}`,
-      ]}
+				'enter save',
+				'esc back',
+			]}
 			onEscape={leave}
 			onEnter={() => {
 				void saveScope();

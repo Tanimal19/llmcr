@@ -1,38 +1,35 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 15;
+const CURSOR_SYMBOL = '-> ';
+const EMPTY_SYMBOL = '   ';
+const CHECKED_SYMBOL = '● ';
+const UNCHECKED_SYMBOL = '○ ';
+const THEME_COLOR = 'cyan';
 
 export interface TableBrowserItem {
 	id: string;
 	label: string;
 	checked?: boolean;
 	rightText?: string;
-	rightColor?: 'white' | 'gray' | 'green' | 'yellow' | 'red' | 'cyan';
 }
 
 interface TableBrowserProps {
 	title: string;
 	subtitle?: string;
 	items: TableBrowserItem[];
-	themeColor?: 'white' | 'gray' | 'green' | 'yellow' | 'red' | 'cyan';
-	pageSize?: number;
 	showCheckbox?: boolean;
-	showLineNumbers?: boolean;
-	cursorSymbol?: string;
-	checkedSymbol?: string;
-	uncheckedSymbol?: string;
 	loading: boolean;
 	loadingText: string;
 	errorText?: string;
-	errorTitle?: string;
 	errorEnterAction?: 'escape' | 'clear';
 	statusText?: string;
 	escapeHint: string;
 	leftHelpLines?: string[];
 	rightHelpLines?: string[];
 	onEscape: () => void;
-	onEnter: () => void;
+	onEnter?: () => void;
 	onToggleCurrent?: (index: number) => void;
 	onToggleAll?: () => void;
 	onSwitchTable?: () => void;
@@ -43,17 +40,10 @@ export const TableBrowser = ({
 	title,
 	subtitle,
 	items,
-	themeColor = 'cyan',
-	pageSize = DEFAULT_PAGE_SIZE,
 	showCheckbox = false,
-	showLineNumbers = false,
-	cursorSymbol = '-> ',
-	checkedSymbol = '[x] ',
-	uncheckedSymbol = '[ ] ',
 	loading,
 	loadingText,
 	errorText,
-	errorTitle,
 	errorEnterAction = 'escape',
 	statusText,
 	escapeHint,
@@ -66,6 +56,7 @@ export const TableBrowser = ({
 	onSwitchTable,
 	onClearError,
 }: TableBrowserProps) => {
+	const pageSize = DEFAULT_PAGE_SIZE;
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [windowStart, setWindowStart] = useState(0);
 
@@ -85,7 +76,6 @@ export const TableBrowser = ({
 
 	const windowEnd = windowStart + pageSize;
 	const visibleItems = useMemo(() => items.slice(windowStart, windowEnd), [items, windowStart, windowEnd]);
-	const lineNumberWidth = Math.max(1, String(items.length).length);
 	const helpRowCount = Math.max(leftHelpLines.length, rightHelpLines.length);
 
 	useInput((input, key) => {
@@ -119,7 +109,7 @@ export const TableBrowser = ({
 
 		if (items.length === 0) {
 			if (key.return) {
-				onEnter();
+				onEnter?.();
 			}
 			return;
 		}
@@ -157,14 +147,14 @@ export const TableBrowser = ({
 		}
 
 		if (key.return) {
-			onEnter();
+			onEnter?.();
 		}
 	});
 
 	if (loading) {
 		return (
 			<Box flexDirection="column" paddingX={1} paddingTop={1}>
-				<Text color={themeColor} bold>{loadingText}</Text>
+				<Text color="white" bold>{loadingText}</Text>
 				<Text color="gray">Press esc to {escapeHint}.</Text>
 			</Box>
 		);
@@ -173,7 +163,7 @@ export const TableBrowser = ({
 	if (errorText && errorEnterAction === 'escape') {
 		return (
 			<Box flexDirection="column" paddingX={1} paddingTop={1}>
-				<Text color="red" bold>{errorTitle ?? 'Failed to load data'}</Text>
+				<Text color="red" bold>Failed to load data</Text>
 				<Text color="gray">{errorText}</Text>
 				<Text color="gray">Press enter or esc to {escapeHint}.</Text>
 			</Box>
@@ -182,7 +172,7 @@ export const TableBrowser = ({
 
 	return (
 		<Box flexDirection="column" paddingX={1} paddingTop={1}>
-			<Text color={themeColor} bold>{title}</Text>
+			<Text color="white" bold>{title}</Text>
 			{subtitle ? <Text color="gray">{subtitle}</Text> : null}
 
 			<Box
@@ -199,26 +189,23 @@ export const TableBrowser = ({
 				{visibleItems.map((item, visibleIndex) => {
 					const absoluteIndex = windowStart + visibleIndex;
 					const isCurrent = absoluteIndex === activeIndex;
-					const lineNumber = String(absoluteIndex + 1).padStart(lineNumberWidth, ' ');
+					const rowColor = isCurrent
+						? THEME_COLOR
+						: (showCheckbox
+							? (item.checked ? 'white' : 'gray')
+							: 'white');
+					const checkboxPrefix = showCheckbox
+						? (item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL)
+						: '';
+					const rightText = item.rightText ? ` ${item.rightText}` : '';
 					return (
-						<Box key={item.id} justifyContent="space-between">
-							<Text color={isCurrent ? themeColor : 'white'} bold={isCurrent}>
-								{isCurrent ? cursorSymbol : '   '}
-								{showLineNumbers ? (
-									<Text color="gray">{`${lineNumber}. `}</Text>
-								) : null}
-								{showCheckbox ? (
-									<Text color={item.checked ? themeColor : 'gray'}>
-										{item.checked ? checkedSymbol : uncheckedSymbol}
-									</Text>
-								) : null}
+						<Box key={item.id}>
+							<Text color={rowColor} bold={isCurrent}>
+								{isCurrent ? CURSOR_SYMBOL : EMPTY_SYMBOL}
+								{checkboxPrefix}
 								{item.label}
+								{rightText}
 							</Text>
-							{item.rightText ? (
-								<Text color={item.rightColor ?? 'gray'} dimColor>
-									{item.rightText}
-								</Text>
-							) : null}
 						</Box>
 					);
 				})}

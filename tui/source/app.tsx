@@ -6,13 +6,6 @@ import { SetRagCommand } from './commands/setrag.js';
 import { LsDbCommand } from './commands/lsdb.js';
 import { SyncCommand } from './commands/sync.js';
 
-interface OneShotFlags {
-	chat?: string;
-	review?: boolean;
-	setrag?: boolean;
-	lsdb?: boolean;
-}
-
 // 主選單組件
 const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
 	const [activeIndex, setActiveIndex] = useState(0);
@@ -111,7 +104,6 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
 	);
 };
 
-// 萬用參數輸入框組件
 interface ArgInputProps {
 	title: string;
 	placeholder: string;
@@ -132,13 +124,11 @@ const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => 
 			return;
 		}
 		if (key.backspace) {
-			setInputValue(prev => prev.slice(0, -1));
+			setInputValue(previous => previous.slice(0, -1));
 			return;
 		}
-		if (input && !key.ctrl && !key.meta) {
-			if (input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001b[Z') {
-				setInputValue(prev => prev + input);
-			}
+		if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001b[Z') {
+			setInputValue(previous => previous + input);
 		}
 	});
 
@@ -174,15 +164,8 @@ const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => 
 };
 
 // 核心路由器
-export default function App({ oneShotFlags }: { oneShotFlags: OneShotFlags }) {
-	const [currentScreen, setCurrentScreen] = useState<string>(() => {
-		if (oneShotFlags.chat !== undefined) return 'chat_oneshot';
-		if (oneShotFlags.review) return 'review_oneshot';
-		if (oneShotFlags.setrag) return 'setrag_oneshot';
-		if (oneShotFlags.lsdb) return 'lsdb_oneshot';
-		return 'menu';
-	});
-
+export default function App() {
+	const [currentScreen, setCurrentScreen] = useState<string>('menu');
 	const [reviewArg, setReviewArg] = useState<string | undefined>(undefined);
 	const [syncArg, setSyncArg] = useState<string | undefined>(undefined);
 
@@ -196,51 +179,39 @@ export default function App({ oneShotFlags }: { oneShotFlags: OneShotFlags }) {
 		case 'menu':
 			return <MainMenu onSelect={setCurrentScreen} />;
 
-		// Review 流程
-		case 'review_flow':
-			return (
-				<ArgInput
-					title="請輸入要進行 Code Review 的 Diff 檔案路徑"
-					placeholder="./staged.diff"
-					onCancel={handleBack}
-					onSubmit={(val) => {
-						setReviewArg(val);
-						setCurrentScreen('review');
-					}}
-				/>
-			);
-		case 'review_oneshot':
-			return <ReviewCommand onBack={handleBack} oneShotArgs={true} />;
+			case 'review_flow':
+				return (
+					<ArgInput
+						title="請輸入要進行 Code Review 的 Diff 檔案路徑"
+						placeholder="./staged.diff"
+						onCancel={handleBack}
+						onSubmit={(value) => {
+							setReviewArg(value);
+							setCurrentScreen('review');
+						}}
+					/>
+				);
 		case 'review':
-			return <ReviewCommand onBack={handleBack} oneShotArgs={reviewArg} />;
+				return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
 
-		// 💡 Sync 流程：全面對接全新的 SyncCommand 組件
-		case 'sync_flow':
-			return (
-				<ArgInput
-					title="請輸入專案根目錄路徑 (Project Root)"
-					placeholder="C:/example_project/"
-					onCancel={handleBack}
-					onSubmit={(val) => {
-						setSyncArg(val);
-						setCurrentScreen('sync');
-					}}
-				/>
-			);
+			case 'sync_flow':
+				return (
+					<ArgInput
+						title="請輸入專案根目錄路徑 (Project Root)"
+						placeholder="C:/example_project/"
+						onCancel={handleBack}
+						onSubmit={(value) => {
+							setSyncArg(value);
+							setCurrentScreen('sync');
+						}}
+					/>
+				);
 		case 'sync':
-			return <SyncCommand onBack={handleBack} oneShotArgs={syncArg} />;
-
-		// 其他常規基礎指令
-		case 'chat_oneshot':
-			return <ChatCommand onBack={handleBack} oneShotArgs={oneShotFlags.chat} />;
+				return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
 		case 'chat':
 			return <ChatCommand onBack={handleBack} />;
-		case 'setrag_oneshot':
-			return <SetRagCommand onBack={handleBack} oneShotArgs={true} />;
 		case 'setrag':
 			return <SetRagCommand onBack={handleBack} />;
-		case 'lsdb_oneshot':
-			return <LsDbCommand onBack={handleBack} oneShotArgs={true} />;
 		case 'lsdb':
 			return <LsDbCommand onBack={handleBack} />;
 

@@ -3,13 +3,12 @@ import { Box, Text, useInput } from 'ink';
 
 interface SyncCommandProps {
 	onBack: () => void;
-	oneShotArgs?: string; // 支援從主選單手打帶入，或從 CLI 旗標帶入
+	targetPath?: string;
 }
 
-export const SyncCommand = ({ onBack, oneShotArgs }: SyncCommandProps) => {
+export const SyncCommand = ({ onBack, targetPath = 'C:/example_project/' }: SyncCommandProps) => {
 	const [progress, setProgress] = useState(0);
 	const [status, setStatus] = useState('正在初始化專案目錄結構...');
-	const targetPath = oneShotArgs || 'C:/example_project/';
 
 	useEffect(() => {
 		const interval = setInterval(() => {

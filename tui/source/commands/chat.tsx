@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, Text, useApp, useInput } from 'ink';
+import { useState } from 'react';
+import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { CommandProps } from '../types.js';
 
@@ -55,51 +55,21 @@ const mockChatCall = async (request: ChatRequest): Promise<ChatResponse> => {
 // ────────────────────────────────────────────────────────
 // 核心組件：Ollama 風格對話核心
 // ────────────────────────────────────────────────────────
-export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
-	const { exit } = useApp();
-	const isOneShot = oneShotArgs !== undefined;
+export const ChatCommand = ({ onBack }: CommandProps) => {
 
 	// --- 狀態定義 ---
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [inputKey, setInputKey] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
-	const [oneShotAnswer, setOneShotAnswer] = useState<string | null>(null);
 
 	// --- 鍵盤事件監聽：隨時按 [Esc] 滑順退回主選單 ---
 	useInput((_, key) => {
-		if (!isOneShot && key.escape) {
+		if (key.escape) {
 			onBack();
 		}
 	});
 
-	// --- 流程 1：單次快捷模式 (One-shot Mode) ---
-	useEffect(() => {
-		if (!isOneShot) return;
-
-		const executeOneShot = async () => {
-			setIsLoading(true);
-			const queryText = typeof oneShotArgs === 'string' ? oneShotArgs : '未輸入問題';
-			try {
-				const res = await mockChatCall({ query: queryText });
-				setOneShotAnswer(res.answer);
-			} catch (err) {
-				setOneShotAnswer("❌ 錯誤：無法完成單次 API 請求。");
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		executeOneShot();
-	}, [isOneShot, oneShotArgs]);
-
-	// 當 One-shot 有了解答後，保留最後畫面並自動安全退出進程
-	useEffect(() => {
-		if (oneShotAnswer && isOneShot) {
-			exit();
-		}
-	}, [oneShotAnswer, isOneShot, exit]);
-
-	// --- 流程 2：互動對話模式 (Interactive Mode) ---
+	// --- 互動對話模式 ---
 	const handleInteractiveSubmit = async (value: string) => {
 		const trimmed = value.trim();
 
@@ -128,30 +98,6 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 		}
 	};
 
-	// ────────────────────────────────────────────────────────
-	// 視覺渲染分流
-	// ────────────────────────────────────────────────────────
-
-	// 狀況 A：單次快捷指令畫面
-	if (isOneShot) {
-		if (isLoading || !oneShotAnswer) {
-			return (
-				<Box paddingX={2} paddingTop={1}>
-					<Text color="yellow" bold>⏳ 正在連線至 Java API 進行 LLM 深度推理... 請稍候...</Text>
-				</Box>
-			);
-		}
-		return (
-			<Box flexDirection="column" paddingX={2} paddingTop={1}>
-				<Text bold color="white">&gt;&gt;&gt; {oneShotArgs}</Text>
-				<Box marginTop={1}>
-					<Text color="white">{oneShotAnswer}</Text>
-				</Box>
-			</Box>
-		);
-	}
-
-	// 狀況 B：互動式 Ollama 瀑布流畫面
 	return (
 		<Box flexDirection="column" paddingX={2} paddingTop={1}>
 			{/* 歷史對話紀錄：拿掉所有冗餘的 UI 裝飾，純粹呈現文字流 */}
