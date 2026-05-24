@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getRagScope, setRagScope } from '../api.js';
-import { TableBrowser, type TableBrowserItem } from '../components/tableBrowser.js';
+import { TableBrowser, type TableBrowserItem } from '../components/table-browser.js';
 import { type CommandProps } from '../types.js';
 
 function toLabel(path: string): string {
