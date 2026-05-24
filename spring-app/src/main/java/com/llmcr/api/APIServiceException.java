@@ -33,6 +33,7 @@ public class APIServiceException extends RuntimeException {
         REVIEW_SUMMARY_FAILED("reviewsummaryfailed", "Review summary stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
         REVIEW_REPORT_WRITE_FAILED("reviewreportwritefailed", "Failed to write review report",
                 HttpStatus.INTERNAL_SERVER_ERROR),
+        REVIEW_CANCELLED("reviewcancelled", "Review task was cancelled", HttpStatus.CONFLICT),
         REVIEW_PIPELINE_FAILED("reviewpipelinefailed", "Code review pipeline execution failed",
                 HttpStatus.INTERNAL_SERVER_ERROR),
 
