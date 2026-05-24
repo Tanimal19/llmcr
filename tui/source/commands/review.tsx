@@ -14,7 +14,7 @@ import {
 type ReviewCommandProps = {
   diffPath?: string;
   useMock?: boolean;
-};
+} & CommandProps;
 
 const MAX_ISSUE_PREVIEW_COUNT = 5;
 

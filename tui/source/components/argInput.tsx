@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 
-interface ArgInputProps {
+type ArgInputProps = {
   title: string;
   placeholder: string;
   usePlaceholderOnEmpty?: boolean;
   onSubmit: (value: string) => void;
   onCancel: () => void;
-}
+};
 
 export const ArgInput = ({ title, placeholder, usePlaceholderOnEmpty = true, onSubmit, onCancel }: ArgInputProps) => {
   const [inputValue, setInputValue] = useState('');

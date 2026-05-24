@@ -107,74 +107,6 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
   );
 };
 
-type ArgInputProps = {
-  title: string;
-  placeholder: string;
-  onSubmit: (value: string) => void;
-  onCancel: () => void;
-};
-
-const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => {
-  const [inputValue, setInputValue] = useState('');
-
-  useInput((input, key) => {
-    if (key.escape) {
-      onCancel();
-      return;
-    }
-
-    if (key.return) {
-      onSubmit(inputValue.trim() || placeholder);
-      return;
-    }
-
-    if (key.backspace) {
-      setInputValue(previous => previous.slice(0, -1));
-      return;
-    }
-
-    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001B[Z') {
-      setInputValue(previous => previous + input);
-    }
-  });
-
-  return (
-    <Box flexDirection="column" paddingX={2} paddingTop={1}>
-      <Text bold color="cyan">
-        📝 {title}
-      </Text>
-
-      <Box borderStyle="round" borderColor="green" paddingX={1} marginY={1}>
-        {inputValue ? (
-          <Text color="white" bold>
-            {inputValue}
-            <Text color="green">┃</Text>
-          </Text>
-        ) : (
-          <Text color="gray" dimColor>
-            {placeholder} (直接按 Enter 使用此預設值)
-          </Text>
-        )}
-      </Box>
-
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderTop={true}
-        borderBottom={false}
-        borderLeft={false}
-        borderRight={false}
-        borderColor="gray"
-        paddingTop={1}
-      >
-        <Box justifyContent="space-between">
-          <Text color="gray">enter select</Text>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
 // 核心路由器
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
@@ -208,13 +140,10 @@ export default function App() {
           }}
         />
       );
-
-    case 'review':
-      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
     }
 
     case 'review': {
-      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
+      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
     }
 
     case 'sync_flow': {
@@ -229,14 +158,10 @@ export default function App() {
           }}
         />
       );
-
-    case 'sync':
     }
 
     case 'sync': {
       return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
-
-    case 'chat':
     }
 
     case 'chat': {
