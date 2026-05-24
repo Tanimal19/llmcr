@@ -1,10 +1,11 @@
-package com.llmcr.controller;
+package com.llmcr.api;
 
 import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +21,23 @@ public class APIExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(APIExceptionHandler.class);
 
     public record ErrorResponse(String code, String error, String message, int status, String path, Instant timestamp) {
+    }
+
+    @ExceptionHandler(APIServiceException.class)
+    public ResponseEntity<ErrorResponse> handleApiServiceException(APIServiceException ex, HttpServletRequest request) {
+        HttpStatus status = ex.getStatus();
+        logger.error("[APIService] {} on {}: {}", ex.getErrorCode().code(), request.getRequestURI(), ex.getMessage(),
+                ex);
+
+        ErrorResponse response = new ErrorResponse(
+                ex.getErrorCode().code(),
+                status.getReasonPhrase(),
+                messageOrDefault(ex, ex.getErrorCode().defaultMessage()),
+                status.value(),
+                request.getRequestURI(),
+                Instant.now());
+
+        return ResponseEntity.status(status).body(response);
     }
 
     @ExceptionHandler({
@@ -59,4 +77,5 @@ public class APIExceptionHandler {
         }
         return ex.getMessage();
     }
+
 }
