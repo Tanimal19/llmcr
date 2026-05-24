@@ -21,8 +21,8 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
   ];
 
   useInput((input, key) => {
-    if (key.upArrow) setActiveIndex(prev => Math.max(0, prev - 1));
-    if (key.downArrow) setActiveIndex(prev => Math.min(options.length - 1, prev + 1));
+    if (key.upArrow) setActiveIndex(prev => (prev - 1 + options.length) % options.length);
+    if (key.downArrow) setActiveIndex(prev => (prev + 1) % options.length);
     if (key.return) {
       const selected = options[activeIndex]?.value ?? 'help';
       onSelect(selected);
@@ -34,7 +34,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
 
   return (
     <Box flexDirection="column" paddingX={2} paddingTop={1}>
-      {/* 頂部圓角資訊外框 (不設固定寬度，改由內容與外層彈性撐開) */}
+      {/* 頂部圓角資訊外框 */}
       <Box borderStyle="round" borderColor="gray" flexDirection="column" paddingX={1}>
         <Text bold color="cyan">
           LLM-CR v0.0.1
@@ -58,7 +58,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
                   </Text>
                 </Box>
                 {/* 💡 這裡很關鍵：只固定「內部左側欄位」寬度，確保不論視窗多寬，後方描述永遠完美對齊 */}
-                <Box width={26}>
+                <Box width={10}>
                   <Text color={isSelected ? 'green' : 'white'} bold={isSelected}>
                     {opt.cmd}
                   </Text>
@@ -84,7 +84,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
         </Text>
       </Box>
 
-      {/* 按鍵指南 Footer (自適應橫向拉滿) */}
+      {/* 按鍵指南 Footer */}
       <Box
         flexDirection="column"
         borderStyle="single"
@@ -93,8 +93,8 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
         borderLeft={false}
         borderRight={false}
         borderColor="gray"
-        paddingTop={1}
-        marginTop={1}
+        paddingTop={0}
+        marginTop={0}
       >
         <Box justifyContent="space-between">
           <Text color="gray">⇅ scroll</Text>
