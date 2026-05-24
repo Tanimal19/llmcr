@@ -7,27 +7,12 @@
 ```sh
 $ npm intall
 $ npm run build
-$ tui
+$ npm link
+$ llmcr
 ```
 
-## Install
+<!-- ## Install -->
 
-```bash
-$ npm install --global tui
-```
-
-## CLI
-
-```
-$ tui --help
-
-  Usage
-    $ tui
-
-  Options
-    --name  Your name
-
-  Examples
-    $ tui --name=Jane
-    Hello, Jane
-```
+<!-- ```bash
+$ npm install --global llmcr
+``` -->
