@@ -11,6 +11,26 @@ export interface CodeReviewOutput {
 	[key: string]: unknown;
 }
 
+export interface ReviewStageProgress {
+	stage: string;
+	status: string;
+	current: number;
+	total: number;
+	message: string;
+}
+
+export interface ReviewErrorEvent {
+	code: string;
+	message: string;
+}
+
+export interface ReviewStreamHandlers {
+	onProgress?: (event: ReviewStageProgress) => void;
+	onResult?: (result: CodeReviewOutput) => void;
+	onError?: (event: ReviewErrorEvent) => void;
+	signal?: AbortSignal;
+}
+
 export type SyncStatus = 'SYNCED' | 'REMOVED' | 'MODIFIED' | 'ADDED';
 
 export interface SourcePreview {
@@ -106,11 +126,119 @@ export async function setRagScope(trackRootPaths: string[]): Promise<void> {
 }
 
 export async function review(pullRequestJsonPath: string): Promise<CodeReviewOutput> {
+	return reviewWithProgress(pullRequestJsonPath);
+}
+
+export async function reviewWithProgress(
+	pullRequestJsonPath: string,
+	handlers: ReviewStreamHandlers = {},
+): Promise<CodeReviewOutput> {
 	requireNonBlank(pullRequestJsonPath, 'pullRequestJsonPath must not be blank');
-	return apiRequest<CodeReviewOutput>('/review', {
+
+	const response = await fetch(`${API_BASE_URL}/review`, {
 		method: 'POST',
+		headers: {
+			'Accept': 'text/event-stream',
+			'Content-Type': 'application/json',
+		},
 		body: JSON.stringify({ pullRequestJsonPath }),
+		signal: handlers.signal,
 	});
+
+	if (!response.ok) {
+		const errorBody = await response.text();
+		throw new Error(`API ${response.status} ${response.statusText}: ${errorBody || 'No response body'}`);
+	}
+
+	if (!response.body) {
+		throw new Error('SSE response body is not available.');
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+	let finalResult: CodeReviewOutput | undefined;
+
+	const parseSseEvent = (rawEvent: string): { event: string; data: string } => {
+		const lines = rawEvent.split(/\r?\n/);
+		let eventName = 'message';
+		const dataLines: string[] = [];
+
+		for (const line of lines) {
+			if (line.startsWith('event:')) {
+				eventName = line.slice('event:'.length).trim();
+				continue;
+			}
+			if (line.startsWith('data:')) {
+				dataLines.push(line.slice('data:'.length).trim());
+			}
+		}
+
+		return { event: eventName, data: dataLines.join('\n') };
+	};
+
+	const parseJson = (payload: string): unknown => {
+		if (!payload) {
+			return null;
+		}
+		try {
+			return JSON.parse(payload);
+		} catch {
+			return payload;
+		}
+	};
+
+	const handleEvent = (eventName: string, payload: unknown): void => {
+		if (eventName === 'progress') {
+			handlers.onProgress?.(payload as ReviewStageProgress);
+			return;
+		}
+		if (eventName === 'result') {
+			finalResult = payload as CodeReviewOutput;
+			handlers.onResult?.(finalResult);
+			return;
+		}
+		if (eventName === 'error') {
+			const errorEvent = (payload as ReviewErrorEvent) ?? {
+				code: 'REVIEW_PIPELINE_FAILED',
+				message: 'Unknown review SSE error',
+			};
+			handlers.onError?.(errorEvent);
+			throw new Error(`${errorEvent.code}: ${errorEvent.message}`);
+		}
+	};
+
+	while (true) {
+		const { value, done } = await reader.read();
+		if (done) {
+			break;
+		}
+
+		buffer += decoder.decode(value, { stream: true });
+		const chunks = buffer.split(/\r?\n\r?\n/);
+		buffer = chunks.pop() ?? '';
+
+		for (const chunk of chunks) {
+			if (!chunk.trim()) {
+				continue;
+			}
+			const parsed = parseSseEvent(chunk);
+			const payload = parseJson(parsed.data);
+			handleEvent(parsed.event, payload);
+		}
+	}
+
+	if (buffer.trim()) {
+		const parsed = parseSseEvent(buffer);
+		const payload = parseJson(parsed.data);
+		handleEvent(parsed.event, payload);
+	}
+
+	if (finalResult === undefined) {
+		throw new Error('Review SSE stream ended without a result event.');
+	}
+
+	return finalResult;
 }
 
 export async function lsdb(): Promise<TrackRootPreview[]> {
