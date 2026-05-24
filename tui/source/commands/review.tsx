@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { CommandProps } from '../types.js';
+import { type CommandProps } from '../types.js';
 import { ThinkingSpinner } from '../components/thinkingSpinner.js';
 import {
   cancelReviewTask,
@@ -11,10 +11,10 @@ import {
   ReviewTaskEvent,
 } from '../api.js';
 
-interface ReviewCommandProps extends CommandProps {
+type ReviewCommandProps = {
   diffPath?: string;
   useMock?: boolean;
-}
+};
 
 const MAX_ISSUE_PREVIEW_COUNT = 5;
 

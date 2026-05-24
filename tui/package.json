@@ -35,23 +35,27 @@
     "meow": "^14.1.0",
     "prettier": "^3.8.3",
     "ts-node": "^10.9.2",
+    "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "xo": "^2.0.2"
   },
   "ava": {
-    "extensions": {
-      "ts": "module",
-      "tsx": "module"
-    },
+    "extensions": [
+      "ts",
+      "tsx"
+    ],
     "nodeArguments": [
-      "--loader=ts-node/esm"
+      "--import=tsx"
     ]
   },
   "xo": {
-    "extends": "xo-react",
     "prettier": true,
+    "semicolon": true,
+    "space": true,
     "rules": {
-      "react/prop-types": "off"
+      "react/prop-types": "off",
+      "unicorn/prevent-abbreviations": "off",
+      "@typescript-eslint/naming-convention": "off"
     }
   }
 }

@@ -28,6 +28,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
       const selected = options[activeIndex]?.value ?? 'help';
       onSelect(selected);
     }
+
     if (input === 'q' || key.escape) {
       exit();
     }
@@ -101,6 +102,71 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
           <Text color="gray">⇅ scroll</Text>
           <Text color="gray">q/esc exit</Text>
         </Box>
+      </Box>
+    </Box>
+  );
+};
+
+type ArgInputProps = {
+  title: string;
+  placeholder: string;
+  onSubmit: (value: string) => void;
+  onCancel: () => void;
+};
+
+const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => {
+  const [inputValue, setInputValue] = useState('');
+
+  useInput((input, key) => {
+    if (key.escape) {
+      onCancel();
+      return;
+    }
+
+    if (key.return) {
+      onSubmit(inputValue.trim() || placeholder);
+      return;
+    }
+
+    if (key.backspace) {
+      setInputValue(previous => previous.slice(0, -1));
+      return;
+    }
+
+    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001B[Z') {
+      setInputValue(previous => previous + input);
+    }
+  });
+
+  return (
+    <Box flexDirection="column" paddingX={2} paddingTop={1}>
+      <Text bold color="cyan">
+        📝 {title}
+      </Text>
+
+      <Box borderStyle="round" borderColor="green" paddingX={1} marginY={1}>
+        {inputValue ? (
+          <Text color="white" bold>
+            {inputValue}
+            <Text color="green">┃</Text>
+          </Text>
+        ) : (
+          <Text color="gray" dimColor>
+            {placeholder} (直接按 Enter 使用此預設值)
+          </Text>
+        )}
+      </Box>
+
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderTop={true}
+        borderBottom={false}
+        borderLeft={false}
+        borderRight={false}
+        borderColor="gray"
+        paddingTop={1}
+      >
         <Box justifyContent="space-between">
           <Text color="gray">enter select</Text>
         </Box>
@@ -124,10 +190,11 @@ export default function App() {
   };
 
   switch (currentScreen) {
-    case 'menu':
+    case 'menu': {
       return <MainMenu onSelect={setCurrentScreen} />;
+    }
 
-    case 'review_flow':
+    case 'review_flow': {
       return (
         <ArgInput
           title="Please enter the path to the pull request JSON file for review"
@@ -144,8 +211,13 @@ export default function App() {
 
     case 'review':
       return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
+    }
 
-    case 'sync_flow':
+    case 'review': {
+      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
+    }
+
+    case 'sync_flow': {
       return (
         <ArgInput
           title="Please Project Root)"
@@ -159,16 +231,27 @@ export default function App() {
       );
 
     case 'sync':
+    }
+
+    case 'sync': {
       return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
 
     case 'chat':
-      return <ChatCommand onBack={handleBack} />;
-    case 'setrag':
-      return <SetRagCommand onBack={handleBack} />;
-    case 'lsdb':
-      return <LsDbCommand onBack={handleBack} />;
+    }
 
-    case 'help':
+    case 'chat': {
+      return <ChatCommand onBack={handleBack} />;
+    }
+
+    case 'setrag': {
+      return <SetRagCommand onBack={handleBack} />;
+    }
+
+    case 'lsdb': {
+      return <LsDbCommand onBack={handleBack} />;
+    }
+
+    case 'help': {
       return (
         <Box flexDirection="column" padding={2}>
           <Text color="cyan" bold>
@@ -179,9 +262,11 @@ export default function App() {
           <PlaceholderBackKey onBack={handleBack} />
         </Box>
       );
+    }
 
-    default:
+    default: {
       return <Text>未知指令</Text>;
+    }
   }
 }
 

@@ -1,11 +1,13 @@
+import process from 'node:process';
+
 const DEFAULT_API_BASE_URL = 'http://localhost:8081/api';
 
 export const API_BASE_URL = (process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL).replace(/\/+$/, '');
 
-export interface ChatResponse {
+export type ChatResponse = {
   answer: string;
   retrievedContexts: Record<string, number>;
-}
+};
 
 export interface CodeReviewIssue {
   type: string;
@@ -91,20 +93,20 @@ export interface ReviewStreamHandlers {
 
 export type SyncStatus = 'SYNCED' | 'REMOVED' | 'MODIFIED' | 'ADDED';
 
-export interface SourcePreview {
-  id: number | null;
+export type SourcePreview = {
+  id: number | undefined;
   path: string;
   type: string;
   syncStatus: SyncStatus;
-}
+};
 
-export interface TrackRootPreview {
+export type TrackRootPreview = {
   id: number;
   path: string;
   isSynced: boolean;
-  lastSyncTime: string | null;
+  lastSyncTime: string | undefined;
   sources: SourcePreview[];
-}
+};
 
 function requireNonBlank(value: string, message: string): void {
   if (!value || value.trim().length === 0) {
@@ -126,13 +128,14 @@ function requireTrackRootId(trackRootId: number): void {
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   if (typeof fetch !== 'function') {
-    throw new Error('Global fetch is not available in this runtime. Use Node.js 18+ or provide a fetch polyfill.');
+    throw new TypeError('Global fetch is not available in this runtime. Use Node.js 18+ or provide a fetch polyfill.');
   }
 
   const headers = new Headers(init?.headers);
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json, text/plain');
   }
+
   if (init?.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
