@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { CommandProps } from '../types.js'; // 引入我們定義的共同介面
+import { type CommandProps } from '../types.js'; // 引入我們定義的共同介面
 
-interface ReviewCommandProps extends CommandProps {
+type ReviewCommandProps = {
   diffPath?: string;
-}
+} & CommandProps;
 
 export const ReviewCommand = ({ onBack, diffPath }: ReviewCommandProps) => {
   const [progress, setProgress] = useState(0);
@@ -24,11 +24,14 @@ export const ReviewCommand = ({ onBack, diffPath }: ReviewCommandProps) => {
           setTimeout(onBack, 500);
           return 100;
         }
+
         return prev + 10;
       });
     }, 100);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [onBack]);
 
   const barWidth = 20;

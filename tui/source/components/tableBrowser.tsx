@@ -8,14 +8,14 @@ const CHECKED_SYMBOL = '● ';
 const UNCHECKED_SYMBOL = '○ ';
 const THEME_COLOR = 'cyan';
 
-export interface TableBrowserItem {
+export type TableBrowserItem = {
   id: string;
   label: string;
   checked?: boolean;
   rightText?: string;
-}
+};
 
-interface TableBrowserProps {
+type TableBrowserProps = {
   title: string;
   subtitle?: string;
   items: TableBrowserItem[];
@@ -34,7 +34,7 @@ interface TableBrowserProps {
   onToggleAll?: () => void;
   onSwitchTable?: () => void;
   onClearError?: () => void;
-}
+};
 
 export const TableBrowser = ({
   title,
@@ -97,10 +97,11 @@ export const TableBrowser = ({
 
         onEscape();
       }
+
       return;
     }
 
-    if ((key.tab && key.shift) || input === '\u001b[Z') {
+    if ((key.tab && key.shift) || input === '\u001B[Z') {
       onSwitchTable?.();
       setActiveIndex(0);
       setWindowStart(0);
@@ -111,6 +112,7 @@ export const TableBrowser = ({
       if (key.return) {
         onEnter?.();
       }
+
       return;
     }
 
@@ -120,6 +122,7 @@ export const TableBrowser = ({
         if (next < windowStart) {
           setWindowStart(next);
         }
+
         return next;
       });
       return;
@@ -131,6 +134,7 @@ export const TableBrowser = ({
         if (next >= windowStart + pageSize) {
           setWindowStart(next - pageSize + 1);
         }
+
         return next;
       });
       return;

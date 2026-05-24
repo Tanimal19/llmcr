@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { lsdb } from '../api.js';
 import { TableBrowser, type TableBrowserItem } from '../components/tableBrowser.js';
-import { CommandProps } from '../types.js';
+import { type CommandProps } from '../types.js';
 
 function toLabel(path: string): string {
   const segments = path.split(/[/\\]/);
@@ -92,7 +92,8 @@ export const LsDbCommand = ({ onBack }: CommandProps) => {
       leftHelpLines={['shift+tab switch track root', 'up/down move']}
       rightHelpLines={['esc back']}
       onEscape={leave}
-      onEnter={() => {}}
+      onEnter={() => {
+}}
       onSwitchTable={() => {
         if (tableKeys.length === 0) {
           return;

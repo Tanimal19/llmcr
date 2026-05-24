@@ -27,6 +27,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
       const selected = options[activeIndex]?.value ?? 'help';
       onSelect(selected);
     }
+
     if (input === 'q' || key.escape) {
       exit();
     }
@@ -108,12 +109,12 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
   );
 };
 
-interface ArgInputProps {
+type ArgInputProps = {
   title: string;
   placeholder: string;
   onSubmit: (value: string) => void;
   onCancel: () => void;
-}
+};
 
 const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => {
   const [inputValue, setInputValue] = useState('');
@@ -123,15 +124,18 @@ const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => 
       onCancel();
       return;
     }
+
     if (key.return) {
       onSubmit(inputValue.trim() || placeholder);
       return;
     }
+
     if (key.backspace) {
       setInputValue(previous => previous.slice(0, -1));
       return;
     }
-    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001b[Z') {
+
+    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001B[Z') {
       setInputValue(previous => previous + input);
     }
   });
@@ -187,10 +191,11 @@ export default function App() {
   };
 
   switch (currentScreen) {
-    case 'menu':
+    case 'menu': {
       return <MainMenu onSelect={setCurrentScreen} />;
+    }
 
-    case 'review_flow':
+    case 'review_flow': {
       return (
         <ArgInput
           title="請輸入要進行 Code Review 的 Diff 檔案路徑"
@@ -202,10 +207,13 @@ export default function App() {
           }}
         />
       );
-    case 'review':
-      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
+    }
 
-    case 'sync_flow':
+    case 'review': {
+      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
+    }
+
+    case 'sync_flow': {
       return (
         <ArgInput
           title="請輸入專案根目錄路徑 (Project Root)"
@@ -217,16 +225,25 @@ export default function App() {
           }}
         />
       );
-    case 'sync':
-      return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
-    case 'chat':
-      return <ChatCommand onBack={handleBack} />;
-    case 'setrag':
-      return <SetRagCommand onBack={handleBack} />;
-    case 'lsdb':
-      return <LsDbCommand onBack={handleBack} />;
+    }
 
-    case 'help':
+    case 'sync': {
+      return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
+    }
+
+    case 'chat': {
+      return <ChatCommand onBack={handleBack} />;
+    }
+
+    case 'setrag': {
+      return <SetRagCommand onBack={handleBack} />;
+    }
+
+    case 'lsdb': {
+      return <LsDbCommand onBack={handleBack} />;
+    }
+
+    case 'help': {
       return (
         <Box flexDirection="column" padding={2}>
           <Text color="cyan" bold>
@@ -237,9 +254,11 @@ export default function App() {
           <PlaceholderBackKey onBack={handleBack} />
         </Box>
       );
+    }
 
-    default:
+    default: {
       return <Text>未知指令</Text>;
+    }
   }
 }
 

@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
-import { CommandProps } from '../types.js';
+import { type CommandProps } from '../types.js';
 import { chat, type ChatResponse } from '../api.js';
 
 // ─── 1. 歷史訊息型態宣告 ───
-interface Message {
+type Message = {
   role: 'user' | 'assistant';
   text: string;
   prefix?: string; // 💡 顯式指定前綴（如 '>>> ' 或 '... '），讓渲染層徹底與邏輯解耦
-}
+};
 
 // ─── 2. 獨立的高質感動態轉圈圈組件 ───
 const ThinkingSpinner = () => {
@@ -20,7 +20,9 @@ const ThinkingSpinner = () => {
     const timer = setInterval(() => {
       setFrameIndex(prev => (prev + 1) % frames.length);
     }, 80);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, []);
 
   return (
@@ -86,6 +88,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
         setMultilineBuffer(prev => [...prev, value]);
         setInputKey(prev => prev + 1);
       }
+
       return;
     }
 
@@ -106,6 +109,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
         setMultilineBuffer(firstLine ? [firstLine] : []);
         setInputKey(prev => prev + 1);
       }
+
       return;
     }
 

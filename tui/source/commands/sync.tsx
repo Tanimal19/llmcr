@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 
-interface SyncCommandProps {
+type SyncCommandProps = {
   onBack: () => void;
   targetPath?: string;
-}
+};
 
 export const SyncCommand = ({ onBack, targetPath = 'C:/example_project/' }: SyncCommandProps) => {
   const [progress, setProgress] = useState(0);
@@ -33,7 +33,9 @@ export const SyncCommand = ({ onBack, targetPath = 'C:/example_project/' }: Sync
       });
     }, 80); // 每 80ms 刷新一次進度
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   // 監聽鍵盤：只有在 100% 完成後，按下 Esc 才能安全退回主畫面
