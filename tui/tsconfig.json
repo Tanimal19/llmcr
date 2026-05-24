@@ -1,10 +1,10 @@
 {
-	"extends": "@sindresorhus/tsconfig",
-	"compilerOptions": {
-		"outDir": "dist",
+  "extends": "@sindresorhus/tsconfig",
+  "compilerOptions": {
+    "outDir": "dist",
         "rootDir": "source",
         "jsx": "react-jsx",
         "types": ["node"]
-	},
-	"include": ["source"]
+  },
+  "include": ["source"]
 }

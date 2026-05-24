@@ -4,7 +4,7 @@ import { CommandProps } from '../types.js'; // 引入我們定義的共同介面
 import { reviewWithProgress, ReviewErrorEvent, ReviewStageProgress } from '../api.js';
 
 interface ReviewCommandProps extends CommandProps {
-	diffPath?: string;
+  diffPath?: string;
 }
 
 export const ReviewCommand = ({ onBack, diffPath }: ReviewCommandProps) => {
@@ -63,9 +63,9 @@ export const ReviewCommand = ({ onBack, diffPath }: ReviewCommandProps) => {
 		};
 	}, [diffPath]);
 
-	const barWidth = 20;
-	const completedWidth = Math.round((progress / 100) * barWidth);
-	const progressBar = '█'.repeat(completedWidth) + '░'.repeat(barWidth - completedWidth);
+  const barWidth = 20;
+  const completedWidth = Math.round((progress / 100) * barWidth);
+  const progressBar = '█'.repeat(completedWidth) + '░'.repeat(barWidth - completedWidth);
 
 	return (
 		<Box flexDirection="column" padding={1}>
