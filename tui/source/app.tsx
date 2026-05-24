@@ -4,7 +4,7 @@ import { ChatCommand } from './commands/chat.js';
 import { ReviewCommand } from './commands/review.js';
 import { SetRagCommand } from './commands/setrag.js';
 import { LsDbCommand } from './commands/lsdb.js';
-import { SyncCommand } from './commands/sync.js'; // 💡 引入剛剛建立的新組件
+import { SyncCommand } from './commands/sync.js';
 
 interface OneShotFlags {
 	chat?: string;
@@ -13,18 +13,16 @@ interface OneShotFlags {
 	lsdb?: boolean;
 }
 
-// ────────────────────────────────────────────────────────
-// 主選單組件 (已拔除硬編碼總寬度，改為 100% 自適應)
-// ────────────────────────────────────────────────────────
+// 主選單組件
 const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
 	const [activeIndex, setActiveIndex] = useState(0);
 	const { exit } = useApp();
 
 	const options = [
 		{ cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
-		{ cmd: 'review [diff_filepath]', desc: 'Generate code review', value: 'review_flow' },
+		{ cmd: 'review', desc: 'Generate code review', value: 'review_flow' },
 		{ cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
-		{ cmd: 'sync [project_root]', desc: 'Sync project data to database', value: 'sync_flow' },
+		{ cmd: 'sync', desc: 'Sync project data to database', value: 'sync_flow' },
 		{ cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
 		{ cmd: 'help', desc: 'Show this command list', value: 'help' }
 	];
@@ -113,9 +111,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
 	);
 };
 
-// ────────────────────────────────────────────────────────
-// 萬用參數輸入框組件 (同樣拔除 width={50}，實現全動態寬度)
-// ────────────────────────────────────────────────────────
+// 萬用參數輸入框組件
 interface ArgInputProps {
 	title: string;
 	placeholder: string;
@@ -177,9 +173,7 @@ const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => 
 	);
 };
 
-// ────────────────────────────────────────────────────────
 // 核心路由器
-// ────────────────────────────────────────────────────────
 export default function App({ oneShotFlags }: { oneShotFlags: OneShotFlags }) {
 	const [currentScreen, setCurrentScreen] = useState<string>(() => {
 		if (oneShotFlags.chat !== undefined) return 'chat_oneshot';
