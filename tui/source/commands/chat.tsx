@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { CommandProps } from '../types.js';
@@ -19,7 +19,7 @@ const ThinkingSpinner = () => {
 	useEffect(() => {
 		const timer = setInterval(() => {
 			setFrameIndex(prev => (prev + 1) % frames.length);
-		}, 80); // 每 80ms 高頻刷新特製編碼幀
+		}, 80);
 		return () => clearInterval(timer);
 	}, []);
 
@@ -31,15 +31,11 @@ const ThinkingSpinner = () => {
 };
 
 // ─── 3. 主對話控制核心 ───
-export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
-	const { exit } = useApp();
-	const isOneShot = oneShotArgs !== undefined;
-
+export const ChatCommand = ({ onBack }: CommandProps) => {
 	// ─── 狀態群組管理 ───
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [inputKey, setInputKey] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
-	const [oneShotAnswer, setOneShotAnswer] = useState<string | null>(null);
 
 	// 💡 多行輸入狀態機
 	const [isMultiline, setIsMultiline] = useState(false);
@@ -51,30 +47,6 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 			onBack();
 		}
 	});
-
-	// ─── 流程 1：單次快捷模式 (One-shot Mode) ───
-	useEffect(() => {
-		if (!isOneShot) return;
-
-		const executeOneShot = async () => {
-			setIsLoading(true);
-			try {
-				const res = await chat(String(oneShotArgs));
-				setOneShotAnswer(res.answer);
-			} catch {
-				setOneShotAnswer("❌ 系統異常：與遠端 Java 服務中斷連線。");
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		executeOneShot();
-	}, [isOneShot, oneShotArgs]);
-
-	useEffect(() => {
-		if (oneShotAnswer && isOneShot) {
-			exit();
-		}
-	}, [oneShotAnswer, isOneShot, exit]);
 
 	// ─── 基礎核心：Java API 請求發送收攏 ───
 	const executeChatApi = async (queryText: string) => {
@@ -92,7 +64,6 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 	const handleInteractiveSubmit = async (value: string) => {
 		const trimmed = value.trim();
 
-		// 🎯 核心分支 A：目前處於「多行輸入模式中」
 		if (isMultiline) {
 			// 檢查本次輸入是否以 """ 結尾，代表要關閉多行並正式發送
 			if (value.endsWith('"""')) {
@@ -190,23 +161,6 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 		setInputKey(prev => prev + 1);
 		await executeChatApi(value);
 	};
-
-	// ─── 4. 視覺渲染分流 ───
-	if (isOneShot) {
-		// 💡 優化點：單次快捷模式載入時，同樣渲染出標準的 >>> 指令頭與動態轉圈圈
-		return (
-			<Box flexDirection="column" paddingX={0} paddingTop={0}>
-                <Text color="white">&gt;&gt;&gt; {oneShotArgs}</Text>
-                {isLoading || !oneShotAnswer ? (
-                    <ThinkingSpinner />
-                ) : (
-                    <Box marginTop={0}>
-                        <Text color="white">{oneShotAnswer}</Text>
-                    </Box>
-                )}
-			</Box>
-		);
-	}
 
 	return (
 		<Box flexDirection="column" paddingX={0} paddingTop={0}>
