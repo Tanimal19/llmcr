@@ -5,7 +5,7 @@ import { ReviewCommand } from './commands/review.js';
 import { SetRagCommand } from './commands/setrag.js';
 import { LsDbCommand } from './commands/lsdb.js';
 import { SyncCommand } from './commands/sync.js';
-import { ArgInput } from './components/argInput.js';
+import { ArgInput } from './components/arg-input.js';
 
 // 主選單組件
 const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
