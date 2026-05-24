@@ -10,8 +10,21 @@ export interface CodeReviewOutput {
 	[key: string]: unknown;
 }
 
+export type SyncStatus = 'SYNCED' | 'REMOVED' | 'MODIFIED' | 'ADDED';
+
+export interface SourcePreview {
+	id: number | null;
+	path: string;
+	type: string;
+	syncStatus: SyncStatus;
+}
+
 export interface TrackRootPreview {
-	[key: string]: unknown;
+	id: number;
+	path: string;
+	isSynced: boolean;
+	lastSyncTime: string | null;
+	sources: SourcePreview[];
 }
 
 function requireNonBlank(value: string, message: string): void {

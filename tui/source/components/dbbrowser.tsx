@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
+import { lsdb, type SourcePreview, type TrackRootPreview } from '../api.js';
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 10;
 
-// 💡 定義多個 Mock 資料庫資料表
-const TABLES = ['JavaClass', 'PythonScripts', 'ConfigDB'];
+interface BrowserItem {
+	id: string;
+	label: string;
+	checked: boolean;
+	syncStatus: SourcePreview['syncStatus'];
+}
+
+function toLabel(path: string): string {
+	const segments = path.split(/[/\\]/);
+	return segments.at(-1) ?? path;
+}
 
 interface DbBrowserProps {
 	editMode: boolean;
@@ -15,30 +25,57 @@ interface DbBrowserProps {
 export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => {
 	const { exit } = useApp();
 	const isOneShot = oneShotArgs === true;
+	const [trackRoots, setTrackRoots] = useState<TrackRootPreview[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
 
-	// --- 1. 多資料表狀態管理 ---
+	useEffect(() => {
+		let alive = true;
+
+		(async () => {
+			try {
+				const previews = await lsdb();
+				if (!alive) {
+					return;
+				}
+
+				setTrackRoots(previews);
+				setDbData(() => {
+					const next: Record<string, BrowserItem[]> = {};
+					for (const preview of previews) {
+						next[preview.path] = preview.sources.map(source => ({
+							id: String(source.id ?? source.path),
+							label: toLabel(source.path),
+							checked: source.syncStatus === 'SYNCED',
+							syncStatus: source.syncStatus,
+						}));
+					}
+					return next;
+				});
+			} catch (error) {
+				if (!alive) {
+					return;
+				}
+				const message = error instanceof Error ? error.message : String(error);
+				setErrorMsg(message);
+			} finally {
+				if (alive) {
+					setIsLoading(false);
+				}
+			}
+		})();
+
+		return () => {
+			alive = false;
+		};
+	}, []);
+
+	const tableKeys = trackRoots.map(trackRoot => trackRoot.path);
 	const [tableIndex, setTableIndex] = useState(0);
-	const currentTable = TABLES[tableIndex]!;
+	const safeTableIndex = tableKeys.length === 0 ? 0 : Math.min(tableIndex, tableKeys.length - 1);
+	const currentTable = tableKeys[safeTableIndex];
 
-	const [dbData, setDbData] = useState<Record<string, Array<{ id: string; label: string; checked: boolean; unsynced?: boolean }>>>({
-		JavaClass: [
-			{ id: 'j1', label: 'ClassNodeExtractor', checked: true },
-			{ id: 'j2', label: 'DataSource', checked: false },
-			{ id: 'j3', label: 'ClassNode', checked: true, unsynced: true },
-			{ id: 'j4', label: 'BytecodeParser', checked: false },
-			{ id: 'j5', label: 'SpringContextLoader', checked: false },
-		],
-		PythonScripts: [
-			{ id: 'p1', label: 'data_processor.py', checked: true },
-			{ id: 'p2', label: 'llm_client.py', checked: false },
-			{ id: 'p3', label: 'embedder.py', checked: true, unsynced: true },
-			{ id: 'p4', label: 'pipeline.py', checked: false },
-		],
-		ConfigDB: [
-			{ id: 'c1', label: 'vector_settings.yaml', checked: false },
-			{ id: 'c2', label: 'prompts.json', checked: true, unsynced: true },
-		],
-	});
+	const [dbData, setDbData] = useState<Record<string, BrowserItem[]>>({});
 
 	// --- 2. 視窗滾動狀態（切換 table 時需重設） ---
 	const [activeIndex, setActiveIndex] = useState(0);
@@ -46,12 +83,27 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 	const [statusMsg, setStatusMsg] = useState('');
 
 	// 取得當前 Table 的檔案清單
-	const items = dbData[currentTable] || [];
+	const items = currentTable ? (dbData[currentTable] ?? []) : [];
 	const windowEnd = windowStart + PAGE_SIZE;
 	const visibleItems = items.slice(windowStart, windowEnd);
+	const currentTrackRoot = currentTable ? trackRoots.find(trackRoot => trackRoot.path === currentTable) : undefined;
 
 	// --- 3. 高階按鍵邏輯監聽 ---
 	useInput((input, key) => {
+		if (isLoading) {
+			if (key.escape) {
+				if (isOneShot) exit(); else onBack();
+			}
+			return;
+		}
+
+		if (errorMsg) {
+			if (key.escape || key.return) {
+				if (isOneShot) exit(); else onBack();
+			}
+			return;
+		}
+
 		if (statusMsg) return;
 
 		// [通用] ESC 離開
@@ -62,6 +114,9 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 
 		// [通用] ⬆️ 往上移
 		if (key.upArrow) {
+			if (items.length === 0) {
+				return;
+			}
 			setActiveIndex(prev => {
 				const next = Math.max(0, prev - 1);
 				if (next < windowStart) setWindowStart(next);
@@ -71,6 +126,9 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 
 		// [通用] ⬇️ 往下移
 		if (key.downArrow) {
+			if (items.length === 0) {
+				return;
+			}
 			setActiveIndex(prev => {
 				const next = Math.min(items.length - 1, prev + 1);
 				if (next >= windowStart + PAGE_SIZE) setWindowStart(next - PAGE_SIZE + 1);
@@ -81,7 +139,10 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 		// 💡 [通用] Shift + Tab 切換資料表
 		// 在多數終端機環境中，Shift+Tab 會送出 'tab' 訊號且 key.shift 為 true，或是送出 '\u001b[Z' 逸出碼
 		if ((key.tab && key.shift) || input === '\u001b[Z') {
-			setTableIndex(prev => (prev + 1) % TABLES.length);
+			if (tableKeys.length === 0) {
+				return;
+			}
+			setTableIndex(prev => (prev + 1) % tableKeys.length);
 			setActiveIndex(0);    // 重設游標到新 Table 的第一行
 			setWindowStart(0);   // 重設滑動視窗
 			return;
@@ -89,6 +150,9 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 
 		// 💡 [編輯模式專屬] 空白鍵勾選 / 取消單項
 		if (editMode && input === ' ') {
+			if (!currentTable) {
+				return;
+			}
 			setDbData(prev => ({
 				...prev,
 				[currentTable]: prev[currentTable]!.map((item, idx) =>
@@ -100,6 +164,9 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 		// 💡 [編輯模式專屬] Shift + A 全選 / 全不選
 		// 在終端機中，按住 Shift + a 會直接送出大寫的 'A'
 		if (editMode && input === 'A') {
+			if (!currentTable) {
+				return;
+			}
 			const allChecked = items.every(item => item.checked);
 			setDbData(prev => ({
 				...prev,
@@ -124,12 +191,35 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 	// 樣式調整
 	const themeColor = editMode ? 'cyan' : 'green';
 
+	if (isLoading) {
+		return (
+			<Box flexDirection="column" paddingX={1} paddingTop={1} >
+				<Text color="cyan" bold>Loading track roots...</Text>
+				<Text color="gray">Press esc to {isOneShot ? 'exit' : 'back'}.</Text>
+			</Box>
+		);
+	}
+
+	if (errorMsg) {
+		return (
+			<Box flexDirection="column" paddingX={1} paddingTop={1} >
+				<Text color="red" bold>Failed to load /lsdb</Text>
+				<Text color="gray">{errorMsg}</Text>
+				<Text color="gray">Press enter or esc to {isOneShot ? 'exit' : 'back'}.</Text>
+			</Box>
+		);
+	}
+
 	return (
-		<Box flexDirection="column" paddingX={1} paddingTop={1} width={50}>
-			{/* 抬頭路徑 */}
+		<Box flexDirection="column" paddingX={1} paddingTop={1} >
 			<Text bold color={themeColor}>
-				{currentTable}/
+				{currentTable ? `${currentTable}` : 'No track roots'}
 			</Text>
+			{currentTrackRoot && (
+				<Text color={currentTrackRoot.isSynced ? 'green' : 'yellow'}>
+					{currentTrackRoot.isSynced ? 'Synced' : 'Unsynced'}
+				</Text>
+			)}
 
 			<Box
 				flexDirection="column"
@@ -160,9 +250,9 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 								</Text>
 							</Box>
 
-							{item.unsynced && (
+							{item.syncStatus !== 'SYNCED' && (
 								<Text color="yellow" dimColor>
-									(unsynced)
+									({item.syncStatus.toLowerCase()})
 								</Text>
 							)}
 						</Box>
@@ -174,10 +264,9 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 				}
 			</Box>
 
-			{/* 下方工具指南 Footer */}
 			<Box flexDirection="column" marginTop={1}>
 				<Box justifyContent="space-between">
-					<Text color="gray">shift+tab switch table</Text>
+					<Text color="gray">shift+tab switch track root</Text>
 					<Text color="gray">⇅ scroll</Text>
 				</Box>
 				{editMode && (
