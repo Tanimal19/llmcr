@@ -100,7 +100,7 @@ public class LoadService {
     }
 
     @Transactional
-    public void reloadChunkCollections(String collectionName) {
+    public void reloadCollection(String collectionName) {
         logger.info("Reloading chunk collection '{}'...", collectionName);
         ChunkCollection collection = chunkCollectionRepository.findByName(collectionName)
                 .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
@@ -127,7 +127,7 @@ public class LoadService {
      * store.
      */
     @Transactional
-    public void reloadAllChunks() {
+    public void reloadAllCollections() {
         logger.info("Start reloading chunks to vector store...");
 
         List<ChunkCollection> chunkCollections = chunkCollectionRepository.findAll();

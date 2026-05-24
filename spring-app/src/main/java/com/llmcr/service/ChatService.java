@@ -143,6 +143,6 @@ public class ChatService {
             collection.addTrackRoots(trackRoots);
         }
         chunkCollectionRepository.save(collection);
-        loadService.reloadChunkCollections(COLLECTION_NAME);
+        loadService.reloadCollection(COLLECTION_NAME);
     }
 }

@@ -1,7 +1,6 @@
 package com.llmcr.service.review;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +29,7 @@ import com.llmcr.agent.SummaryAgent.Issue;
 import com.llmcr.agent.SummaryAgent.ItemAnswer;
 import com.llmcr.agent.SummaryAgent.SummaryAgentInput;
 import com.llmcr.agent.SummaryAgent.SummaryAgentOutput;
+import com.llmcr.api.APIServiceException;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.review.PullRequestParser.PullRequestData;
 
@@ -197,59 +197,90 @@ public class CodeReviewService {
     }
 
     public CodeReviewOutput review(String jsonFilePath, boolean useMockData) {
-
-        if (useMockData) {
-            jsonFilePath = MockReviewData.MOCK_PULL_REQUEST_JSON_PATH;
-        }
-
-        PullRequestData prData = PullRequestParser.parseJsonFile(jsonFilePath);
-        logger.info("review start for PR: {} (id={})", prData.title(), prData.prId());
-
-        List<CodeChange> codeChanges = prData.changedFiles().stream()
-                .map(file -> new CodeChange(file.path(), file.patch()))
-                .toList();
-
         try {
+            if (useMockData) {
+                jsonFilePath = MockReviewData.MOCK_PULL_REQUEST_JSON_PATH;
+            }
+
+            PullRequestData prData;
+            try {
+                prData = PullRequestParser.parseJsonFile(jsonFilePath);
+            } catch (Exception ex) {
+                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PARSE_FAILED,
+                        "Failed to parse pull request data: " + jsonFilePath, ex);
+            }
+
+            logger.info("[REVIEW] start prId={} title={}", prData.prId(), prData.title());
+
+            List<CodeChange> codeChanges = prData.changedFiles().stream()
+                    .map(file -> new CodeChange(file.path(), file.patch()))
+                    .toList();
+
             // TODO: integrate static analysis tool and populate codeAnalysis
             String codeAnalysis = null;
 
             InterpretationAgentOutput interpretation;
             PlanningAgentOutput planning;
             if (!useMockData) {
-                logger.info("[INTERPRETATION] start");
-                interpretation = interpretationAgent.execute(
-                        new InterpretationAgentInput(codeChanges));
+                logger.info("[REVIEW] interpretation:start");
+                try {
+                    interpretation = interpretationAgent.execute(
+                            new InterpretationAgentInput(codeChanges));
+                } catch (Exception ex) {
+                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED,
+                            "Review interpretation stage failed", ex);
+                }
 
-                logger.info("[PLANNING] start");
-                planning = planningAgent.execute(
-                        new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+                logger.info("[REVIEW] planning:start");
+                try {
+                    planning = planningAgent.execute(
+                            new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+                } catch (Exception ex) {
+                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED,
+                            "Review planning stage failed", ex);
+                }
             } else {
                 interpretation = MockReviewData.MOCK_INTERPRETATION;
                 planning = MockReviewData.MOCK_PLANNING;
-                logger.info("using mock interpretation and planning results");
+                logger.info("[REVIEW] using mock interpretation/planning");
             }
 
-            logger.info("[COMPUTATION] start", planning.checklistItems().size());
+            logger.info("[REVIEW] computation:start items={}", planning.checklistItems().size());
             List<ItemAnswer> itemAnswers = new ArrayList<>();
             for (String item : planning.checklistItems()) {
-                logger.info("[COMPUTATION] item={}", item);
-                ComputationAgentOutput answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
+                logger.debug("[REVIEW] computation:item={}", item);
+                ComputationAgentOutput answer;
+                try {
+                    answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
+                } catch (Exception ex) {
+                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
+                            "Review computation stage failed for checklist item: " + item, ex);
+                }
                 itemAnswers.add(new ItemAnswer(item, answer));
             }
 
-            logger.info("[SUMMARY] start");
-            SummaryAgentOutput reviewResult = summaryAgent.execute(
-                    new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
+            logger.info("[REVIEW] summary:start");
+            SummaryAgentOutput reviewResult;
+            try {
+                reviewResult = summaryAgent.execute(
+                        new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
+            } catch (Exception ex) {
+                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_SUMMARY_FAILED,
+                        "Review summary stage failed", ex);
+            }
 
             CodeReviewReport review = new CodeReviewReport(
                     prData.prId(), prData.title(), reviewResult, interpretation, itemAnswers);
             Path reportPath = writeReport(review);
 
-            logger.info("code review completed. Report written to: {}", reportPath);
+            logger.info("[REVIEW] done reportPath={}", reportPath);
 
             return new CodeReviewOutput(review, reportPath);
-        } catch (RuntimeException e) {
-            throw e;
+        } catch (APIServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
+                    "Code review pipeline execution failed", ex);
         }
     }
 
@@ -263,7 +294,8 @@ public class CodeReviewService {
             Files.writeString(reportPath, report.toString());
             return reportPath;
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to write review report", e);
+            throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_REPORT_WRITE_FAILED,
+                    "Failed to write review report", e);
         }
     }
 

@@ -1,4 +1,4 @@
-package com.llmcr.controller;
+package com.llmcr.api;
 
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class APIController {
             // If there is any change in track roots or collections, we need to reload all
             // chunks to update the collection-chunk mapping in the vector store.
             loadService.rebuildCollectionChunkMapping();
-            loadService.reloadAllChunks();
+            loadService.reloadAllCollections();
         }
     }
 
