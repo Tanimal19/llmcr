@@ -133,15 +133,20 @@ public class ChatService {
     }
 
     public void setRagScope(Set<String> trackRootPaths) {
-        Set<TrackRoot> trackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
+        Set<TrackRoot> newTrackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
         ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
         if (collection == null) {
-            collection = new ChunkCollection(COLLECTION_NAME, trackRoots);
+            collection = new ChunkCollection(COLLECTION_NAME, newTrackRoots);
             collection.setName(COLLECTION_NAME);
-        } else {
-            collection.clearTrackRoots();
-            collection.addTrackRoots(trackRoots);
+            chunkCollectionRepository.save(collection);
         }
+
+        if (newTrackRoots.equals(collection.getTrackRoots())) {
+            return;
+        }
+
+        collection.clearTrackRoots();
+        collection.addTrackRoots(newTrackRoots);
         chunkCollectionRepository.save(collection);
         loadService.reloadCollection(COLLECTION_NAME);
     }
