@@ -174,7 +174,9 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
           <TextInput
             key={inputKey}
             placeholder={isMultiline ? '' : 'Send a message (/? for help)'}
-            onSubmit={handleInteractiveSubmit}
+            onSubmit={value => {
+              void handleInteractiveSubmit(value);
+            }}
           />
         </Box>
       )}

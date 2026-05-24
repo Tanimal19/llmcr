@@ -18,43 +18,53 @@ export const ArgInput = ({ title, placeholder, usePlaceholderOnEmpty = true, onS
       onCancel();
       return;
     }
+
     if (key.return) {
       const trimmed = inputValue.trim();
       onSubmit(trimmed.length === 0 && usePlaceholderOnEmpty ? placeholder : trimmed);
       return;
     }
+
     if (key.leftArrow) {
       setCursorPosition(previous => Math.max(0, previous - 1));
       return;
     }
+
     if (key.rightArrow) {
       setCursorPosition(previous => Math.min(inputValue.length, previous + 1));
       return;
     }
+
     if (key.backspace) {
       if (cursorPosition === 0) {
         return;
       }
+
       setInputValue(previous => previous.slice(0, cursorPosition - 1) + previous.slice(cursorPosition));
       setCursorPosition(previous => previous - 1);
       return;
     }
+
     if (key.delete) {
       if (cursorPosition >= inputValue.length) {
         return;
       }
+
       setInputValue(previous => previous.slice(0, cursorPosition) + previous.slice(cursorPosition + 1));
       return;
     }
+
     if (key.home) {
       setCursorPosition(0);
       return;
     }
+
     if (key.end) {
       setCursorPosition(inputValue.length);
       return;
     }
-    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001b[Z') {
+
+    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001B[Z') {
       setInputValue(previous => previous.slice(0, cursorPosition) + input + previous.slice(cursorPosition));
       setCursorPosition(previous => previous + input.length);
     }

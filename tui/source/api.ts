@@ -9,87 +9,87 @@ export type ChatResponse = {
   retrievedContexts: Record<string, number>;
 };
 
-export interface CodeReviewIssue {
+export type CodeReviewIssue = {
   type: string;
   title: string;
   location: string;
   detail: string;
-}
+};
 
-export interface CodeReviewImplementationDetails {
+export type CodeReviewImplementationDetails = {
   filename: string;
   details: string[];
-}
+};
 
-export interface CodeReviewSummary {
+export type CodeReviewSummary = {
   motivation: string;
   goodPoints: string[];
   badPoints: string[];
   suggestion: string;
   implementationDetails: CodeReviewImplementationDetails[];
   issues: CodeReviewIssue[];
-}
+};
 
-export interface CodeReviewInterpretation {
+export type CodeReviewInterpretation = {
   changeDescription: string;
   changeMotivation: string;
-}
+};
 
-export interface CodeReviewEvidenceItem {
+export type CodeReviewEvidenceItem = {
   file: string;
   lines: string;
   reason: string;
-}
+};
 
-export interface CodeReviewAnswer {
+export type CodeReviewAnswer = {
   finalAnswer: string;
   analysis: string;
   evidence: CodeReviewEvidenceItem[];
-}
+};
 
-export interface CodeReviewItemAnswer {
+export type CodeReviewItemAnswer = {
   checklistItemTitle: string;
   answer: CodeReviewAnswer;
-}
+};
 
-export interface CodeReviewReport {
+export type CodeReviewReport = {
   prId: number;
   prTitle: string;
   mainReport: CodeReviewSummary;
   interpretation: CodeReviewInterpretation;
   itemAnswers: CodeReviewItemAnswer[];
-}
+};
 
-export interface CodeReviewOutput {
+export type CodeReviewOutput = {
   reviewReport: CodeReviewReport;
   reportPath: string;
-}
+};
 
-export interface ReviewStageProgress {
+export type ReviewStageProgress = {
   stage: string;
   status: string;
   current: number;
   total: number;
   message: string;
-}
+};
 
-export interface ReviewErrorEvent {
+export type ReviewErrorEvent = {
   code: string;
   message: string;
-}
+};
 
-export interface ReviewTaskEvent {
+export type ReviewTaskEvent = {
   taskId: string;
-}
+};
 
-export interface ReviewStreamHandlers {
+export type ReviewStreamHandlers = {
   onTask?: (event: ReviewTaskEvent) => void;
   onProgress?: (event: ReviewStageProgress) => void;
   onResult?: (result: CodeReviewOutput) => void;
   onError?: (event: ReviewErrorEvent) => void;
   useMock?: boolean;
   signal?: AbortSignal;
-}
+};
 
 export type SyncStatus = 'SYNCED' | 'REMOVED' | 'MODIFIED' | 'ADDED';
 
@@ -228,6 +228,7 @@ export async function reviewWithProgress(
         eventName = line.slice('event:'.length).trim();
         continue;
       }
+
       if (line.startsWith('data:')) {
         dataLines.push(line.slice('data:'.length).trim());
       }
@@ -240,6 +241,7 @@ export async function reviewWithProgress(
     if (!payload) {
       return null;
     }
+
     try {
       return JSON.parse(payload);
     } catch {
@@ -252,15 +254,18 @@ export async function reviewWithProgress(
       handlers.onTask?.(payload as ReviewTaskEvent);
       return;
     }
+
     if (eventName === 'progress') {
       handlers.onProgress?.(payload as ReviewStageProgress);
       return;
     }
+
     if (eventName === 'result') {
       finalResult = payload as CodeReviewOutput;
       handlers.onResult?.(finalResult);
       return;
     }
+
     if (eventName === 'error') {
       const errorEvent = (payload as ReviewErrorEvent) ?? {
         code: 'REVIEW_PIPELINE_FAILED',
@@ -285,6 +290,7 @@ export async function reviewWithProgress(
       if (!chunk.trim()) {
         continue;
       }
+
       const parsed = parseSseEvent(chunk);
       const payload = parseJson(parsed.data);
       handleEvent(parsed.event, payload);

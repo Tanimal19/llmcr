@@ -4,11 +4,11 @@ import { type CommandProps } from '../types.js';
 import { ThinkingSpinner } from '../components/thinkingSpinner.js';
 import {
   cancelReviewTask,
-  CodeReviewOutput,
+  type CodeReviewOutput,
   reviewWithProgress,
-  ReviewErrorEvent,
-  ReviewStageProgress,
-  ReviewTaskEvent,
+  type ReviewErrorEvent,
+  type ReviewStageProgress,
+  type ReviewTaskEvent,
 } from '../api.js';
 
 type ReviewCommandProps = {
@@ -21,12 +21,12 @@ const MAX_ISSUE_PREVIEW_COUNT = 5;
 export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewCommandProps) => {
   const [stageMessage, setStageMessage] = useState('Waiting to start review...');
   const [status, setStatus] = useState<'running' | 'success' | 'error'>('running');
-  const [reviewResult, setReviewResult] = useState<CodeReviewOutput | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reviewResult, setReviewResult] = useState<CodeReviewOutput | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [awaitingExitConfirm, setAwaitingExitConfirm] = useState(false);
   const [progressLogs, setProgressLogs] = useState<string[]>([]);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const reviewTaskIdRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | undefined>(null);
+  const reviewTaskIdRef = useRef<string | undefined>(null);
   const hasRequestedCancelRef = useRef(false);
 
   const appendLog = (message: string): void => {
@@ -56,6 +56,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       } else {
         appendLog('[WARN] Review task id not received yet; only local stream abort will be applied.');
       }
+
       abortControllerRef.current?.abort();
       return;
     }
@@ -91,6 +92,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       if (!event?.taskId) {
         return;
       }
+
       reviewTaskIdRef.current = event.taskId;
       appendLog(`[INFO] Review task registered: ${event.taskId}`);
     };
@@ -112,7 +114,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       onProgress: updateProgress,
       onError: updateError,
       useMock,
-      onResult: result => {
+      onResult(result) {
         setReviewResult(result);
         setStatus('success');
         setStageMessage('Review completed successfully');
@@ -122,11 +124,12 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
     }).catch(error => {
       if (abortController.signal.aborted) {
         setStatus('error');
-        setErrorMessage(null);
+        setErrorMessage(undefined);
         setStageMessage('Review cancelled by user');
         appendLog('[INFO] Review stream aborted');
         return;
       }
+
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : String(error));
       setStageMessage('Review failed');

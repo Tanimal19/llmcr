@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-interface ThinkingSpinnerProps {
+type ThinkingSpinnerProps = {
   message?: string;
   color?: string;
   intervalMs?: number;
-}
+};
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
@@ -21,7 +21,9 @@ export const ThinkingSpinner = ({
       setFrameIndex(previous => (previous + 1) % SPINNER_FRAMES.length);
     }, intervalMs);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [intervalMs]);
 
   const frame = SPINNER_FRAMES[frameIndex];

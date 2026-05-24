@@ -1,9 +1,8 @@
-import React from 'react';
 import test from 'ava';
 import { render } from 'ink-testing-library';
-import { ChatCommand } from './source/commands/chat.js';
-import { LsDbCommand } from './source/commands/lsdb.js';
-import { SetRagCommand } from './source/commands/setrag.js';
+import { ChatCommand } from './commands/chat.js';
+import { LsDbCommand } from './commands/lsdb.js';
+import { SetRagCommand } from './commands/setrag.js';
 
 // ─── 💡 輔助工具 1：非同步等待刷新 ───
 // 修正點：加上大括號 {} 避免 setTimeout 回傳的 ID 被 Promise 執行器錯誤地隱式 return
