@@ -25,7 +25,7 @@ export interface ReviewErrorEvent {
 }
 
 export interface ReviewStreamHandlers {
-	onProgress?: (event: ReviewStageProgress) => void;
+  onProgress?: (event: ReviewStageProgress) => void;
 	onResult?: (result: CodeReviewOutput) => void;
 	onError?: (event: ReviewErrorEvent) => void;
 	signal?: AbortSignal;
