@@ -10,10 +10,7 @@ interface Message {
 	text: string;
 }
 
-export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
-	const { exit } = useApp();
-	const isOneShot = oneShotArgs !== undefined;
-
+export const ChatCommand = ({ onBack }: CommandProps) => {
 	// ─── 狀態管理 ───
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [inputKey, setInputKey] = useState(0);
@@ -26,43 +23,11 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 		}
 	});
 
-	// ─── 流程 1：單次快捷模式 (One-shot Mode) ───
-	useEffect(() => {
-		if (!isOneShot) return;
-
-		const executeOneShot = async () => {
-			setIsLoading(true);
-			try {
-				const res = await chat(String(oneShotArgs));
-				setOneShotAnswer(res.answer);
-			} catch {
-				setOneShotAnswer("❌ 錯誤：無法完成單次 API 請求。");
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		executeOneShot();
-	}, [isOneShot, oneShotArgs]);
-
-	useEffect(() => {
-		if (oneShotAnswer && isOneShot) {
-			exit();
-		}
-	}, [oneShotAnswer, isOneShot, exit]);
-
-	// ─── 流程 2：互動對話模式 (精準模擬 Ollama 核心內建指令機制) ───
+	// ─── 互動對話模式 ───
 	const handleInteractiveSubmit = async (value: string) => {
 		const trimmed = value.trim();
 
-		// 🎯 規則 1：如果是空的直接按 Enter
-		// 在歷史紀錄追加一筆空的 user 訊息，重置輸入框，畫面上就會自然多出一個緊湊的 >>> 換行
-		if (value === '') {
-			setMessages(prev => [...prev, { role: 'user', text: '' }]);
-			setInputKey(prev => prev + 1);
-			return;
-		}
-
-		// 🎯 規則 2：如果輸入是以 / 開頭的斜線指令流程
+		// 🎯 規則 1：如果輸入是以 / 開頭的斜線指令流程
 		if (value.startsWith('/')) {
 			// 無論指令對錯，先將使用者的敲擊輸入印在歷史瀑布流中
 			setMessages(prev => [...prev, { role: 'user', text: value }]);
@@ -102,7 +67,13 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 			return;
 		}
 
-		// 🎯 規則 3：常規對話文字，送往 Java API / MockAPI 進行推理
+		if (trimmed === '') {
+			setMessages(prev => [...prev, { role: 'user', text: '' }]);
+			setInputKey(prev => prev + 1);
+			return;
+		}
+
+		// 🎯 規則 2：常規對話文字，送往 Java API / MockAPI 進行推理
 		setMessages(prev => [...prev, { role: 'user', text: value }]);
 		setIsLoading(true);
 		setInputKey(prev => prev + 1);
@@ -116,25 +87,6 @@ export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
 			setIsLoading(false);
 		}
 	};
-
-	// ─── 畫面渲染分流 ───
-	if (isOneShot) {
-		if (isLoading || !oneShotAnswer) {
-			return (
-				<Box paddingX={0} paddingTop={0}>
-					<Text color="yellow" bold>⏳ 正在連線至 Java API 進行 LLM 深度推理... 請稍候...</Text>
-				</Box>
-			);
-		}
-		return (
-			<Box flexDirection="column" paddingX={0} paddingTop={0}>
-				<Text bold color="white">&gt;&gt;&gt; {oneShotArgs}</Text>
-				<Box marginTop={0}>
-					<Text color="white">{oneShotAnswer}</Text>
-				</Box>
-			</Box>
-		);
-	}
 
 	return (
 		<Box flexDirection="column" paddingX={0} paddingTop={0}>
