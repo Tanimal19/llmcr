@@ -28,6 +28,7 @@ export interface ReviewStreamHandlers {
   onProgress?: (event: ReviewStageProgress) => void;
 	onResult?: (result: CodeReviewOutput) => void;
 	onError?: (event: ReviewErrorEvent) => void;
+	useMock?: boolean;
 	signal?: AbortSignal;
 }
 
@@ -133,15 +134,13 @@ export async function reviewWithProgress(
 	pullRequestJsonPath: string,
 	handlers: ReviewStreamHandlers = {},
 ): Promise<CodeReviewOutput> {
-	requireNonBlank(pullRequestJsonPath, 'pullRequestJsonPath must not be blank');
-
 	const response = await fetch(`${API_BASE_URL}/review`, {
 		method: 'POST',
 		headers: {
 			'Accept': 'text/event-stream',
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({ pullRequestJsonPath }),
+		body: JSON.stringify({ pullRequestJsonPath, useMock: handlers.useMock ?? false }),
 		signal: handlers.signal,
 	});
 

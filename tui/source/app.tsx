@@ -5,6 +5,7 @@ import { ReviewCommand } from './commands/review.js';
 import { SetRagCommand } from './commands/setrag.js';
 import { LsDbCommand } from './commands/lsdb.js';
 import { SyncCommand } from './commands/sync.js';
+import { ArgInput } from './components/argInput.js';
 
 // 主選單組件
 const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
@@ -104,73 +105,17 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
   );
 };
 
-interface ArgInputProps {
-  title: string;
-  placeholder: string;
-  onSubmit: (value: string) => void;
-  onCancel: () => void;
-}
-
-const ArgInput = ({ title, placeholder, onSubmit, onCancel }: ArgInputProps) => {
-  const [inputValue, setInputValue] = useState('');
-
-  useInput((input, key) => {
-    if (key.escape) {
-      onCancel();
-      return;
-    }
-    if (key.return) {
-      onSubmit(inputValue.trim() || placeholder);
-      return;
-    }
-    if (key.backspace) {
-      setInputValue(previous => previous.slice(0, -1));
-      return;
-    }
-    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001b[Z') {
-      setInputValue(previous => previous + input);
-    }
-  });
-
-  return (
-    <Box flexDirection="column" paddingX={2} paddingTop={1}>
-      <Text bold color="cyan">📝 {title}</Text>
-
-      <Box borderStyle="round" borderColor="green" paddingX={1} marginY={1}>
-        {inputValue ? (
-          <Text color="white" bold>{inputValue}<Text color="green">┃</Text></Text>
-        ) : (
-          <Text color="gray" dimColor>{placeholder} (直接按 Enter 使用此預設值)</Text>
-        )}
-      </Box>
-
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderTop={true}
-        borderBottom={false}
-        borderLeft={false}
-        borderRight={false}
-        borderColor="gray"
-        paddingTop={1}
-      >
-        <Box justifyContent="space-between">
-          <Text color="gray">enter confirm</Text>
-          <Text color="gray">esc cancel</Text>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
 
 // 核心路由器
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
   const [reviewArg, setReviewArg] = useState<string | undefined>(undefined);
+  const [reviewUseMock, setReviewUseMock] = useState(false);
   const [syncArg, setSyncArg] = useState<string | undefined>(undefined);
 
   const handleBack = () => {
     setReviewArg(undefined);
+    setReviewUseMock(false);
     setSyncArg(undefined);
     setCurrentScreen('menu');
   };
@@ -179,35 +124,40 @@ export default function App() {
     case 'menu':
       return <MainMenu onSelect={setCurrentScreen} />;
 
-      case 'review_flow':
-        return (
-          <ArgInput
-            title="請輸入要進行 Code Review 的 Diff 檔案路徑"
-            placeholder="./staged.diff"
-            onCancel={handleBack}
-            onSubmit={(value) => {
-              setReviewArg(value);
-              setCurrentScreen('review');
-            }}
-          />
-        );
+    case 'review_flow':
+      return (
+        <ArgInput
+          title="Please enter the path to the pull request JSON file for review"
+          placeholder="./example.diff (leave empty to use mock data)"
+          usePlaceholderOnEmpty={false}
+          onCancel={handleBack}
+          onSubmit={(value) => {
+            setReviewArg(value);
+            setReviewUseMock(value.length === 0);
+            setCurrentScreen('review');
+          }}
+        />
+      );
+      
     case 'review':
-        return <ReviewCommand onBack={handleBack} diffPath={reviewArg} />;
+      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
 
-      case 'sync_flow':
-        return (
-          <ArgInput
-            title="請輸入專案根目錄路徑 (Project Root)"
-            placeholder="C:/example_project/"
-            onCancel={handleBack}
-            onSubmit={(value) => {
-              setSyncArg(value);
-              setCurrentScreen('sync');
-            }}
-          />
-        );
+    case 'sync_flow':
+      return (
+        <ArgInput
+          title="請輸入專案根目錄路徑 (Project Root)"
+          placeholder="C:/example_project/"
+          onCancel={handleBack}
+          onSubmit={(value) => {
+            setSyncArg(value);
+            setCurrentScreen('sync');
+          }}
+        />
+      );
+
     case 'sync':
         return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
+
     case 'chat':
       return <ChatCommand onBack={handleBack} />;
     case 'setrag':

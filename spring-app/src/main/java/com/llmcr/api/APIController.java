@@ -71,7 +71,7 @@ public class APIController {
     public record ChatRequest(String query) {
     }
 
-    public record ReviewRequest(String pullRequestJsonPath) {
+    public record ReviewRequest(String pullRequestJsonPath, boolean useMock) {
     }
 
     public record ReviewErrorEvent(String code, String message) {
@@ -111,13 +111,14 @@ public class APIController {
 
     @PostMapping(value = "/review", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter review(@RequestBody ReviewRequest request) {
-        String pullRequestJsonPath = request == null ? null : request.pullRequestJsonPath();
-        requireNonBlank(pullRequestJsonPath, "pullRequestJsonPath must not be blank");
-        logger.info("[APIService] Code review request received: {}", pullRequestJsonPath);
+        if (request == null) {
+            throw new IllegalArgumentException("Request body must not be null");
+        }
+        logger.info("[APIService] Code review request received: {}", request.pullRequestJsonPath());
 
         SseEmitter emitter = new SseEmitter(0L);
-        emitter.onTimeout(() -> logger.warn("[APIService] review SSE timeout: {}", pullRequestJsonPath));
-        emitter.onCompletion(() -> logger.info("[APIService] review SSE completed: {}", pullRequestJsonPath));
+        emitter.onTimeout(() -> logger.warn("[APIService] review SSE timeout: {}", request.pullRequestJsonPath()));
+        emitter.onCompletion(() -> logger.info("[APIService] review SSE completed: {}", request.pullRequestJsonPath()));
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -125,14 +126,14 @@ public class APIController {
                         "PIPELINE", "STARTED", 0, 6, "Review request accepted"));
 
                 CodeReviewOutput output = codeReviewService.review(
-                        pullRequestJsonPath,
-                        false,
+                        request.pullRequestJsonPath(),
+                        request.useMock(),
                         progress -> sendSseEvent(emitter, "progress", progress));
 
                 sendSseEvent(emitter, "result", output);
                 emitter.complete();
             } catch (Exception ex) {
-                logger.error("[APIService] review SSE failed: {}", pullRequestJsonPath, ex);
+                logger.error("[APIService] review SSE failed: {}", request.pullRequestJsonPath(), ex);
                 if (ex instanceof APIServiceException apiEx) {
                     sendSseEvent(emitter, "error", new ReviewErrorEvent(
                             apiEx.getErrorCode().name(),
