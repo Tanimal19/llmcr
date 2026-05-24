@@ -19,3 +19,5 @@
 **/__pycache__/
 
 spring-app/config.yml
+
+*.zip
