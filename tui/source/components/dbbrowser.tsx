@@ -3,8 +3,11 @@ import { Box, Text, useApp, useInput } from 'ink';
 
 const PAGE_SIZE = 4;
 
+// 💡 定義多個 Mock 資料庫資料表
+const TABLES = ['JavaClass', 'PythonScripts', 'ConfigDB'];
+
 interface DbBrowserProps {
-	editMode: boolean; // 💡 透過 mode 來決定是 setrag 還是 lsdb
+	editMode: boolean;
 	onBack: () => void;
 	oneShotArgs?: boolean;
 }
@@ -13,53 +16,51 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 	const { exit } = useApp();
 	const isOneShot = oneShotArgs === true;
 
-	// 統一集中的資料源
-	const [items, setItems] = useState([
-		{ id: '1', label: '知識庫_產品說明書.pdf', checked: false },
-		{ id: '2', label: '知識庫_公司常見問答.txt', checked: true },
-		{ id: '3', label: '知識庫_2026財務報表.xlsx', checked: false },
-		{ id: '4', label: '核心演算法演練.md', checked: false },
-		{ id: '5', label: '部署指南_Docker.yaml', checked: false },
-		{ id: '6', label: 'API_V2_規格書.json', checked: true },
-		{ id: '7', label: '環境變數範本.env', checked: false },
-		{ id: '8', label: '客戶隱私條款_2026.docx', checked: false },
-		{ id: '9', label: '測試測資數據_大模型.csv', checked: false },
-		{ id: '10', label: 'README_開發必看.md', checked: false },
-	]);
+	// --- 1. 多資料表狀態管理 ---
+	const [tableIndex, setTableIndex] = useState(0);
+	const currentTable = TABLES[tableIndex]!;
 
-	// 滑動視窗核心狀態
+	const [dbData, setDbData] = useState<Record<string, Array<{ id: string; label: string; checked: boolean; unsynced?: boolean }>>>({
+		JavaClass: [
+			{ id: 'j1', label: 'ClassNodeExtractor', checked: true },
+			{ id: 'j2', label: 'DataSource', checked: false },
+			{ id: 'j3', label: 'ClassNode', checked: true, unsynced: true },
+			{ id: 'j4', label: 'BytecodeParser', checked: false },
+			{ id: 'j5', label: 'SpringContextLoader', checked: false },
+		],
+		PythonScripts: [
+			{ id: 'p1', label: 'data_processor.py', checked: true },
+			{ id: 'p2', label: 'llm_client.py', checked: false },
+			{ id: 'p3', label: 'embedder.py', checked: true, unsynced: true },
+			{ id: 'p4', label: 'pipeline.py', checked: false },
+		],
+		ConfigDB: [
+			{ id: 'c1', label: 'vector_settings.yaml', checked: false },
+			{ id: 'c2', label: 'prompts.json', checked: true, unsynced: true },
+		],
+	});
+
+	// --- 2. 視窗滾動狀態（切換 table 時需重設） ---
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [windowStart, setWindowStart] = useState(0);
 	const [statusMsg, setStatusMsg] = useState('');
 
+	// 取得當前 Table 的檔案清單
+	const items = dbData[currentTable] || [];
 	const windowEnd = windowStart + PAGE_SIZE;
 	const visibleItems = items.slice(windowStart, windowEnd);
-	const remainingAbove = windowStart;
-	const remainingBelow = Math.max(0, items.length - windowEnd);
 
-	// 🎨 根據模式動態切換 UI 樣式主題
-	const themeColor = editMode ? 'cyan' : 'green';
-	const headerColor = editMode ? 'blue' : 'green';
-	const titleText = editMode ? 'RAG 文件配置模式' : '當前知識庫檔案清單';
-	const shortcutTag = isOneShot ? '⚡ [捷徑直達] ' : (editMode ? '⚙️ ' : '🔍 ');
-
+	// --- 3. 高階按鍵邏輯監聽 ---
 	useInput((input, key) => {
 		if (statusMsg) return;
 
-		// 1. 共用鍵盤：ESC 放棄離開
+		// [通用] ESC 離開
 		if (key.escape) {
 			if (isOneShot) exit(); else onBack();
 			return;
 		}
 
-		// 2. 共用鍵盤：上下移動與滾動算式
-		if (key.downArrow) {
-			setActiveIndex(prev => {
-				const next = Math.min(items.length - 1, prev + 1);
-				if (next >= windowStart + PAGE_SIZE) setWindowStart(next - PAGE_SIZE + 1);
-				return next;
-			});
-		}
+		// [通用] ⬆️ 往上移
 		if (key.upArrow) {
 			setActiveIndex(prev => {
 				const next = Math.max(0, prev - 1);
@@ -68,78 +69,134 @@ export const DbBrowser = ({ editMode, onBack, oneShotArgs }: DbBrowserProps) => 
 			});
 		}
 
-		// 3. 變體鍵盤：僅在編輯模式下允許「空白鍵」勾選
-		if (editMode && input === ' ') {
-			setItems(prev => prev.map((item, idx) =>
-				idx === activeIndex ? { ...item, checked: !item.checked } : item
-			));
+		// [通用] ⬇️ 往下移
+		if (key.downArrow) {
+			setActiveIndex(prev => {
+				const next = Math.min(items.length - 1, prev + 1);
+				if (next >= windowStart + PAGE_SIZE) setWindowStart(next - PAGE_SIZE + 1);
+				return next;
+			});
 		}
 
-		// 4. 變體鍵盤：Enter 送出處理
+		// 💡 [通用] Shift + Tab 切換資料表
+		// 在多數終端機環境中，Shift+Tab 會送出 'tab' 訊號且 key.shift 為 true，或是送出 '\u001b[Z' 逸出碼
+		if ((key.tab && key.shift) || input === '\u001b[Z') {
+			setTableIndex(prev => (prev + 1) % TABLES.length);
+			setActiveIndex(0);    // 重設游標到新 Table 的第一行
+			setWindowStart(0);   // 重設滑動視窗
+			return;
+		}
+
+		// 💡 [編輯模式專屬] 空白鍵勾選 / 取消單項
+		if (editMode && input === ' ') {
+			setDbData(prev => ({
+				...prev,
+				[currentTable]: prev[currentTable]!.map((item, idx) =>
+					idx === activeIndex ? { ...item, checked: !item.checked } : item
+				),
+			}));
+		}
+
+		// 💡 [編輯模式專屬] Shift + A 全選 / 全不選
+		// 在終端機中，按住 Shift + a 會直接送出大寫的 'A'
+		if (editMode && input === 'A') {
+			const allChecked = items.every(item => item.checked);
+			setDbData(prev => ({
+				...prev,
+				[currentTable]: prev[currentTable]!.map(item => ({
+					...item,
+					checked: !allChecked, // 如果本來全選就全取消，否則就全選
+				})),
+			}));
+		}
+
+		// [通用] Enter 送出或退出
 		if (key.return) {
 			if (editMode) {
-				const selectedLabels = items.filter(i => i.checked).map(i => i.label);
-				setStatusMsg(`已變更設定！成功配置 ${selectedLabels.length} 個檔案，正在${isOneShot ? '關閉' : '返回'}...`);
-				setTimeout(isOneShot ? exit : onBack, 1000);
+				setStatusMsg(`已成功配置修訂！正在儲存並${isOneShot ? '退出' : '返回'}...`);
+				setTimeout(isOneShot ? exit : onBack, 800);
 			} else {
-				// 唯讀模式直接秒退，不需提示
 				if (isOneShot) exit(); else onBack();
 			}
 		}
 	});
 
+	// 樣式調整
+	const themeColor = editMode ? 'cyan' : 'green';
+
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Text color={headerColor} bold>
-				{shortcutTag}{titleText}
-				<Text color="gray"> ({activeIndex + 1}/{items.length})</Text>
+		<Box flexDirection="column" paddingX={1} paddingTop={1} width={50}>
+			{/* 抬頭路徑 */}
+			<Text bold color={themeColor}>
+				{currentTable}/
 			</Text>
-			<Text color="gray">
-				{editMode
-					? '使用 ⬆️⬇️ 移動，[空白鍵] 勾選/取消，[Enter] 儲存修訂'
-					: '使用 ⬆️⬇️ 瀏覽，按 [Enter] 或 [Esc] 退出檢視'
+
+			<Box
+				flexDirection="column"
+				borderStyle="single"
+				borderTop={true}
+				borderBottom={true}
+				borderLeft={false}
+				borderRight={false}
+				borderColor="gray"
+				paddingY={0}
+				marginY={0}
+			>
+				{visibleItems.map((item, visibleIdx) => {
+					const absoluteIdx = windowStart + visibleIdx;
+					const isCurrent = absoluteIdx === activeIndex;
+
+					return (
+						<Box key={item.id} justifyContent="space-between">
+							<Box>
+								<Text color={isCurrent ? themeColor : 'white'} bold={isCurrent}>
+									{isCurrent ? '👉 ' : '   '}
+									{editMode && (
+										<Text color={item.checked ? themeColor : 'gray'}>
+											{item.checked ? '▣ ' : '▢ '}
+										</Text>
+									)}
+									{item.label}
+								</Text>
+							</Box>
+
+							{item.unsynced && (
+								<Text color="yellow" dimColor>
+									(unsynced)
+								</Text>
+							)}
+						</Box>
+					);
+				})}
+
+				{visibleItems.length < PAGE_SIZE &&
+					Array.from({ length: PAGE_SIZE - visibleItems.length }).map((_, i) => <Box key={i} height={1} />)
 				}
-			</Text>
-
-			<Box flexDirection="column" marginY={1} borderStyle="round" borderColor={themeColor} paddingX={1}>
-				{/* 頂部邊界 */}
-				<Box height={1}>
-					{remainingAbove > 0 ? (
-						<Text color="gray" dimColor>▴ 上方還有 {remainingAbove} 個檔案...</Text>
-					) : (
-						<Text color="gray" dimColor>--- 列表頂端 ---</Text>
-					)}
-				</Box>
-
-				{/* 核心列表渲染 */}
-				<Box flexDirection="column" marginY={1}>
-					{visibleItems.map((item, visibleIdx) => {
-						const absoluteIdx = windowStart + visibleIdx;
-						const isCurrent = absoluteIdx === activeIndex;
-						const checkbox = item.checked ? '[𝘅]' : '[ ]';
-
-						return (
-							<Text key={item.id} color={isCurrent ? themeColor : 'white'} bold={isCurrent}>
-								{isCurrent ? '👉 ' : '   '}
-								{/* 💡 僅在編輯模式顯示勾選框 */}
-								{editMode && <Text color={item.checked ? 'green' : 'gray'}>{checkbox} </Text>}
-								{item.label}
-							</Text>
-						);
-					})}
-				</Box>
-
-				{/* 底部邊界 */}
-				<Box height={1}>
-					{remainingBelow > 0 ? (
-						<Text color="gray" dimColor>▾ 下方還有 {remainingBelow} 個檔案...</Text>
-					) : (
-						<Text color="gray" dimColor>--- 列表末端 ---</Text>
-					)}
-				</Box>
 			</Box>
 
-			{statusMsg ? <Text color="yellow">{statusMsg}</Text> : null}
+			{/* 下方工具指南 Footer */}
+			<Box flexDirection="column" marginTop={1}>
+				<Box justifyContent="space-between">
+					<Text color="gray">shift+tab switch table</Text>
+					<Text color="gray">⇅ scroll</Text>
+				</Box>
+				{editMode && (
+					<Box flexDirection="column">
+						<Box justifyContent="space-between">
+							<Text color="gray">space     select/unselect</Text>
+						</Box>
+						<Box justifyContent="space-between">
+							<Text color="gray">shift+A   select/unselect all</Text>
+						</Box>
+					</Box>
+				)}
+			</Box>
+
+			{statusMsg ? (
+				<Box marginTop={1}>
+					<Text color="yellow" bold>{statusMsg}</Text>
+				</Box>
+			) : null}
 		</Box>
 	);
 };
