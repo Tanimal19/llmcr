@@ -6,25 +6,26 @@ import { LsDbCommand } from './source/commands/lsdb.js';
 import { SetRagCommand } from './source/commands/setrag.js';
 
 // ─── 💡 輔助工具 1：非同步等待刷新 ───
-// 因為 API 請求是異步的，我們需要一個小工具讓測試暫停、等待 React 完成 State 更新與重新渲染
-const delay = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// 修正點：加上大括號 {} 避免 setTimeout 回傳的 ID 被 Promise 執行器錯誤地隱式 return
+const delay = async (ms: number) =>
+  new Promise<void>(resolve => {
+    setTimeout(resolve, ms);
+  });
 
 // ─── 💡 輔助工具 2：全域 Fetch 模擬器 ───
-const setupMockFetch = (mockResponseData: any, status = 200) => {
-  globalThis.fetch = async () => {
-    return {
-      ok: status === 200,
+// 修正點：將 any 改為 unknown。直接使用原生的 new Response()，徹底移除不安全的類型斷言 (as Response)
+const setupMockFetch = (mockResponseData: unknown, status = 200) => {
+  globalThis.fetch = async () =>
+    Response.json(mockResponseData, {
       status,
-      headers: new Headers({ 'content-type': 'application/json' }),
-      json: async () => mockResponseData,
-      text: async () => JSON.stringify(mockResponseData),
-    } as Response;
-  };
+      headers: { 'content-type': 'application/json' },
+    });
 };
 
 // 在每個測試結束後清理 Fetch 模擬，避免污染環境
 test.afterEach(() => {
-  // @ts-ignore
+  // 修正點：遵照 XO 規範，將不推薦的 @ts-ignore 改為現代的 @ts-expect-error
+  // @ts-expect-error - fetch 在 globalThis 上預設不可刪除，此處僅用於測試清理
   delete globalThis.fetch;
 });
 
@@ -35,8 +36,14 @@ test.serial('ChatCommand - 應能正常輸入訊息並渲染 AI 的回應', asyn
     retrievedContexts: {},
   });
 
-  const { lastFrame, stdin, unmount } = render(<ChatCommand onBack={() => {
-}} />);
+  // 修正點：為空箭頭函式補上註解 /* No-op */ 並縮回單行，同時滿足 Prettier 與 XO 的空函式限制
+  const { lastFrame, stdin, unmount } = render(
+    <ChatCommand
+      onBack={() => {
+        /* No-op */
+      }}
+    />,
+  );
 
   // 1. 模擬使用者打字（改用英文更穩健）
   stdin.write('hello');
@@ -49,7 +56,8 @@ test.serial('ChatCommand - 應能正常輸入訊息並渲染 AI 的回應', asyn
   // 💡 【除錯法寶】如果還是失敗，這行會把畫面完整印在終端機上供你檢查
   console.log('=== Chat 畫面實況 ===\n', lastFrame(), '\n====================');
 
-  const frameText = lastFrame() || '';
+  // 修正點：依據安全規範，將帶有布林偽值風險的 || 替換為空值合併運算子 ??
+  const frameText = lastFrame() ?? '';
   t.true(frameText.includes('hello'));
   t.true(frameText.includes('這是來自 Java API 模擬的智慧回應。'));
 
@@ -71,15 +79,20 @@ test.serial('LsDbCommand - 應能載入並渲染正確的知識庫列表與 Sour
     },
   ]);
 
-  const { lastFrame, unmount } = render(<LsDbCommand onBack={() => {
-}} />);
+  const { lastFrame, unmount } = render(
+    <LsDbCommand
+      onBack={() => {
+        /* No-op */
+      }}
+    />,
+  );
 
   await delay(100);
 
   // 💡 【除錯法寶】印出 LsDb 的實際畫面
   console.log('=== LsDb 畫面實況 ===\n', lastFrame(), '\n====================');
 
-  const frameText = lastFrame() || '';
+  const frameText = lastFrame() ?? '';
 
   t.true(frameText.includes('demo-repo'));
   t.true(frameText.includes('Synced · 2 sources'));
@@ -96,13 +109,21 @@ test.serial('SetRagCommand - 應能載入 Scope 狀態並渲染核取方塊', as
     '/Users/project/repo-B': false,
   });
 
-  const { lastFrame, unmount } = render(<SetRagCommand onBack={() => {
-}} />);
+  const { lastFrame, unmount } = render(
+    <SetRagCommand
+      onBack={() => {
+        /* No-op */
+      }}
+    />,
+  );
 
   // 等待異步資料載入與排序處理
   await delay(100);
 
-  const frameText = lastFrame() || '';
+  // 💡 【除錯法寶】印出 SetRag 的實際畫面
+  console.log('=== SetRag 畫面實況 ===\n', lastFrame(), '\n====================');
+
+  const frameText = lastFrame() ?? '';
 
   // 2. 驗證標題與選擇數量統計
   t.true(frameText.includes('RAG Scope'));
