@@ -8,7 +8,7 @@ import {
   reviewWithProgress,
   type ReviewErrorEvent,
   type ReviewStageProgress,
-  type ReviewTaskEvent,
+  type SseTaskStartEvent,
 } from '../api.js';
 
 type ReviewCommandProps = {
@@ -28,6 +28,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
   const abortControllerRef = useRef<AbortController | undefined>(null);
   const reviewTaskIdRef = useRef<string | undefined>(null);
   const hasRequestedCancelRef = useRef(false);
+  const waitingTaskIdForCancelRef = useRef(false);
 
   const appendLog = (message: string): void => {
     setProgressLogs(previous => [...previous, message]);
@@ -41,6 +42,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
 
     if (status === 'running' && !hasRequestedCancelRef.current) {
       hasRequestedCancelRef.current = true;
+      waitingTaskIdForCancelRef.current = true;
       setAwaitingExitConfirm(true);
       setStageMessage('Cancelling review...');
       appendLog('[INFO] ESC pressed. Cancelling review task...');
@@ -48,17 +50,16 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
 
       const taskId = reviewTaskIdRef.current;
       if (taskId) {
-        // 🎯 修正點 1：將 catch 回呼參數型別調整為安全且顯式的 unknown
+        waitingTaskIdForCancelRef.current = false;
         void cancelReviewTask(taskId).catch((error: unknown) => {
           appendLog(
             `[WARN] Failed to cancel review task on backend: ${error instanceof Error ? error.message : String(error)}`,
           );
         });
+        abortControllerRef.current?.abort();
       } else {
-        appendLog('[WARN] Review task id not received yet; only local stream abort will be applied.');
+        appendLog('[INFO] Waiting for task id from backend before sending cancel request...');
       }
-
-      abortControllerRef.current?.abort();
       return;
     }
 
@@ -89,18 +90,30 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const updateTask = (event: ReviewTaskEvent): void => {
-      if (!event?.taskId) {
+    const updateTask = (event: SseTaskStartEvent): void => {
+      if (!event?.id) {
         return;
       }
 
-      reviewTaskIdRef.current = event.taskId;
-      appendLog(`[INFO] Review task registered: ${event.taskId}`);
+      reviewTaskIdRef.current = event.id;
+      appendLog(`[INFO] Review task started: ${event.name} (${event.id})`);
+
+      if (waitingTaskIdForCancelRef.current) {
+        waitingTaskIdForCancelRef.current = false;
+        appendLog('[INFO] Sending cancellation request to backend...');
+        void cancelReviewTask(event.id).catch((error: unknown) => {
+          appendLog(
+            `[WARN] Failed to cancel review task on backend: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+        abortController.abort();
+      }
     };
 
     const updateProgress = (event: ReviewStageProgress): void => {
-      setStageMessage(`${event.stage} (${event.status}) - ${event.message}`);
-      appendLog(`[${event.stage}] ${event.status} - ${event.message}`);
+      const level = event.isError ? 'ERROR' : 'INFO';
+      setStageMessage(`${event.stage} - ${event.message}`);
+      appendLog(`[${event.stage}] ${level} - ${event.message}`);
     };
 
     const updateError = (event: ReviewErrorEvent): void => {
@@ -110,20 +123,25 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       appendLog(`[ERROR] ${event.code}: ${event.message}`);
     };
 
-    reviewWithProgress(diffPath ?? '', {
-      onTask: updateTask,
-      onProgress: updateProgress,
-      onError: updateError,
-      useMock,
-      onResult(result) {
-        setReviewResult(result);
-        setStatus('success');
-        setStageMessage('Review completed successfully');
-        appendLog('[DONE] Review completed successfully');
+    reviewWithProgress(
+      {
+        jsonFilePath: diffPath ?? '',
+        useMockData: useMock,
       },
-      signal: abortController.signal,
-    }).catch((error: unknown) => {
-      // 🎯 修正點 2：將 catch 回呼參數型別調整為安全且顯式的 unknown
+      {
+        onStart: updateTask,
+        onProgress: updateProgress,
+        onError: updateError,
+        useMock,
+        onResult(result) {
+          setReviewResult(result);
+          setStatus('success');
+          setStageMessage('Review completed successfully');
+          appendLog('[DONE] Review completed successfully');
+        },
+        signal: abortController.signal,
+      },
+    ).catch((error: unknown) => {
       if (abortController.signal.aborted) {
         setStatus('error');
         setErrorMessage(undefined);
@@ -140,14 +158,15 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
 
     return () => {
       abortControllerRef.current = null;
+      waitingTaskIdForCancelRef.current = false;
       abortController.abort();
     };
   }, [diffPath, useMock]);
 
   return (
     <Box flexDirection="column" padding={1}>
-      {diffPath && <Text color="yellow">Preforming code reivew on: {diffPath}</Text>}
-      {useMock && <Text color="yellow">Preforming code review using Mock Data</Text>}
+      {diffPath && <Text color="yellow">Performing code review on: {diffPath}</Text>}
+      {useMock && <Text color="yellow">Performing code review using mock data</Text>}
       <Text color="gray">(Press esc to cancel)</Text>
 
       {status === 'running' ? (

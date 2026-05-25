@@ -158,7 +158,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
           const prefix = msg.prefix ?? (msg.role === 'user' ? '>>> ' : '');
           return (
             <Box key={i} flexDirection="row">
-              {prefix ? <Text color="white">{prefix}</Text> : null}
+              {prefix ? <Text color="cyan">{prefix}</Text> : null}
               <Text color="white">{msg.text}</Text>
             </Box>
           );
@@ -170,7 +170,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
         <ThinkingSpinner intervalMs={80} message="Thinking..." />
       ) : (
         <Box flexDirection="row">
-          <Text color="white">{isMultiline ? '... ' : '>>> '}</Text>
+          <Text color="cyan">{isMultiline ? '... ' : '>>> '}</Text>
           <TextInput
             key={inputKey}
             placeholder={isMultiline ? '' : 'Send a message (/? for help)'}

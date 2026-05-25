@@ -58,10 +58,6 @@ public class SseTaskManager {
      * defined in the execute() method.
      */
     public <I, O> SseEmitter start(SseTaskObject<I, O> taskObject, I request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Request body must not be null");
-        }
-
         SseEmitter emitter = new SseEmitter(0L);
         String taskId = UUID.randomUUID().toString();
         TaskContext taskContext = new TaskContext();

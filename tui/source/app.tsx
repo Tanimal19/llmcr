@@ -164,17 +164,16 @@ export default function App() {
       return (
         <Box flexDirection="column" padding={2}>
           <Text color="cyan" bold>
-            💡 LLM-CR 系統幫助手冊
+            LLM-CR help
           </Text>
-          <Text color="white">這是一個基於 Ink 驅動的自動化本地程式碼審查與動態 RAG 知識庫檢索終端介面。</Text>
-          <Text color="gray">按 [Esc] 鍵安全返回極簡主選單</Text>
+          <Text color="gray">[Esc] back to menu</Text>
           <PlaceholderBackKey onBack={handleBack} />
         </Box>
       );
     }
 
     default: {
-      return <Text>未知指令</Text>;
+      return <Text>Unknown command</Text>;
     }
   }
 }

@@ -2,7 +2,6 @@ import process from 'node:process';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8081/api';
 
-// 修正點：為正則表達式加上 v 旗標以符合 require-unicode-regexp
 export const API_BASE_URL = (process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL).replace(/\/+$/v, '');
 
 export type ChatResponse = {
@@ -66,11 +65,14 @@ export type CodeReviewOutput = {
   reportPath: string;
 };
 
+export type SseTaskStartEvent = {
+  name: string;
+  id: string;
+};
+
 export type ReviewStageProgress = {
+  isError: boolean;
   stage: string;
-  status: string;
-  current: number;
-  total: number;
   message: string;
 };
 
@@ -84,11 +86,20 @@ export type ReviewTaskEvent = {
 };
 
 export type ReviewStreamHandlers = {
+  onStart?: (event: SseTaskStartEvent) => void;
   onTask?: (event: ReviewTaskEvent) => void;
   onProgress?: (event: ReviewStageProgress) => void;
   onResult?: (result: CodeReviewOutput) => void;
   onError?: (event: ReviewErrorEvent) => void;
   useMock?: boolean;
+  signal?: AbortSignal;
+};
+
+export type SyncStreamHandlers = {
+  onStart?: (event: SseTaskStartEvent) => void;
+  onProgress?: (event: ReviewStageProgress) => void;
+  onResult?: () => void;
+  onError?: (event: ReviewErrorEvent) => void;
   signal?: AbortSignal;
 };
 
@@ -146,17 +157,14 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (response.status === 204) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return undefined as T;
   }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return (await response.json()) as T;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return (await response.text()) as T;
 }
 
@@ -173,23 +181,30 @@ export async function chat(query: string): Promise<ChatResponse> {
 }
 
 export async function getRagScope(): Promise<Record<string, boolean>> {
-  return apiRequest<Record<string, boolean>>('/rag-scope');
+  return apiRequest<Record<string, boolean>>('/getrag', {
+    method: 'POST',
+  });
 }
 
 export async function setRagScope(trackRootPaths: string[]): Promise<void> {
   requireNonEmpty(trackRootPaths, 'trackRootPaths must not be empty');
-  await apiRequest<void>('/rag-scope', {
+  await apiRequest<void>('/setrag', {
     method: 'POST',
     body: JSON.stringify({ trackRootPaths }),
   });
 }
 
-export async function review(pullRequestJsonPath: string): Promise<CodeReviewOutput> {
-  return reviewWithProgress(pullRequestJsonPath);
+export type CodeReviewInput = {
+  jsonFilePath: string;
+  useMockData?: boolean;
+};
+
+export async function review(input: CodeReviewInput): Promise<CodeReviewOutput> {
+  return reviewWithProgress(input);
 }
 
 export async function reviewWithProgress(
-  pullRequestJsonPath: string,
+  input: CodeReviewInput,
   handlers: ReviewStreamHandlers = {},
 ): Promise<CodeReviewOutput> {
   const response = await fetch(`${API_BASE_URL}/review`, {
@@ -198,7 +213,10 @@ export async function reviewWithProgress(
       Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ pullRequestJsonPath, useMock: handlers.useMock ?? false }),
+    body: JSON.stringify({
+      jsonFilePath: input.jsonFilePath,
+      useMockData: input.useMockData ?? handlers.useMock ?? false,
+    }),
     signal: handlers.signal,
   });
 
@@ -217,7 +235,6 @@ export async function reviewWithProgress(
   let finalResult: CodeReviewOutput | undefined;
 
   const parseSseEvent = (rawEvent: string): { event: string; data: string } => {
-    // 修正點：加上 v 旗標
     const lines = rawEvent.split(/\r?\n/v);
     let eventName = 'message';
     const dataLines: string[] = [];
@@ -248,46 +265,75 @@ export async function reviewWithProgress(
     }
   };
 
+  const parseError = (payload: unknown): ReviewErrorEvent => {
+    if (payload && typeof payload === 'object') {
+      const payloadRecord = payload as Record<string, unknown>;
+      const rawMessage = payloadRecord['message'];
+      const message =
+        typeof rawMessage === 'string' && rawMessage.trim().length > 0 ? rawMessage : 'Unknown review SSE error';
+
+      const errorCode = payloadRecord['errorCode'];
+      if (errorCode && typeof errorCode === 'object') {
+        const code = (errorCode as Record<string, unknown>)['code'];
+        if (typeof code === 'string' && code.trim().length > 0) {
+          return { code, message };
+        }
+      }
+
+      const rawCode = payloadRecord['code'];
+      if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
+        return { code: rawCode, message };
+      }
+
+      return { code: 'REVIEW_PIPELINE_FAILED', message };
+    }
+
+    if (typeof payload === 'string' && payload.trim().length > 0) {
+      return { code: 'REVIEW_PIPELINE_FAILED', message: payload };
+    }
+
+    return {
+      code: 'REVIEW_PIPELINE_FAILED',
+      message: 'Unknown review SSE error',
+    };
+  };
+
   const handleEvent = (eventName: string, payload: unknown): void => {
+    if (eventName === 'start') {
+      const startEvent = payload as SseTaskStartEvent;
+      handlers.onStart?.(startEvent);
+      if (startEvent && typeof startEvent.id === 'string') {
+        handlers.onTask?.({ taskId: startEvent.id });
+      }
+      return;
+    }
     if (eventName === 'task') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onTask?.(payload as ReviewTaskEvent);
       return;
     }
-
     if (eventName === 'progress') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onProgress?.(payload as ReviewStageProgress);
       return;
     }
-
     if (eventName === 'result') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       finalResult = payload as CodeReviewOutput;
       handlers.onResult?.(finalResult);
       return;
     }
-
     if (eventName === 'error') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const errorEvent = (payload as ReviewErrorEvent) ?? {
-        code: 'REVIEW_PIPELINE_FAILED',
-        message: 'Unknown review SSE error',
-      };
+      const errorEvent = parseError(payload);
       handlers.onError?.(errorEvent);
       throw new Error(`${errorEvent.code}: ${errorEvent.message}`);
     }
   };
 
   while (true) {
-    // eslint-disable-next-line no-await-in-loop
     const { value, done } = await reader.read();
     if (done) {
       break;
     }
 
     buffer += decoder.decode(value, { stream: true });
-    // 修正點：加上 v 旗標
     const chunks = buffer.split(/\r?\n\r?\n/v);
     buffer = chunks.pop() ?? '';
 
@@ -315,19 +361,163 @@ export async function reviewWithProgress(
   return finalResult;
 }
 
+export async function syncWithProgress(handlers: SyncStreamHandlers = {}): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/sync`, {
+    method: 'POST',
+    headers: {
+      Accept: 'text/event-stream',
+    },
+    signal: handlers.signal,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`API ${response.status} ${response.statusText}: ${errorBody || 'No response body'}`);
+  }
+
+  if (!response.body) {
+    throw new Error('SSE response body is not available.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let hasResult = false;
+
+  const parseSseEvent = (rawEvent: string): { event: string; data: string } => {
+    const lines = rawEvent.split(/\r?\n/v);
+    let eventName = 'message';
+    const dataLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventName = line.slice('event:'.length).trim();
+        continue;
+      }
+
+      if (line.startsWith('data:')) {
+        dataLines.push(line.slice('data:'.length).trim());
+      }
+    }
+
+    return { event: eventName, data: dataLines.join('\n') };
+  };
+
+  const parseJson = (payload: string): unknown => {
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return payload;
+    }
+  };
+
+  const parseError = (payload: unknown): ReviewErrorEvent => {
+    if (payload && typeof payload === 'object') {
+      const payloadRecord = payload as Record<string, unknown>;
+      const rawMessage = payloadRecord['message'];
+      const message = typeof rawMessage === 'string' && rawMessage.trim().length > 0 ? rawMessage : 'Sync failed';
+
+      const errorCode = payloadRecord['errorCode'];
+      if (errorCode && typeof errorCode === 'object') {
+        const code = (errorCode as Record<string, unknown>)['code'];
+        if (typeof code === 'string' && code.trim().length > 0) {
+          return { code, message };
+        }
+      }
+
+      const rawCode = payloadRecord['code'];
+      if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
+        return { code: rawCode, message };
+      }
+
+      return { code: 'SOURCE_SYNC_FAILED', message };
+    }
+
+    if (typeof payload === 'string' && payload.trim().length > 0) {
+      return { code: 'SOURCE_SYNC_FAILED', message: payload };
+    }
+
+    return {
+      code: 'SOURCE_SYNC_FAILED',
+      message: 'Unknown sync SSE error',
+    };
+  };
+
+  const handleEvent = (eventName: string, payload: unknown): void => {
+    if (eventName === 'start') {
+      handlers.onStart?.(payload as SseTaskStartEvent);
+      return;
+    }
+
+    if (eventName === 'progress') {
+      handlers.onProgress?.(payload as ReviewStageProgress);
+      return;
+    }
+
+    if (eventName === 'result') {
+      hasResult = true;
+      handlers.onResult?.();
+      return;
+    }
+
+    if (eventName === 'error') {
+      const errorEvent = parseError(payload);
+      handlers.onError?.(errorEvent);
+      throw new Error(`${errorEvent.code}: ${errorEvent.message}`);
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split(/\r?\n\r?\n/v);
+    buffer = chunks.pop() ?? '';
+
+    for (const chunk of chunks) {
+      if (!chunk.trim()) {
+        continue;
+      }
+
+      const parsed = parseSseEvent(chunk);
+      const payload = parseJson(parsed.data);
+      handleEvent(parsed.event, payload);
+    }
+  }
+
+  if (buffer.trim()) {
+    const parsed = parseSseEvent(buffer);
+    const payload = parseJson(parsed.data);
+    handleEvent(parsed.event, payload);
+  }
+
+  if (!hasResult) {
+    throw new Error('Sync SSE stream ended without a result event.');
+  }
+}
+
 export async function lsdb(): Promise<TrackRootPreview[]> {
   return apiRequest<TrackRootPreview[]>('/lsdb');
 }
 
-export async function cancelReviewTask(taskId: string): Promise<void> {
+export async function cancelSseTask(taskId: string): Promise<void> {
   requireNonBlank(taskId, 'taskId must not be blank');
-  await apiRequest<void>(`/review/${encodeURIComponent(taskId)}/cancel`, {
+  await apiRequest<void>(`/cancel/${encodeURIComponent(taskId)}`, {
     method: 'POST',
   });
 }
 
+export async function cancelReviewTask(taskId: string): Promise<void> {
+  return cancelSseTask(taskId);
+}
+
 export async function syncAll(): Promise<void> {
-  await apiRequest<void>('/sync', {
-    method: 'POST',
-  });
+  return syncWithProgress();
 }

@@ -1,6 +1,7 @@
 package com.llmcr.api;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -85,6 +86,11 @@ public class APIController {
         return chatService.chat(query);
     }
 
+    @PostMapping("/getrag")
+    public Map<String, Boolean> getRagScope() {
+        return chatService.getRagScope();
+    }
+
     @PostMapping("/setrag")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void setRagScope(@RequestBody SetRagRequest request) {
@@ -107,11 +113,10 @@ public class APIController {
         return sourceSyncService.getAllTrackRootPreview();
     }
 
-    @PostMapping("/sync")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void sync() {
+    @PostMapping(value = "/sync", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter sync() {
         logger.info("Sync request received");
-        sseTaskManager.start(sourceSyncService, null);
+        return sseTaskManager.start(sourceSyncService, null);
     }
 
     @PostMapping("/cancel/{taskId}")
