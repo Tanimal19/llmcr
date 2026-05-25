@@ -1,15 +1,5 @@
 package com.llmcr.agent.logging;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -20,8 +10,15 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.llmcr.config.ApplicationProperties;
-
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AgentContextLogger {
@@ -31,36 +28,40 @@ public class AgentContextLogger {
 
     private static ObjectMapper buildObjectMapper() {
         SimpleModule fallbackModule = new SimpleModule();
-        fallbackModule.setSerializerModifier(new BeanSerializerModifier() {
-            @Override
-            public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                    BeanDescription beanDesc, JsonSerializer<?> serializer) {
-                // If the bean has no serializable properties, fall back to toString()
-                if (serializer.getClass().getName().contains("UnknownSerializer")) {
-                    return new JsonSerializer<Object>() {
-                        @Override
-                        public void serialize(Object value, JsonGenerator gen,
-                                SerializerProvider provider) throws java.io.IOException {
-                            gen.writeString(value.getClass().getSimpleName() + "(" + value + ")");
-                        }
-                    };
+        fallbackModule.setSerializerModifier(
+            new BeanSerializerModifier() {
+                @Override
+                public JsonSerializer<?> modifySerializer(
+                    SerializationConfig config,
+                    BeanDescription beanDesc,
+                    JsonSerializer<?> serializer
+                ) {
+                    // If the bean has no serializable properties, fall back to toString()
+                    if (serializer.getClass().getName().contains("UnknownSerializer")) {
+                        return new JsonSerializer<Object>() {
+                            @Override
+                            public void serialize(Object value, JsonGenerator gen, SerializerProvider provider)
+                                throws java.io.IOException {
+                                gen.writeString(value.getClass().getSimpleName() + "(" + value + ")");
+                            }
+                        };
+                    }
+                    return serializer;
                 }
-                return serializer;
             }
-        });
+        );
 
         return new ObjectMapper()
-                .disable(SerializationFeature.INDENT_OUTPUT)
-                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-                .findAndRegisterModules()
-                .registerModule(fallbackModule);
+            .disable(SerializationFeature.INDENT_OUTPUT)
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+            .findAndRegisterModules()
+            .registerModule(fallbackModule);
     }
 
     private final Path agentLogFilePath;
 
     public AgentContextLogger(ApplicationProperties applicationProperties) {
-        this.agentLogFilePath = Paths
-                .get(applicationProperties.getLogging().getReviewOutputDir() + "/agent_logs.json");
+        this.agentLogFilePath = Paths.get(applicationProperties.getLogging().getReviewOutputDir() + "/agent_logs.json");
     }
 
     @PostConstruct
@@ -86,9 +87,7 @@ public class AgentContextLogger {
 
         try {
             String jsonLine = objectMapper.writeValueAsString(entry) + "\n";
-            Files.write(agentLogFilePath, jsonLine.getBytes(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND);
+            Files.write(agentLogFilePath, jsonLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             logger.debug("Logged agent execution for: {}", entry.agentName);
         } catch (IOException e) {
             logger.error("Failed to write agent log entry to {}", agentLogFilePath, e);

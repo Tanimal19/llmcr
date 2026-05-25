@@ -1,24 +1,19 @@
 package com.llmcr.tool;
 
+import com.llmcr.util.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
-
-import com.llmcr.util.StringUtils;
 
 public class MyToolCallingManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MyToolCallingManager.class);
     private final Map<String, ToolCallback> avaliableToolCallbacks;
 
-    public record ToolCall(
-            String toolName,
-            Map<String, Object> arguments) {
-
+    public record ToolCall(String toolName, Map<String, Object> arguments) {
         public String toString() {
             StringJoiner joiner = new StringJoiner(", ");
             for (Map.Entry<String, Object> entry : arguments.entrySet()) {
@@ -36,7 +31,6 @@ public class MyToolCallingManager {
     }
 
     public String executeToolCall(ToolCall toolCall) {
-
         ToolCallback callback = avaliableToolCallbacks.get(toolCall.toolName());
         if (callback == null) {
             return "Tool not found: " + toolCall.toolName();
@@ -46,5 +40,4 @@ public class MyToolCallingManager {
 
         return callback.call(StringUtils.jsonString(toolCall.arguments()));
     }
-
 }

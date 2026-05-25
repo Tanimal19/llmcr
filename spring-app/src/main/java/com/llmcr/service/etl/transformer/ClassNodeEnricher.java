@@ -1,14 +1,12 @@
 package com.llmcr.service.etl.transformer;
 
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.llmcr.agent.ClassNodeEnrichAgent;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.Context;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Enrich ClassNode context by generating a summary using LLM.
@@ -56,8 +54,9 @@ public class ClassNodeEnricher implements ContextEnricher {
             }
         }
 
-        ClassNodeEnrichAgent.ClassNodeEnrichOutput enrichment = classNodeEnrichAgent
-                .execute(new ClassNodeEnrichAgent.ClassNodeEnrichInput(classNode.getContent()));
+        ClassNodeEnrichAgent.ClassNodeEnrichOutput enrichment = classNodeEnrichAgent.execute(
+            new ClassNodeEnrichAgent.ClassNodeEnrichInput(classNode.getContent())
+        );
 
         // update class node
         classNode.addChunk(new Chunk(enrichment.functional()));

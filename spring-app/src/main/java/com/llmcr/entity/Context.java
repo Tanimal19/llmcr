@@ -1,13 +1,9 @@
 package com.llmcr.entity;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.hibernate.Hibernate;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -19,7 +15,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.EnumType;
+import java.util.HashSet;
+import java.util.Set;
+import org.hibernate.Hibernate;
 
 @Entity
 @Table(name = "context")
@@ -101,11 +99,9 @@ public class Context {
         TOOLDEF,
     }
 
-    protected Context() {
-    }
+    protected Context() {}
 
-    public Context(
-            Source source, Integer contextIndex, String name, String content, ContextType type) {
+    public Context(Source source, Integer contextIndex, String name, String content, ContextType type) {
         setSource(source);
         this.contextIndex = contextIndex;
         this.name = name;
@@ -138,9 +134,7 @@ public class Context {
         }
 
         this.source = source;
-        if (source != null
-                && Hibernate.isInitialized(source.getContexts())
-                && !source.getContexts().contains(this)) {
+        if (source != null && Hibernate.isInitialized(source.getContexts()) && !source.getContexts().contains(this)) {
             source.getContexts().add(this);
         }
     }
@@ -265,10 +259,8 @@ public class Context {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof Context))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof Context)) return false;
         Context other = (Context) o;
         return id != null && id.equals(other.id);
     }

@@ -1,8 +1,7 @@
 package com.llmcr.service.rag.select;
 
-import java.util.List;
-
 import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
+import java.util.List;
 
 public interface TopKSelectionStrategy {
     /**

@@ -1,15 +1,13 @@
 package com.llmcr.service.etl;
 
+import com.llmcr.entity.Context;
+import com.llmcr.repository.ContextRepository;
+import com.llmcr.service.etl.transformer.ContextEnricher;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.llmcr.entity.Context;
-import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.etl.transformer.ContextEnricher;
 
 @Component
 public class EnrichService {
@@ -19,17 +17,16 @@ public class EnrichService {
     private final ContextRepository contextRepository;
     private final List<ContextEnricher> enrichers;
 
-    public EnrichService(
-            ContextRepository contextRepository,
-            List<ContextEnricher> enrichers) {
+    public EnrichService(ContextRepository contextRepository, List<ContextEnricher> enrichers) {
         this.contextRepository = contextRepository;
         this.enrichers = enrichers;
     }
 
     @Transactional
     public void enrich(Long contextId) {
-        Context context = contextRepository.findById(contextId)
-                .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+        Context context = contextRepository
+            .findById(contextId)
+            .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isEnriched()) {
             logger.info("Context '{}' already context, skipping enriching", context.getName());
             return;

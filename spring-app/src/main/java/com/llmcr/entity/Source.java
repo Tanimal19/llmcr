@@ -1,15 +1,11 @@
 package com.llmcr.entity;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.hibernate.Hibernate;
-
 import com.llmcr.util.PathUtils;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,13 +15,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import java.util.HashSet;
+import java.util.Set;
+import org.hibernate.Hibernate;
 
 @Entity
-@Table(name = "source", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "path")
-})
+@Table(name = "source", uniqueConstraints = { @UniqueConstraint(columnNames = "path") })
 public class Source {
 
     @Id
@@ -71,8 +66,7 @@ public class Source {
         JSON,
     }
 
-    protected Source() {
-    }
+    protected Source() {}
 
     public Source(String path, String contentHash, SourceType type) {
         this.path = PathUtils.toRelativePath(path);
@@ -195,19 +189,19 @@ public class Source {
         }
 
         this.trackRoot = trackRoot;
-        if (trackRoot != null
-                && Hibernate.isInitialized(trackRoot.getSources())
-                && !trackRoot.getSources().contains(this)) {
+        if (
+            trackRoot != null &&
+            Hibernate.isInitialized(trackRoot.getSources()) &&
+            !trackRoot.getSources().contains(this)
+        ) {
             trackRoot.getSources().add(this);
         }
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof Source))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof Source)) return false;
         Source other = (Source) o;
         return id != null && id.equals(other.id);
     }

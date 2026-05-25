@@ -1,8 +1,7 @@
 package com.llmcr.service.etl.transformer;
 
-import java.util.function.Function;
-
 import com.llmcr.entity.Context;
+import java.util.function.Function;
 
 /**
  * ContextTransformer is responsible for transforming a context by modify its

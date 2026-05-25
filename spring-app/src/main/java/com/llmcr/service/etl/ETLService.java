@@ -1,16 +1,14 @@
 package com.llmcr.service.etl;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
 import com.llmcr.api.APIServiceException;
 import com.llmcr.api.SseTaskManager.TaskProgressEvent;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.repository.SourceRepository;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ETLService {
@@ -25,12 +23,13 @@ public class ETLService {
     private final LoadService loadService;
 
     public ETLService(
-            SourceRepository sourceRepository,
-            ContextRepository contextRepository,
-            ExtractService extractService,
-            SplitService splitService,
-            EnrichService enrichService,
-            LoadService loadService) {
+        SourceRepository sourceRepository,
+        ContextRepository contextRepository,
+        ExtractService extractService,
+        SplitService splitService,
+        EnrichService enrichService,
+        LoadService loadService
+    ) {
         this.sourceRepository = sourceRepository;
         this.contextRepository = contextRepository;
         this.extractService = extractService;
@@ -39,9 +38,7 @@ public class ETLService {
         this.loadService = loadService;
     }
 
-    public void run(
-            Consumer<TaskProgressEvent> progressListener,
-            BooleanSupplier cancellationRequested) {
+    public void run(Consumer<TaskProgressEvent> progressListener, BooleanSupplier cancellationRequested) {
         throwIfCancelled(cancellationRequested);
         emitProgress(progressListener, "ETL", "Starting ETL pipeline");
 
@@ -52,8 +49,11 @@ public class ETLService {
                 emitProgress(progressListener, "ETL", "Running extract stage");
                 long t0 = System.currentTimeMillis();
                 sourceRepository.findAllUnextractedIds().forEach(id -> extractService.extract(id));
-                emitProgress(progressListener, "ETL",
-                        "Extract stage completed in " + (System.currentTimeMillis() - t0) + " ms");
+                emitProgress(
+                    progressListener,
+                    "ETL",
+                    "Extract stage completed in " + (System.currentTimeMillis() - t0) + " ms"
+                );
             } catch (Exception ex) {
                 throw new APIServiceException(APIServiceException.ErrorCode.ETL_EXTRACT_FAILED, ex);
             }
@@ -64,8 +64,11 @@ public class ETLService {
                 emitProgress(progressListener, "ETL", "Running split stage");
                 long t1 = System.currentTimeMillis();
                 contextRepository.findAllUnsplittedIds().forEach(id -> splitService.split(id));
-                emitProgress(progressListener, "ETL",
-                        "Split stage completed in " + (System.currentTimeMillis() - t1) + " ms");
+                emitProgress(
+                    progressListener,
+                    "ETL",
+                    "Split stage completed in " + (System.currentTimeMillis() - t1) + " ms"
+                );
             } catch (Exception ex) {
                 throw new APIServiceException(APIServiceException.ErrorCode.ETL_SPLIT_FAILED, ex);
             }
@@ -75,11 +78,17 @@ public class ETLService {
                 emitProgress(progressListener, "ETL", "Running load stage after split");
                 long t2 = System.currentTimeMillis();
                 contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContextChunks(id));
-                emitProgress(progressListener, "ETL",
-                        "Load after split stage completed in " + (System.currentTimeMillis() - t2) + " ms");
+                emitProgress(
+                    progressListener,
+                    "ETL",
+                    "Load after split stage completed in " + (System.currentTimeMillis() - t2) + " ms"
+                );
             } catch (Exception ex) {
-                throw new APIServiceException(APIServiceException.ErrorCode.ETL_LOAD_FAILED,
-                        "ETL load-after-split stage failed", ex);
+                throw new APIServiceException(
+                    APIServiceException.ErrorCode.ETL_LOAD_FAILED,
+                    "ETL load-after-split stage failed",
+                    ex
+                );
             }
 
             // enrich must be performed on all contexts after splitting, since the
@@ -111,27 +120,29 @@ public class ETLService {
             // "ETL load-after-enrich stage failed", ex);
             // }
 
-            emitProgress(progressListener, "ETL",
-                    "ETL pipeline completed in " + (System.currentTimeMillis() - pipelineStart) + " ms");
+            emitProgress(
+                progressListener,
+                "ETL",
+                "ETL pipeline completed in " + (System.currentTimeMillis() - pipelineStart) + " ms"
+            );
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.ETL_RUN_FAILED, "ETL pipeline execution failed",
-                    ex);
+            throw new APIServiceException(
+                APIServiceException.ErrorCode.ETL_RUN_FAILED,
+                "ETL pipeline execution failed",
+                ex
+            );
         }
     }
 
     private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
         if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
-            throw new APIServiceException(APIServiceException.ErrorCode.ETL_CANCELLED,
-                    "Sync task cancelled by client");
+            throw new APIServiceException(APIServiceException.ErrorCode.ETL_CANCELLED, "Sync task cancelled by client");
         }
     }
 
-    private static void emitProgress(
-            Consumer<TaskProgressEvent> progressListener,
-            String stage,
-            String message) {
+    private static void emitProgress(Consumer<TaskProgressEvent> progressListener, String stage, String message) {
         logger.info("stage={} message={}", stage, message);
         if (progressListener == null) {
             return;

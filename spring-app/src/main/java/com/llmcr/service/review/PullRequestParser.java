@@ -1,5 +1,8 @@
 package com.llmcr.service.review;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -7,44 +10,39 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public final class PullRequestParser {
 
     public record CommentEntry(
-            String type,
-            String poster,
-            @JsonProperty("created_at") String createdAt,
-            String body,
-            String state) {
-    }
+        String type,
+        String poster,
+        @JsonProperty("created_at") String createdAt,
+        String body,
+        String state
+    ) {}
 
     public record ChangedFileEntry(
-            String path,
-            @JsonProperty("previous_path") String previousPath,
-            String patch,
-            String content) {
-    }
+        String path,
+        @JsonProperty("previous_path") String previousPath,
+        String patch,
+        String content
+    ) {}
 
     public record PullRequestData(
-            @JsonProperty("pr_id") int prId,
-            String url,
-            String title,
-            @JsonProperty("pr_description") String prDescription,
-            @JsonProperty("is_closed") boolean isClosed,
-            @JsonProperty("is_merged") boolean isMerged,
-            @JsonProperty("is_approved") boolean isApproved,
-            List<CommentEntry> comments,
-            @JsonProperty("changed_files") List<ChangedFileEntry> changedFiles) {
-    }
+        @JsonProperty("pr_id") int prId,
+        String url,
+        String title,
+        @JsonProperty("pr_description") String prDescription,
+        @JsonProperty("is_closed") boolean isClosed,
+        @JsonProperty("is_merged") boolean isMerged,
+        @JsonProperty("is_approved") boolean isApproved,
+        List<CommentEntry> comments,
+        @JsonProperty("changed_files") List<ChangedFileEntry> changedFiles
+    ) {}
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    private PullRequestParser() {
-    }
+    private PullRequestParser() {}
 
     /**
      * Parse a JSON file into a {@link PullRequestData} instance.

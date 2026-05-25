@@ -1,8 +1,7 @@
 package com.llmcr.vectorstore;
 
-import java.util.List;
-
 import com.llmcr.entity.Chunk;
+import java.util.List;
 
 /**
  * This abstract class defines the interface for a vector store that can be used
@@ -14,8 +13,7 @@ import com.llmcr.entity.Chunk;
  */
 public abstract class MyVectorStore {
 
-    public record ChunkIdScorePair(Long chunkId, float score) {
-    }
+    public record ChunkIdScorePair(Long chunkId, float score) {}
 
     /**
      * Add chunks to a collection.
@@ -27,9 +25,10 @@ public abstract class MyVectorStore {
      * sorted by score in descending order.
      */
     public List<ChunkIdScorePair> similaritySearch(String query, int topK, String collectionName) {
-        return doSimilaritySearch(query, topK, collectionName).stream()
-                .sorted((a, b) -> Float.compare(b.score(), a.score()))
-                .toList();
+        return doSimilaritySearch(query, topK, collectionName)
+            .stream()
+            .sorted((a, b) -> Float.compare(b.score(), a.score()))
+            .toList();
     }
 
     protected abstract List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName);

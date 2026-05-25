@@ -11,8 +11,7 @@ public final class AgentContextHolder {
     private static final ThreadLocal<Deque<AgentCallEntry>> ITERATION_STACK = ThreadLocal.withInitial(ArrayDeque::new);
     private static volatile Consumer<AgentCallEntry> onContextFinished;
 
-    private AgentContextHolder() {
-    }
+    private AgentContextHolder() {}
 
     public static void setOnContextFinished(Consumer<AgentCallEntry> callback) {
         onContextFinished = callback;

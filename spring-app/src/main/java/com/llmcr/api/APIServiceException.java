@@ -12,12 +12,21 @@ public class APIServiceException extends RuntimeException {
         RAG_SCOPE_SET_FAILED("ragscopesetfailed", "Failed to set RAG scope", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_VECTOR_SEARCH_FAILED("ragvectorsearchfailed", "Vector search failed", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_RERANK_FAILED("ragrerankfailed", "Reranking failed", HttpStatus.INTERNAL_SERVER_ERROR),
-        RAG_CONTEXT_MERGE_FAILED("ragcontextmergefailed", "Failed to merge retrieved contexts",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        RAG_FUSION_FAILED("ragfusionfailed", "Failed to fuse multi-query retrieval results",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        RAG_TOPK_SELECTION_FAILED("ragtopkselectionfailed", "Failed to select top-k contexts",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+        RAG_CONTEXT_MERGE_FAILED(
+            "ragcontextmergefailed",
+            "Failed to merge retrieved contexts",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        RAG_FUSION_FAILED(
+            "ragfusionfailed",
+            "Failed to fuse multi-query retrieval results",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        RAG_TOPK_SELECTION_FAILED(
+            "ragtopkselectionfailed",
+            "Failed to select top-k contexts",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
 
         ETL_EXTRACT_FAILED("etlextractfailed", "ETL extract stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
         ETL_SPLIT_FAILED("etlsplitfailed", "ETL split stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
@@ -26,61 +35,88 @@ public class APIServiceException extends RuntimeException {
         ETL_CANCELLED("etlcancelled", "ETL task was cancelled", HttpStatus.CONFLICT),
         ETL_RUN_FAILED("etlrunfailed", "ETL pipeline execution failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
-        REVIEW_PARSE_FAILED(
-                "reviewparsefailed", "Failed to parse pull request data", HttpStatus.INTERNAL_SERVER_ERROR),
+        REVIEW_PARSE_FAILED("reviewparsefailed", "Failed to parse pull request data", HttpStatus.INTERNAL_SERVER_ERROR),
         REVIEW_INTERPRETATION_FAILED(
-                "reviewinterpretationfailed", "Review interpretation stage failed",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "reviewinterpretationfailed",
+            "Review interpretation stage failed",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
         REVIEW_PLANNING_FAILED(
-                "reviewplanningfailed", "Review planning stage failed",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "reviewplanningfailed",
+            "Review planning stage failed",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
         REVIEW_COMPUTATION_FAILED(
-                "reviewcomputationfailed", "Review computation stage failed",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_SUMMARY_FAILED(
-                "reviewsummaryfailed", "Review summary stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
+            "reviewcomputationfailed",
+            "Review computation stage failed",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        REVIEW_SUMMARY_FAILED("reviewsummaryfailed", "Review summary stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
         REVIEW_REPORT_WRITE_FAILED(
-                "reviewreportwritefailed", "Failed to write review report",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_CANCELLED(
-                "reviewcancelled", "Review task was cancelled", HttpStatus.CONFLICT),
+            "reviewreportwritefailed",
+            "Failed to write review report",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        REVIEW_CANCELLED("reviewcancelled", "Review task was cancelled", HttpStatus.CONFLICT),
         REVIEW_PIPELINE_FAILED(
-                "reviewpipelinefailed", "Code review pipeline execution failed",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "reviewpipelinefailed",
+            "Code review pipeline execution failed",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
 
-        CONFIG_SYNC_TRACK_ROOTS_FAILED("configsynctrackrootsfailed", "Failed to sync track roots",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        CONFIG_SYNC_COLLECTIONS_FAILED("configsynccollectionsfailed", "Failed to sync collections",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        CONFIG_SYNC_DEFAULT_COLLECTIONS_FAILED("configsyncdefaultcollectionsfailed",
-                "Failed to sync default collections", HttpStatus.INTERNAL_SERVER_ERROR),
+        CONFIG_SYNC_TRACK_ROOTS_FAILED(
+            "configsynctrackrootsfailed",
+            "Failed to sync track roots",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        CONFIG_SYNC_COLLECTIONS_FAILED(
+            "configsynccollectionsfailed",
+            "Failed to sync collections",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        CONFIG_SYNC_DEFAULT_COLLECTIONS_FAILED(
+            "configsyncdefaultcollectionsfailed",
+            "Failed to sync default collections",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
 
         SOURCE_SYNC_GET_SYNC_TIME_FAILED(
-                "sourcesyncgetsynctimefailed", "Failed to get last sync time",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "sourcesyncgetsynctimefailed",
+            "Failed to get last sync time",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
         SOURCE_SYNC_PREVIEW_LIST_FAILED(
-                "sourcesyncpreviewlistfailed", "Failed to list track root previews",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_FAILED(
-                "sourcesyncallfailed", "Failed to sync all track roots",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "sourcesyncpreviewlistfailed",
+            "Failed to list track root previews",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        SOURCE_SYNC_FAILED("sourcesyncallfailed", "Failed to sync all track roots", HttpStatus.INTERNAL_SERVER_ERROR),
         SOURCE_SYNC_PREVIEW_FAILED(
-                "sourcesyncpreviewfailed", "Failed to generate track root preview",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "sourcesyncpreviewfailed",
+            "Failed to generate track root preview",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
         SOURCE_SYNC_LOCAL_SCAN_FAILED(
-                "sourcesynclocalscanfailed", "Failed to scan local sources",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "sourcesynclocalscanfailed",
+            "Failed to scan local sources",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
         SOURCE_SYNC_HASH_FAILED(
-                "sourcesynchashfailed", "Failed to compute source content hash",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "sourcesynchashfailed",
+            "Failed to compute source content hash",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
         SOURCE_SYNC_TRACK_ROOT_FAILED(
-                "sourcesynctrackrootfailed", "Failed to sync track root sources",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_CANCELLED(
-                "sourcesynccancelled", "Source sync task was cancelled", HttpStatus.CONFLICT),
+            "sourcesynctrackrootfailed",
+            "Failed to sync track root sources",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
+        SOURCE_SYNC_CANCELLED("sourcesynccancelled", "Source sync task was cancelled", HttpStatus.CONFLICT),
         SOURCE_SYNC_REMOVE_CHUNKS_FAILED(
-                "sourcesyncremovechunksfailed", "Failed to remove chunks from vector store",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+            "sourcesyncremovechunksfailed",
+            "Failed to remove chunks from vector store",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        ),
 
         LLM_RESPONSE_FAILED("llmresponsefailed", "Failed to get response from LLM", HttpStatus.INTERNAL_SERVER_ERROR),
         INTERNAL_ERROR("internalerror", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);

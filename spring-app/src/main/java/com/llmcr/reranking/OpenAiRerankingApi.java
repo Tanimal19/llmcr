@@ -2,7 +2,6 @@ package com.llmcr.reranking;
 
 import java.time.Duration;
 import java.util.List;
-
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,33 +23,26 @@ public class OpenAiRerankingApi {
     public OpenAiRerankingApi(WebClient.Builder builder, String baseUrl, String apiKey) {
         Assert.hasText(baseUrl, "baseUrl must not be blank");
         Assert.notNull(apiKey, "apiKey must not be null");
-        this.webClient = builder.baseUrl(baseUrl)
-                .defaultHeader("Authorization", "Bearer " + apiKey)
-                .build();
+        this.webClient = builder.baseUrl(baseUrl).defaultHeader("Authorization", "Bearer " + apiKey).build();
     }
 
     public RerankingApiResponse rerank(RerankingApiRequest request) {
         Assert.notNull(request, "request must not be null");
         return this.webClient.post()
-                .uri("/v1/rerank")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(RerankingApiResponse.class)
-                .timeout(DEFAULT_TIMEOUT)
-                .block();
+            .uri("/v1/rerank")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(RerankingApiResponse.class)
+            .timeout(DEFAULT_TIMEOUT)
+            .block();
     }
 
-    public record RerankingApiRequest(String model, String query, List<String> documents) {
-    }
+    public record RerankingApiRequest(String model, String query, List<String> documents) {}
 
     public record RerankingApiResponse(String model, String object, Usage usage, List<Result> results) {
+        public record Usage(int prompt_tokens, int total_tokens) {}
 
-        public record Usage(int prompt_tokens, int total_tokens) {
-        }
-
-        public record Result(int index, double relevance_score) {
-        }
+        public record Result(int index, double relevance_score) {}
     }
-
 }

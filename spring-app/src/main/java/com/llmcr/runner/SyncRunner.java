@@ -1,21 +1,19 @@
 package com.llmcr.runner;
 
+import com.llmcr.service.sync.SourceSyncService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import com.llmcr.service.sync.SourceSyncService;
+import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "sync")
 public class SyncRunner implements CommandLineRunner {
+
     private final SourceSyncService syncService;
     private final JdbcTemplate jdbcTemplate;
 
-    public SyncRunner(
-            SourceSyncService syncService,
-            JdbcTemplate jdbcTemplate) {
+    public SyncRunner(SourceSyncService syncService, JdbcTemplate jdbcTemplate) {
         this.syncService = syncService;
         this.jdbcTemplate = jdbcTemplate;
     }

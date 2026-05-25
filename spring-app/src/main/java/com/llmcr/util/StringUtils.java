@@ -1,11 +1,11 @@
 package com.llmcr.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class StringUtils {
+
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static String clean(String text) {
@@ -13,18 +13,17 @@ public class StringUtils {
             return "";
         }
         return text
-                // remove control characters except newlines and tabs
-                .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")
-                // specific cleaning for ANTLR serialized ATN
-                .replaceAll("_serializedATN\\s*=\\s*\"[\\s\\S]*?\";",
-                        "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";")
-                // collapse runs of spaces/tabs (but not newlines) into a single space
-                .replaceAll("[ \\t]+", " ")
-                // trim leading/trailing whitespace on each line
-                .replaceAll("(?m)^[ \\t]+|[ \\t]+$", "")
-                // collapse 3+ consecutive blank lines into 2
-                .replaceAll("(\\r?\\n){3,}", "\n\n")
-                .strip();
+            // remove control characters except newlines and tabs
+            .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")
+            // specific cleaning for ANTLR serialized ATN
+            .replaceAll("_serializedATN\\s*=\\s*\"[\\s\\S]*?\";", "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";")
+            // collapse runs of spaces/tabs (but not newlines) into a single space
+            .replaceAll("[ \\t]+", " ")
+            // trim leading/trailing whitespace on each line
+            .replaceAll("(?m)^[ \\t]+|[ \\t]+$", "")
+            // collapse 3+ consecutive blank lines into 2
+            .replaceAll("(\\r?\\n){3,}", "\n\n")
+            .strip();
     }
 
     public static String jsonString(Object obj) {

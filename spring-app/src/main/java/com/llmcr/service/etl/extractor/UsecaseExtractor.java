@@ -1,18 +1,16 @@
 package com.llmcr.service.etl.extractor;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llmcr.entity.Context;
 import com.llmcr.entity.Context.ContextType;
 import com.llmcr.entity.Source;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
 
 @Deprecated
 @Component
@@ -46,19 +44,15 @@ public class UsecaseExtractor implements SourceExtractor {
 
             String content;
             try {
-                String response = objectMapper.writerWithDefaultPrettyPrinter()
-                        .writeValueAsString(item.path("response"));
+                String response = objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(item.path("response"));
                 content = "Checklist item: " + checklistItem + "\n" + "Response: " + response;
             } catch (Exception e) {
                 content = "Checklist item: " + checklistItem + "\n" + "Response: " + item.path("response").toString();
             }
 
-            contexts.add(new Context(
-                    source,
-                    contextIndex.getAndIncrement(),
-                    name,
-                    content,
-                    ContextType.USECASE));
+            contexts.add(new Context(source, contextIndex.getAndIncrement(), name, content, ContextType.USECASE));
         }
 
         return contexts;

@@ -5,7 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -18,16 +17,12 @@ public class SseTaskManager {
 
     private final ConcurrentMap<String, TaskContext> currentTasks = new ConcurrentHashMap<>();
 
-    public record TaskStartEvent(String name, String id) {
-    }
+    public record TaskStartEvent(String name, String id) {}
 
-    public record TaskProgressEvent(
-            Boolean isError,
-            String stage,
-            String message) {
-    }
+    public record TaskProgressEvent(Boolean isError, String stage, String message) {}
 
     private static final class TaskContext {
+
         private final AtomicBoolean cancellationRequested = new AtomicBoolean(false);
         private volatile CompletableFuture<Void> future;
 
@@ -73,13 +68,14 @@ public class SseTaskManager {
             try {
                 sendSseEvent(emitter, "start", new TaskStartEvent(taskObject.getTaskName(), taskId));
 
-                Object output = taskObject.execute(request,
-                        progress -> sendSseEvent(emitter, "progress", progress),
-                        taskContext::isCancellationRequested);
+                Object output = taskObject.execute(
+                    request,
+                    progress -> sendSseEvent(emitter, "progress", progress),
+                    taskContext::isCancellationRequested
+                );
 
                 sendSseEvent(emitter, "result", output);
                 emitter.complete();
-
             } catch (Exception ex) {
                 logger.error("review SSE failed: {}", ex);
                 sendSseEvent(emitter, "error", ex);

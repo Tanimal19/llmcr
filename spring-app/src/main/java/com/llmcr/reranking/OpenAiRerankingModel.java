@@ -1,7 +1,6 @@
 package com.llmcr.reranking;
 
 import java.util.List;
-
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -20,8 +19,11 @@ public class OpenAiRerankingModel implements RerankingModel {
         this(openAiRerankingApi, defaultModel, RetryUtils.DEFAULT_RETRY_TEMPLATE);
     }
 
-    public OpenAiRerankingModel(OpenAiRerankingApi openAiRerankingApi, String defaultModel,
-            RetryTemplate retryTemplate) {
+    public OpenAiRerankingModel(
+        OpenAiRerankingApi openAiRerankingApi,
+        String defaultModel,
+        RetryTemplate retryTemplate
+    ) {
         Assert.notNull(openAiRerankingApi, "openAiRerankingApi must not be null");
         Assert.notNull(retryTemplate, "retryTemplate must not be null");
         this.openAiRerankingApi = openAiRerankingApi;
@@ -36,23 +38,34 @@ public class OpenAiRerankingModel implements RerankingModel {
         Assert.hasText(request.getQuery(), "query must not be blank");
         Assert.notEmpty(request.getDocuments(), "documents must not be empty");
 
-        OpenAiRerankingApi.RerankingApiResponse apiResponse = this.retryTemplate.execute(
-                ctx -> this.openAiRerankingApi.rerank(new OpenAiRerankingApi.RerankingApiRequest(
-                        request.getModel(),
-                        request.getQuery(),
-                        request.getDocuments())));
+        OpenAiRerankingApi.RerankingApiResponse apiResponse =
+            this.retryTemplate.execute(ctx ->
+                    this.openAiRerankingApi.rerank(
+                            new OpenAiRerankingApi.RerankingApiRequest(
+                                request.getModel(),
+                                request.getQuery(),
+                                request.getDocuments()
+                            )
+                        )
+                );
 
         if (apiResponse == null || apiResponse.results() == null || apiResponse.results().isEmpty()) {
             return new RerankingResponse(List.of());
         }
 
-        List<RerankingResponse.RerankingResult> results = apiResponse.results().stream()
-                .map(result -> new RerankingResponse.RerankingResult(
-                        new RerankingResponse.RankedDocument(
-                                result.index(),
-                                result.relevance_score(),
-                                getDocumentSafely(request.getDocuments(), result.index()))))
-                .toList();
+        List<RerankingResponse.RerankingResult> results = apiResponse
+            .results()
+            .stream()
+            .map(result ->
+                new RerankingResponse.RerankingResult(
+                    new RerankingResponse.RankedDocument(
+                        result.index(),
+                        result.relevance_score(),
+                        getDocumentSafely(request.getDocuments(), result.index())
+                    )
+                )
+            )
+            .toList();
 
         return new RerankingResponse(results);
     }
@@ -69,5 +82,4 @@ public class OpenAiRerankingModel implements RerankingModel {
         }
         return documents.get(index);
     }
-
 }

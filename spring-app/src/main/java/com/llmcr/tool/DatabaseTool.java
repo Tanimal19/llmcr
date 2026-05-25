@@ -1,14 +1,5 @@
 package com.llmcr.tool;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Component;
-
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.rag.QueryContextRetriever;
 import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalConfiguration;
@@ -16,6 +7,13 @@ import com.llmcr.service.rag.QueryContextRetriever.ContextRetrievalRequest;
 import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 import com.llmcr.service.rag.select.FixedKStrategy;
 import com.llmcr.util.StringUtils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DatabaseTool {
@@ -32,17 +30,22 @@ public class DatabaseTool {
 
     @Tool(description = "Find documents by semantic query and return matching document ids.")
     public String findDocuments(
-            @ToolParam(description = "A concise semantic queries. Prefer domain keywords over natural language questions.", required = true) String query) {
+        @ToolParam(
+            description = "A concise semantic queries. Prefer domain keywords over natural language questions.",
+            required = true
+        ) String query
+    ) {
         if (query == null || query.isBlank()) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "query must not be blank");
             return StringUtils.jsonString(errorResponse);
         }
         ContextRetrievalConfiguration retrievalConfiguration = new ContextRetrievalConfiguration(
-                MAX_RESULT_ROWS,
-                new FixedKStrategy(),
-                "all",
-                false);
+            MAX_RESULT_ROWS,
+            new FixedKStrategy(),
+            "all",
+            false
+        );
         ContextRetrievalRequest request = new ContextRetrievalRequest(List.of(query.trim()), retrievalConfiguration);
         List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(request);
 
@@ -68,21 +71,25 @@ public class DatabaseTool {
         return StringUtils.jsonString(response);
     }
 
-    @Tool(description = "Fetch full document content using an exact integer document id. NEVER use this tool when you are not sure about the exact document id.")
+    @Tool(
+        description = "Fetch full document content using an exact integer document id. NEVER use this tool when you are not sure about the exact document id."
+    )
     public String fetchDocumentcontent(
-            @ToolParam(description = "The exact integer id of the document to retrieve.", required = true) Long id) {
-        return contextRepository.findById(id)
-                .map(c -> {
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("id", c.getId());
-                    response.put("name", c.getName());
-                    response.put("content", c.getContent() == null ? "" : c.getContent());
-                    return StringUtils.jsonString(response);
-                })
-                .orElseGet(() -> {
-                    Map<String, Object> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "No context found with id: " + id);
-                    return StringUtils.jsonString(errorResponse);
-                });
+        @ToolParam(description = "The exact integer id of the document to retrieve.", required = true) Long id
+    ) {
+        return contextRepository
+            .findById(id)
+            .map(c -> {
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", c.getId());
+                response.put("name", c.getName());
+                response.put("content", c.getContent() == null ? "" : c.getContent());
+                return StringUtils.jsonString(response);
+            })
+            .orElseGet(() -> {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "No context found with id: " + id);
+                return StringUtils.jsonString(errorResponse);
+            });
     }
 }

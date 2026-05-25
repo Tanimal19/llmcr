@@ -1,15 +1,13 @@
 package com.llmcr.service.etl;
 
+import com.llmcr.entity.Context;
+import com.llmcr.repository.ContextRepository;
+import com.llmcr.service.etl.transformer.ContextSplitter;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.llmcr.entity.Context;
-import com.llmcr.repository.ContextRepository;
-import com.llmcr.service.etl.transformer.ContextSplitter;
 
 @Component
 public class SplitService {
@@ -19,17 +17,16 @@ public class SplitService {
     private final ContextRepository contextRepository;
     private final List<ContextSplitter> splitters;
 
-    public SplitService(
-            ContextRepository contextRepository,
-            List<ContextSplitter> splitters) {
+    public SplitService(ContextRepository contextRepository, List<ContextSplitter> splitters) {
         this.contextRepository = contextRepository;
         this.splitters = splitters;
     }
 
     @Transactional
     public void split(Long contextId) {
-        Context context = contextRepository.findById(contextId)
-                .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+        Context context = contextRepository
+            .findById(contextId)
+            .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isSplitted()) {
             logger.info("Context '{}' already loaded, skipping splitting", context.getName());
             return;

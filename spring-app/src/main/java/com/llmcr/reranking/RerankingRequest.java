@@ -1,7 +1,6 @@
 package com.llmcr.reranking;
 
 import java.util.List;
-
 import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
 
@@ -38,5 +37,4 @@ public class RerankingRequest implements ModelRequest<String> {
     public List<String> getDocuments() {
         return this.documents;
     }
-
 }

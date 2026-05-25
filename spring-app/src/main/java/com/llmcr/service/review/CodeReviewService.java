@@ -1,5 +1,25 @@
 package com.llmcr.service.review;
 
+import com.llmcr.agent.ComputationAgent;
+import com.llmcr.agent.ComputationAgent.ComputationAgentInput;
+import com.llmcr.agent.ComputationAgent.ComputationAgentOutput;
+import com.llmcr.agent.ComputationAgent.EvidenceItem;
+import com.llmcr.agent.InterpretationAgent;
+import com.llmcr.agent.InterpretationAgent.InterpretationAgentInput;
+import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.agent.PlanningAgent;
+import com.llmcr.agent.PlanningAgent.PlanningAgentInput;
+import com.llmcr.agent.PlanningAgent.PlanningAgentOutput;
+import com.llmcr.agent.SummaryAgent;
+import com.llmcr.agent.SummaryAgent.Issue;
+import com.llmcr.agent.SummaryAgent.ItemAnswer;
+import com.llmcr.agent.SummaryAgent.SummaryAgentInput;
+import com.llmcr.agent.SummaryAgent.SummaryAgentOutput;
+import com.llmcr.api.APIServiceException;
+import com.llmcr.api.SseTaskManager.TaskProgressEvent;
+import com.llmcr.api.SseTaskObject;
+import com.llmcr.config.ApplicationProperties;
+import com.llmcr.service.review.PullRequestParser.PullRequestData;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,35 +31,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.llmcr.agent.ComputationAgent;
-import com.llmcr.agent.InterpretationAgent;
-import com.llmcr.agent.PlanningAgent;
-import com.llmcr.agent.SummaryAgent;
-import com.llmcr.agent.ComputationAgent.ComputationAgentInput;
-import com.llmcr.agent.ComputationAgent.ComputationAgentOutput;
-import com.llmcr.agent.ComputationAgent.EvidenceItem;
-import com.llmcr.agent.InterpretationAgent.InterpretationAgentInput;
-import com.llmcr.agent.InterpretationAgent.InterpretationAgentOutput;
-import com.llmcr.agent.PlanningAgent.PlanningAgentInput;
-import com.llmcr.agent.PlanningAgent.PlanningAgentOutput;
-import com.llmcr.agent.SummaryAgent.Issue;
-import com.llmcr.agent.SummaryAgent.ItemAnswer;
-import com.llmcr.agent.SummaryAgent.SummaryAgentInput;
-import com.llmcr.agent.SummaryAgent.SummaryAgentOutput;
-import com.llmcr.api.APIServiceException;
-import com.llmcr.api.SseTaskObject;
-import com.llmcr.api.SseTaskManager.TaskProgressEvent;
-import com.llmcr.config.ApplicationProperties;
-import com.llmcr.service.review.PullRequestParser.PullRequestData;
-
 @Service
 public class CodeReviewService
-        implements SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
+    implements SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
 
     private static final Logger logger = LoggerFactory.getLogger(CodeReviewService.class);
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -52,11 +50,12 @@ public class CodeReviewService
     private String outputDir;
 
     public CodeReviewService(
-            ApplicationProperties applicationProperties,
-            InterpretationAgent interpretationAgent,
-            PlanningAgent planningAgent,
-            ComputationAgent computationAgent,
-            SummaryAgent summaryAgent) {
+        ApplicationProperties applicationProperties,
+        InterpretationAgent interpretationAgent,
+        PlanningAgent planningAgent,
+        ComputationAgent computationAgent,
+        SummaryAgent summaryAgent
+    ) {
         this.outputDir = applicationProperties.getLogging().getReviewOutputDir();
         this.interpretationAgent = interpretationAgent;
         this.planningAgent = planningAgent;
@@ -64,22 +63,19 @@ public class CodeReviewService
         this.summaryAgent = summaryAgent;
     }
 
-    public record CodeReviewInput(String jsonFilePath, boolean useMockData) {
-    }
+    public record CodeReviewInput(String jsonFilePath, boolean useMockData) {}
 
-    public record CodeReviewOutput(CodeReviewReport reviewReport, Path reportPath) {
-    }
+    public record CodeReviewOutput(CodeReviewReport reviewReport, Path reportPath) {}
 
-    public record CodeChange(String filePath, String diffContent) {
-    }
+    public record CodeChange(String filePath, String diffContent) {}
 
     public record CodeReviewReport(
-            int prId,
-            String prTitle,
-            SummaryAgentOutput mainReport,
-            InterpretationAgentOutput interpretation,
-            List<ItemAnswer> itemAnswers) {
-
+        int prId,
+        String prTitle,
+        SummaryAgentOutput mainReport,
+        InterpretationAgentOutput interpretation,
+        List<ItemAnswer> itemAnswers
+    ) {
         public String toString() {
             return toMarkdown(this);
         }
@@ -128,11 +124,14 @@ public class CodeReviewService
                 }
 
                 sb.append("## Implementation Details\n\n");
-                if (report.mainReport().implementationDetails() != null
-                        && !report.mainReport().implementationDetails().isEmpty()) {
+                if (
+                    report.mainReport().implementationDetails() != null &&
+                    !report.mainReport().implementationDetails().isEmpty()
+                ) {
                     for (var detailsByFile : report.mainReport().implementationDetails()) {
-                        String filename = detailsByFile.filename() != null ? detailsByFile.filename()
-                                : "(unknown file)";
+                        String filename = detailsByFile.filename() != null
+                            ? detailsByFile.filename()
+                            : "(unknown file)";
                         sb.append("#### ").append(filename).append("\n\n");
                         if (detailsByFile.details() != null && !detailsByFile.details().isEmpty()) {
                             for (String detail : detailsByFile.details()) {
@@ -152,11 +151,16 @@ public class CodeReviewService
                     for (Issue issue : report.mainReport().issues()) {
                         String location = issue.location() != null ? issue.location() : "";
                         String type = issue.type() != null ? issue.type() : "";
-                        sb.append("| ").append(type)
-                                .append(" | ").append(issue.title())
-                                .append(" | ").append(location)
-                                .append(" | ").append(issue.detail())
-                                .append(" |\n");
+                        sb
+                            .append("| ")
+                            .append(type)
+                            .append(" | ")
+                            .append(issue.title())
+                            .append(" | ")
+                            .append(location)
+                            .append(" | ")
+                            .append(issue.detail())
+                            .append(" |\n");
                     }
                     sb.append("\n");
                 }
@@ -190,8 +194,14 @@ public class CodeReviewService
                     sb.append(itemAnswer.answer().finalAnswer()).append("\n");
                     sb.append(itemAnswer.answer().analysis()).append("\n");
                     for (EvidenceItem evdience : itemAnswer.answer().evidence()) {
-                        sb.append("- ").append(evdience.file()).append(":::").append(evdience.lines()).append(":::")
-                                .append(evdience.reason()).append("\n");
+                        sb
+                            .append("- ")
+                            .append(evdience.file())
+                            .append(":::")
+                            .append(evdience.lines())
+                            .append(":::")
+                            .append(evdience.reason())
+                            .append("\n");
                     }
                 }
             } else {
@@ -213,16 +223,18 @@ public class CodeReviewService
         return execute(input, null, () -> false);
     }
 
-    public CodeReviewOutput execute(CodeReviewInput input,
-            Consumer<TaskProgressEvent> progressListener,
-            BooleanSupplier cancellationRequested) {
-
+    public CodeReviewOutput execute(
+        CodeReviewInput input,
+        Consumer<TaskProgressEvent> progressListener,
+        BooleanSupplier cancellationRequested
+    ) {
         try {
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, "PIPELINE", "Review pipeline started");
 
-            String jsonFilePath = input.useMockData() ? MockReviewData.MOCK_PULL_REQUEST_JSON_PATH
-                    : input.jsonFilePath();
+            String jsonFilePath = input.useMockData()
+                ? MockReviewData.MOCK_PULL_REQUEST_JSON_PATH
+                : input.jsonFilePath();
 
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, "PIPELINE", "Parsing pull request data");
@@ -230,15 +242,23 @@ public class CodeReviewService
             try {
                 prData = PullRequestParser.parseJsonFile(jsonFilePath);
             } catch (Exception ex) {
-                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PARSE_FAILED,
-                        "Failed to parse pull request data: " + jsonFilePath, ex);
+                throw new APIServiceException(
+                    APIServiceException.ErrorCode.REVIEW_PARSE_FAILED,
+                    "Failed to parse pull request data: " + jsonFilePath,
+                    ex
+                );
             }
-            emitProgress(progressListener, "PIPELINE",
-                    "Starting review for PR #" + prData.prId() + ": " + prData.title());
+            emitProgress(
+                progressListener,
+                "PIPELINE",
+                "Starting review for PR #" + prData.prId() + ": " + prData.title()
+            );
 
-            List<CodeChange> codeChanges = prData.changedFiles().stream()
-                    .map(file -> new CodeChange(file.path(), file.patch()))
-                    .toList();
+            List<CodeChange> codeChanges = prData
+                .changedFiles()
+                .stream()
+                .map(file -> new CodeChange(file.path(), file.patch()))
+                .toList();
 
             // TODO: integrate static analysis tool and populate codeAnalysis
             String codeAnalysis = null;
@@ -249,8 +269,7 @@ public class CodeReviewService
                 throwIfCancelled(cancellationRequested);
                 emitProgress(progressListener, "INTERPRETATION", "Start interpretation stage");
                 try {
-                    interpretation = interpretationAgent.execute(
-                            new InterpretationAgentInput(codeChanges));
+                    interpretation = interpretationAgent.execute(new InterpretationAgentInput(codeChanges));
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
                 }
@@ -259,13 +278,11 @@ public class CodeReviewService
                 throwIfCancelled(cancellationRequested);
                 emitProgress(progressListener, "PLANNING", "Start planning stage");
                 try {
-                    planning = planningAgent.execute(
-                            new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+                    planning = planningAgent.execute(new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
                 }
                 emitProgress(progressListener, "PLANNING", "Planning stage completed");
-
             } else {
                 throwIfCancelled(cancellationRequested);
                 interpretation = MockReviewData.MOCK_INTERPRETATION;
@@ -282,17 +299,24 @@ public class CodeReviewService
             int itemIndex = 0;
             for (String item : planning.checklistItems()) {
                 throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "COMPUTATION",
-                        "Running checklist item " + itemIndex + "/" + totalItems + ": " + item);
+                emitProgress(
+                    progressListener,
+                    "COMPUTATION",
+                    "Running checklist item " + itemIndex + "/" + totalItems + ": " + item
+                );
                 itemIndex++;
 
                 try {
-                    ComputationAgentOutput answer = computationAgent
-                            .execute(new ComputationAgentInput(codeChanges, item));
+                    ComputationAgentOutput answer = computationAgent.execute(
+                        new ComputationAgentInput(codeChanges, item)
+                    );
                     itemAnswers.add(new ItemAnswer(item, answer));
                 } catch (Exception ex) {
-                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
-                            "Review computation stage failed for checklist item: " + item, ex);
+                    throw new APIServiceException(
+                        APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
+                        "Review computation stage failed for checklist item: " + item,
+                        ex
+                    );
                 }
             }
             emitProgress(progressListener, "COMPUTATION", "Computation stage completed");
@@ -310,33 +334,42 @@ public class CodeReviewService
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, "PIPELINE", "Writing review report");
             CodeReviewReport review = new CodeReviewReport(
-                    prData.prId(), prData.title(), reviewResult, interpretation, itemAnswers);
+                prData.prId(),
+                prData.title(),
+                reviewResult,
+                interpretation,
+                itemAnswers
+            );
             Path reportPath = writeReport(review);
 
-            emitProgress(progressListener, "PIPELINE",
-                    "Review pipeline completed, report generated at: " + reportPath.toString());
+            emitProgress(
+                progressListener,
+                "PIPELINE",
+                "Review pipeline completed, report generated at: " + reportPath.toString()
+            );
 
             return new CodeReviewOutput(review, reportPath);
-
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
-                    "Code review pipeline execution failed", ex);
+            throw new APIServiceException(
+                APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
+                "Code review pipeline execution failed",
+                ex
+            );
         }
     }
 
     private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
         if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
-            throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_CANCELLED,
-                    "Review task cancelled by client");
+            throw new APIServiceException(
+                APIServiceException.ErrorCode.REVIEW_CANCELLED,
+                "Review task cancelled by client"
+            );
         }
     }
 
-    private static void emitProgress(
-            Consumer<TaskProgressEvent> progressListener,
-            String stage,
-            String message) {
+    private static void emitProgress(Consumer<TaskProgressEvent> progressListener, String stage, String message) {
         logger.info("stage={} message={}", stage, message);
         if (progressListener == null) {
             return;
@@ -354,8 +387,11 @@ public class CodeReviewService
             Files.writeString(reportPath, report.toString());
             return reportPath;
         } catch (IOException e) {
-            throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_REPORT_WRITE_FAILED,
-                    "Failed to write review report", e);
+            throw new APIServiceException(
+                APIServiceException.ErrorCode.REVIEW_REPORT_WRITE_FAILED,
+                "Failed to write review report",
+                e
+            );
         }
     }
 }

@@ -1,10 +1,5 @@
 package com.llmcr.entity;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.hibernate.Hibernate;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,11 +10,12 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.HashSet;
+import java.util.Set;
+import org.hibernate.Hibernate;
 
 @Entity
-@Table(name = "chunk_collection", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "name")
-})
+@Table(name = "chunk_collection", uniqueConstraints = { @UniqueConstraint(columnNames = "name") })
 public class ChunkCollection {
 
     @Id
@@ -31,15 +27,22 @@ public class ChunkCollection {
     private String name;
 
     @ManyToMany
-    @JoinTable(name = "collection_have_track_roots", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "track_root_id"))
+    @JoinTable(
+        name = "collection_have_track_roots",
+        joinColumns = @JoinColumn(name = "chunk_collection_id"),
+        inverseJoinColumns = @JoinColumn(name = "track_root_id")
+    )
     private Set<TrackRoot> havedTrackRoots = new HashSet<>();
 
     @ManyToMany
-    @JoinTable(name = "collection_have_chunks", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
+    @JoinTable(
+        name = "collection_have_chunks",
+        joinColumns = @JoinColumn(name = "chunk_collection_id"),
+        inverseJoinColumns = @JoinColumn(name = "chunk_id")
+    )
     private Set<Chunk> havedChunks = new HashSet<>();
 
-    protected ChunkCollection() {
-    }
+    protected ChunkCollection() {}
 
     public ChunkCollection(String name, Set<TrackRoot> havedTrackRoots) {
         this.name = name;
@@ -87,8 +90,7 @@ public class ChunkCollection {
             havedTrackRoots.add(trackRoot);
         }
 
-        if (Hibernate.isInitialized(trackRoot.getInCollections())
-                && !trackRoot.getInCollections().contains(this)) {
+        if (Hibernate.isInitialized(trackRoot.getInCollections()) && !trackRoot.getInCollections().contains(this)) {
             trackRoot.getInCollections().add(this);
         }
     }
@@ -124,8 +126,7 @@ public class ChunkCollection {
             havedChunks.add(chunk);
         }
 
-        if (Hibernate.isInitialized(chunk.getChunkCollections())
-                && !chunk.getChunkCollections().contains(this)) {
+        if (Hibernate.isInitialized(chunk.getChunkCollections()) && !chunk.getChunkCollections().contains(this)) {
             chunk.getChunkCollections().add(this);
         }
     }
@@ -150,10 +151,8 @@ public class ChunkCollection {
     }
 
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof ChunkCollection))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof ChunkCollection)) return false;
         ChunkCollection other = (ChunkCollection) o;
         return id != null && id.equals(other.id);
     }

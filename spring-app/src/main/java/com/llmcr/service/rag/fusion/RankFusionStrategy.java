@@ -1,21 +1,20 @@
 package com.llmcr.service.rag.fusion;
 
+import com.llmcr.entity.Context;
+import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.llmcr.entity.Context;
-import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
-
 /**
  * Use Reciprocal Rank Fusion (RRF) to fuse multiple lists of contexts.
  */
 public class RankFusionStrategy implements FusionStrategy {
+
     private static final int RRF_K = 60;
 
     public List<ContextScorePair> fuse(List<List<ContextScorePair>> contextLists, int topK) {
-
         Map<Context, Double> contextMap = new HashMap<>();
 
         for (List<ContextScorePair> contexts : contextLists) {
@@ -26,10 +25,12 @@ public class RankFusionStrategy implements FusionStrategy {
             }
         }
 
-        return contextMap.entrySet().stream()
-                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
-                .limit(topK)
-                .map(e -> new ContextScorePair(e.getKey(), e.getValue().floatValue()))
-                .collect(Collectors.toList());
+        return contextMap
+            .entrySet()
+            .stream()
+            .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+            .limit(topK)
+            .map(e -> new ContextScorePair(e.getKey(), e.getValue().floatValue()))
+            .collect(Collectors.toList());
     }
 }

@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.llmcr.entity.Source.SourceType;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
-
-import com.llmcr.entity.Source.SourceType;
 
 class ConfigReaderTest {
 

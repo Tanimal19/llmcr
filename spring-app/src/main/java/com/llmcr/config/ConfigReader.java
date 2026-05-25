@@ -1,19 +1,17 @@
 package com.llmcr.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.llmcr.entity.Source.SourceType;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.llmcr.entity.Source.SourceType;
 
 @Component
 public class ConfigReader {
@@ -49,21 +47,23 @@ public class ConfigReader {
         ApplicationProperties.ModelProperties rerankingModel = normalizeModel(raw.rerankingModel());
         Map<String, ApplicationProperties.AgentProperties> agents = normalizeAgents(raw.agents(), chatModels);
         ApplicationProperties.LoggingProperties logging = raw.logging() == null
-                ? new ApplicationProperties.LoggingProperties(null)
-                : raw.logging();
+            ? new ApplicationProperties.LoggingProperties(null)
+            : raw.logging();
 
         return new ApplicationProperties(
-                trackRoots,
-                collections,
-                chatModels,
-                embeddingModel,
-                rerankingModel,
-                agents,
-                logging);
+            trackRoots,
+            collections,
+            chatModels,
+            embeddingModel,
+            rerankingModel,
+            agents,
+            logging
+        );
     }
 
     private Map<String, ApplicationProperties.TrackRootProperties> normalizeTrackRoots(
-            Map<String, ApplicationProperties.TrackRootProperties> trackRoots) {
+        Map<String, ApplicationProperties.TrackRootProperties> trackRoots
+    ) {
         Map<String, ApplicationProperties.TrackRootProperties> normalized = new LinkedHashMap<>();
         for (Map.Entry<String, ApplicationProperties.TrackRootProperties> entry : defaultMap(trackRoots).entrySet()) {
             String id = entry.getKey();
@@ -76,7 +76,8 @@ public class ConfigReader {
     }
 
     private Map<String, ApplicationProperties.CollectionProperties> normalizeCollections(
-            Map<String, ApplicationProperties.CollectionProperties> collections) {
+        Map<String, ApplicationProperties.CollectionProperties> collections
+    ) {
         Map<String, ApplicationProperties.CollectionProperties> normalized = new LinkedHashMap<>();
         for (Map.Entry<String, ApplicationProperties.CollectionProperties> entry : defaultMap(collections).entrySet()) {
             ApplicationProperties.CollectionProperties value = entry.getValue();
@@ -87,7 +88,8 @@ public class ConfigReader {
     }
 
     private Map<String, ApplicationProperties.ModelProperties> normalizeChatModels(
-            Map<String, ApplicationProperties.ModelProperties> chatModels) {
+        Map<String, ApplicationProperties.ModelProperties> chatModels
+    ) {
         Map<String, ApplicationProperties.ModelProperties> normalized = new LinkedHashMap<>();
         for (Map.Entry<String, ApplicationProperties.ModelProperties> entry : defaultMap(chatModels).entrySet()) {
             normalized.put(entry.getKey(), normalizeModel(entry.getValue()));
@@ -96,8 +98,9 @@ public class ConfigReader {
     }
 
     private Map<String, ApplicationProperties.AgentProperties> normalizeAgents(
-            Map<String, ApplicationProperties.AgentProperties> agents,
-            Map<String, ApplicationProperties.ModelProperties> chatModels) {
+        Map<String, ApplicationProperties.AgentProperties> agents,
+        Map<String, ApplicationProperties.ModelProperties> chatModels
+    ) {
         Map<String, ApplicationProperties.AgentProperties> normalized = new LinkedHashMap<>();
         for (Map.Entry<String, ApplicationProperties.AgentProperties> entry : defaultMap(agents).entrySet()) {
             ApplicationProperties.AgentProperties value = entry.getValue();
@@ -108,11 +111,13 @@ public class ConfigReader {
             }
 
             normalized.put(
-                    entry.getKey(),
-                    new ApplicationProperties.AgentProperties(
-                            chatModelKey,
-                            modelProperties,
-                            value == null ? null : value.collection()));
+                entry.getKey(),
+                new ApplicationProperties.AgentProperties(
+                    chatModelKey,
+                    modelProperties,
+                    value == null ? null : value.collection()
+                )
+            );
         }
 
         return Map.copyOf(normalized);
