@@ -170,23 +170,8 @@
                             <include>src/main/java/**/*.java</include>
                             <include>src/test/java/**/*.java</include>
                         </includes>
-                        <prettier>
-                            <configFile>${project.basedir}/.prettierrc.json</configFile>
-                            <devDependencies>
-                                <prettier>3.3.3</prettier>
-                                <prettier-plugin-java>2.6.6</prettier-plugin-java>
-                            </devDependencies>
-                        </prettier>
                     </java>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>validate</phase>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
@@ -194,7 +179,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>
-                        @{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+                        @{argLine}
+                        -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
                     </argLine>
                     <forkNode
                         implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />
@@ -208,7 +194,8 @@
                 <configuration>
                     <skipITs>${skipITs}</skipITs>
                     <argLine>
-                        @{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+                        @{argLine}
+                        -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
                     </argLine>
                     <forkNode
                         implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />

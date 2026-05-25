@@ -10,8 +10,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "prettier --check . && xo && ava",
-    "test:coverage": "prettier --check . && xo && c8 --reporter=lcov ava"
+    "lint": "prettier --check . && xo",
+    "test": "ava",
+    "test:coverage": "c8 --reporter=lcov ava"
   },
   "files": [
     "dist"

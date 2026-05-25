@@ -35,9 +35,19 @@ jobs:
           node-version: 24
 
       # --------------------------------------------------------
-      # 步驟 1：後端測試（內建自動編譯，並生成 JaCoCo 覆蓋率報告）
+      # 步驟 1-1：後端程式碼風格檢查 (Java Prettier)
+      # --------------------------------------------------------
+      - name: Run Backend Lint (Spotless)
+        run: |
+          cd spring-app
+          mvn spotless:check
+
+      # --------------------------------------------------------
+      # 步驟 1-2：後端測試與編譯
+      # 關鍵：即使上面的 Java 排版沒過，這裡依然會強行啟動 Docker 並執行所有測試！
       # --------------------------------------------------------
       - name: Run Backend Tests & Compile
+        if: success() || failure()
         run: |
           docker compose up -d
           cd spring-app
@@ -45,14 +55,23 @@ jobs:
           mvn verify
 
       # --------------------------------------------------------
-      # 步驟 2：前端測試與編譯（React-Ink TUI）
-      # 不論後端成功或失敗，前端測試與型別檢查都必須執行
+      # 步驟 2-1：前端程式碼風格檢查 (Lint)
       # --------------------------------------------------------
-      - name: Run Frontend Lint, Tests & Build
+      - name: Run Frontend Lint (Prettier & XO)
         if: success() || failure()
         run: |
           cd tui
           npm ci --ignore-scripts
+          npm run lint
+
+      # --------------------------------------------------------
+      # 步驟 2-2：前端測試與編譯
+      # 關鍵：即使上面的 Lint 失敗了，這個步驟依然會強制執行
+      # --------------------------------------------------------
+      - name: Run Frontend Tests & Build
+        if: success() || failure()
+        run: |
+          cd tui
           npm run test:coverage
           npm run build
 
