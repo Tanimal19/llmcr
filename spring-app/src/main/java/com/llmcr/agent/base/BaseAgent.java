@@ -2,6 +2,7 @@ package com.llmcr.agent.base;
 
 import com.llmcr.agent.logging.AgentContextHolder;
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
+import com.llmcr.api.APIServiceException;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.config.ApplicationProperties.ModelProperties;
 import com.llmcr.service.ModelClientFactory;
@@ -43,11 +44,10 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
      * be cast to R (which may cause a ClassCastException if R is not String).
      */
     protected BaseAgent(
-        String agentName,
-        ApplicationProperties applicationProperties,
-        ModelClientFactory modelClientFactory,
-        BeanOutputConverter<R> outputConverter
-    ) {
+            String agentName,
+            ApplicationProperties applicationProperties,
+            ModelClientFactory modelClientFactory,
+            BeanOutputConverter<R> outputConverter) {
         ModelProperties chatConfig = applicationProperties.getAgents().get(agentName).getChatModelProperties();
         this.chatProviderName = chatConfig.getProvider();
         this.chatModelName = chatConfig.getName();
@@ -79,10 +79,10 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
         variables.put("format_instructions", outputConverter != null ? outputConverter.getFormat() : "");
 
         return PromptTemplate.builder()
-            .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-            .template(getInitialUserMessageTemplate())
-            .build()
-            .render(variables);
+                .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+                .template(getInitialUserMessageTemplate())
+                .build()
+                .render(variables);
     }
 
     protected ChatOptions buildChatOptions(I input) {
@@ -91,6 +91,10 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
 
     @SuppressWarnings("unchecked")
     protected R convertRawResponse(String rawResponse) {
+        if (rawResponse == null) {
+            return null;
+        }
+
         int attempt = 0;
         while (true) {
             try {
@@ -103,17 +107,19 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
                 }
 
                 ChatClientRequestSpec retryRequest = chatClient
-                    .prompt(
-                        "Fix this invalid JSON. Return ONLY valid JSON. DO NOT modify the content, only fix the format: " +
-                        rawResponse
-                    )
-                    .advisors(new AgentLoggerAdvisor("OutputFixAgent"));
+                        .prompt(
+                                "Fix this invalid JSON. Return ONLY valid JSON. DO NOT modify the content, only fix the format: "
+                                        +
+                                        rawResponse)
+                        .advisors(new AgentLoggerAdvisor("OutputFixAgent"));
 
                 retryRequest.user(rawResponse);
                 rawResponse = retryRequest.call().content();
             }
         }
-        throw new RuntimeException("Failed to convert model response after " + getMaxRetry() + " attempts");
+        throw new APIServiceException(
+                APIServiceException.ErrorCode.LLM_RESPONSE_FAILED,
+                "Failed to convert LLM response after " + getMaxRetry() + " attempts: " + rawResponse);
     }
 
     protected abstract boolean shouldTerminate(R response);
@@ -137,8 +143,8 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
         do {
             prompt = Prompt.builder().messages(conversationHistory).chatOptions(chatOptions).build();
             ChatClientRequestSpec requestSpec = chatClient
-                .prompt(prompt)
-                .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
+                    .prompt(prompt)
+                    .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
 
             chatResponse = requestSpec.call().chatResponse();
             modelResponse = convertRawResponse(chatResponse.getResult().getOutput().getText());
@@ -149,10 +155,10 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
 
             // update conversation history
             List<Message> assistantMessages = chatResponse
-                .getResults()
-                .stream()
-                .map(g -> (Message) g.getOutput())
-                .toList();
+                    .getResults()
+                    .stream()
+                    .map(g -> (Message) g.getOutput())
+                    .toList();
             conversationHistory.addAll(assistantMessages);
 
             Message nextMessage = buildNextUserMessage(itreation + 1, modelResponse);
