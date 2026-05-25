@@ -33,6 +33,7 @@
         <java.version>17</java.version>
         <spring-ai.version>1.1.6</spring-ai.version>
         <mockito.version>5.14.1</mockito.version>
+        <skipITs>false</skipITs>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -164,8 +165,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>
-                        @{argLine}
-                        -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+                        @{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+                    </argLine>
+                    <forkNode
+                        implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />
                     <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
                 </configuration>
             </plugin>
@@ -174,7 +177,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
-                    <argLine>@{argLine}</argLine>
+                    <skipITs>${skipITs}</skipITs>
+                    <argLine>
+                        @{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+                    </argLine>
+                    <forkNode
+                        implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />
+                    <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
                 </configuration>
                 <executions>
                     <execution>
