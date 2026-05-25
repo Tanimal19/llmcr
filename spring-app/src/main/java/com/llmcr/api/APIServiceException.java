@@ -60,6 +60,8 @@ public class APIServiceException extends RuntimeException {
         SOURCE_SYNC_REMOVE_CHUNKS_FAILED("sourcesyncremovechunksfailed", "Failed to remove chunks from vector store",
                 HttpStatus.INTERNAL_SERVER_ERROR),
 
+        LLM_RESPONSE_FAILED("llmresponsefailed", "Failed to get response from LLM", HttpStatus.INTERNAL_SERVER_ERROR),
+
         INTERNAL_ERROR("internalerror", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
 
         private final String code;

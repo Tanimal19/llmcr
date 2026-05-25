@@ -88,8 +88,16 @@ public class ChatService {
             return new ChatResponse("(no query provided)", Map.of());
         }
 
-        List<ContextScorePair> retrievedContexts = queryContextRetriever
-                .retrieve(new ContextRetrievalRequest(List.of(query), RETRIEVAL_CONFIGURATION));
+        List<ContextScorePair> retrievedContexts;
+        try 
+        {
+            retrievedContexts = queryContextRetriever
+                    .retrieve(new ContextRetrievalRequest(List.of(query), RETRIEVAL_CONFIGURATION));
+        } 
+        catch (Exception ex) 
+        {
+            throw new APIServiceException(ErrorCode.RAG_RETRIEVAL_FAILED, "Failed to retrieve contexts for query", ex);
+        }
 
         String contextString = String.join("\n---\n", retrievedContexts.stream()
                 .map(pair -> pair.context().getContent())
@@ -110,7 +118,15 @@ public class ChatService {
                 .user(userMessage)
                 .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
 
-        String answer = requestSpec.call().content();
+        String answer;
+        try 
+        {
+            answer = requestSpec.call().content();
+        } 
+        catch (Exception ex) 
+        {
+            throw new APIServiceException(ErrorCode.LLM_RESPONSE_FAILED, "Failed to get response from LLM", ex);
+        }
         Map<String, Float> retrievedContextMap = retrievedContexts.stream()
                 .collect(Collectors.toMap(pair -> pair.context().getName(), ContextScorePair::score));
         return new ChatResponse(answer, retrievedContextMap);
