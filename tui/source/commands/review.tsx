@@ -1,15 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { useState, useEffect } from 'react';
+import { Box, Text } from 'ink';
 import { type CommandProps } from '../types.js';
 import { ThinkingSpinner } from '../components/thinking-spinner.js';
-import {
-  cancelReviewTask,
-  type CodeReviewOutput,
-  reviewWithProgress,
-  type ReviewErrorEvent,
-  type ReviewStageProgress,
-  type SseTaskStartEvent,
-} from '../api.js';
+import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '../api.js';
+import { useSseTaskLifecycle } from './use-sse-task-lifecycle.js';
 
 type ReviewCommandProps = {
   diffPath?: string;
@@ -19,57 +13,33 @@ type ReviewCommandProps = {
 const MAX_ISSUE_PREVIEW_COUNT = 5;
 
 export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewCommandProps) => {
-  const [stageMessage, setStageMessage] = useState('Waiting to start review...');
-  const [status, setStatus] = useState<'running' | 'success' | 'error'>('running');
   const [reviewResult, setReviewResult] = useState<CodeReviewOutput | undefined>(undefined);
-  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
-  const [awaitingExitConfirm, setAwaitingExitConfirm] = useState(false);
-  const [progressLogs, setProgressLogs] = useState<string[]>([]);
-  const abortControllerRef = useRef<AbortController | undefined>(null);
-  const reviewTaskIdRef = useRef<string | undefined>(null);
-  const hasRequestedCancelRef = useRef(false);
-  const waitingTaskIdForCancelRef = useRef(false);
-
-  const appendLog = (message: string): void => {
-    setProgressLogs(previous => [...previous, message]);
-  };
-
-  // Allow user to leave the view with ESC.
-  useInput((_, key) => {
-    if (!key.escape) {
-      return;
-    }
-
-    if (status === 'running' && !hasRequestedCancelRef.current) {
-      hasRequestedCancelRef.current = true;
-      waitingTaskIdForCancelRef.current = true;
-      setAwaitingExitConfirm(true);
-      setStageMessage('Cancelling review...');
-      appendLog('[INFO] ESC pressed. Cancelling review task...');
-      appendLog('[INFO] Press ESC again to return to the menu.');
-
-      const taskId = reviewTaskIdRef.current;
-      if (taskId) {
-        waitingTaskIdForCancelRef.current = false;
-        void cancelReviewTask(taskId).catch((error: unknown) => {
-          appendLog(
-            `[WARN] Failed to cancel review task on backend: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
-        abortControllerRef.current?.abort();
-      } else {
-        appendLog('[INFO] Waiting for task id from backend before sending cancel request...');
-      }
-
-      return;
-    }
-
-    if (awaitingExitConfirm) {
-      onBack();
-      return;
-    }
-
-    onBack();
+  const {
+    stageMessage,
+    status,
+    errorMessage,
+    awaitingExitConfirm,
+    progressLogs,
+    setStageMessage,
+    setStatus,
+    setErrorMessage,
+    appendLog,
+    startRun,
+    handleTaskStart,
+    handleProgress,
+    handleError,
+    completeRun,
+    handleRunFailure,
+    cleanupRun,
+  } = useSseTaskLifecycle({
+    initialStageMessage: 'Waiting to start review...',
+    cancellingStageMessage: 'Cancelling review...',
+    cancelledStageMessage: 'Review cancelled by user',
+    failedStageMessage: 'Review failed',
+    taskLabelLower: 'review',
+    taskLabelTitle: 'Review',
+    onBack,
+    cancelTask: cancelReviewTask,
   });
 
   useEffect(() => {
@@ -86,43 +56,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       appendLog('[INFO] Using mock review data');
     }
 
-    appendLog('[INFO] Review started');
-
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    const updateTask = (event: SseTaskStartEvent): void => {
-      if (!event?.id) {
-        return;
-      }
-
-      reviewTaskIdRef.current = event.id;
-      appendLog(`[INFO] Review task started: ${event.name} (${event.id})`);
-
-      if (waitingTaskIdForCancelRef.current) {
-        waitingTaskIdForCancelRef.current = false;
-        appendLog('[INFO] Sending cancellation request to backend...');
-        void cancelReviewTask(event.id).catch((error: unknown) => {
-          appendLog(
-            `[WARN] Failed to cancel review task on backend: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
-        abortController.abort();
-      }
-    };
-
-    const updateProgress = (event: ReviewStageProgress): void => {
-      const level = event.isError ? 'ERROR' : 'INFO';
-      setStageMessage(`${event.stage} - ${event.message}`);
-      appendLog(`[${event.stage}] ${level} - ${event.message}`);
-    };
-
-    const updateError = (event: ReviewErrorEvent): void => {
-      setStatus('error');
-      setErrorMessage(`${event.code}: ${event.message}`);
-      setStageMessage('Review failed');
-      appendLog(`[ERROR] ${event.code}: ${event.message}`);
-    };
+    const abortController = startRun('[INFO] Review started');
 
     reviewWithProgress(
       {
@@ -130,37 +64,22 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
         useMockData: useMock,
       },
       {
-        onStart: updateTask,
-        onProgress: updateProgress,
-        onError: updateError,
+        onStart: handleTaskStart,
+        onProgress: handleProgress,
+        onError: handleError,
         useMock,
         onResult(result) {
           setReviewResult(result);
-          setStatus('success');
-          setStageMessage('Review completed successfully');
-          appendLog('[DONE] Review completed successfully');
+          completeRun('Review completed successfully', '[DONE] Review completed successfully');
         },
         signal: abortController.signal,
       },
     ).catch((error: unknown) => {
-      if (abortController.signal.aborted) {
-        setStatus('error');
-        setErrorMessage(undefined);
-        setStageMessage('Review cancelled by user');
-        appendLog('[INFO] Review stream aborted');
-        return;
-      }
-
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : String(error));
-      setStageMessage('Review failed');
-      appendLog(`[ERROR] ${error instanceof Error ? error.message : String(error)}`);
+      handleRunFailure(error, abortController, '[INFO] Review stream aborted');
     });
 
     return () => {
-      abortControllerRef.current = null;
-      waitingTaskIdForCancelRef.current = false;
-      abortController.abort();
+      cleanupRun(abortController);
     };
   }, [diffPath, useMock]);
 

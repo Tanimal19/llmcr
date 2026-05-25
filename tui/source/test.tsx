@@ -2,40 +2,59 @@ import test from 'ava';
 import { render } from 'ink-testing-library';
 import { ChatCommand } from './commands/chat.js';
 import { LsDbCommand } from './commands/lsdb.js';
+import { ReviewCommand } from './commands/review.js';
 import { SetRagCommand } from './commands/setrag.js';
+import { SyncCommand } from './commands/sync.js';
 
-// ─── 💡 輔助工具 1：非同步等待刷新 ───
-// 修正點：加上大括號 {} 避免 setTimeout 回傳的 ID 被 Promise 執行器錯誤地隱式 return
 const delay = async (ms: number) =>
   new Promise<void>(resolve => {
     setTimeout(resolve, ms);
   });
 
-// ─── 💡 輔助工具 2：全域 Fetch 模擬器 ───
-// 修正點：將 any 改為 unknown。直接使用原生的 new Response()，徹底移除不安全的類型斷言 (as Response)
-const setupMockFetch = (mockResponseData: unknown, status = 200) => {
-  globalThis.fetch = async () =>
-    Response.json(mockResponseData, {
-      status,
-      headers: { 'content-type': 'application/json' },
-    });
+const setupMockFetch = (handler: (url: string, init?: RequestInit) => Response | Promise<Response>) => {
+  globalThis.fetch = async (input: URL | RequestInfo, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    return handler(url, init);
+  };
 };
 
-// 在每個測試結束後清理 Fetch 模擬，避免污染環境
+const jsonResponse = (value: unknown, status = 200) =>
+  Response.json(value, {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+
+const createSseResponse = (events: Array<{ event: string; data: unknown }>) => {
+  const payload = events
+    .map(({ event, data }) => {
+      const encodedData = typeof data === 'string' ? data : JSON.stringify(data);
+      return `event: ${event}\ndata: ${encodedData}`;
+    })
+    .join('\n\n');
+
+  return new Response(payload, {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream' },
+  });
+};
+
 test.afterEach(() => {
-  // 修正點：遵照 XO 規範，將不推薦的 @ts-ignore 改為現代的 @ts-expect-error
-  // @ts-expect-error - fetch 在 globalThis 上預設不可刪除，此處僅用於測試清理
+  // @ts-expect-error fetch is non-configurable in lib dom types, but we clear it in tests.
   delete globalThis.fetch;
 });
 
-// ─── 🎯 測試個案 1：Chat 指令測試 ───
-test.serial('ChatCommand - 應能正常輸入訊息並渲染 AI 的回應', async t => {
-  setupMockFetch({
-    answer: '這是來自 Java API 模擬的智慧回應。',
-    retrievedContexts: {},
+test.serial('ChatCommand renders user input and assistant reply', async t => {
+  setupMockFetch(url => {
+    if (url.endsWith('/chat')) {
+      return jsonResponse({
+        answer: 'This is a mocked assistant response.',
+        retrievedContexts: {},
+      });
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
   });
 
-  // 修正點：為空箭頭函式補上註解 /* No-op */ 並縮回單行，同時滿足 Prettier 與 XO 的空函式限制
   const { lastFrame, stdin, unmount } = render(
     <ChatCommand
       onBack={() => {
@@ -44,39 +63,37 @@ test.serial('ChatCommand - 應能正常輸入訊息並渲染 AI 的回應', asyn
     />,
   );
 
-  // 1. 模擬使用者打字（改用英文更穩健）
   stdin.write('hello');
-  await delay(50); // 💡 給 TextInput 一點時間把字吃進去
-
-  // 2. 按下 Enter 鍵
+  await delay(50);
   stdin.write('\r');
-  await delay(150); // 等待 API 異步回傳與畫面刷新
+  await delay(150);
 
-  // 💡 【除錯法寶】如果還是失敗，這行會把畫面完整印在終端機上供你檢查
-  console.log('=== Chat 畫面實況 ===\n', lastFrame(), '\n====================');
-
-  // 修正點：依據安全規範，將帶有布林偽值風險的 || 替換為空值合併運算子 ??
   const frameText = lastFrame() ?? '';
   t.true(frameText.includes('hello'));
-  t.true(frameText.includes('這是來自 Java API 模擬的智慧回應。'));
+  t.true(frameText.includes('This is a mocked assistant response.'));
 
   unmount();
 });
 
-// ─── 🎯 測試個案 2：LsDB 查看知識庫測試 ───
-test.serial('LsDbCommand - 應能載入並渲染正確的知識庫列表與 Source 數量', async t => {
-  setupMockFetch([
-    {
-      id: 1,
-      path: '/Users/project/demo-repo',
-      isSynced: true,
-      lastSyncTime: '2026-05-24 12:00:00',
-      sources: [
-        { id: 101, path: 'src/main.ts', type: 'TS', syncStatus: 'SYNCED' },
-        { id: 102, path: 'package.json', type: 'JSON', syncStatus: 'SYNCED' },
-      ],
-    },
-  ]);
+test.serial('LsDbCommand renders track roots and source counts', async t => {
+  setupMockFetch(url => {
+    if (url.endsWith('/lsdb')) {
+      return jsonResponse([
+        {
+          id: 1,
+          path: '/Users/project/demo-repo',
+          isSynced: true,
+          lastSyncTime: '2026-05-24 12:00:00',
+          sources: [
+            { id: 101, path: 'src/main.ts', type: 'TS', syncStatus: 'SYNCED' },
+            { id: 102, path: 'package.json', type: 'JSON', syncStatus: 'SYNCED' },
+          ],
+        },
+      ]);
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  });
 
   const { lastFrame, unmount } = render(
     <LsDbCommand
@@ -88,24 +105,25 @@ test.serial('LsDbCommand - 應能載入並渲染正確的知識庫列表與 Sour
 
   await delay(100);
 
-  // 💡 【除錯法寶】印出 LsDb 的實際畫面
-  console.log('=== LsDb 畫面實況 ===\n', lastFrame(), '\n====================');
-
   const frameText = lastFrame() ?? '';
 
   t.true(frameText.includes('demo-repo'));
   t.true(frameText.includes('Synced · 2 sources'));
-  t.true(frameText.includes('main.ts')); // 💡 修正點：因為 toLabel() 會把路徑切到只剩檔名！
+  t.true(frameText.includes('main.ts'));
 
   unmount();
 });
 
-// ─── 🎯 測試個案 3：SetRAG 配置文件清單測試 ───
-test.serial('SetRagCommand - 應能載入 Scope 狀態並渲染核取方塊', async t => {
-  // 1. 準備符合 Record<string, boolean> 格式的 Mock 資料
-  setupMockFetch({
-    '/Users/project/repo-A': true,
-    '/Users/project/repo-B': false,
+test.serial('SetRagCommand renders rag scope and selection count', async t => {
+  setupMockFetch(url => {
+    if (url.endsWith('/getrag')) {
+      return jsonResponse({
+        '/Users/project/repo-A': true,
+        '/Users/project/repo-B': false,
+      });
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
   });
 
   const { lastFrame, unmount } = render(
@@ -116,21 +134,127 @@ test.serial('SetRagCommand - 應能載入 Scope 狀態並渲染核取方塊', as
     />,
   );
 
-  // 等待異步資料載入與排序處理
   await delay(100);
-
-  // 💡 【除錯法寶】印出 SetRag 的實際畫面
-  console.log('=== SetRag 畫面實況 ===\n', lastFrame(), '\n====================');
 
   const frameText = lastFrame() ?? '';
 
-  // 2. 驗證標題與選擇數量統計
   t.true(frameText.includes('RAG Scope'));
-  t.true(frameText.includes('Selected: 1/2')); // 因為一個 true 一个 false
-
-  // 3. 驗證專案標籤解析與 Checkbox 符號是否存在 (● 代表選中, ○ 代表未選)
+  t.true(frameText.includes('Selected: 1/2'));
   t.true(frameText.includes('repo-A'));
   t.true(frameText.includes('repo-B'));
+
+  unmount();
+});
+
+test.serial('SyncCommand completes sync flow and prints summary', async t => {
+  setupMockFetch(url => {
+    if (url.endsWith('/sync')) {
+      return createSseResponse([
+        { event: 'start', data: { name: 'sync', id: 'sync-1' } },
+        { event: 'progress', data: { isError: false, stage: 'INDEX', message: 'Running indexers' } },
+        { event: 'result', data: {} },
+      ]);
+    }
+
+    if (url.endsWith('/lsdb')) {
+      return jsonResponse([
+        {
+          id: 1,
+          path: '/Users/project/demo-repo',
+          isSynced: false,
+          lastSyncTime: undefined,
+          sources: [],
+        },
+      ]);
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  });
+
+  const { lastFrame, unmount } = render(
+    <SyncCommand
+      onBack={() => {
+        /* No-op */
+      }}
+    />,
+  );
+
+  await delay(180);
+
+  const frameText = lastFrame() ?? '';
+  t.true(frameText.includes('Performing source sync using backend SSE stream'));
+  t.true(frameText.includes('Sync done. Press ESC to return.'));
+  t.true(frameText.includes('Track roots before sync: 1 total, 1 unsynced'));
+  t.true(frameText.includes('Track roots after sync: 1 total, 1 unsynced'));
+
+  unmount();
+});
+
+test.serial('ReviewCommand renders review summary from SSE result', async t => {
+  setupMockFetch(url => {
+    if (url.endsWith('/review')) {
+      return createSseResponse([
+        { event: 'start', data: { name: 'review', id: 'review-1' } },
+        { event: 'progress', data: { isError: false, stage: 'ANALYZE', message: 'Reading diff' } },
+        {
+          event: 'result',
+          data: {
+            reportPath: '/tmp/review.md',
+            reviewReport: {
+              prId: 123,
+              prTitle: 'Improve parser stability',
+              mainReport: {
+                motivation: 'Improve reliability',
+                goodPoints: ['Clear separation of concerns'],
+                badPoints: ['Missing edge-case test'],
+                suggestion: 'Add validation test',
+                implementationDetails: [{ filename: 'src/parser.ts', details: ['Adds retry logic'] }],
+                issues: [
+                  {
+                    type: 'BUG',
+                    title: 'Nullable value not checked',
+                    location: 'src/parser.ts:42',
+                    detail: 'Potential runtime error',
+                  },
+                  {
+                    type: 'STYLE',
+                    title: 'Inconsistent naming',
+                    location: 'src/parser.ts:77',
+                    detail: 'Use camelCase',
+                  },
+                ],
+              },
+              interpretation: {
+                changeDescription: 'Parser handling updates',
+                changeMotivation: 'Reduce failures',
+              },
+              itemAnswers: [],
+            },
+          },
+        },
+      ]);
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  });
+
+  const { lastFrame, unmount } = render(
+    <ReviewCommand
+      diffPath="/tmp/pr.json"
+      onBack={() => {
+        /* No-op */
+      }}
+    />,
+  );
+
+  await delay(180);
+
+  const frameText = lastFrame() ?? '';
+  t.true(frameText.includes('Performing code review on: /tmp/pr.json'));
+  t.true(frameText.includes('Review done. Press ESC to return.'));
+  t.true(frameText.includes('PR: #123 Improve parser stability'));
+  t.true(frameText.includes('Issues: 2'));
+  t.true(frameText.includes('1. [BUG] Nullable value not checked @ src/parser.ts:42'));
 
   unmount();
 });

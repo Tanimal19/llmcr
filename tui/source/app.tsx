@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
+import { info } from './api.js';
 import { ChatCommand } from './commands/chat.js';
 import { ReviewCommand } from './commands/review.js';
 import { SetRagCommand } from './commands/setrag.js';
@@ -7,8 +8,15 @@ import { LsDbCommand } from './commands/lsdb.js';
 import { SyncCommand } from './commands/sync.js';
 import { ArgInput } from './components/arg-input.js';
 
-// 主選單組件
-const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
+type MainMenuProps = {
+  onSelect: (screen: string) => void;
+  projectLoaded: string;
+  lastSynced: string;
+  isInfoLoading: boolean;
+  infoError: string | undefined;
+};
+
+const MainMenu = ({ onSelect, projectLoaded, lastSynced, isInfoLoading, infoError }: MainMenuProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const { exit } = useApp();
 
@@ -78,12 +86,13 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
       <Box flexDirection="column" marginTop={1}>
         <Text>
           <Text color="green">●</Text> <Text color="white">Project loaded:</Text>{' '}
-          <Text color="gray">C:/example_project/</Text>
+          <Text color="gray">{projectLoaded}</Text>
         </Text>
         <Text>
-          <Text color="green">●</Text> <Text color="white">Last synced:</Text>{' '}
-          <Text color="gray">2026/04/17 22:04</Text>
+          <Text color="green">●</Text> <Text color="white">Last synced:</Text> <Text color="gray">{lastSynced}</Text>
         </Text>
+        {isInfoLoading ? <Text color="gray">Loading project metadata...</Text> : null}
+        {!isInfoLoading && infoError ? <Text color="red">Failed to load /info: {infoError}</Text> : null}
       </Box>
 
       {/* 按鍵指南 Footer */}
@@ -112,6 +121,47 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
   const [reviewArg, setReviewArg] = useState<string | undefined>(undefined);
   const [reviewUseMock, setReviewUseMock] = useState(false);
+  const [projectLoaded, setProjectLoaded] = useState('Loading...');
+  const [lastSynced, setLastSynced] = useState('Loading...');
+  const [isInfoLoading, setIsInfoLoading] = useState(true);
+  const [infoError, setInfoError] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const loadInfo = async (): Promise<void> => {
+      setIsInfoLoading(true);
+      setInfoError(undefined);
+
+      try {
+        const result = await info();
+        if (disposed) {
+          return;
+        }
+
+        setProjectLoaded(result.configPath || 'N/A');
+        setLastSynced(result.lastSyncTime ? String(result.lastSyncTime) : 'N/A');
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+
+        setProjectLoaded('N/A');
+        setLastSynced('N/A');
+        setInfoError(error instanceof Error ? error.message : String(error));
+      } finally {
+        if (!disposed) {
+          setIsInfoLoading(false);
+        }
+      }
+    };
+
+    void loadInfo();
+
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const handleBack = () => {
     setReviewArg(undefined);
@@ -121,7 +171,15 @@ export default function App() {
 
   switch (currentScreen) {
     case 'menu': {
-      return <MainMenu onSelect={setCurrentScreen} />;
+      return (
+        <MainMenu
+          onSelect={setCurrentScreen}
+          projectLoaded={projectLoaded}
+          lastSynced={lastSynced}
+          isInfoLoading={isInfoLoading}
+          infoError={infoError}
+        />
+      );
     }
 
     case 'review_flow': {

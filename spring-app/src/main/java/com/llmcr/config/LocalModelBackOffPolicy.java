@@ -7,8 +7,8 @@ import org.springframework.retry.backoff.BackOffPolicy;
 
 public final class LocalModelBackOffPolicy implements BackOffPolicy {
 
-    private final long defaultBackoffMillis = 10_000L;
-    private final long http502503BackoffMillis = 30_000L;
+    private static final long DEFAULT_BACKOFF_MILLIS = 10_000L;
+    private static final long HTTP502503_BACKOFF_MILLIS = 30_000L;
 
     public LocalModelBackOffPolicy() {
     }
@@ -22,8 +22,8 @@ public final class LocalModelBackOffPolicy implements BackOffPolicy {
     public void backOff(BackOffContext backOffContext) throws BackOffInterruptedException {
         RetryContext retryContext = ((RetryContextBackOffContext) backOffContext).retryContext();
         Throwable throwable = retryContext.getLastThrowable();
-        long backoffMillis = is502Or503Error(throwable) ? http502503BackoffMillis
-                : defaultBackoffMillis;
+        long backoffMillis = is502Or503Error(throwable) ? HTTP502503_BACKOFF_MILLIS
+                : DEFAULT_BACKOFF_MILLIS;
 
         try {
             Thread.sleep(backoffMillis);

@@ -27,6 +27,10 @@ public class ConfigReader {
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
+    public String getConfigFilePath() {
+        return configFilePath;
+    }
+
     @Bean
     public ApplicationProperties applicationConfiguration() {
         try {

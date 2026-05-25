@@ -120,6 +120,115 @@ export type TrackRootPreview = {
   sources: SourcePreview[];
 };
 
+export type InfoResponse = {
+  configPath: string;
+  config: unknown;
+  lastSyncTime: string | null | undefined;
+};
+
+function parseSseEvent(rawEvent: string): { event: string; data: string } {
+  const lines = rawEvent.split(/\r?\n/v);
+  let eventName = 'message';
+  const dataLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith('event:')) {
+      eventName = line.slice('event:'.length).trim();
+      continue;
+    }
+
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice('data:'.length).trim());
+    }
+  }
+
+  return { event: eventName, data: dataLines.join('\n') };
+}
+
+function parseJsonPayload(payload: string): unknown {
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return payload;
+  }
+}
+
+function parseSseError(payload: unknown, fallbackCode: string, fallbackMessage: string): ReviewErrorEvent {
+  if (payload && typeof payload === 'object') {
+    const payloadRecord = payload as Record<string, unknown>;
+    const rawMessage = payloadRecord['message'];
+    const message = typeof rawMessage === 'string' && rawMessage.trim().length > 0 ? rawMessage : fallbackMessage;
+
+    const errorCode = payloadRecord['errorCode'];
+    if (errorCode && typeof errorCode === 'object') {
+      const code = (errorCode as Record<string, unknown>)['code'];
+      if (typeof code === 'string' && code.trim().length > 0) {
+        return { code, message };
+      }
+    }
+
+    const rawCode = payloadRecord['code'];
+    if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
+      return { code: rawCode, message };
+    }
+
+    return { code: fallbackCode, message };
+  }
+
+  if (typeof payload === 'string' && payload.trim().length > 0) {
+    return { code: fallbackCode, message: payload };
+  }
+
+  return {
+    code: fallbackCode,
+    message: fallbackMessage,
+  };
+}
+
+async function consumeSseStream(
+  response: Response,
+  handleEvent: (eventName: string, payload: unknown) => void,
+): Promise<void> {
+  if (!response.body) {
+    throw new Error('SSE response body is not available.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split(/\r?\n\r?\n/v);
+    buffer = chunks.pop() ?? '';
+
+    for (const chunk of chunks) {
+      if (!chunk.trim()) {
+        continue;
+      }
+
+      const parsed = parseSseEvent(chunk);
+      const payload = parseJsonPayload(parsed.data);
+      handleEvent(parsed.event, payload);
+    }
+  }
+
+  if (buffer.trim()) {
+    const parsed = parseSseEvent(buffer);
+    const payload = parseJsonPayload(parsed.data);
+    handleEvent(parsed.event, payload);
+  }
+}
+
 function requireNonBlank(value: string, message: string): void {
   if (!value || value.trim().length === 0) {
     throw new Error(message);
@@ -170,6 +279,10 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function health(): Promise<string> {
   return apiRequest<string>('/health');
+}
+
+export async function info(): Promise<InfoResponse> {
+  return apiRequest<InfoResponse>('/info');
 }
 
 export async function chat(query: string): Promise<ChatResponse> {
@@ -225,78 +338,7 @@ export async function reviewWithProgress(
     throw new Error(`API ${response.status} ${response.statusText}: ${errorBody || 'No response body'}`);
   }
 
-  if (!response.body) {
-    throw new Error('SSE response body is not available.');
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
   let finalResult: CodeReviewOutput | undefined;
-
-  const parseSseEvent = (rawEvent: string): { event: string; data: string } => {
-    const lines = rawEvent.split(/\r?\n/v);
-    let eventName = 'message';
-    const dataLines: string[] = [];
-
-    for (const line of lines) {
-      if (line.startsWith('event:')) {
-        eventName = line.slice('event:'.length).trim();
-        continue;
-      }
-
-      if (line.startsWith('data:')) {
-        dataLines.push(line.slice('data:'.length).trim());
-      }
-    }
-
-    return { event: eventName, data: dataLines.join('\n') };
-  };
-
-  const parseJson = (payload: string): unknown => {
-    if (!payload) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(payload);
-    } catch {
-      return payload;
-    }
-  };
-
-  const parseError = (payload: unknown): ReviewErrorEvent => {
-    if (payload && typeof payload === 'object') {
-      const payloadRecord = payload as Record<string, unknown>;
-      const rawMessage = payloadRecord['message'];
-      const message =
-        typeof rawMessage === 'string' && rawMessage.trim().length > 0 ? rawMessage : 'Unknown review SSE error';
-
-      const errorCode = payloadRecord['errorCode'];
-      if (errorCode && typeof errorCode === 'object') {
-        const code = (errorCode as Record<string, unknown>)['code'];
-        if (typeof code === 'string' && code.trim().length > 0) {
-          return { code, message };
-        }
-      }
-
-      const rawCode = payloadRecord['code'];
-      if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
-        return { code: rawCode, message };
-      }
-
-      return { code: 'REVIEW_PIPELINE_FAILED', message };
-    }
-
-    if (typeof payload === 'string' && payload.trim().length > 0) {
-      return { code: 'REVIEW_PIPELINE_FAILED', message: payload };
-    }
-
-    return {
-      code: 'REVIEW_PIPELINE_FAILED',
-      message: 'Unknown review SSE error',
-    };
-  };
 
   const handleEvent = (eventName: string, payload: unknown): void => {
     if (eventName === 'start') {
@@ -326,38 +368,13 @@ export async function reviewWithProgress(
     }
 
     if (eventName === 'error') {
-      const errorEvent = parseError(payload);
+      const errorEvent = parseSseError(payload, 'REVIEW_PIPELINE_FAILED', 'Unknown review SSE error');
       handlers.onError?.(errorEvent);
       throw new Error(`${errorEvent.code}: ${errorEvent.message}`);
     }
   };
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    buffer += decoder.decode(value, { stream: true });
-    const chunks = buffer.split(/\r?\n\r?\n/v);
-    buffer = chunks.pop() ?? '';
-
-    for (const chunk of chunks) {
-      if (!chunk.trim()) {
-        continue;
-      }
-
-      const parsed = parseSseEvent(chunk);
-      const payload = parseJson(parsed.data);
-      handleEvent(parsed.event, payload);
-    }
-  }
-
-  if (buffer.trim()) {
-    const parsed = parseSseEvent(buffer);
-    const payload = parseJson(parsed.data);
-    handleEvent(parsed.event, payload);
-  }
+  await consumeSseStream(response, handleEvent);
 
   if (finalResult === undefined) {
     throw new Error('Review SSE stream ended without a result event.');
@@ -380,77 +397,7 @@ export async function syncWithProgress(handlers: SyncStreamHandlers = {}): Promi
     throw new Error(`API ${response.status} ${response.statusText}: ${errorBody || 'No response body'}`);
   }
 
-  if (!response.body) {
-    throw new Error('SSE response body is not available.');
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
   let hasResult = false;
-
-  const parseSseEvent = (rawEvent: string): { event: string; data: string } => {
-    const lines = rawEvent.split(/\r?\n/v);
-    let eventName = 'message';
-    const dataLines: string[] = [];
-
-    for (const line of lines) {
-      if (line.startsWith('event:')) {
-        eventName = line.slice('event:'.length).trim();
-        continue;
-      }
-
-      if (line.startsWith('data:')) {
-        dataLines.push(line.slice('data:'.length).trim());
-      }
-    }
-
-    return { event: eventName, data: dataLines.join('\n') };
-  };
-
-  const parseJson = (payload: string): unknown => {
-    if (!payload) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(payload);
-    } catch {
-      return payload;
-    }
-  };
-
-  const parseError = (payload: unknown): ReviewErrorEvent => {
-    if (payload && typeof payload === 'object') {
-      const payloadRecord = payload as Record<string, unknown>;
-      const rawMessage = payloadRecord['message'];
-      const message = typeof rawMessage === 'string' && rawMessage.trim().length > 0 ? rawMessage : 'Sync failed';
-
-      const errorCode = payloadRecord['errorCode'];
-      if (errorCode && typeof errorCode === 'object') {
-        const code = (errorCode as Record<string, unknown>)['code'];
-        if (typeof code === 'string' && code.trim().length > 0) {
-          return { code, message };
-        }
-      }
-
-      const rawCode = payloadRecord['code'];
-      if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
-        return { code: rawCode, message };
-      }
-
-      return { code: 'SOURCE_SYNC_FAILED', message };
-    }
-
-    if (typeof payload === 'string' && payload.trim().length > 0) {
-      return { code: 'SOURCE_SYNC_FAILED', message: payload };
-    }
-
-    return {
-      code: 'SOURCE_SYNC_FAILED',
-      message: 'Unknown sync SSE error',
-    };
-  };
 
   const handleEvent = (eventName: string, payload: unknown): void => {
     if (eventName === 'start') {
@@ -470,38 +417,13 @@ export async function syncWithProgress(handlers: SyncStreamHandlers = {}): Promi
     }
 
     if (eventName === 'error') {
-      const errorEvent = parseError(payload);
+      const errorEvent = parseSseError(payload, 'SOURCE_SYNC_FAILED', 'Unknown sync SSE error');
       handlers.onError?.(errorEvent);
       throw new Error(`${errorEvent.code}: ${errorEvent.message}`);
     }
   };
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    buffer += decoder.decode(value, { stream: true });
-    const chunks = buffer.split(/\r?\n\r?\n/v);
-    buffer = chunks.pop() ?? '';
-
-    for (const chunk of chunks) {
-      if (!chunk.trim()) {
-        continue;
-      }
-
-      const parsed = parseSseEvent(chunk);
-      const payload = parseJson(parsed.data);
-      handleEvent(parsed.event, payload);
-    }
-  }
-
-  if (buffer.trim()) {
-    const parsed = parseSseEvent(buffer);
-    const payload = parseJson(parsed.data);
-    handleEvent(parsed.event, payload);
-  }
+  await consumeSseStream(response, handleEvent);
 
   if (!hasResult) {
     throw new Error('Sync SSE stream ended without a result event.');

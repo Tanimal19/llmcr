@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.llmcr.config.ApplicationProperties;
+import com.llmcr.config.ConfigReader;
 import com.llmcr.service.ChatService;
 import com.llmcr.service.ChatService.ChatResponse;
 import com.llmcr.service.etl.LoadService;
@@ -35,18 +37,24 @@ public class APIController {
     private static final Logger logger = LoggerFactory.getLogger(APIController.class);
 
     private final SseTaskManager sseTaskManager;
+    private final ApplicationProperties applicationProperties;
+    private final ConfigReader configReader;
     private final ChatService chatService;
     private final CodeReviewService codeReviewService;
     private final SourceSyncService sourceSyncService;
 
     public APIController(
             SseTaskManager sseTaskManager,
+            ApplicationProperties applicationProperties,
+            ConfigReader configReader,
             ChatService chatService,
             CodeReviewService codeReviewService,
             ConfigSyncService configSyncService,
             SourceSyncService sourceSyncService,
             LoadService loadService) {
         this.sseTaskManager = sseTaskManager;
+        this.applicationProperties = applicationProperties;
+        this.configReader = configReader;
 
         this.chatService = chatService;
         this.codeReviewService = codeReviewService;
@@ -75,6 +83,15 @@ public class APIController {
     public String health() {
         logger.info("Health check endpoint called");
         return "ok";
+    }
+
+    @GetMapping("/info")
+    public Map<String, Object> getInfo() {
+        logger.info("Get info request received");
+        return Map.of(
+                "configPath", configReader.getConfigFilePath(),
+                "config", applicationProperties,
+                "lastSyncTime", sourceSyncService.getLastAllSyncTime());
     }
 
     @PostMapping("/chat")

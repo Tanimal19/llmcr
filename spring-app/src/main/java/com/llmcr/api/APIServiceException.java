@@ -54,6 +54,9 @@ public class APIServiceException extends RuntimeException {
         CONFIG_SYNC_DEFAULT_COLLECTIONS_FAILED("configsyncdefaultcollectionsfailed",
                 "Failed to sync default collections", HttpStatus.INTERNAL_SERVER_ERROR),
 
+        SOURCE_SYNC_GET_SYNC_TIME_FAILED(
+                "sourcesyncgetsynctimefailed", "Failed to get last sync time",
+                HttpStatus.INTERNAL_SERVER_ERROR),
         SOURCE_SYNC_PREVIEW_LIST_FAILED(
                 "sourcesyncpreviewlistfailed", "Failed to list track root previews",
                 HttpStatus.INTERNAL_SERVER_ERROR),

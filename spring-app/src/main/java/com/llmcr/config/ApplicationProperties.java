@@ -101,4 +101,15 @@ public record ApplicationProperties(
             return reviewOutputDir;
         }
     }
+
+    public Map<String, Object> toMap() {
+        return Map.of(
+                "trackRoots", trackRoots,
+                "collections", collections,
+                "chatModels", chatModels,
+                "embeddingModel", embeddingModel,
+                "rerankingModel", rerankingModel,
+                "agents", agents,
+                "logging", logging);
+    }
 }
