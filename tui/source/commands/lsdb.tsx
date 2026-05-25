@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
 import { lsdb } from '../api.js';
-import { TableBrowser, type TableBrowserItem } from '../components/table-browser.js';
+import { TableBrowser, type TableBrowserItem, toLabel } from '../components/table-browser.js';
 import { type CommandProps } from '../types.js';
 
 const STATUS_STYLE: Record<
@@ -13,12 +13,6 @@ const STATUS_STYLE: Record<
   ADDED: { color: 'green', prefix: '+ ', legend: 'ADDED    : + <name>' },
   MODIFIED: { color: 'yellow', prefix: '± ', legend: 'MODIFIED : ± <name>' },
 };
-
-function toLabel(path: string): string {
-  // 修正點：為正則表達式加上 v 旗標
-  const segments = path.split(/[\/\\\\]/v);
-  return segments.at(-1) ?? path;
-}
 
 export const LsDbCommand = ({ onBack }: CommandProps) => {
   const [isLoading, setIsLoading] = useState(true);

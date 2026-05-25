@@ -199,3 +199,8 @@ export const TableBrowser = ({
     </Box>
   );
 };
+
+export function toLabel(path: string): string {
+  const segments = path.split(/[\/\\]/v);
+  return segments.at(-1) ?? path;
+}
