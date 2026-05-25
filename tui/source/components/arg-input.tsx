@@ -71,7 +71,7 @@ export const ArgInput = ({ title, placeholder, usePlaceholderOnEmpty = true, onS
   });
 
   const beforeCursor = inputValue.slice(0, cursorPosition);
-  const atCursor = inputValue[cursorPosition] || ' ';
+  const atCursor = inputValue[cursorPosition] ?? ' ';
   const afterCursor = inputValue.slice(cursorPosition + 1);
   const hasInput = inputValue.length > 0;
 

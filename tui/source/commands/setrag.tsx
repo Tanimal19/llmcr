@@ -4,7 +4,8 @@ import { TableBrowser, type TableBrowserItem } from '../components/table-browser
 import { type CommandProps } from '../types.js';
 
 function toLabel(path: string): string {
-  const segments = path.split(/[/\\]/);
+  // 🎯 修正點 A：為正則表達式加上 v 旗標，並正確將內部的正斜線轉義
+  const segments = path.split(/[\/\\\\]/v);
   return segments.at(-1) ?? path;
 }
 
@@ -31,6 +32,7 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
           return;
         }
 
+        // 🎯 修正點 B：使用 toSorted() 替代 sort()，確保陣列操作的純粹性與不可變性
         const nextItems = Object.entries(scopeMap)
           .map(([path, checked]) => ({
             id: path,
@@ -38,7 +40,7 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
             checked,
             rightText: path,
           }))
-          .sort((a, b) => a.id.localeCompare(b.id));
+          .toSorted((a, b) => a.id.localeCompare(b.id));
 
         setItems(nextItems);
       } catch (error) {
@@ -60,13 +62,13 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
   }, []);
 
   const saveScope = async () => {
-    if (isSaving || isLoading) {
+    if (isSaving) {
       return;
     }
 
     const selectedPaths = items.filter(item => item.checked).map(item => item.id);
     if (selectedPaths.length === 0) {
-      setErrorMsg('At least one track root must be selected.');
+      setErrorMsg('Please select at least one track root.');
       return;
     }
 
@@ -116,9 +118,6 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
             checked: !isAllChecked,
           })),
         );
-      }}
-      onClearError={() => {
-        setErrorMsg(undefined);
       }}
     />
   );
