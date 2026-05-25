@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Box, Text, useInput, type Key } from 'ink';
 import { LoadingSpinner } from './loading-spinner.js';
 
@@ -11,55 +11,41 @@ const THEME_COLOR = 'cyan';
 
 export type TableBrowserItem = {
   id: string;
-  label: string;
+  content: ReactNode;
   checked?: boolean;
-  rightText?: string;
 };
 
 type TableBrowserProps = {
-  title: string;
-  subtitle?: string;
+  header?: ReactNode;
   items: TableBrowserItem[];
+  footer?: ReactNode;
   showCheckbox?: boolean;
-  loading: boolean;
-  loadingText: string;
-  errorText?: string;
-  errorEnterAction?: 'escape' | 'clear';
-  statusText?: string;
-  statusLoading?: boolean;
-  escapeHint: string;
-  leftHelpLines?: string[];
-  rightHelpLines?: string[];
-  onEscape: () => void;
-  onEnter?: () => void;
+  loading?: boolean;
+  loadingText?: string;
+  enableInput?: boolean;
+  onEscape?: () => void;
+  onEnter?: (index: number) => void;
   onToggleCurrent?: (index: number) => void;
   onToggleAll?: () => void;
   onSwitchTable?: () => void;
-  onClearError?: () => void;
+  pageSize?: number;
 };
 
 export const TableBrowser = ({
-  title,
-  subtitle,
+  header,
   items,
+  footer,
   showCheckbox = false,
-  loading,
-  loadingText,
-  errorText,
-  errorEnterAction = 'escape',
-  statusText,
-  statusLoading = false,
-  escapeHint,
-  leftHelpLines = [],
-  rightHelpLines = [],
+  loading = false,
+  loadingText = 'Loading...',
+  enableInput = true,
   onEscape,
   onEnter,
   onToggleCurrent,
   onToggleAll,
   onSwitchTable,
-  onClearError,
+  pageSize = DEFAULT_PAGE_SIZE,
 }: TableBrowserProps) => {
-  const pageSize = DEFAULT_PAGE_SIZE;
   const [activeIndex, setActiveIndex] = useState(0);
   const [windowStart, setWindowStart] = useState(0);
 
@@ -79,9 +65,7 @@ export const TableBrowser = ({
 
   const windowEnd = windowStart + pageSize;
   const visibleItems = useMemo(() => items.slice(windowStart, windowEnd), [items, windowStart, windowEnd]);
-  const helpRowCount = Math.max(leftHelpLines.length, rightHelpLines.length);
 
-  // 🎯 抽離子函數 1：處理上下方向鍵導覽，降低主體複雜度
   const handleArrowKeys = (key: Key): boolean => {
     if (key.upArrow) {
       setActiveIndex(previous => {
@@ -110,7 +94,6 @@ export const TableBrowser = ({
     return false;
   };
 
-  // 🎯 抽離子函數 2：處理多選核取方塊的熱鍵觸發
   const handleCheckboxInput = (input: string): boolean => {
     if (!showCheckbox) {
       return false;
@@ -130,24 +113,12 @@ export const TableBrowser = ({
   };
 
   useInput((input, key) => {
-    if (key.escape) {
-      onEscape();
+    if (key.escape && onEscape) {
+      onEscape?.();
       return;
     }
 
-    if (loading || statusText) {
-      return;
-    }
-
-    if (errorText) {
-      if (key.return) {
-        if (errorEnterAction === 'clear') {
-          onClearError?.();
-        } else {
-          onEscape();
-        }
-      }
-
+    if (!enableInput || loading) {
       return;
     }
 
@@ -161,49 +132,24 @@ export const TableBrowser = ({
 
     if (items.length === 0) {
       if (key.return) {
-        onEnter?.();
+        onEnter?.(0);
       }
 
       return;
     }
 
-    // 呼叫被抽離的分流處理器
     if (handleArrowKeys(key) || handleCheckboxInput(input)) {
       return;
     }
 
     if (key.return) {
-      onEnter?.();
+      onEnter?.(activeIndex);
     }
   });
 
-  if (loading) {
-    return (
-      <Box flexDirection="column" paddingX={1} paddingTop={1}>
-        <LoadingSpinner message={loadingText} color="white" />
-        <Text color="gray">Press esc to {escapeHint}.</Text>
-      </Box>
-    );
-  }
-
-  if (errorText && errorEnterAction === 'escape') {
-    return (
-      <Box flexDirection="column" paddingX={1} paddingTop={1}>
-        <Text color="red" bold>
-          Failed to load data
-        </Text>
-        <Text color="gray">{errorText}</Text>
-        <Text color="gray">Press enter or esc to {escapeHint}.</Text>
-      </Box>
-    );
-  }
-
   return (
     <Box flexDirection="column" paddingX={1} paddingTop={1}>
-      <Text color="white" bold>
-        {title}
-      </Text>
-      {subtitle ? <Text color="gray">{subtitle}</Text> : null}
+      {header ? <Box flexDirection="column">{header}</Box> : null}
 
       <Box
         flexDirection="column"
@@ -216,56 +162,38 @@ export const TableBrowser = ({
         paddingY={0}
         marginY={0}
       >
-        {visibleItems.map((item, visibleIndex) => {
-          const absoluteIndex = windowStart + visibleIndex;
-          const isCurrent = absoluteIndex === activeIndex;
-          const rowColor = isCurrent ? THEME_COLOR : showCheckbox ? (item.checked ? 'white' : 'gray') : 'white';
-          const checkboxPrefix = showCheckbox ? (item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL) : '';
-          const rightText = item.rightText ? ` ${item.rightText}` : '';
-          return (
-            <Box key={item.id}>
-              <Text color={rowColor} bold={isCurrent}>
-                {isCurrent ? CURSOR_SYMBOL : EMPTY_SYMBOL}
-                {checkboxPrefix}
-                {item.label}
-                {rightText}
-              </Text>
-            </Box>
-          );
-        })}
+        {loading ? (
+          <Box paddingLeft={1}>
+            <LoadingSpinner message={loadingText} color="white" />
+          </Box>
+        ) : (
+          visibleItems.map((item, visibleIndex) => {
+            const absoluteIndex = windowStart + visibleIndex;
+            const isCurrent = absoluteIndex === activeIndex;
+            const cursorColor = isCurrent ? THEME_COLOR : 'gray';
+            const checkboxPrefix = showCheckbox ? (item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL) : '';
+            return (
+              <Box key={item.id}>
+                <Text color={cursorColor} bold={isCurrent}>
+                  {isCurrent ? CURSOR_SYMBOL : EMPTY_SYMBOL}
+                  {checkboxPrefix}
+                </Text>
+                <Box flexGrow={1}>{item.content}</Box>
+              </Box>
+            );
+          })
+        )}
 
-        {visibleItems.length < pageSize &&
+        {!loading &&
+          visibleItems.length < pageSize &&
           Array.from({ length: pageSize - visibleItems.length }).map((_, index) => (
             <Box key={`empty-${index}`} height={1} />
           ))}
       </Box>
 
-      <Box flexDirection="column" marginTop={1}>
-        {Array.from({ length: helpRowCount }).map((_, index) => (
-          <Box key={`help-${index}`} justifyContent="space-between">
-            <Text color="gray">{leftHelpLines[index] ?? ''}</Text>
-            <Text color="gray">{rightHelpLines[index] ?? ''}</Text>
-          </Box>
-        ))}
-      </Box>
-
-      {errorText ? (
-        <Box marginTop={1}>
-          <Text color="red" bold>
-            {errorText}
-          </Text>
-        </Box>
-      ) : null}
-
-      {statusText ? (
-        <Box marginTop={1}>
-          {statusLoading ? (
-            <LoadingSpinner message={statusText} color="green" />
-          ) : (
-            <Text color="green" bold>
-              {statusText}
-            </Text>
-          )}
+      {footer ? (
+        <Box flexDirection="column" marginTop={1}>
+          {footer}
         </Box>
       ) : null}
     </Box>

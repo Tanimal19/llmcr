@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Box, Text } from 'ink';
 import { getRagScope, setRagScope } from '../api.js';
+import { LoadingSpinner } from '../components/loading-spinner.js';
 import { TableBrowser, type TableBrowserItem } from '../components/table-browser.js';
 import { type CommandProps } from '../types.js';
+
+type RagScopeItem = {
+  id: string;
+  path: string;
+  label: string;
+  checked: boolean;
+};
+
+const LABEL_COLUMN_WIDTH = 24;
+const PATH_COLUMN_WIDTH = 56;
 
 function toLabel(path: string): string {
   const segments = path.split(/[\/\\\\]/v);
@@ -9,7 +21,7 @@ function toLabel(path: string): string {
 }
 
 export const SetRagCommand = ({ onBack }: CommandProps) => {
-  const [items, setItems] = useState<TableBrowserItem[]>([]);
+  const [items, setItems] = useState<RagScopeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
@@ -34,9 +46,9 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
         const nextItems = Object.entries(scopeMap)
           .map(([path, checked]) => ({
             id: path,
+            path,
             label: toLabel(path),
             checked,
-            rightText: path,
           }))
           .toSorted((a, b) => a.id.localeCompare(b.id));
 
@@ -86,23 +98,78 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
     }
   };
 
+  const tableItems = useMemo<TableBrowserItem[]>(
+    () =>
+      items.map(item => ({
+        id: item.id,
+        checked: item.checked,
+        content: (
+          <Box>
+            <Box width={LABEL_COLUMN_WIDTH} marginRight={1}>
+              <Text color={item.checked ? 'white' : 'gray'} wrap="truncate-end">
+                {item.label}
+              </Text>
+            </Box>
+            <Box width={PATH_COLUMN_WIDTH}>
+              <Text color="gray" wrap="truncate-end">
+                {item.path}
+              </Text>
+            </Box>
+          </Box>
+        ),
+      })),
+    [items],
+  );
+
   return (
     <TableBrowser
-      title="RAG Scope"
-      subtitle={`Selected: ${selectedCount}/${items.length}`}
-      items={items}
+      header={
+        <>
+          <Text color="white" bold>
+            RAG Scope
+          </Text>
+          <Text color="gray">{`Selected: ${selectedCount}/${items.length}`}</Text>
+        </>
+      }
+      items={tableItems}
+      footer={
+        <>
+          <Box justifyContent="space-between">
+            <Text color="gray">up/down move</Text>
+            <Text color="gray">enter save</Text>
+          </Box>
+          <Box justifyContent="space-between">
+            <Text color="gray">space toggle</Text>
+            <Text color="gray">esc back</Text>
+          </Box>
+          <Box justifyContent="space-between">
+            <Text color="gray">shift+A toggle all</Text>
+            <Text color="gray" />
+          </Box>
+          {isSaving && statusMsg ? <LoadingSpinner message={statusMsg} color="green" /> : null}
+          {!isSaving && statusMsg ? (
+            <Text color="green" bold>
+              {statusMsg}
+            </Text>
+          ) : null}
+          {errorMsg ? (
+            <Text color="red" bold>
+              {errorMsg}
+            </Text>
+          ) : null}
+        </>
+      }
       showCheckbox={true}
       loading={isLoading}
       loadingText="Loading RAG scope..."
-      errorText={errorMsg}
-      errorEnterAction="clear"
-      statusText={statusMsg}
-      statusLoading={isSaving}
-      escapeHint={'back'}
-      leftHelpLines={['up/down move', 'space toggle', 'shift+A toggle all']}
-      rightHelpLines={['enter save', 'esc back']}
+      enableInput={!isSaving}
       onEscape={leave}
       onEnter={() => {
+        if (errorMsg) {
+          setErrorMsg(undefined);
+          return;
+        }
+
         void saveScope();
       }}
       onToggleCurrent={index => {

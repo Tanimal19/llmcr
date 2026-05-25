@@ -119,4 +119,4 @@ fi
 
 ./mvnw spring-boot:run \
     -Dspring-boot.run.arguments="$ALL_ARGUMENTS" \
-    2>&1 | tee ../logs/spring-app-$TIMESTAMP.log
+    2>&1 | tee ./logs/spring-app-$TIMESTAMP.log

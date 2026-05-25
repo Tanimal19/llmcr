@@ -97,4 +97,4 @@ agents:
     chat-model: "nemotron-3-4b"
 
 logging:
-  review-output-dir: "../logs/reviews"
+  review-output-dir: "./logs/reviews"

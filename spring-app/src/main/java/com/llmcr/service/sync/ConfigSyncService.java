@@ -38,11 +38,10 @@ public class ConfigSyncService {
     private final MyVectorStore vectorStore;
 
     public ConfigSyncService(
-        ApplicationProperties properties,
-        TrackRootRepository trackRootRepository,
-        ChunkCollectionRepository chunkCollectionRepository,
-        MyVectorStore vectorStore
-    ) {
+            ApplicationProperties properties,
+            TrackRootRepository trackRootRepository,
+            ChunkCollectionRepository chunkCollectionRepository,
+            MyVectorStore vectorStore) {
         this.trackRootRepository = trackRootRepository;
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.properties = properties;
@@ -54,23 +53,23 @@ public class ConfigSyncService {
      */
     @Transactional
     public boolean syncTrackRoots() {
-        logger.info("[CONFIG_SYNC] trackRoots:start");
+        logger.info("trackRoots:start");
         try {
             boolean changed = false;
 
             Set<String> configuredPaths = properties
-                .getTrackRoots()
-                .values()
-                .stream()
-                .map(TrackRootProperties::getPath)
-                .collect(Collectors.toSet());
+                    .getTrackRoots()
+                    .values()
+                    .stream()
+                    .map(TrackRootProperties::getPath)
+                    .collect(Collectors.toSet());
 
             for (TrackRoot trackRoot : trackRootRepository.findAll()) {
                 boolean existsInConfig = configuredPaths.contains(trackRoot.getPath());
                 if (!existsInConfig) {
                     trackRootRepository.delete(trackRoot);
                     changed = true;
-                    logger.info("[CONFIG_SYNC] trackRoot:deleted path={}", trackRoot.getPath());
+                    logger.info("trackRoot:deleted path={}", trackRoot.getPath());
                 }
             }
 
@@ -84,23 +83,22 @@ public class ConfigSyncService {
                     existing.setAllowedSourceTypes(configuredTypes);
                     trackRootRepository.save(existing);
                     changed = true;
-                    logger.info("[CONFIG_SYNC] trackRoot:updated path={}", existing.getPath());
+                    logger.info("trackRoot:updated path={}", existing.getPath());
                 } else {
                     TrackRoot trackRoot = new TrackRoot(configuredTrackRoot.getPath(), configuredTypes);
                     trackRootRepository.save(trackRoot);
                     changed = true;
-                    logger.info("[CONFIG_SYNC] trackRoot:created path={}", trackRoot.getPath());
+                    logger.info("trackRoot:created path={}", trackRoot.getPath());
                 }
             }
 
-            logger.info("[CONFIG_SYNC] trackRoots:done changed={}", changed);
+            logger.info("trackRoots:done changed={}", changed);
             return changed;
         } catch (Exception ex) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.CONFIG_SYNC_TRACK_ROOTS_FAILED,
-                "Failed to sync track roots",
-                ex
-            );
+                    APIServiceException.ErrorCode.CONFIG_SYNC_TRACK_ROOTS_FAILED,
+                    "Failed to sync track roots",
+                    ex);
         }
     }
 
@@ -109,22 +107,20 @@ public class ConfigSyncService {
      */
     @Transactional
     public boolean syncConfiguredCollections() {
-        logger.info("[CONFIG_SYNC] collections:start");
+        logger.info("collections:start");
         try {
             syncDefaultCollections();
             boolean changed = false;
 
             for (ChunkCollection collection : chunkCollectionRepository.findAll()) {
                 boolean existsInConfig = properties.getCollections().containsKey(collection.getName());
-                if (
-                    !existsInConfig &&
-                    !collection.getName().equals(ChatService.COLLECTION_NAME) &&
-                    !collection.getName().equals("all")
-                ) {
+                if (!existsInConfig &&
+                        !collection.getName().equals(ChatService.COLLECTION_NAME) &&
+                        !collection.getName().equals("all")) {
                     chunkCollectionRepository.delete(collection);
                     vectorStore.removeCollection(collection.getName());
                     changed = true;
-                    logger.info("[CONFIG_SYNC] collection:deleted name={}", collection.getName());
+                    logger.info("collection:deleted name={}", collection.getName());
                 }
             }
 
@@ -141,11 +137,11 @@ public class ConfigSyncService {
                 String collectionName = entry.getKey();
                 CollectionProperties configuredCollection = entry.getValue();
                 Set<TrackRoot> targetTrackRoots = configuredCollection
-                    .getTrackRoots()
-                    .stream()
-                    .map(trackRootsByName::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
+                        .getTrackRoots()
+                        .stream()
+                        .map(trackRootsByName::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
 
                 ChunkCollection existing = chunkCollectionRepository.findByName(collectionName).orElse(null);
                 if (existing != null) {
@@ -156,25 +152,24 @@ public class ConfigSyncService {
                     existing.addTrackRoots(targetTrackRoots);
                     chunkCollectionRepository.save(existing);
                     changed = true;
-                    logger.info("[CONFIG_SYNC] collection:updated name={}", existing.getName());
+                    logger.info("collection:updated name={}", existing.getName());
                 } else {
                     ChunkCollection chunkCollection = new ChunkCollection(collectionName, targetTrackRoots);
                     chunkCollectionRepository.save(chunkCollection);
                     changed = true;
-                    logger.info("[CONFIG_SYNC] collection:created name={}", chunkCollection.getName());
+                    logger.info("collection:created name={}", chunkCollection.getName());
                 }
             }
 
-            logger.info("[CONFIG_SYNC] collections:done changed={}", changed);
+            logger.info("collections:done changed={}", changed);
             return changed;
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.CONFIG_SYNC_COLLECTIONS_FAILED,
-                "Failed to sync collections",
-                ex
-            );
+                    APIServiceException.ErrorCode.CONFIG_SYNC_COLLECTIONS_FAILED,
+                    "Failed to sync collections",
+                    ex);
         }
     }
 
@@ -191,17 +186,16 @@ public class ConfigSyncService {
             }
 
             ChunkCollection chatCollection = chunkCollectionRepository
-                .findByName(ChatService.COLLECTION_NAME)
-                .orElse(null);
+                    .findByName(ChatService.COLLECTION_NAME)
+                    .orElse(null);
             if (chatCollection == null) {
                 chunkCollectionRepository.save(new ChunkCollection(ChatService.COLLECTION_NAME, allTrackRoots));
             }
         } catch (Exception ex) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.CONFIG_SYNC_DEFAULT_COLLECTIONS_FAILED,
-                "Failed to sync default collections",
-                ex
-            );
+                    APIServiceException.ErrorCode.CONFIG_SYNC_DEFAULT_COLLECTIONS_FAILED,
+                    "Failed to sync default collections",
+                    ex);
         }
     }
 }

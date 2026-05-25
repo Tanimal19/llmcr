@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+/**
+ * This class manages the lifecycle of SSE (Server Sent Envents) tasks.
+ */
 @Component
 public class SseTaskManager {
 
@@ -17,9 +20,11 @@ public class SseTaskManager {
 
     private final ConcurrentMap<String, TaskContext> currentTasks = new ConcurrentHashMap<>();
 
-    public record TaskStartEvent(String name, String id) {}
+    public record TaskStartEvent(String name, String id) {
+    }
 
-    public record TaskProgressEvent(Boolean isError, String stage, String message) {}
+    public record TaskProgressEvent(Boolean isError, String stage, String message) {
+    }
 
     private static final class TaskContext {
 
@@ -69,15 +74,14 @@ public class SseTaskManager {
                 sendSseEvent(emitter, "start", new TaskStartEvent(taskObject.getTaskName(), taskId));
 
                 Object output = taskObject.execute(
-                    request,
-                    progress -> sendSseEvent(emitter, "progress", progress),
-                    taskContext::isCancellationRequested
-                );
+                        request,
+                        progress -> sendSseEvent(emitter, "progress", progress),
+                        taskContext::isCancellationRequested);
 
                 sendSseEvent(emitter, "result", output);
                 emitter.complete();
             } catch (Exception ex) {
-                logger.error("review SSE failed: {}", ex);
+                logger.error("SSE task failed: {}", ex);
                 sendSseEvent(emitter, "error", ex);
                 emitter.complete();
             } finally {
@@ -103,11 +107,11 @@ public class SseTaskManager {
     public void requestCancellation(String taskId, String reason) {
         TaskContext taskContext = currentTasks.get(taskId);
         if (taskContext == null) {
-            logger.info("[SseTaskManager] cancel ignored (task not found): taskId={} reason={}", taskId, reason);
+            logger.info("cancel ignored (task not found): taskId={} reason={}", taskId, reason);
             return;
         }
 
         taskContext.requestCancellation();
-        logger.info("[SseTaskManager] cancellation requested: taskId={} reason={}", taskId, reason);
+        logger.info("cancellation requested: taskId={} reason={}", taskId, reason);
     }
 }
