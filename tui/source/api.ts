@@ -123,7 +123,7 @@ export type TrackRootPreview = {
 export type InfoResponse = {
   configPath: string;
   config: unknown;
-  lastSyncTime: string | null | undefined;
+  lastSyncTime: string | undefined;
 };
 
 function parseSseEvent(rawEvent: string): { event: string; data: string } {
@@ -147,7 +147,7 @@ function parseSseEvent(rawEvent: string): { event: string; data: string } {
 
 function parseJsonPayload(payload: string): unknown {
   if (!payload) {
-    return null;
+    return undefined;
   }
 
   try {

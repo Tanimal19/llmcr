@@ -93,6 +93,7 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
                     .filter(Objects::nonNull)
                     .min(LocalDateTime::compareTo)
                     .orElse(null);
+            logger.info("Getting last sync time for all track roots, lastAllSyncTime={}", lastAllSyncTime);
             return lastAllSyncTime == null ? "Never" : lastAllSyncTime.toString();
         } catch (Exception ex) {
             throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_GET_SYNC_TIME_FAILED,
@@ -350,6 +351,8 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
             if (trackRootPreview.isSynced()) {
                 emitProgress(progressListener, "SYNC",
                         "Track root already synced, skipping: " + trackRoot.getPath());
+                trackRoot.setLastSyncTime(LocalDateTime.now());
+                trackRootRepository.save(trackRoot);
                 return;
             }
 

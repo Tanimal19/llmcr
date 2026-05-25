@@ -91,8 +91,8 @@ const MainMenu = ({ onSelect, projectLoaded, lastSynced, isInfoLoading, infoErro
         <Text>
           <Text color="green">●</Text> <Text color="white">Last synced:</Text> <Text color="gray">{lastSynced}</Text>
         </Text>
-        {isInfoLoading ? <Text color="gray">Loading project metadata...</Text> : null}
-        {!isInfoLoading && infoError ? <Text color="red">Failed to load /info: {infoError}</Text> : null}
+        {isInfoLoading ? <Text color="gray">Loading project metadata...</Text> : undefined}
+        {!isInfoLoading && infoError ? <Text color="red">Failed to load /info: {infoError}</Text> : undefined}
       </Box>
 
       {/* 按鍵指南 Footer */}
@@ -127,6 +127,10 @@ export default function App() {
   const [infoError, setInfoError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    if (currentScreen !== 'menu') {
+      return;
+    }
+
     let disposed = false;
 
     const loadInfo = async (): Promise<void> => {
@@ -161,7 +165,7 @@ export default function App() {
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [currentScreen]);
 
   const handleBack = () => {
     setReviewArg(undefined);
@@ -240,5 +244,5 @@ const PlaceholderBackKey = ({ onBack }: { onBack: () => void }) => {
   useInput((_, key) => {
     if (key.escape) onBack();
   });
-  return null;
+  return undefined;
 };
