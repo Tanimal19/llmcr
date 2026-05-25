@@ -157,26 +157,35 @@ function parseJsonPayload(payload: string): unknown {
   }
 }
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function extractCode(payloadRecord: Record<string, unknown>): string | undefined {
+  const { errorCode, code: rawCode } = payloadRecord;
+
+  if (isObject(errorCode)) {
+    const { code } = errorCode;
+    if (typeof code === 'string' && code.trim().length > 0) {
+      return code;
+    }
+  }
+
+  if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
+    return rawCode;
+  }
+
+  return undefined;
+}
+
 function parseSseError(payload: unknown, fallbackCode: string, fallbackMessage: string): ReviewErrorEvent {
-  if (payload && typeof payload === 'object') {
-    const payloadRecord = payload as Record<string, unknown>;
-    const rawMessage = payloadRecord['message'];
+  if (isObject(payload)) {
+    // 使用物件解構規範修復 prefer-destructuring
+    const { message: rawMessage } = payload;
     const message = typeof rawMessage === 'string' && rawMessage.trim().length > 0 ? rawMessage : fallbackMessage;
 
-    const errorCode = payloadRecord['errorCode'];
-    if (errorCode && typeof errorCode === 'object') {
-      const code = (errorCode as Record<string, unknown>)['code'];
-      if (typeof code === 'string' && code.trim().length > 0) {
-        return { code, message };
-      }
-    }
-
-    const rawCode = payloadRecord['code'];
-    if (typeof rawCode === 'string' && rawCode.trim().length > 0) {
-      return { code: rawCode, message };
-    }
-
-    return { code: fallbackCode, message };
+    const code = extractCode(payload) ?? fallbackCode;
+    return { code, message };
   }
 
   if (typeof payload === 'string' && payload.trim().length > 0) {
@@ -202,6 +211,7 @@ async function consumeSseStream(
   let buffer = '';
 
   while (true) {
+    // eslint-disable-next-line no-await-in-loop
     const { value, done } = await reader.read();
     if (done) {
       break;
@@ -266,14 +276,17 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (response.status === 204) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return undefined as T;
   }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return (await response.json()) as T;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return (await response.text()) as T;
 }
 
@@ -342,6 +355,7 @@ export async function reviewWithProgress(
 
   const handleEvent = (eventName: string, payload: unknown): void => {
     if (eventName === 'start') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const startEvent = payload as SseTaskStartEvent;
       handlers.onStart?.(startEvent);
       if (startEvent && typeof startEvent.id === 'string') {
@@ -352,16 +366,19 @@ export async function reviewWithProgress(
     }
 
     if (eventName === 'task') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onTask?.(payload as ReviewTaskEvent);
       return;
     }
 
     if (eventName === 'progress') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onProgress?.(payload as ReviewStageProgress);
       return;
     }
 
     if (eventName === 'result') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       finalResult = payload as CodeReviewOutput;
       handlers.onResult?.(finalResult);
       return;
@@ -401,11 +418,13 @@ export async function syncWithProgress(handlers: SyncStreamHandlers = {}): Promi
 
   const handleEvent = (eventName: string, payload: unknown): void => {
     if (eventName === 'start') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onStart?.(payload as SseTaskStartEvent);
       return;
     }
 
     if (eventName === 'progress') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       handlers.onProgress?.(payload as ReviewStageProgress);
       return;
     }
