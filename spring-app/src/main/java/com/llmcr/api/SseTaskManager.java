@@ -81,7 +81,7 @@ public class SseTaskManager {
                 sendSseEvent(emitter, "result", output);
                 emitter.complete();
             } catch (Exception ex) {
-                logger.error("SSE task failed: {}", ex);
+                logger.error("SSE task failed", ex);
                 sendSseEvent(emitter, "error", ex);
                 emitter.complete();
             } finally {
