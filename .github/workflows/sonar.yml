@@ -40,6 +40,7 @@ jobs:
       - name: Run Backend Tests & Compile
         run: |
           cd spring-app
+          cp config.default.yml config.yml
           mvn verify
 
       # --------------------------------------------------------
