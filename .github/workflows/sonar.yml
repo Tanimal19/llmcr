@@ -84,3 +84,7 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.java.libraries=/home/runner/.m2/repository/**/*.jar
+            -Dsonar.java.test.libraries=/home/runner/.m2/repository/**/*.jar
