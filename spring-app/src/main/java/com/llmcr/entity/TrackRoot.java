@@ -62,7 +62,8 @@ public class TrackRoot {
     @OneToMany(mappedBy = "trackRoot", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Source> sources = new ArrayList<>();
 
-    protected TrackRoot() {}
+    protected TrackRoot() {
+    }
 
     public TrackRoot(String path, Set<SourceType> allowedSourceTypes) {
         this.path = PathUtils.toRelativePath(path);

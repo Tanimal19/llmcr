@@ -5,24 +5,17 @@
 # All tracked files will be transformed using ETL and stored in the vector database,
 # and will be used to perform RAG.
 track-roots:
-  "test-code-files":
-    path: "./src/test/resources/test_datasets/test_project/"
-    allowed-source-types:
-      - JAVACODE
-
-  "test-doc-files":
-    path: "./src/test/resources/test_datasets/test_documents/"
+  "test-root":
+    path: "./src/test/resources/test_datasets/"
     allowed-source-types:
       - ASCIIDOC
       - MARKDOWN
-      - PDF
 
 # Collections are logical groupings of track roots that can be used to perform RAG on specific subsets of the data.
 collections:
   "test":
     track-roots:
-      - "test-code-files"
-      - "test-doc-files"
+      - "test-root"
 
 # Each model has a unique name, a provider, and a type.
 chat-models:
