@@ -1,0 +1,35 @@
+name: SonarCloud Single Project Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarcloud:
+    name: Combined Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      # 1. 依然要先編譯 Java，讓 target/classes 產生檔案
+      - name: Compile Backend Java
+        run: |
+          cd spring-app
+          mvn compile
+
+      # 2. 掃描器會自動去讀你的 sonar-project.properties，這裡不用寫 args 了！
+      - name: Combined SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
