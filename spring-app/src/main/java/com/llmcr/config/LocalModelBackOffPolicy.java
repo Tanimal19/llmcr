@@ -10,8 +10,6 @@ public final class LocalModelBackOffPolicy implements BackOffPolicy {
     private static final long DEFAULT_BACKOFF_MILLIS = 10_000L;
     private static final long HTTP502503_BACKOFF_MILLIS = 30_000L;
 
-    public LocalModelBackOffPolicy() {}
-
     @Override
     public BackOffContext start(RetryContext context) {
         return new RetryContextBackOffContext(context);
@@ -43,5 +41,6 @@ public final class LocalModelBackOffPolicy implements BackOffPolicy {
         return false;
     }
 
-    private record RetryContextBackOffContext(RetryContext retryContext) implements BackOffContext {}
+    private record RetryContextBackOffContext(RetryContext retryContext) implements BackOffContext {
+    }
 }

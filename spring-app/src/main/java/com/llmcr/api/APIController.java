@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
@@ -42,15 +43,14 @@ public class APIController {
     private final SourceSyncService sourceSyncService;
 
     public APIController(
-        SseTaskManager sseTaskManager,
-        ApplicationProperties applicationProperties,
-        ConfigReader configReader,
-        ChatService chatService,
-        CodeReviewService codeReviewService,
-        ConfigSyncService configSyncService,
-        SourceSyncService sourceSyncService,
-        LoadService loadService
-    ) {
+            SseTaskManager sseTaskManager,
+            ApplicationProperties applicationProperties,
+            ConfigReader configReader,
+            ChatService chatService,
+            CodeReviewService codeReviewService,
+            ConfigSyncService configSyncService,
+            SourceSyncService sourceSyncService,
+            LoadService loadService) {
         this.sseTaskManager = sseTaskManager;
         this.applicationProperties = applicationProperties;
         this.configReader = configReader;
@@ -72,9 +72,11 @@ public class APIController {
         }
     }
 
-    public record ChatRequest(String query) {}
+    public record ChatRequest(String query) {
+    }
 
-    public record SetRagRequest(Set<String> trackRootPaths) {}
+    public record SetRagRequest(Set<String> trackRootPaths) {
+    }
 
     @GetMapping("/health")
     public String health() {
@@ -93,9 +95,12 @@ public class APIController {
 
     @PostMapping("/chat")
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        String query = request == null ? null : request.query();
+        if (request == null || request.query() == null || request.query().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "query must not be blank");
+        }
+
+        String query = request.query();
         logger.info("Chat request received: {}", query);
-        requireNonBlank(query, "query must not be blank");
 
         return chatService.chat(query);
     }
@@ -108,19 +113,20 @@ public class APIController {
     @PostMapping("/setrag")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void setRagScope(@RequestBody SetRagRequest request) {
-        logger.info("Set RAG scope request received: {}", request.trackRootPaths());
-        requireNonEmpty(request.trackRootPaths(), "trackRootPaths must not be empty");
+        if (request == null || request.trackRootPaths() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "trackRootPaths must not be null");
+        }
 
+        logger.info("Set RAG scope request received: {}", request.trackRootPaths());
         chatService.setRagScope(request.trackRootPaths());
     }
 
     @PostMapping(value = "/review", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter review(@RequestBody CodeReviewInput request) {
         logger.info(
-            "Code review request received for jsonFilePath={}, useMockData={}",
-            request.jsonFilePath(),
-            request.useMockData()
-        );
+                "Code review request received for jsonFilePath={}, useMockData={}",
+                request.jsonFilePath(),
+                request.useMockData());
         return sseTaskManager.start(codeReviewService, request);
     }
 
@@ -139,19 +145,10 @@ public class APIController {
     @PostMapping("/cancel/{taskId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelSseTask(@PathVariable String taskId) {
-        requireNonBlank(taskId, "taskId must not be blank");
+        if (taskId == null || taskId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId must not be blank");
+        }
+
         sseTaskManager.requestCancellation(taskId, "client_request");
-    }
-
-    private static void requireNonBlank(String value, String message) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void requireNonEmpty(Set<String> values, String message) {
-        if (values == null || values.isEmpty()) {
-            throw new IllegalArgumentException(message);
-        }
     }
 }
