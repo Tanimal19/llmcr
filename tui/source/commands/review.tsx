@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { type CommandProps } from '../types.js';
-import { ThinkingSpinner } from '../components/thinking-spinner.js';
+import { LoadingSpinner } from '../components/loading-spinner.js';
 import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '../api.js';
 import { useSseTaskLifecycle } from './use-sse-task-lifecycle.js';
 
@@ -90,7 +90,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       <Text color="gray">(Press esc to cancel)</Text>
 
       {status === 'running' ? (
-        <ThinkingSpinner message={stageMessage} color="white" />
+        <LoadingSpinner message={stageMessage} color="white" />
       ) : (
         <Text color={status === 'error' ? 'red' : 'white'}>{stageMessage}</Text>
       )}

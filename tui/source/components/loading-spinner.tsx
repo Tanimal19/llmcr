@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-type ThinkingSpinnerProps = {
+type LoadingSpinnerProps = {
   message?: string;
   color?: string;
   intervalMs?: number;
@@ -9,11 +9,7 @@ type ThinkingSpinnerProps = {
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
-export const ThinkingSpinner = ({
-  message = 'Thinking...',
-  color = 'gray',
-  intervalMs = 100,
-}: ThinkingSpinnerProps) => {
+export const LoadingSpinner = ({ message, color = 'gray', intervalMs = 100 }: LoadingSpinnerProps) => {
   const [frameIndex, setFrameIndex] = useState(0);
 
   useEffect(() => {

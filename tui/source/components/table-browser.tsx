@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text, useInput, type Key } from 'ink';
+import { LoadingSpinner } from './loading-spinner.js';
 
 const DEFAULT_PAGE_SIZE = 15;
 const CURSOR_SYMBOL = '-> ';
@@ -25,6 +26,7 @@ type TableBrowserProps = {
   errorText?: string;
   errorEnterAction?: 'escape' | 'clear';
   statusText?: string;
+  statusLoading?: boolean;
   escapeHint: string;
   leftHelpLines?: string[];
   rightHelpLines?: string[];
@@ -46,6 +48,7 @@ export const TableBrowser = ({
   errorText,
   errorEnterAction = 'escape',
   statusText,
+  statusLoading = false,
   escapeHint,
   leftHelpLines = [],
   rightHelpLines = [],
@@ -177,9 +180,7 @@ export const TableBrowser = ({
   if (loading) {
     return (
       <Box flexDirection="column" paddingX={1} paddingTop={1}>
-        <Text color="white" bold>
-          {loadingText}
-        </Text>
+        <LoadingSpinner message={loadingText} color="white" />
         <Text color="gray">Press esc to {escapeHint}.</Text>
       </Box>
     );
@@ -258,9 +259,13 @@ export const TableBrowser = ({
 
       {statusText ? (
         <Box marginTop={1}>
-          <Text color="green" bold>
-            {statusText}
-          </Text>
+          {statusLoading ? (
+            <LoadingSpinner message={statusText} color="green" />
+          ) : (
+            <Text color="green" bold>
+              {statusText}
+            </Text>
+          )}
         </Box>
       ) : null}
     </Box>

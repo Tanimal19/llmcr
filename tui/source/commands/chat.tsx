@@ -3,7 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { type CommandProps } from '../types.js';
 import { chat, type ChatResponse } from '../api.js';
-import { ThinkingSpinner } from '../components/thinking-spinner.js';
+import { LoadingSpinner } from '../components/loading-spinner.js';
 
 // ─── 1. 歷史訊息型態宣告 ───
 type Message = {
@@ -167,7 +167,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
 
       {/* 底層動態輸入輸入列 */}
       {isLoading ? (
-        <ThinkingSpinner intervalMs={80} message="Thinking..." />
+        <LoadingSpinner intervalMs={80} message="Thinking..." />
       ) : (
         <Box flexDirection="row">
           <Text color="cyan">{isMultiline ? '... ' : '>>> '}</Text>

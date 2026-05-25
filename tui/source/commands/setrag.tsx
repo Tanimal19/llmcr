@@ -72,13 +72,14 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
 
     setIsSaving(true);
     setErrorMsg(undefined);
+    setStatusMsg('Modifying rag scope...');
 
     try {
-      setStatusMsg(`Saved ${selectedPaths.length} track root(s)...`);
       await setRagScope(selectedPaths);
       setStatusMsg(`Complete. Going back...`);
       setTimeout(leave, 700);
     } catch (error) {
+      setStatusMsg(undefined);
       setErrorMsg(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSaving(false);
@@ -96,6 +97,7 @@ export const SetRagCommand = ({ onBack }: CommandProps) => {
       errorText={errorMsg}
       errorEnterAction="clear"
       statusText={statusMsg}
+      statusLoading={isSaving}
       escapeHint={'back'}
       leftHelpLines={['up/down move', 'space toggle', 'shift+A toggle all']}
       rightHelpLines={['enter save', 'esc back']}
