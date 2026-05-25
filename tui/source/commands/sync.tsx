@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { type CommandProps } from '../types.js';
-import { cancelSseTask, lsdb, syncWithProgress, type TrackRootPreview } from '../api.js';
+import { cancelSseTask, lsdb, syncWithProgress, type SseTaskStartEvent, type TrackRootPreview } from '../api.js';
 import { LoadingSpinner } from '../components/loading-spinner.js';
 import { useSseTaskLifecycle } from './use-sse-task-lifecycle.js';
 
@@ -44,7 +44,7 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
     }
   };
 
-  const handleSyncStart = (event: any) => {
+  const handleSyncStart = (event: SseTaskStartEvent) => {
     handleTaskStart(event, startedEvent => {
       setStageMessage(`Sync task started: ${startedEvent.name}`);
     });
@@ -75,6 +75,16 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
     };
   }, []);
 
+  // ─── 💡 修正 S6479：利用常規 for 迴圈預先建立日誌列元件陣列 ───
+  const renderedLogs = [];
+  for (const [i, progressLog] of progressLogs.entries()) {
+    renderedLogs.push(
+      <Text key={`sync-progress-log-${i}`} color="gray">
+        {progressLog}
+      </Text>,
+    );
+  }
+
   return (
     <Box flexDirection="column" padding={1}>
       <Text color="yellow">Performing source sync using backend SSE stream</Text>
@@ -89,11 +99,9 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
       <Box flexDirection="column" marginTop={1}>
         <Text color="cyan">Progress Log:</Text>
         {progressLogs.length === 0 && <Text color="gray">(no events yet)</Text>}
-        {progressLogs.map((log, index) => (
-          <Text key={index} color="gray">
-            {log}
-          </Text>
-        ))}
+
+        {/* 渲染預先生成的日誌列表 */}
+        {renderedLogs}
       </Box>
 
       {awaitingExitConfirm && <Text color="yellow">Cancellation requested. Press ESC again to return.</Text>}
