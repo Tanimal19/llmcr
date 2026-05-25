@@ -16,19 +16,19 @@ public class AdaptiveKStrategy implements TopKSelectionStrategy {
 
     private static final Logger logger = LoggerFactory.getLogger(AdaptiveKStrategy.class);
 
-    private final int buffer = 5;
-    private final float highConfidenceScore = 0.7f;
-    private final float lowConfidenceScore = 0.3f;
+    private static final int BUFFER = 5;
+    private static final float HIGH_CONF_SCORE = 0.7f;
+    private static final float LOW_CONF_SCORE = 0.3f;
 
     public List<ContextScorePair> select(List<ContextScorePair> contexts, int topK) {
         float maxGap = 0;
         int optimalK = 0;
         for (int i = 0; i < contexts.size() - 1; i++) {
             float score1 = contexts.get(i).score();
-            if (score1 >= highConfidenceScore) {
+            if (score1 >= HIGH_CONF_SCORE) {
                 optimalK = i + 1;
                 continue; // always include high-confidence documents
-            } else if (score1 < lowConfidenceScore) {
+            } else if (score1 < LOW_CONF_SCORE) {
                 break; // drop all low-confidence documents
             }
 
@@ -41,8 +41,8 @@ public class AdaptiveKStrategy implements TopKSelectionStrategy {
         }
 
         logger.debug("AdaptiveKStrategy determined optimalK: {}, maxGap: {:.4f}", optimalK, maxGap);
-        logger.debug("Selected topK with buffer: {}", Math.min(optimalK + buffer, topK));
+        logger.debug("Selected topK with buffer: {}", Math.min(optimalK + BUFFER, topK));
 
-        return contexts.subList(0, Math.min(optimalK + buffer, topK));
+        return contexts.subList(0, Math.min(optimalK + BUFFER, topK));
     }
 }

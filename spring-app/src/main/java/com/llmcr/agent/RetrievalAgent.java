@@ -26,7 +26,7 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
             ToolCall toolCall) {
     }
 
-    private String SYSTEM_PROMPT = """
+    private String system_prompt = """
             You are a retrieval planning agent.
             Your task is to determine the next best action based on the user's query and previous tool results.
             You do NOT answer the user's query directly.
@@ -87,13 +87,13 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
         for (ToolCallback callback : toolCallbacks) {
             toolDefBuilder.append(callback.getToolDefinition()).append("\n----\n");
         }
-        this.SYSTEM_PROMPT = this.SYSTEM_PROMPT.replace("{tool_definitions}",
+        this.system_prompt = this.system_prompt.replace("{tool_definitions}",
                 toolDefBuilder.toString());
     }
 
     @Override
     protected String getSystemMessage() {
-        return SYSTEM_PROMPT;
+        return system_prompt;
     }
 
     @Override

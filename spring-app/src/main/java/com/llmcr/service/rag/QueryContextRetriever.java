@@ -61,8 +61,8 @@ public class QueryContextRetriever {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryContextRetriever.class);
 
-    private int TOP_N = 1000;
-    private int MAX_QUERY_LENGTH = 8192;
+    private static final int TOP_N = 1000;
+    private static final int MAX_QUERY_LENGTH = 8192;
 
     private final MyVectorStore vectorStore;
     private final ContextRepository contextRepository;

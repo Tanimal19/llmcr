@@ -12,7 +12,7 @@ import com.llmcr.service.rag.QueryContextRetriever.ContextScorePair;
  * Use Reciprocal Rank Fusion (RRF) to fuse multiple lists of contexts.
  */
 public class RankFusionStrategy implements FusionStrategy {
-    final int RRF_K = 60;
+    private static final int RRF_K = 60;
 
     public List<ContextScorePair> fuse(List<List<ContextScorePair>> contextLists, int topK) {
 
