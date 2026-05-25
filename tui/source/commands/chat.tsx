@@ -38,7 +38,10 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
       const response: ChatResponse = await chat(queryText);
       setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: response.answer }]);
     } catch {
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: '❌ 系統異常：與遠端 Java 服務中斷連線。' }]);
+      setMessages(prev => [
+        ...prev,
+        { id: crypto.randomUUID(), role: 'assistant', text: '❌ 系統異常：與遠端 Java 服務中斷連線。' },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +118,10 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
       return;
     }
 
-    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: `Unknown command '${value}'. Type /? for help` }]);
+    setMessages(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), role: 'assistant', text: `Unknown command '${value}'. Type /? for help` },
+    ]);
   };
 
   // 🎯 ─── 主入口流程 2：互動對話模式狀態機 ───
@@ -158,7 +164,7 @@ export const ChatCommand = ({ onBack }: CommandProps) => {
     <Box flexDirection="column" paddingX={0} paddingTop={0}>
       {/* 歷史對話瀑布流 */}
       <Box flexDirection="column">
-        {messages.map((msg) => {
+        {messages.map(msg => {
           // 優先使用明確指定的自訂前綴，若無則依角色判定
           const prefix = msg.prefix ?? (msg.role === 'user' ? '>>> ' : '');
           return (

@@ -147,6 +147,15 @@ export const TableBrowser = ({
     }
   });
 
+  // ─── 💡 修正 S6479：預先建構空白排版 Filler 列陣列 ───
+  const emptyRows = [];
+  if (!loading && visibleItems.length < pageSize) {
+    const fillerCount = pageSize - visibleItems.length;
+    for (let i = 0; i < fillerCount; i++) {
+      emptyRows.push(<Box key={`table-filler-row-${i}`} height={1} />);
+    }
+  }
+
   return (
     <Box flexDirection="column" paddingX={1} paddingTop={1}>
       {header ? <Box flexDirection="column">{header}</Box> : null}
@@ -171,7 +180,13 @@ export const TableBrowser = ({
             const absoluteIndex = windowStart + visibleIndex;
             const isCurrent = absoluteIndex === activeIndex;
             const cursorColor = isCurrent ? THEME_COLOR : 'gray';
-            const checkboxPrefix = showCheckbox ? (item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL) : '';
+
+            // ─── 💡 修正 S3358：將巢狀三元運算子抽離成獨立的陳述式 ───
+            let checkboxPrefix = '';
+            if (showCheckbox) {
+              checkboxPrefix = item.checked ? CHECKED_SYMBOL : UNCHECKED_SYMBOL;
+            }
+
             return (
               <Box key={item.id}>
                 <Text color={cursorColor} bold={isCurrent}>
@@ -184,11 +199,8 @@ export const TableBrowser = ({
           })
         )}
 
-        {!loading &&
-          visibleItems.length < pageSize &&
-          Array.from({ length: pageSize - visibleItems.length }).map((_, index) => (
-            <Box key={`empty-${index}`} height={1} />
-          ))}
+        {/* 渲染預先生成的空白排版列 */}
+        {emptyRows}
       </Box>
 
       {footer ? (
