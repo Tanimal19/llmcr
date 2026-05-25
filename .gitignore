@@ -21,3 +21,5 @@
 spring-app/config.yml
 
 *.zip
+*/dist/
+*/node_modules/
