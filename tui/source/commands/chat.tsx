@@ -1,187 +1,185 @@
-import { useState, useEffect } from 'react';
-import { Box, Text, useApp, useInput } from 'ink';
+import { useState } from 'react';
+import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
-import { CommandProps } from '../types.js';
+import { type CommandProps } from '../types.js';
+import { chat, type ChatResponse } from '../api.js';
+import { ThinkingSpinner } from '../components/thinking-spinner.js';
 
-// ────────────────────────────────────────────────────────
-// 💡 精準對齊 Java Record 結構的 DTO 型態定義
-// ────────────────────────────────────────────────────────
-interface ChatRequest {
-	query: string;
-}
-
-interface ChatResponse {
-	answer: string;
-	retrievedContexts: Record<string, number>; // 對應 Java 的 Map<String, Float>
-}
-
-interface Message {
-	role: 'user' | 'assistant';
-	text: string;
-}
-
-// ────────────────────────────────────────────────────────
-// 🧠 Mock API: 完美模擬 Java 後端 @PostMapping("/chat") 行為
-// ────────────────────────────────────────────────────────
-const mockChatCall = async (request: ChatRequest): Promise<ChatResponse> => {
-	return new Promise((resolve) => {
-		setTimeout(() => {
-			const query = request.query.trim().toLowerCase();
-			let answer = "Hello! How can I assist you today? Feel free to ask me any questions or let me know if you need help with anything specific.";
-
-			// 依據關鍵字進行簡單的 Mock 語意分流
-			if (query === 'hi' || query === 'hello') {
-				answer = "Hello! How can I assist you today? Feel free to ask me any questions or let me know if you need help with anything specific.";
-			} else if (query.includes('review') || query.includes('code')) {
-				answer = "I can definitely help you review your code! Please provide the specific git diff or file path you'd like me to look into.";
-			} else if (query.includes('status')) {
-				answer = "All internal pipelines are nominal. Simulated Java APIService is listening on port 8080.";
-			} else {
-				answer = `I received your query: "${request.query}". This is a structured mock response streamed from your simulated Java backend context.`;
-			}
-
-			resolve({
-				answer,
-				// 模擬動態 RAG 檢索命中的上下文權重，保留擴充彈性
-				retrievedContexts: {
-					"src/main/java/APIService.java": 0.945,
-					"src/main/resources/prompt.txt": 0.812
-				}
-			});
-		}, 750); // 模擬 750 毫秒的網絡往返與 LLM 執行延遲
-	});
+// ─── 1. 歷史訊息型態宣告 ───
+type Message = {
+  role: 'user' | 'assistant';
+  text: string;
+  prefix?: string; // 💡 顯式指定前綴（如 '>>> ' 或 '... '），讓渲染層徹底與邏輯解耦
 };
 
-// ────────────────────────────────────────────────────────
-// 核心組件：Ollama 風格對話核心
-// ────────────────────────────────────────────────────────
-export const ChatCommand = ({ onBack, oneShotArgs }: CommandProps) => {
-	const { exit } = useApp();
-	const isOneShot = oneShotArgs !== undefined;
+// ─── 2. 主對話控制核心 ───
+export const ChatCommand = ({ onBack }: CommandProps) => {
+  // ─── 狀態群組管理 ───
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputKey, setInputKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-	// --- 狀態定義 ---
-	const [messages, setMessages] = useState<Message[]>([]);
-	const [inputKey, setInputKey] = useState(0);
-	const [isLoading, setIsLoading] = useState(false);
-	const [oneShotAnswer, setOneShotAnswer] = useState<string | null>(null);
+  // 💡 多行輸入狀態機
+  const [isMultiline, setIsMultiline] = useState(false);
+  const [multilineBuffer, setMultilineBuffer] = useState<string[]>([]);
 
-	// --- 鍵盤事件監聽：隨時按 [Esc] 滑順退回主選單 ---
-	useInput((_, key) => {
-		if (!isOneShot && key.escape) {
-			onBack();
-		}
-	});
+  // 監聽 Esc 鍵滑順返回主選單
+  useInput((_, key) => {
+    if (key.escape) {
+      onBack();
+    }
+  });
 
-	// --- 流程 1：單次快捷模式 (One-shot Mode) ---
-	useEffect(() => {
-		if (!isOneShot) return;
+  // ─── 基礎核心：Java API 請求發送收攏 ───
+  const executeChatApi = async (queryText: string) => {
+    try {
+      const response: ChatResponse = await chat(queryText);
+      setMessages(prev => [...prev, { role: 'assistant', text: response.answer }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', text: '❌ 系統異常：與遠端 Java 服務中斷連線。' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-		const executeOneShot = async () => {
-			setIsLoading(true);
-			const queryText = typeof oneShotArgs === 'string' ? oneShotArgs : '未輸入問題';
-			try {
-				const res = await mockChatCall({ query: queryText });
-				setOneShotAnswer(res.answer);
-			} catch (err) {
-				setOneShotAnswer("❌ 錯誤：無法完成單次 API 請求。");
-			} finally {
-				setIsLoading(false);
-			}
-		};
+  // ─── 流程 2：互動對話模式狀態機 ───
+  const handleInteractiveSubmit = async (value: string) => {
+    const trimmed = value.trim();
 
-		executeOneShot();
-	}, [isOneShot, oneShotArgs]);
+    if (isMultiline) {
+      // 檢查本次輸入是否以 """ 結尾，代表要關閉多行並正式發送
+      if (value.endsWith('"""')) {
+        const lastLine = value.slice(0, -3);
+        const finalBuffer = [...multilineBuffer];
+        if (lastLine) finalBuffer.push(lastLine);
 
-	// 當 One-shot 有了解答後，保留最後畫面並自動安全退出進程
-	useEffect(() => {
-		if (oneShotAnswer && isOneShot) {
-			exit();
-		}
-	}, [oneShotAnswer, isOneShot, exit]);
+        // 將最後一行與閉合符印上終端機歷史
+        setMessages(prev => [...prev, { role: 'user', text: value, prefix: '... ' }]);
+        setIsLoading(true);
+        setIsMultiline(false);
+        setMultilineBuffer([]);
+        setInputKey(prev => prev + 1);
 
-	// --- 流程 2：互動對話模式 (Interactive Mode) ---
-	const handleInteractiveSubmit = async (value: string) => {
-		const trimmed = value.trim();
+        // 合併所有快取文字，以換行符串接，打包投遞給 Java API
+        await executeChatApi(finalBuffer.join('\n'));
+      } else {
+        // 普通多行文字，持續累積進快取，並將前綴設為 '... '
+        setMessages(prev => [...prev, { role: 'user', text: value, prefix: '... ' }]);
+        setMultilineBuffer(prev => [...prev, value]);
+        setInputKey(prev => prev + 1);
+      }
 
-		// 支援輸入 /exit 退出，與 Esc 鍵雙軌並行
-		if (trimmed === '/exit') {
-			onBack();
-			return;
-		}
-		if (trimmed === '' || isLoading) return;
+      return;
+    }
 
-		// 1. 立即將使用者的問題推入對話瀑布流
-		setMessages(prev => [...prev, { role: 'user', text: trimmed }]);
-		setIsLoading(true);
-		setInputKey(prev => prev + 1); // 立即重構並清空輸入框，重現 Ollama 順暢無滯後的敲擊感
+    // 🎯 核心分支 B：常規狀態下，偵測到 """ 啟動多行模式
+    if (value.startsWith('"""')) {
+      // 特殊狀況：如果單行直接閉合，例如輸入 """hello"""
+      if (value.endsWith('"""') && value.length >= 6) {
+        const inlineQuery = value.slice(3, -3);
+        setMessages(prev => [...prev, { role: 'user', text: value, prefix: '>>> ' }]);
+        setIsLoading(true);
+        setInputKey(prev => prev + 1);
+        await executeChatApi(inlineQuery);
+      } else {
+        // 正式切換為多行累積模式
+        const firstLine = value.slice(3);
+        setMessages(prev => [...prev, { role: 'user', text: value, prefix: '>>> ' }]);
+        setIsMultiline(true);
+        setMultilineBuffer(firstLine ? [firstLine] : []);
+        setInputKey(prev => prev + 1);
+      }
 
-		try {
-			// 2. 封裝標準 Request 並發送給 Mock 服務
-			const response = await mockChatCall({ query: trimmed });
+      return;
+    }
 
-			// 3. 將 Java DTO 解析出的答案追加至畫面
-			setMessages(prev => [...prev, { role: 'assistant', text: response.answer }]);
-		} catch (error) {
-			setMessages(prev => [...prev, { role: 'assistant', text: "❌ 系統異常：與遠端 Java 服務中斷連線。" }]);
-		} finally {
-			setIsLoading(false);
-		}
-	};
+    // 🎯 核心分支 C：空字串直接按 Enter 換行
+    if (value.length === 0) {
+      setMessages(prev => [...prev, { role: 'user', text: '', prefix: '>>> ' }]);
+      setInputKey(prev => prev + 1);
+      return;
+    }
 
-	// ────────────────────────────────────────────────────────
-	// 視覺渲染分流
-	// ────────────────────────────────────────────────────────
+    // 🎯 核心分支 D：處理內建斜線指令 (Slash Commands)
+    if (trimmed.startsWith('/')) {
+      setMessages(prev => [...prev, { role: 'user', text: value, prefix: '>>> ' }]);
+      setInputKey(prev => prev + 1);
 
-	// 狀況 A：單次快捷指令畫面
-	if (isOneShot) {
-		if (isLoading || !oneShotAnswer) {
-			return (
-				<Box paddingX={2} paddingTop={1}>
-					<Text color="yellow" bold>⏳ 正在連線至 Java API 進行 LLM 深度推理... 請稍候...</Text>
-				</Box>
-			);
-		}
-		return (
-			<Box flexDirection="column" paddingX={2} paddingTop={1}>
-				<Text bold color="white">&gt;&gt;&gt; {oneShotArgs}</Text>
-				<Box marginTop={1}>
-					<Text color="white">{oneShotAnswer}</Text>
-				</Box>
-			</Box>
-		);
-	}
+      if (trimmed === '/q' || trimmed === '/exit') {
+        onBack();
+        return;
+      }
 
-	// 狀況 B：互動式 Ollama 瀑布流畫面
-	return (
-		<Box flexDirection="column" paddingX={2} paddingTop={1}>
-			{/* 歷史對話紀錄：拿掉所有冗餘的 UI 裝飾，純粹呈現文字流 */}
-			<Box flexDirection="column">
-				{messages.map((msg, i) => (
-					<Box key={i} flexDirection="column" marginBottom={1}>
-						{msg.role === 'user' ? (
-							<Text bold color="white">&gt;&gt;&gt; {msg.text}</Text>
-						) : (
-							<Text color="white">{msg.text}</Text>
-						)}
-					</Box>
-				))}
-			</Box>
+      // 💡 實作 /clear 指令：重置全數狀態，清空終端面板環境
+      if (trimmed === '/clear') {
+        setMessages([]);
+        setIsMultiline(false);
+        setMultilineBuffer([]);
+        return;
+      }
 
-			{/* 動態輸入控制區 */}
-			{isLoading ? (
-				<Box marginBottom={1}>
-					<Text color="gray">⠋ Thinking...</Text>
-				</Box>
-			) : (
-				<Box flexDirection="row">
-					<Text bold color="white">&gt;&gt;&gt; </Text>
-					<TextInput
-						key={inputKey}
-						placeholder=""
-						onSubmit={handleInteractiveSubmit}
-					/>
-				</Box>
-			)}
-		</Box>
-	);
+      if (trimmed === '/?' || trimmed === '/help') {
+        const helpMenu = [
+          'Available Commands:',
+          '  /clear          Clear session context',
+          '  /q, /exit       Exit',
+          '  /?, /help       Help',
+          '',
+          'Use """ to begin a multi-line message.',
+        ].join('\n');
+
+        setMessages(prev => [...prev, { role: 'assistant', text: helpMenu }]);
+        return;
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: `Unknown command '${value}'. Type /? for help`,
+        },
+      ]);
+      return;
+    }
+
+    // 🎯 核心分支 E：標準單行常規對話
+    setMessages(prev => [...prev, { role: 'user', text: value, prefix: '>>> ' }]);
+    setIsLoading(true);
+    setInputKey(prev => prev + 1);
+    await executeChatApi(value);
+  };
+
+  return (
+    <Box flexDirection="column" paddingX={0} paddingTop={0}>
+      {/* 歷史對話瀑布流 */}
+      <Box flexDirection="column">
+        {messages.map((msg, i) => {
+          // 優先使用明確指定的自訂前綴，若無則依角色判定（User 預設為 '>>> '，AI 無前綴靠左直落）
+          const prefix = msg.prefix ?? (msg.role === 'user' ? '>>> ' : '');
+          return (
+            <Box key={i} flexDirection="row">
+              {prefix ? <Text color="cyan">{prefix}</Text> : null}
+              <Text color="white">{msg.text}</Text>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* 底層動態輸入輸入列 */}
+      {isLoading ? (
+        <ThinkingSpinner intervalMs={80} message="Thinking..." />
+      ) : (
+        <Box flexDirection="row">
+          <Text color="cyan">{isMultiline ? '... ' : '>>> '}</Text>
+          <TextInput
+            key={inputKey}
+            placeholder={isMultiline ? '' : 'Send a message (/? for help)'}
+            onSubmit={value => {
+              void handleInteractiveSubmit(value);
+            }}
+          />
+        </Box>
+      )}
+    </Box>
+  );
 };

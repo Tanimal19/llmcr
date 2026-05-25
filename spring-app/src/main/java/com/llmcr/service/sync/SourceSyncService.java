@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,12 +27,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.llmcr.api.APIServiceException;
+import com.llmcr.api.SseTaskManager.TaskProgressEvent;
+import com.llmcr.api.SseTaskObject;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
 import com.llmcr.entity.Source;
 import com.llmcr.entity.TrackRoot;
 import com.llmcr.entity.Source.SourceType;
 import com.llmcr.repository.TrackRootRepository;
+import com.llmcr.service.etl.ETLService;
 import com.llmcr.vectorstore.MyVectorStore;
 import com.llmcr.repository.SourceRepository;
 
@@ -38,13 +43,14 @@ import com.llmcr.repository.SourceRepository;
  * Service for managing data sources (files)
  */
 @Service
-public class SourceSyncService {
+public class SourceSyncService implements SseTaskObject<Void, Void> {
 
     private static final Logger logger = LoggerFactory.getLogger(SourceSyncService.class);
 
     private final TrackRootRepository trackRootRepository;
     private final SourceRepository sourceRepository;
     private final MyVectorStore vectorStore;
+    private final ETLService etlService;
     private final SourceSyncService self;
 
     public record TrackRootPreview(Long id, String path, Boolean isSynced, LocalDateTime lastSyncTime,
@@ -67,20 +73,26 @@ public class SourceSyncService {
             TrackRootRepository trackRootRepository,
             SourceRepository sourceRepository,
             MyVectorStore vectorStore,
+            ETLService etlService,
             @Lazy SourceSyncService self) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
         this.vectorStore = vectorStore;
+        this.etlService = etlService;
         this.self = self;
     }
 
+    public String getTaskName() {
+        return "SourceSync";
+    }
+
     public List<TrackRootPreview> getAllTrackRootPreview() {
-        logger.info("[SOURCE_SYNC] previewAll:start");
+        logger.info("previewAll:start");
         try {
             List<TrackRootPreview> previews = trackRootRepository.findAllIds().stream()
                     .map(trackRootId -> self.getTrackRootPreview(trackRootId))
                     .toList();
-            logger.info("[SOURCE_SYNC] previewAll:done count={}", previews.size());
+            logger.info("previewAll:done count={}", previews.size());
             return previews;
         } catch (Exception ex) {
             throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED,
@@ -89,14 +101,25 @@ public class SourceSyncService {
     }
 
     public void syncAllTrackRootSource() {
-        logger.info("[SOURCE_SYNC] syncAll:start");
+        self.execute(null, null, () -> false);
+    }
+
+    public Void execute(Void input,
+            Consumer<TaskProgressEvent> progressListener,
+            BooleanSupplier cancellationRequested) {
         try {
-            trackRootRepository.findAllIds().forEach(trackRootId -> self.syncTrackRootSource(trackRootId));
-            logger.info("[SOURCE_SYNC] syncAll:done");
+            throwIfCancelled(cancellationRequested);
+            emitProgress(progressListener, "SYNC", "Starting to sync all track roots");
+            trackRootRepository.findAllIds().stream().forEach(
+                    trackRootId -> self.syncTrackRootSource(trackRootId, progressListener, cancellationRequested));
+
+            emitProgress(progressListener, "SYNC", "Completed syncing all track roots");
+
+            etlService.run(progressListener, cancellationRequested);
         } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_ALL_FAILED,
-                    "Failed to sync all track roots", ex);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_FAILED, ex);
         }
+        return null;
     }
 
     /**
@@ -123,7 +146,7 @@ public class SourceSyncService {
                     .orElseThrow(() -> new APIServiceException(APIServiceException.ErrorCode.INVALID_REQUEST,
                             "TrackRoot not found: " + trackRootId));
 
-            logger.info("[SOURCE_SYNC] preview:start trackRoot={}", trackRoot.getPath());
+            logger.info("preview:start trackRoot={}", trackRoot.getPath());
 
             List<Source> localSources = getLocalSources(trackRoot);
             List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
@@ -139,7 +162,7 @@ public class SourceSyncService {
             for (Source dbSource : dbSources) {
                 Source localSource = localSourcesByPath.get(dbSource.getPath());
                 if (localSource == null) {
-                    logger.debug("[SOURCE_SYNC] preview:removed path={}", dbSource.getPath());
+                    logger.debug("preview:removed path={}", dbSource.getPath());
                     sourcePreviews.add(new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(),
                             SyncStatus.REMOVED));
                     hasChanges = true;
@@ -150,7 +173,7 @@ public class SourceSyncService {
                         ? SyncStatus.SYNCED
                         : SyncStatus.MODIFIED;
                 if (syncStatus != SyncStatus.SYNCED) {
-                    logger.debug("[SOURCE_SYNC] preview:modified path={}", dbSource.getPath());
+                    logger.debug("preview:modified path={}", dbSource.getPath());
                     hasChanges = true;
                 }
                 sourcePreviews
@@ -162,7 +185,7 @@ public class SourceSyncService {
                     continue;
                 }
 
-                logger.debug("[SOURCE_SYNC] preview:added path={}", localSource.getPath());
+                logger.debug("preview:added path={}", localSource.getPath());
                 sourcePreviews.add(new SourcePreview(localSource.getId(), localSource.getPath(), localSource.getType(),
                         SyncStatus.ADDED));
                 hasChanges = true;
@@ -172,15 +195,14 @@ public class SourceSyncService {
                     trackRoot.getLastSyncTime(), sourcePreviews);
             trackRootPreviewCache.put(trackRootId, trackRootPreview);
 
-            logger.info("[SOURCE_SYNC] preview:done trackRoot={} sourceCount={} synced={}",
+            logger.info("preview:done trackRoot={} sourceCount={} synced={}",
                     trackRoot.getPath(), sourcePreviews.size(), !hasChanges);
 
             return trackRootPreview;
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_FAILED,
-                    "Failed to generate track root preview", ex);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_FAILED, ex);
         }
     }
 
@@ -289,8 +311,7 @@ public class SourceSyncService {
             throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED,
                     "Failed to read file for hashing: " + path, e);
         } catch (NoSuchAlgorithmException e) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED,
-                    "SHA-256 is not available", e);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED, e);
         }
     }
 
@@ -300,25 +321,27 @@ public class SourceSyncService {
      * Only ADDED, MODIFIED sources will need to be re-extracted.
      */
     @Transactional
-    public void syncTrackRootSource(Long trackRootId) {
+    public void syncTrackRootSource(Long trackRootId,
+            Consumer<TaskProgressEvent> progressListener,
+            BooleanSupplier cancellationRequested) {
         try {
-            TrackRoot trackRoot = trackRootRepository.findById(trackRootId)
-                    .orElseThrow(() -> new APIServiceException(APIServiceException.ErrorCode.INVALID_REQUEST,
-                            "TrackRoot not found: " + trackRootId));
+            throwIfCancelled(cancellationRequested);
+            emitProgress(progressListener, "SYNC", "Syncing track root: " + trackRootId);
 
-            logger.info("[SOURCE_SYNC] trackRoot:start path={}", trackRoot.getPath());
-
+            TrackRoot trackRoot = trackRootRepository.findById(trackRootId).orElseThrow();
             TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
             if (trackRootPreview == null) {
                 trackRootPreview = getTrackRootPreview(trackRootId);
             }
             if (trackRootPreview.isSynced()) {
-                logger.info("[SOURCE_SYNC] trackRoot:skip path={} reason=already_synced", trackRoot.getPath());
+                emitProgress(progressListener, "SYNC",
+                        "Track root already synced, skipping: " + trackRoot.getPath());
                 return;
             }
 
             List<Source> sourcesToRemove = new ArrayList<>();
             for (SourcePreview sourcePreview : trackRootPreview.sources()) {
+                throwIfCancelled(cancellationRequested);
                 SyncStatus syncStatus = sourcePreview.syncStatus();
 
                 switch (syncStatus) {
@@ -348,18 +371,21 @@ public class SourceSyncService {
                 }
             }
 
+            throwIfCancelled(cancellationRequested);
+            emitProgress(progressListener, "SYNC",
+                    "Removing " + sourcesToRemove.size() + " sources for track root: " + trackRoot.getPath());
             batchRemoveSources(sourcesToRemove);
 
             trackRoot.setLastSyncTime(LocalDateTime.now());
             trackRootRepository.save(trackRoot);
-
             trackRootPreviewCache.remove(trackRootId);
-            logger.info("[SOURCE_SYNC] trackRoot:done path={}", trackRoot.getPath());
+
+            throwIfCancelled(cancellationRequested);
+            emitProgress(progressListener, "SYNC", "Completed syncing track root: " + trackRoot.getPath());
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
-                    "Failed to sync track root sources", ex);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED, ex);
         }
     }
 
@@ -424,8 +450,24 @@ public class SourceSyncService {
                 }
             }
         } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_REMOVE_CHUNKS_FAILED,
-                    "Failed to remove chunks from vector store", ex);
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_REMOVE_CHUNKS_FAILED, ex);
         }
+    }
+
+    private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
+        if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
+            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_CANCELLED);
+        }
+    }
+
+    private static void emitProgress(
+            Consumer<TaskProgressEvent> progressListener,
+            String stage,
+            String message) {
+        logger.info("stage={} message={}", stage, message);
+        if (progressListener == null) {
+            return;
+        }
+        progressListener.accept(new TaskProgressEvent(false, stage, message));
     }
 }

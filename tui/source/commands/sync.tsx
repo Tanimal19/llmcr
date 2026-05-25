@@ -1,87 +1,179 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
+import { type CommandProps } from '../types.js';
+import {
+  cancelSseTask,
+  lsdb,
+  syncWithProgress,
+  type ReviewErrorEvent,
+  type ReviewStageProgress,
+  type SseTaskStartEvent,
+} from '../api.js';
+import { ThinkingSpinner } from '../components/thinking-spinner.js';
 
-interface SyncCommandProps {
-	onBack: () => void;
-	oneShotArgs?: string; // 支援從主選單手打帶入，或從 CLI 旗標帶入
-}
+export const SyncCommand = ({ onBack }: CommandProps) => {
+  const [stageMessage, setStageMessage] = useState('Waiting to start sync...');
+  const [status, setStatus] = useState<'running' | 'success' | 'error'>('running');
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [awaitingExitConfirm, setAwaitingExitConfirm] = useState(false);
+  const [progressLogs, setProgressLogs] = useState<string[]>([]);
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
+  const syncTaskIdRef = useRef<string | undefined>(undefined);
+  const hasRequestedCancelRef = useRef(false);
+  const waitingTaskIdForCancelRef = useRef(false);
 
-export const SyncCommand = ({ onBack, oneShotArgs }: SyncCommandProps) => {
-	const [progress, setProgress] = useState(0);
-	const [status, setStatus] = useState('正在初始化專案目錄結構...');
-	const targetPath = oneShotArgs || 'C:/example_project/';
+  const appendLog = (message: string): void => {
+    setProgressLogs(previous => [...previous, message]);
+  };
 
-	useEffect(() => {
-		const interval = setInterval(() => {
-			setProgress(prev => {
-				if (prev >= 100) {
-					clearInterval(interval);
-					setStatus('✨ 同步完成！所有動態 RAG 向量索引已成功更新。');
-					return 100;
-				}
+  useInput((_, key) => {
+    if (!key.escape) {
+      return;
+    }
 
-				const next = prev + 5;
-				// 🧠 依據進度百分比，動態切換嚴謹的工程狀態回饋
-				if (next < 30) {
-					setStatus('🔍 正在深度掃描專案原始碼 AST 節點...');
-				} else if (next < 60) {
-					setStatus('🧠 正在呼叫本地 LLM 生成程式碼語意向量嵌入 (Embeddings)...');
-				} else if (next < 90) {
-					setStatus('💾 正在將向量資料增量寫入本地輕量化資料庫...');
-				}
+    if (status === 'running' && !hasRequestedCancelRef.current) {
+      hasRequestedCancelRef.current = true;
+      waitingTaskIdForCancelRef.current = true;
+      setAwaitingExitConfirm(true);
+      setStageMessage('Cancelling sync...');
+      appendLog('[INFO] ESC pressed. Cancelling sync task...');
+      appendLog('[INFO] Press ESC again to return to the menu.');
 
-				return next;
-			});
-		}, 80); // 每 80ms 刷新一次進度
+      const taskId = syncTaskIdRef.current;
+      if (taskId) {
+        waitingTaskIdForCancelRef.current = false;
+        void cancelSseTask(taskId).catch((error: unknown) => {
+          appendLog(
+            `[WARN] Failed to cancel sync task on backend: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+        abortControllerRef.current?.abort();
+      } else {
+        appendLog('[INFO] Waiting for task id from backend before sending cancel request...');
+      }
 
-		return () => clearInterval(interval);
-	}, []);
+      return;
+    }
 
-	// 監聽鍵盤：只有在 100% 完成後，按下 Esc 才能安全退回主畫面
-	useInput((_, key) => {
-		if (key.escape && progress === 100) {
-			onBack();
-		}
-	});
+    onBack();
+  });
 
-	// 動態渲染進度條字串 (總長度 20 格)
-	const BAR_WIDTH = 20;
-	const filledLength = Math.round((progress / 100) * BAR_WIDTH);
-	const barString = '█'.repeat(filledLength) + '░'.repeat(BAR_WIDTH - filledLength);
+  useEffect(() => {
+    appendLog('[INFO] Sync started');
 
-	return (
-		<Box flexDirection="column" paddingX={2} paddingTop={1}>
-			{/* 標題欄 */}
-			<Text bold color="yellow">🔄 Synchronizing Project Data</Text>
-			<Text color="gray">
-				目標目錄: <Text color="cyan" bold>{targetPath}</Text>
-			</Text>
+    void lsdb()
+      .then(trackRoots => {
+        const unsynced = trackRoots.filter(trackRoot => !trackRoot.isSynced).length;
+        appendLog(`[INFO] Track roots before sync: ${trackRoots.length} total, ${unsynced} unsynced`);
+      })
+      .catch((error: unknown) => {
+        appendLog(`[WARN] Failed to load pre-sync preview: ${error instanceof Error ? error.message : String(error)}`);
+      });
 
-			{/* 💡 進度條本體 */}
-			<Box flexDirection="row">
-				<Text color="green">[{barString}] </Text>
-				<Text bold color="green">{progress}%</Text>
-			</Box>
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
-			{/* 動態狀態提示 */}
-			<Text color="white">{status}</Text>
+    const updateTask = (event: SseTaskStartEvent): void => {
+      if (!event?.id) {
+        return;
+      }
 
-			{/* 底部導覽：完成時才淡入 */}
-			{progress === 100 && (
-				<Box
-					flexDirection="column"
-					borderStyle="single"
-					borderTop={true}
-					borderBottom={false}
-					borderLeft={false}
-					borderRight={false}
-					borderColor="gray"
-					paddingTop={1}
-					marginTop={1}
-				>
-					<Text color="gray">esc back to menu</Text>
-				</Box>
-			)}
-		</Box>
-	);
+      syncTaskIdRef.current = event.id;
+      setStageMessage(`Sync task started: ${event.name}`);
+      appendLog(`[INFO] Sync task started: ${event.name} (${event.id})`);
+
+      if (waitingTaskIdForCancelRef.current) {
+        waitingTaskIdForCancelRef.current = false;
+        appendLog('[INFO] Sending cancellation request to backend...');
+        void cancelSseTask(event.id).catch((error: unknown) => {
+          appendLog(
+            `[WARN] Failed to cancel sync task on backend: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+        abortController.abort();
+      }
+    };
+
+    const updateProgress = (event: ReviewStageProgress): void => {
+      const level = event.isError ? 'ERROR' : 'INFO';
+      setStageMessage(`${event.stage} - ${event.message}`);
+      appendLog(`[${event.stage}] ${level} - ${event.message}`);
+    };
+
+    const updateError = (event: ReviewErrorEvent): void => {
+      setStatus('error');
+      setErrorMessage(`${event.code}: ${event.message}`);
+      setStageMessage('Sync failed');
+      appendLog(`[ERROR] ${event.code}: ${event.message}`);
+    };
+
+    syncWithProgress({
+      onStart: updateTask,
+      onProgress: updateProgress,
+      onError: updateError,
+      onResult() {
+        setStatus('success');
+        setStageMessage('Sync completed successfully');
+        appendLog('[DONE] Sync completed successfully');
+
+        void lsdb()
+          .then(trackRoots => {
+            const unsynced = trackRoots.filter(trackRoot => !trackRoot.isSynced).length;
+            appendLog(`[INFO] Track roots after sync: ${trackRoots.length} total, ${unsynced} unsynced`);
+          })
+          .catch((error: unknown) => {
+            appendLog(
+              `[WARN] Failed to load post-sync preview: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+      },
+      signal: abortController.signal,
+    }).catch((error: unknown) => {
+      if (abortController.signal.aborted) {
+        setStatus('error');
+        setErrorMessage(undefined);
+        setStageMessage('Sync cancelled by user');
+        appendLog('[INFO] Sync stream aborted');
+        return;
+      }
+
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+      setStageMessage('Sync failed');
+      appendLog(`[ERROR] ${error instanceof Error ? error.message : String(error)}`);
+    });
+
+    return () => {
+      abortControllerRef.current = undefined;
+      waitingTaskIdForCancelRef.current = false;
+      abortController.abort();
+    };
+  }, []);
+
+  return (
+    <Box flexDirection="column" padding={1}>
+      <Text color="yellow">Performing source sync using backend SSE stream</Text>
+      <Text color="gray">(Press esc to cancel)</Text>
+
+      {status === 'running' ? (
+        <ThinkingSpinner message={stageMessage} color="white" />
+      ) : (
+        <Text color={status === 'error' ? 'red' : 'white'}>{stageMessage}</Text>
+      )}
+
+      <Box flexDirection="column" marginTop={1}>
+        <Text color="cyan">Progress Log:</Text>
+        {progressLogs.length === 0 && <Text color="gray">(no events yet)</Text>}
+        {progressLogs.map((log, index) => (
+          <Text key={index} color="gray">
+            {log}
+          </Text>
+        ))}
+      </Box>
+
+      {awaitingExitConfirm && <Text color="yellow">Cancellation requested. Press ESC again to return.</Text>}
+      {status === 'success' && <Text color="green">Sync done. Press ESC to return.</Text>}
+      {status === 'error' && errorMessage && <Text color="red">Error: {errorMessage}</Text>}
+    </Box>
+  );
 };

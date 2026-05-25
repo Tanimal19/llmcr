@@ -6,6 +6,7 @@ public class APIServiceException extends RuntimeException {
 
     public enum ErrorCode {
         INVALID_REQUEST("invalidrequest", "Invalid request payload or parameters", HttpStatus.INTERNAL_SERVER_ERROR),
+        INTERNAL_ERROR("internalerror", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR),
 
         RAG_RETRIEVAL_FAILED("ragretrievalfailed", "Failed to retrieve contexts", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_VECTOR_SEARCH_FAILED("ragvectorsearchfailed", "Vector search failed", HttpStatus.INTERNAL_SERVER_ERROR),
@@ -21,19 +22,29 @@ public class APIServiceException extends RuntimeException {
         ETL_SPLIT_FAILED("etlsplitfailed", "ETL split stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
         ETL_ENRICH_FAILED("etlenrichfailed", "ETL enrich stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
         ETL_LOAD_FAILED("etlloadfailed", "ETL load failed", HttpStatus.INTERNAL_SERVER_ERROR),
+        ETL_CANCELLED("etlcancelled", "ETL task was cancelled", HttpStatus.CONFLICT),
         ETL_RUN_FAILED("etlrunfailed", "ETL pipeline execution failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
-        REVIEW_PARSE_FAILED("reviewparsefailed", "Failed to parse pull request data", HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_INTERPRETATION_FAILED("reviewinterpretationfailed", "Review interpretation stage failed",
+        REVIEW_PARSE_FAILED(
+                "reviewparsefailed", "Failed to parse pull request data", HttpStatus.INTERNAL_SERVER_ERROR),
+        REVIEW_INTERPRETATION_FAILED(
+                "reviewinterpretationfailed", "Review interpretation stage failed",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_PLANNING_FAILED("reviewplanningfailed", "Review planning stage failed",
+        REVIEW_PLANNING_FAILED(
+                "reviewplanningfailed", "Review planning stage failed",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_COMPUTATION_FAILED("reviewcomputationfailed", "Review computation stage failed",
+        REVIEW_COMPUTATION_FAILED(
+                "reviewcomputationfailed", "Review computation stage failed",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_SUMMARY_FAILED("reviewsummaryfailed", "Review summary stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_REPORT_WRITE_FAILED("reviewreportwritefailed", "Failed to write review report",
+        REVIEW_SUMMARY_FAILED(
+                "reviewsummaryfailed", "Review summary stage failed", HttpStatus.INTERNAL_SERVER_ERROR),
+        REVIEW_REPORT_WRITE_FAILED(
+                "reviewreportwritefailed", "Failed to write review report",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        REVIEW_PIPELINE_FAILED("reviewpipelinefailed", "Code review pipeline execution failed",
+        REVIEW_CANCELLED(
+                "reviewcancelled", "Review task was cancelled", HttpStatus.CONFLICT),
+        REVIEW_PIPELINE_FAILED(
+                "reviewpipelinefailed", "Code review pipeline execution failed",
                 HttpStatus.INTERNAL_SERVER_ERROR),
 
         CONFIG_SYNC_TRACK_ROOTS_FAILED("configsynctrackrootsfailed", "Failed to sync track roots",
@@ -43,30 +54,37 @@ public class APIServiceException extends RuntimeException {
         CONFIG_SYNC_DEFAULT_COLLECTIONS_FAILED("configsyncdefaultcollectionsfailed",
                 "Failed to sync default collections", HttpStatus.INTERNAL_SERVER_ERROR),
 
-        SOURCE_SYNC_PREVIEW_LIST_FAILED("sourcesyncpreviewlistfailed", "Failed to list track root previews",
+        SOURCE_SYNC_PREVIEW_LIST_FAILED(
+                "sourcesyncpreviewlistfailed", "Failed to list track root previews",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_ALL_FAILED("sourcesyncallfailed", "Failed to sync all track roots",
+        SOURCE_SYNC_FAILED(
+                "sourcesyncallfailed", "Failed to sync all track roots",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_PREVIEW_FAILED("sourcesyncpreviewfailed", "Failed to generate track root preview",
+        SOURCE_SYNC_PREVIEW_FAILED(
+                "sourcesyncpreviewfailed", "Failed to generate track root preview",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_LOCAL_SCAN_FAILED("sourcesynclocalscanfailed", "Failed to scan local sources",
+        SOURCE_SYNC_LOCAL_SCAN_FAILED(
+                "sourcesynclocalscanfailed", "Failed to scan local sources",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_HASH_FAILED("sourcesynchashfailed", "Failed to compute source content hash",
+        SOURCE_SYNC_HASH_FAILED(
+                "sourcesynchashfailed", "Failed to compute source content hash",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_TRACK_ROOT_FAILED("sourcesynctrackrootfailed", "Failed to sync track root sources",
+        SOURCE_SYNC_TRACK_ROOT_FAILED(
+                "sourcesynctrackrootfailed", "Failed to sync track root sources",
                 HttpStatus.INTERNAL_SERVER_ERROR),
-        SOURCE_SYNC_REMOVE_CHUNKS_FAILED("sourcesyncremovechunksfailed", "Failed to remove chunks from vector store",
-                HttpStatus.INTERNAL_SERVER_ERROR),
-
-        INTERNAL_ERROR("internalerror", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+        SOURCE_SYNC_CANCELLED(
+                "sourcesynccancelled", "Source sync task was cancelled", HttpStatus.CONFLICT),
+        SOURCE_SYNC_REMOVE_CHUNKS_FAILED(
+                "sourcesyncremovechunksfailed", "Failed to remove chunks from vector store",
+                HttpStatus.INTERNAL_SERVER_ERROR);
 
         private final String code;
-        private final String defaultMessage;
+        private final String message;
         private final HttpStatus status;
 
-        ErrorCode(String code, String defaultMessage, HttpStatus status) {
+        ErrorCode(String code, String message, HttpStatus status) {
             this.code = code;
-            this.defaultMessage = defaultMessage;
+            this.message = message;
             this.status = status;
         }
 
@@ -74,8 +92,8 @@ public class APIServiceException extends RuntimeException {
             return code;
         }
 
-        public String defaultMessage() {
-            return defaultMessage;
+        public String message() {
+            return message;
         }
 
         public HttpStatus status() {
@@ -86,12 +104,17 @@ public class APIServiceException extends RuntimeException {
     private final ErrorCode errorCode;
 
     public APIServiceException(ErrorCode errorCode) {
-        super(errorCode.defaultMessage());
+        super(errorCode.message());
         this.errorCode = errorCode;
     }
 
     public APIServiceException(ErrorCode errorCode, String message) {
         super(message);
+        this.errorCode = errorCode;
+    }
+
+    public APIServiceException(ErrorCode errorCode, Throwable cause) {
+        super(errorCode.message(), cause);
         this.errorCode = errorCode;
     }
 
