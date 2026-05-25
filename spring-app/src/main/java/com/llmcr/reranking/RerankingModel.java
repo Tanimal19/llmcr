@@ -1,12 +1,10 @@
 package com.llmcr.reranking;
 
 import java.util.List;
-
 import org.springframework.ai.model.Model;
 import org.springframework.util.Assert;
 
 public interface RerankingModel extends Model<RerankingRequest, RerankingResponse> {
-
     RerankingResponse rerank(RerankingRequest request);
 
     RerankingResponse rerank(String query, List<String> documents);

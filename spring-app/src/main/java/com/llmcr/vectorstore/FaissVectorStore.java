@@ -1,19 +1,17 @@
 package com.llmcr.vectorstore;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.stereotype.Repository;
-
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.Chunk;
 import com.llmcr.service.FaissService;
-import com.llmcr.service.ModelClientFactory;
 import com.llmcr.service.FaissService.AddVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsRequest;
 import com.llmcr.service.FaissService.SearchVectorsResponse;
+import com.llmcr.service.ModelClientFactory;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class FaissVectorStore extends MyVectorStore {
@@ -22,25 +20,29 @@ public class FaissVectorStore extends MyVectorStore {
     private final EmbeddingModel embeddingModel;
 
     public FaissVectorStore(
-            ApplicationProperties applicationProperties,
-            FaissService faissService,
-            ModelClientFactory modelClientFactory) {
+        ApplicationProperties applicationProperties,
+        FaissService faissService,
+        ModelClientFactory modelClientFactory
+    ) {
         this.faissService = faissService;
         this.embeddingModel = modelClientFactory.createEmbeddingModel(
-                applicationProperties.getEmbeddingModel().getProvider(),
-                applicationProperties.getEmbeddingModel().getName());
+            applicationProperties.getEmbeddingModel().getProvider(),
+            applicationProperties.getEmbeddingModel().getName()
+        );
     }
 
+    @Override
     public void addChunks(List<Chunk> chunks, String collectionName) {
         if (chunks.isEmpty()) {
             return;
         }
 
         List<Long> ids = chunks.stream().map(Chunk::getId).collect(Collectors.toList());
-        List<float[]> embeddings = chunks.stream()
-                .map(chunk -> chunk.getEmbedding())
-                .filter(embedding -> embedding != null)
-                .collect(Collectors.toList());
+        List<float[]> embeddings = chunks
+            .stream()
+            .map(chunk -> chunk.getEmbedding())
+            .filter(embedding -> embedding != null)
+            .collect(Collectors.toList());
 
         if (embeddings.size() != ids.size()) {
             throw new IllegalStateException("Some chunks are missing embeddings");
@@ -52,7 +54,8 @@ public class FaissVectorStore extends MyVectorStore {
     protected List<ChunkIdScorePair> doSimilaritySearch(String query, int topK, String collectionName) {
         float[] queryVector = embeddingModel.embed(query);
         SearchVectorsResponse res = faissService.searchVectors(
-                new SearchVectorsRequest(collectionName, queryVector, topK));
+            new SearchVectorsRequest(collectionName, queryVector, topK)
+        );
 
         assert res.ids().size() == res.scores().size() : "FAISS response ids and scores size mismatch";
 

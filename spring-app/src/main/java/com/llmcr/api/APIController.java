@@ -1,9 +1,18 @@
 package com.llmcr.api;
 
+import com.llmcr.config.ApplicationProperties;
+import com.llmcr.config.ConfigReader;
+import com.llmcr.service.ChatService;
+import com.llmcr.service.ChatService.ChatResponse;
+import com.llmcr.service.etl.LoadService;
+import com.llmcr.service.review.CodeReviewService;
+import com.llmcr.service.review.CodeReviewService.CodeReviewInput;
+import com.llmcr.service.sync.ConfigSyncService;
+import com.llmcr.service.sync.SourceSyncService;
+import com.llmcr.service.sync.SourceSyncService.TrackRootPreview;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,17 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import com.llmcr.config.ApplicationProperties;
-import com.llmcr.config.ConfigReader;
-import com.llmcr.service.ChatService;
-import com.llmcr.service.ChatService.ChatResponse;
-import com.llmcr.service.etl.LoadService;
-import com.llmcr.service.review.CodeReviewService;
-import com.llmcr.service.review.CodeReviewService.CodeReviewInput;
-import com.llmcr.service.sync.ConfigSyncService;
-import com.llmcr.service.sync.SourceSyncService;
-import com.llmcr.service.sync.SourceSyncService.TrackRootPreview;
 
 @RestController
 @CrossOrigin(origins = "${server.cors.allowed-origins:*}")
@@ -44,14 +42,15 @@ public class APIController {
     private final SourceSyncService sourceSyncService;
 
     public APIController(
-            SseTaskManager sseTaskManager,
-            ApplicationProperties applicationProperties,
-            ConfigReader configReader,
-            ChatService chatService,
-            CodeReviewService codeReviewService,
-            ConfigSyncService configSyncService,
-            SourceSyncService sourceSyncService,
-            LoadService loadService) {
+        SseTaskManager sseTaskManager,
+        ApplicationProperties applicationProperties,
+        ConfigReader configReader,
+        ChatService chatService,
+        CodeReviewService codeReviewService,
+        ConfigSyncService configSyncService,
+        SourceSyncService sourceSyncService,
+        LoadService loadService
+    ) {
         this.sseTaskManager = sseTaskManager;
         this.applicationProperties = applicationProperties;
         this.configReader = configReader;
@@ -73,11 +72,9 @@ public class APIController {
         }
     }
 
-    public record ChatRequest(String query) {
-    }
+    public record ChatRequest(String query) {}
 
-    public record SetRagRequest(Set<String> trackRootPaths) {
-    }
+    public record SetRagRequest(Set<String> trackRootPaths) {}
 
     @GetMapping("/health")
     public String health() {
@@ -91,10 +88,7 @@ public class APIController {
         String configPath = configReader.getConfigFilePath();
         String lastSyncTime = sourceSyncService.getLastAllSyncTime();
 
-        return Map.of(
-                "configPath", configPath,
-                "config", applicationProperties,
-                "lastSyncTime", lastSyncTime);
+        return Map.of("configPath", configPath, "config", applicationProperties, "lastSyncTime", lastSyncTime);
     }
 
     @PostMapping("/chat")
@@ -122,8 +116,11 @@ public class APIController {
 
     @PostMapping(value = "/review", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter review(@RequestBody CodeReviewInput request) {
-        logger.info("Code review request received for jsonFilePath={}, useMockData={}",
-                request.jsonFilePath(), request.useMockData());
+        logger.info(
+            "Code review request received for jsonFilePath={}, useMockData={}",
+            request.jsonFilePath(),
+            request.useMockData()
+        );
         return sseTaskManager.start(codeReviewService, request);
     }
 
@@ -157,5 +154,4 @@ public class APIController {
             throw new IllegalArgumentException(message);
         }
     }
-
 }

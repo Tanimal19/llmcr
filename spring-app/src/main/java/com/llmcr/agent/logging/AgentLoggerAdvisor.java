@@ -1,15 +1,14 @@
 package com.llmcr.agent.logging;
 
 import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
 public class AgentLoggerAdvisor implements BaseAdvisor {
@@ -24,8 +23,7 @@ public class AgentLoggerAdvisor implements BaseAdvisor {
 
     @Override
     public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-        logger.info("{} input: {}", agentName,
-                chatClientRequest.prompt().getLastUserOrToolResponseMessage().getText());
+        logger.info("{} input: {}", agentName, chatClientRequest.prompt().getLastUserOrToolResponseMessage().getText());
         AgentContextHolder.beginIteration(chatClientRequest.prompt().getInstructions());
         return chatClientRequest;
     }
@@ -43,10 +41,10 @@ public class AgentLoggerAdvisor implements BaseAdvisor {
 
     private static String extractText(ChatResponse chatResponse) {
         return Optional.ofNullable(chatResponse)
-                .map(ChatResponse::getResult)
-                .map(Generation::getOutput)
-                .map(AbstractMessage::getText)
-                .orElse(null);
+            .map(ChatResponse::getResult)
+            .map(Generation::getOutput)
+            .map(AbstractMessage::getText)
+            .orElse(null);
     }
 
     @Override

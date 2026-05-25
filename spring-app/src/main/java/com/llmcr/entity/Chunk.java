@@ -1,12 +1,6 @@
 package com.llmcr.entity;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.hibernate.Hibernate;
-
 import com.llmcr.entity.converter.FloatArrayStringConverter;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -15,9 +9,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
+import org.hibernate.Hibernate;
 
 @Entity
 @Table(name = "chunk")
@@ -66,8 +63,7 @@ public class Chunk {
     @ManyToMany(mappedBy = "havedChunks")
     private Set<ChunkCollection> inCollections = new HashSet<>();
 
-    protected Chunk() {
-    }
+    protected Chunk() {}
 
     public Chunk(String content) {
         this.content = content;
@@ -103,9 +99,7 @@ public class Chunk {
         }
 
         this.context = context;
-        if (context != null
-                && Hibernate.isInitialized(context.getChunks())
-                && !context.getChunks().contains(this)) {
+        if (context != null && Hibernate.isInitialized(context.getChunks()) && !context.getChunks().contains(this)) {
             context.addChunk(this);
         }
     }
@@ -140,10 +134,8 @@ public class Chunk {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof Chunk))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof Chunk)) return false;
         Chunk other = (Chunk) o;
         return id != null && id.equals(other.id);
     }

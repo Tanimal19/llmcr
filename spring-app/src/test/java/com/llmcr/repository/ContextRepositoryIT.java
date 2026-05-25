@@ -1,30 +1,28 @@
 package com.llmcr.repository;
 
-import java.util.List;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.llmcr.BaseIntegrationTest;
 import com.llmcr.entity.*;
 import com.llmcr.entity.Context.ContextType;
 import com.llmcr.entity.Source.SourceType;
-
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 public class ContextRepositoryIT extends BaseIntegrationTest {
+
     @Autowired
     private ContextRepository contextRepository;
 
@@ -51,8 +49,13 @@ public class ContextRepositoryIT extends BaseIntegrationTest {
         chunkB = new Chunk("ChunkB");
         chunkC = new Chunk("ChunkC");
 
-        contextA = new Context(testSource, 0, "contextA", chunkA.getContent() + chunkB.getContent(),
-                ContextType.USECASE);
+        contextA = new Context(
+            testSource,
+            0,
+            "contextA",
+            chunkA.getContent() + chunkB.getContent(),
+            ContextType.USECASE
+        );
         contextA.setChunkLoaded(true);
         contextA.setSplitted(false);
         contextA.setEnriched(false);
@@ -87,7 +90,9 @@ public class ContextRepositoryIT extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("Test status filter query: Should correctly filter out unloaded, unsplitted, and unenriched Context IDs")
+    @DisplayName(
+        "Test status filter query: Should correctly filter out unloaded, unsplitted, and unenriched Context IDs"
+    )
     void testStatusFilters() {
         List<Long> unloadedIds = contextRepository.findAllUnloadedIds();
         assertThat(unloadedIds).containsOnly(contextB.getId());
@@ -109,7 +114,9 @@ public class ContextRepositoryIT extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("Test findAllByChunkIds: When passing multiple Chunk IDs, it should return a deduplicated Context list")
+    @DisplayName(
+        "Test findAllByChunkIds: When passing multiple Chunk IDs, it should return a deduplicated Context list"
+    )
     void testFindAllByChunkIds() {
         List<Long> chunkIds = Arrays.asList(chunkA.getId(), chunkB.getId(), chunkC.getId());
         List<Context> contexts = contextRepository.findAllByChunkIds(chunkIds);

@@ -1,15 +1,5 @@
 package com.llmcr.service.etl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.entity.Chunk;
 import com.llmcr.entity.ChunkCollection;
@@ -19,9 +9,16 @@ import com.llmcr.repository.ChunkRepository;
 import com.llmcr.repository.ContextRepository;
 import com.llmcr.service.ModelClientFactory;
 import com.llmcr.vectorstore.MyVectorStore;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class LoadService {
@@ -38,19 +35,21 @@ public class LoadService {
     private final EmbeddingModel embeddingClient;
 
     public LoadService(
-            ApplicationProperties applicationProperties,
-            ChunkCollectionRepository chunkCollectionRepository,
-            ContextRepository contextRepository,
-            ChunkRepository chunkRepository,
-            MyVectorStore vectorStore,
-            ModelClientFactory modelClientFactory) {
+        ApplicationProperties applicationProperties,
+        ChunkCollectionRepository chunkCollectionRepository,
+        ContextRepository contextRepository,
+        ChunkRepository chunkRepository,
+        MyVectorStore vectorStore,
+        ModelClientFactory modelClientFactory
+    ) {
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.contextRepository = contextRepository;
         this.chunkRepository = chunkRepository;
         this.vectorStore = vectorStore;
         this.embeddingClient = modelClientFactory.createEmbeddingModel(
-                applicationProperties.getEmbeddingModel().getProvider(),
-                applicationProperties.getEmbeddingModel().getName());
+            applicationProperties.getEmbeddingModel().getProvider(),
+            applicationProperties.getEmbeddingModel().getName()
+        );
     }
 
     /**
@@ -62,8 +61,9 @@ public class LoadService {
      */
     @Transactional
     public void loadContextChunks(Long contextId) {
-        Context context = contextRepository.findById(contextId)
-                .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+        Context context = contextRepository
+            .findById(contextId)
+            .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isChunkLoaded()) {
             logger.info("Context '{}' is already loaded, skipping", context.getName(), context.getId());
             return;
@@ -84,14 +84,16 @@ public class LoadService {
             // only load chunks that are not already in the collection to avoid duplication
             // in vector store
             Set<Chunk> collectionChunks = chunkCollection.getChunks();
-            List<Chunk> chunksToAdd = chunks.stream()
-                    .filter(chunk -> collectionChunks.contains(chunk))
-                    .toList();
+            List<Chunk> chunksToAdd = chunks.stream().filter(chunk -> collectionChunks.contains(chunk)).toList();
 
             if (!chunksToAdd.isEmpty()) {
                 vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
-                logger.info("Loaded {} chunks of context '{}' to collection '{}'", chunksToAdd.size(),
-                        context.getName(), chunkCollection.getName());
+                logger.info(
+                    "Loaded {} chunks of context '{}' to collection '{}'",
+                    chunksToAdd.size(),
+                    context.getName(),
+                    chunkCollection.getName()
+                );
             }
         }
 
@@ -102,16 +104,19 @@ public class LoadService {
     @Transactional
     public void reloadCollection(String collectionName) {
         logger.info("Reloading chunk collection '{}'...", collectionName);
-        ChunkCollection collection = chunkCollectionRepository.findByName(collectionName)
-                .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
+        ChunkCollection collection = chunkCollectionRepository
+            .findByName(collectionName)
+            .orElseThrow(() -> new RuntimeException("Chunk collection not found: " + collectionName));
         collection.clearChunks();
         vectorStore.removeCollection(collectionName);
 
-        Set<Chunk> chunks = collection.getTrackRoots().stream()
-                .flatMap(trackRoot -> trackRoot.getSources().stream())
-                .flatMap(source -> source.getContexts().stream())
-                .flatMap(context -> context.getChunks().stream())
-                .collect(java.util.stream.Collectors.toSet());
+        Set<Chunk> chunks = collection
+            .getTrackRoots()
+            .stream()
+            .flatMap(trackRoot -> trackRoot.getSources().stream())
+            .flatMap(source -> source.getContexts().stream())
+            .flatMap(context -> context.getChunks().stream())
+            .collect(java.util.stream.Collectors.toSet());
 
         collection.addChunks(chunks);
         vectorStore.addChunks(new ArrayList<>(chunks), collectionName);
@@ -149,9 +154,10 @@ public class LoadService {
             String collectionName = chunkCollection.getName();
 
             Set<Chunk> collectionChunks = chunkCollection.getChunks();
-            List<Chunk> chunksToLoad = collectionChunks.stream()
-                    .filter(chunk -> chunk.getEmbedding() != null && chunk.getEmbedding().length > 0)
-                    .toList();
+            List<Chunk> chunksToLoad = collectionChunks
+                .stream()
+                .filter(chunk -> chunk.getEmbedding() != null && chunk.getEmbedding().length > 0)
+                .toList();
 
             int skippedMissingEmbedding = collectionChunks.size() - chunksToLoad.size();
             if (!chunksToLoad.isEmpty()) {
@@ -161,34 +167,41 @@ public class LoadService {
             totalAdded += chunksToLoad.size();
             totalSkippedMissingEmbedding += skippedMissingEmbedding;
 
-            logger.info("Loaded {} chunks into collection '{}', skipped {} chunks without embedding",
-                    chunksToLoad.size(), collectionName, skippedMissingEmbedding);
+            logger.info(
+                "Loaded {} chunks into collection '{}', skipped {} chunks without embedding",
+                chunksToLoad.size(),
+                collectionName,
+                skippedMissingEmbedding
+            );
         }
 
-        logger.info("Vector store reload complete. Added {} chunks, skipped {} chunks without embedding",
-                totalAdded, totalSkippedMissingEmbedding);
+        logger.info(
+            "Vector store reload complete. Added {} chunks, skipped {} chunks without embedding",
+            totalAdded,
+            totalSkippedMissingEmbedding
+        );
     }
 
     @Transactional
     public int rebuildCollectionChunkMapping() {
         logger.info("Rebuilding collection-chunk mapping...");
 
-        entityManager.createNativeQuery("DELETE FROM collection_have_chunks")
-                .executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM collection_have_chunks").executeUpdate();
 
-        String sql = """
-                INSERT INTO collection_have_chunks (chunk_collection_id, chunk_id)
-                SELECT DISTINCT
-                    ctr.chunk_collection_id,
-                    ch.id
-                FROM collection_have_track_roots ctr
-                JOIN source s
-                    ON s.track_root_id = ctr.track_root_id
-                JOIN context c
-                    ON c.source_id = s.id
-                JOIN chunk ch
-                    ON ch.context_id = c.id
-                """;
+        String sql =
+            """
+            INSERT INTO collection_have_chunks (chunk_collection_id, chunk_id)
+            SELECT DISTINCT
+                ctr.chunk_collection_id,
+                ch.id
+            FROM collection_have_track_roots ctr
+            JOIN source s
+                ON s.track_root_id = ctr.track_root_id
+            JOIN context c
+                ON c.source_id = s.id
+            JOIN chunk ch
+                ON ch.context_id = c.id
+            """;
 
         int inserted = entityManager.createNativeQuery(sql).executeUpdate();
 

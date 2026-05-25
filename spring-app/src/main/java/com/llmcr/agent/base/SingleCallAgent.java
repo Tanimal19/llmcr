@@ -1,10 +1,9 @@
 package com.llmcr.agent.base;
 
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.converter.BeanOutputConverter;
-
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.ModelClientFactory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.converter.BeanOutputConverter;
 
 /**
  * Base class for agents that only need to make a single call to the LLM.
@@ -12,10 +11,11 @@ import com.llmcr.service.ModelClientFactory;
 public abstract class SingleCallAgent<I, O> extends BaseAgent<I, O, O> {
 
     protected SingleCallAgent(
-            String agentName,
-            ApplicationProperties applicationProperties,
-            ModelClientFactory modelClientFactory,
-            BeanOutputConverter<O> outputConverter) {
+        String agentName,
+        ApplicationProperties applicationProperties,
+        ModelClientFactory modelClientFactory,
+        BeanOutputConverter<O> outputConverter
+    ) {
         super(agentName, applicationProperties, modelClientFactory, outputConverter);
     }
 

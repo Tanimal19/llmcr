@@ -1,7 +1,6 @@
 package com.llmcr.reranking;
 
 import java.util.List;
-
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.ai.model.ModelResult;
 import org.springframework.ai.model.ResponseMetadata;
@@ -30,8 +29,7 @@ public class RerankingResponse implements ModelResponse<RerankingResponse.Rerank
         return null;
     }
 
-    public record RankedDocument(int index, double relevanceScore, String document) {
-    }
+    public record RankedDocument(int index, double relevanceScore, String document) {}
 
     public static class RerankingResult implements ModelResult<RankedDocument> {
 

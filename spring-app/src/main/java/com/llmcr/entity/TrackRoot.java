@@ -1,16 +1,7 @@
 package com.llmcr.entity;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.hibernate.Hibernate;
-
 import com.llmcr.entity.Source.SourceType;
 import com.llmcr.util.PathUtils;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -27,6 +18,12 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.hibernate.Hibernate;
 
 @Entity
 @Table(name = "track_root")
@@ -65,8 +62,7 @@ public class TrackRoot {
     @OneToMany(mappedBy = "trackRoot", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Source> sources = new ArrayList<>();
 
-    protected TrackRoot() {
-    }
+    protected TrackRoot() {}
 
     public TrackRoot(String path, Set<SourceType> allowedSourceTypes) {
         this.path = PathUtils.toRelativePath(path);

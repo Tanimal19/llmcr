@@ -1,14 +1,12 @@
 package com.llmcr.runner;
 
+import com.llmcr.service.review.CodeReviewService;
+import com.llmcr.service.review.CodeReviewService.CodeReviewInput;
 import java.util.List;
-
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import com.llmcr.service.review.CodeReviewService;
-import com.llmcr.service.review.CodeReviewService.CodeReviewInput;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "review")
