@@ -11,7 +11,7 @@ const STATUS_STYLE: Record<
   SYNCED: { color: 'white', legend: 'SYNCED   : <name>' },
   REMOVED: { color: 'red', prefix: '- ', legend: 'REMOVED  : - <name>' },
   ADDED: { color: 'green', prefix: '+ ', legend: 'ADDED    : + <name>' },
-  MODIFIED: { color: 'green', prefix: '± ', legend: 'MODIFIED : ± <name>' },
+  MODIFIED: { color: 'yellow', prefix: '± ', legend: 'MODIFIED : ± <name>' },
 };
 
 function toLabel(path: string): string {
