@@ -39,9 +39,10 @@ jobs:
       # --------------------------------------------------------
       - name: Run Backend Tests & Compile
         run: |
+          docker-compose up -d
           cd spring-app
           cp config.default.yml config.yml
-          mvn verify -DskipITs=true
+          mvn verify
 
       # --------------------------------------------------------
       # 步驟 2：前端測試（安裝依賴，並用 c8 幫 AVA 生成 lcov 報告）
