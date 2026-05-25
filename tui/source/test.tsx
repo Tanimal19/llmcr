@@ -1,5 +1,8 @@
 import test from 'ava';
 import { render } from 'ink-testing-library';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import { ChatCommand } from './commands/chat.js';
 import { LsDbCommand } from './commands/lsdb.js';
 import { ReviewCommand } from './commands/review.js';
@@ -13,7 +16,16 @@ const delay = async (ms: number) =>
 
 const setupMockFetch = (handler: (url: string, init?: RequestInit) => Response | Promise<Response>) => {
   globalThis.fetch = async (input: URL | RequestInfo, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    let url: string;
+
+    if (typeof input === 'string') {
+      url = input;
+    } else if (input instanceof URL) {
+      url = input.toString();
+    } else {
+      url = input.url;
+    }
+
     return handler(url, init);
   };
 };
@@ -191,6 +203,11 @@ test.serial('SyncCommand completes sync flow and prints summary', async t => {
 });
 
 test.serial('ReviewCommand renders review summary from SSE result', async t => {
+  // 👇 動態生成隨機且安全的暫存路徑
+  const secureTmpDir = os.tmpdir();
+  const randomDiffPath = path.join(secureTmpDir, `pr-${crypto.randomUUID()}.json`);
+  const randomReportPath = path.join(secureTmpDir, `review-${crypto.randomUUID()}.md`);
+
   setupMockFetch(url => {
     if (url.endsWith('/review')) {
       return createSseResponse([
@@ -199,7 +216,7 @@ test.serial('ReviewCommand renders review summary from SSE result', async t => {
         {
           event: 'result',
           data: {
-            reportPath: '/tmp/review.md',
+            reportPath: randomReportPath, // 👈 1. 這裡改用隨機路徑变量
             reviewReport: {
               prId: 123,
               prTitle: 'Improve parser stability',
@@ -240,7 +257,7 @@ test.serial('ReviewCommand renders review summary from SSE result', async t => {
 
   const { lastFrame, unmount } = render(
     <ReviewCommand
-      diffPath="/tmp/pr.json"
+      diffPath={randomDiffPath} // 👈 2. 這裡也改用隨機路徑变量
       onBack={() => {
         /* No-op */
       }}
@@ -250,7 +267,8 @@ test.serial('ReviewCommand renders review summary from SSE result', async t => {
   await delay(180);
 
   const frameText = lastFrame() ?? '';
-  t.true(frameText.includes('Performing code review on: /tmp/pr.json'));
+  t.true(frameText.includes('Performing code review on:'));
+  t.true(frameText.includes(path.basename(randomDiffPath)));
   t.true(frameText.includes('Review done. Press ESC to return.'));
   t.true(frameText.includes('PR: #123 Improve parser stability'));
   t.true(frameText.includes('Issues: 2'));

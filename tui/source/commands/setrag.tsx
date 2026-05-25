@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
 import { getRagScope, setRagScope } from '../api.js';
 import { LoadingSpinner } from '../components/loading-spinner.js';
-import { TableBrowser, type TableBrowserItem } from '../components/table-browser.js';
+import { TableBrowser, type TableBrowserItem, toLabel } from '../components/table-browser.js';
 import { type CommandProps } from '../types.js';
 
 type RagScopeItem = {
@@ -14,11 +14,6 @@ type RagScopeItem = {
 
 const LABEL_COLUMN_WIDTH = 24;
 const PATH_COLUMN_WIDTH = 56;
-
-function toLabel(path: string): string {
-  const segments = path.split(/[\/\\\\]/v);
-  return segments.at(-1) ?? path;
-}
 
 export const SetRagCommand = ({ onBack }: CommandProps) => {
   const [items, setItems] = useState<RagScopeItem[]>([]);
