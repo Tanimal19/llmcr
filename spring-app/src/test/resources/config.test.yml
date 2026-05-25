@@ -1,0 +1,72 @@
+# Track roots are the top-level directories that will be tracked by the application.
+# Each track root can be a directory or a file, and it can have an optional list of allowed source types.
+# - The avaliable source types are: JAVACODE, ASCIIDOC, MARKDOWN, PDF, JSON.
+#
+# All tracked files will be transformed using ETL and stored in the vector database,
+# and will be used to perform RAG.
+track-roots:
+  "test-code-files":
+    path: "./src/test/resources/test_datasets/test_project/"
+    allowed-source-types:
+      - JAVACODE
+
+  "test-doc-files":
+    path: "./src/test/resources/test_datasets/test_documents/"
+    allowed-source-types:
+      - ASCIIDOC
+      - MARKDOWN
+      - PDF
+
+# Collections are logical groupings of track roots that can be used to perform RAG on specific subsets of the data.
+collections:
+  "test":
+    track-roots:
+      - "test-code-files"
+      - "test-doc-files"
+
+# Each model has a unique name, a provider, and a type.
+chat-models:
+  "nemotron-3-4b":
+    name: "nemotron-3-4b"
+    provider: "openai"
+
+  "gemini-2.5-flash-lite":
+    name: "gemini-2.5-flash-lite"
+    provider: "google"
+
+embedding-model:
+  name: "harrier-0.6b"
+  provider: "openai"
+
+reranking-model:
+  name: "qwen3-reranker-0.6b"
+  provider: "openai"
+
+# Set each agent's chat model
+agents:
+  "class-node-enrich":
+    chat-model: "nemotron-3-4b"
+    collection: "project-context"
+
+  "interpretation":
+    chat-model: "gemini-2.5-flash-lite"
+    collection: "project-context"
+
+  "planning":
+    chat-model: "gemini-2.5-flash-lite"
+    collection: "guidelines"
+
+  "computation":
+    chat-model: "nemotron-3-4b"
+
+  "retrieval":
+    chat-model: "nemotron-3-4b"
+
+  "summary":
+    chat-model: "gemini-2.5-flash-lite"
+
+  "question-answer":
+    chat-model: "nemotron-3-4b"
+
+logging:
+  review-output-dir: "../logs/reviews"
