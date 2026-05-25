@@ -24,8 +24,8 @@ const MainMenu = ({ onSelect, configLoaded, lastSynced, isInfoLoading, infoError
     { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
     { cmd: 'review', desc: 'Generate code review', value: 'review_flow' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
-    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
+    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'help', desc: 'Show this command list', value: 'help' },
   ];
 
