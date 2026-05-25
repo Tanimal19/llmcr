@@ -7,6 +7,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# 提早啟用 Node.js 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   sonarcloud:
     name: Combined Analysis
@@ -16,20 +20,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'zulu'
 
-      # 1. 依然要先編譯 Java，讓 target/classes 產生檔案
+      # 1. 先編譯 Java，讓 target/classes 產生檔案
       - name: Compile Backend Java
         run: |
           cd spring-app
           mvn compile
 
-      # 2. 掃描器會自動去讀你的 sonar-project.properties，這裡不用寫 args 了！
+      # 2. 綜合掃描（參數寫在sonar-project.properties）
       - name: Combined SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
