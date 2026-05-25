@@ -43,12 +43,15 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
       if (taskId) {
         waitingTaskIdForCancelRef.current = false;
         void cancelSseTask(taskId).catch((error: unknown) => {
-          appendLog(`[WARN] Failed to cancel sync task on backend: ${error instanceof Error ? error.message : String(error)}`);
+          appendLog(
+            `[WARN] Failed to cancel sync task on backend: ${error instanceof Error ? error.message : String(error)}`,
+          );
         });
         abortControllerRef.current?.abort();
       } else {
         appendLog('[INFO] Waiting for task id from backend before sending cancel request...');
       }
+
       return;
     }
 
@@ -83,7 +86,9 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
         waitingTaskIdForCancelRef.current = false;
         appendLog('[INFO] Sending cancellation request to backend...');
         void cancelSseTask(event.id).catch((error: unknown) => {
-          appendLog(`[WARN] Failed to cancel sync task on backend: ${error instanceof Error ? error.message : String(error)}`);
+          appendLog(
+            `[WARN] Failed to cancel sync task on backend: ${error instanceof Error ? error.message : String(error)}`,
+          );
         });
         abortController.abort();
       }
@@ -106,7 +111,7 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
       onStart: updateTask,
       onProgress: updateProgress,
       onError: updateError,
-      onResult: () => {
+      onResult() {
         setStatus('success');
         setStageMessage('Sync completed successfully');
         appendLog('[DONE] Sync completed successfully');

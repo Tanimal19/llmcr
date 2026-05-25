@@ -305,21 +305,26 @@ export async function reviewWithProgress(
       if (startEvent && typeof startEvent.id === 'string') {
         handlers.onTask?.({ taskId: startEvent.id });
       }
+
       return;
     }
+
     if (eventName === 'task') {
       handlers.onTask?.(payload as ReviewTaskEvent);
       return;
     }
+
     if (eventName === 'progress') {
       handlers.onProgress?.(payload as ReviewStageProgress);
       return;
     }
+
     if (eventName === 'result') {
       finalResult = payload as CodeReviewOutput;
       handlers.onResult?.(finalResult);
       return;
     }
+
     if (eventName === 'error') {
       const errorEvent = parseError(payload);
       handlers.onError?.(errorEvent);

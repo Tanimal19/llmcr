@@ -60,6 +60,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       } else {
         appendLog('[INFO] Waiting for task id from backend before sending cancel request...');
       }
+
       return;
     }
 
