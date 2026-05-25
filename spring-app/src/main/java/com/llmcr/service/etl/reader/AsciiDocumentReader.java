@@ -26,18 +26,16 @@ public class AsciiDocumentReader implements DocumentReader {
             throw new IllegalArgumentException("AsciiDoc source file not found: " + this.asciiPath);
         }
         this.sourceName = this.asciiPath.getFileName() == null
-            ? "unknown_source"
-            : this.asciiPath.getFileName().toString();
+                ? "unknown_source"
+                : this.asciiPath.getFileName().toString();
     }
 
     @Override
     public List<Document> get() {
-        try {
-            Asciidoctor asciidoctor = Asciidoctor.Factory.create();
+        try (Asciidoctor asciidoctor = Asciidoctor.Factory.create()) {
             org.asciidoctor.ast.Document document = asciidoctor.load(
-                Files.readString(this.asciiPath),
-                org.asciidoctor.Options.builder().build()
-            );
+                    Files.readString(this.asciiPath),
+                    org.asciidoctor.Options.builder().build());
 
             List<Document> documents = new ArrayList<>();
             processNode(document, sourceName, 0, documents);
@@ -50,15 +48,15 @@ public class AsciiDocumentReader implements DocumentReader {
     private void processNode(StructuralNode node, String ctx, int depth, List<Document> output) {
         if (depth < 2) {
             node
-                .getBlocks()
-                .stream()
-                .filter(b -> b instanceof Section)
-                .forEach(s -> processNode(s, ctx + "::" + s.getTitle(), depth + 1, output));
+                    .getBlocks()
+                    .stream()
+                    .filter(b -> b instanceof Section)
+                    .forEach(s -> processNode(s, ctx + "::" + s.getTitle(), depth + 1, output));
         }
 
         Stream<StructuralNode> contentBlocks = depth < 2
-            ? node.getBlocks().stream().filter(b -> !(b instanceof Section))
-            : flatten(node);
+                ? node.getBlocks().stream().filter(b -> !(b instanceof Section))
+                : flatten(node);
 
         StringBuilder paragraph = new StringBuilder();
         contentBlocks.forEach(block -> appendOrFlush(output, ctx, paragraph, extractContent(block)));
@@ -66,7 +64,8 @@ public class AsciiDocumentReader implements DocumentReader {
     }
 
     private void appendOrFlush(List<Document> output, String ctx, StringBuilder paragraph, String content) {
-        if (content == null || content.isBlank()) return;
+        if (content == null || content.isBlank())
+            return;
         if (paragraph.length() + content.length() > MAX_PARA_LENGTH && paragraph.length() > 0) {
             flush(output, ctx, paragraph);
         }
@@ -81,17 +80,20 @@ public class AsciiDocumentReader implements DocumentReader {
     }
 
     private String extractContent(StructuralNode block) {
-        if (block instanceof Section s) return s.getTitle();
+        if (block instanceof Section s)
+            return s.getTitle();
         if (block instanceof org.asciidoctor.ast.List list) {
             StringBuilder sb = new StringBuilder();
-            for (StructuralNode item : list.getItems()) sb.append(((ListItemImpl) item).getText()).append("\n");
+            for (StructuralNode item : list.getItems())
+                sb.append(((ListItemImpl) item).getText()).append("\n");
             return sb.toString();
         }
         return block.getContent() == null ? null : block.getContent().toString();
     }
 
     private Stream<StructuralNode> flatten(StructuralNode node) {
-        if (!(node instanceof Section) || node.getBlocks() == null || node.getBlocks().isEmpty()) return Stream.empty();
+        if (!(node instanceof Section) || node.getBlocks() == null || node.getBlocks().isEmpty())
+            return Stream.empty();
         return node.getBlocks().stream().flatMap(child -> Stream.concat(Stream.of(child), flatten(child)));
     }
 }
