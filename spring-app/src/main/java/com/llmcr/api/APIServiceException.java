@@ -6,9 +6,10 @@ public class APIServiceException extends RuntimeException {
 
     public enum ErrorCode {
         INVALID_REQUEST("invalidrequest", "Invalid request payload or parameters", HttpStatus.INTERNAL_SERVER_ERROR),
-        INTERNAL_ERROR("internalerror", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR),
 
         RAG_RETRIEVAL_FAILED("ragretrievalfailed", "Failed to retrieve contexts", HttpStatus.INTERNAL_SERVER_ERROR),
+        RAG_SCOPE_GET_FAILED("ragscopegetfailed", "Failed to get RAG scope", HttpStatus.INTERNAL_SERVER_ERROR),
+        RAG_SCOPE_SET_FAILED("ragscopesetfailed", "Failed to set RAG scope", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_VECTOR_SEARCH_FAILED("ragvectorsearchfailed", "Vector search failed", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_RERANK_FAILED("ragrerankfailed", "Reranking failed", HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_CONTEXT_MERGE_FAILED("ragcontextmergefailed", "Failed to merge retrieved contexts",
@@ -79,7 +80,10 @@ public class APIServiceException extends RuntimeException {
                 "sourcesynccancelled", "Source sync task was cancelled", HttpStatus.CONFLICT),
         SOURCE_SYNC_REMOVE_CHUNKS_FAILED(
                 "sourcesyncremovechunksfailed", "Failed to remove chunks from vector store",
-                HttpStatus.INTERNAL_SERVER_ERROR);
+                HttpStatus.INTERNAL_SERVER_ERROR),
+
+        LLM_RESPONSE_FAILED("llmresponsefailed", "Failed to get response from LLM", HttpStatus.INTERNAL_SERVER_ERROR),
+        INTERNAL_ERROR("internalerror", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
 
         private final String code;
         private final String message;

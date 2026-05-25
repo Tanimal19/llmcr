@@ -31,6 +31,7 @@ public class FaissVectorStore extends MyVectorStore {
                 applicationProperties.getEmbeddingModel().getName());
     }
 
+    @Override
     public void addChunks(List<Chunk> chunks, String collectionName) {
         if (chunks.isEmpty()) {
             return;
