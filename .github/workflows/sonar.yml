@@ -20,19 +20,40 @@ jobs:
         with:
           fetch-depth: 0
 
+      # --------------------------------------------------------
+      # 環境初始化：同時準備好 Java 21 與 Node.js
+      # --------------------------------------------------------
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: 'zulu'
 
-      # 1. 先編譯 Java，讓 target/classes 產生檔案
-      - name: Compile Backend Java
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # --------------------------------------------------------
+      # 步驟 1：後端測試（內建自動編譯，並生成 JaCoCo 覆蓋率報告）
+      # --------------------------------------------------------
+      - name: Run Backend Tests & Compile
         run: |
           cd spring-app
-          mvn compile
+          mvn verify
 
-      # 2. 綜合掃描（參數寫在sonar-project.properties）
+      # --------------------------------------------------------
+      # 步驟 2：前端測試（安裝依賴，並用 c8 幫 AVA 生成 lcov 報告）
+      # --------------------------------------------------------
+      - name: Run Frontend Tests
+        run: |
+          cd tui
+          npm ci --ignore-scripts
+          ./node_modules/.bin/c8 --reporter=lcov ./node_modules/.bin/ava
+
+      # --------------------------------------------------------
+      # 步驟 3：綜合掃描（自動讀取 sonar-project.properties 裡設定好的報告路徑）
+      # --------------------------------------------------------
       - name: Combined SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
