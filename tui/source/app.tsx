@@ -10,13 +10,13 @@ import { ArgInput } from './components/arg-input.js';
 
 type MainMenuProps = {
   onSelect: (screen: string) => void;
-  projectLoaded: string;
+  configLoaded: string;
   lastSynced: string;
   isInfoLoading: boolean;
   infoError: string | undefined;
 };
 
-const MainMenu = ({ onSelect, projectLoaded, lastSynced, isInfoLoading, infoError }: MainMenuProps) => {
+const MainMenu = ({ onSelect, configLoaded, lastSynced, isInfoLoading, infoError }: MainMenuProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const { exit } = useApp();
 
@@ -85,14 +85,14 @@ const MainMenu = ({ onSelect, projectLoaded, lastSynced, isInfoLoading, infoErro
       {/* 項目狀況中繼資料 */}
       <Box flexDirection="column" marginTop={1}>
         <Text>
-          <Text color="green">●</Text> <Text color="white">Project loaded:</Text>{' '}
-          <Text color="gray">{projectLoaded}</Text>
+          <Text color="green">●</Text> <Text color="white">Config loaded:</Text>{' '}
+          <Text color="gray">{configLoaded}</Text>
         </Text>
         <Text>
           <Text color="green">●</Text> <Text color="white">Last synced:</Text> <Text color="gray">{lastSynced}</Text>
         </Text>
-        {isInfoLoading ? <Text color="gray">Loading project metadata...</Text> : null}
-        {!isInfoLoading && infoError ? <Text color="red">Failed to load /info: {infoError}</Text> : null}
+        {isInfoLoading ? <Text color="gray">Loading info metadata...</Text> : undefined}
+        {!isInfoLoading && infoError ? <Text color="red">Failed to load /info: {infoError}</Text> : undefined}
       </Box>
 
       {/* 按鍵指南 Footer */}
@@ -121,12 +121,16 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
   const [reviewArg, setReviewArg] = useState<string | undefined>(undefined);
   const [reviewUseMock, setReviewUseMock] = useState(false);
-  const [projectLoaded, setProjectLoaded] = useState('Loading...');
+  const [configLoaded, setconfigLoaded] = useState('Loading...');
   const [lastSynced, setLastSynced] = useState('Loading...');
   const [isInfoLoading, setIsInfoLoading] = useState(true);
   const [infoError, setInfoError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    if (currentScreen !== 'menu') {
+      return;
+    }
+
     let disposed = false;
 
     const loadInfo = async (): Promise<void> => {
@@ -139,14 +143,14 @@ export default function App() {
           return;
         }
 
-        setProjectLoaded(result.configPath || 'N/A');
+        setconfigLoaded(result.configPath || 'N/A');
         setLastSynced(result.lastSyncTime ? String(result.lastSyncTime) : 'N/A');
       } catch (error) {
         if (disposed) {
           return;
         }
 
-        setProjectLoaded('N/A');
+        setconfigLoaded('N/A');
         setLastSynced('N/A');
         setInfoError(error instanceof Error ? error.message : String(error));
       } finally {
@@ -161,7 +165,7 @@ export default function App() {
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [currentScreen]);
 
   const handleBack = () => {
     setReviewArg(undefined);
@@ -174,7 +178,7 @@ export default function App() {
       return (
         <MainMenu
           onSelect={setCurrentScreen}
-          projectLoaded={projectLoaded}
+          configLoaded={configLoaded}
           lastSynced={lastSynced}
           isInfoLoading={isInfoLoading}
           infoError={infoError}
@@ -240,5 +244,5 @@ const PlaceholderBackKey = ({ onBack }: { onBack: () => void }) => {
   useInput((_, key) => {
     if (key.escape) onBack();
   });
-  return null;
+  return undefined;
 };

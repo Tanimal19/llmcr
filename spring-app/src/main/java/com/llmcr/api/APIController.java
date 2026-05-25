@@ -88,10 +88,13 @@ public class APIController {
     @GetMapping("/info")
     public Map<String, Object> getInfo() {
         logger.info("Get info request received");
+        String configPath = configReader.getConfigFilePath();
+        String lastSyncTime = sourceSyncService.getLastAllSyncTime();
+
         return Map.of(
-                "configPath", configReader.getConfigFilePath(),
+                "configPath", configPath,
                 "config", applicationProperties,
-                "lastSyncTime", sourceSyncService.getLastAllSyncTime());
+                "lastSyncTime", lastSyncTime);
     }
 
     @PostMapping("/chat")
