@@ -120,12 +120,6 @@ function requireNonEmpty(values: string[], message: string): void {
   }
 }
 
-function requireTrackRootId(trackRootId: number): void {
-  if (!Number.isInteger(trackRootId) || trackRootId <= 0) {
-    throw new Error('trackRootId must be a positive integer');
-  }
-}
-
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   if (typeof fetch !== 'function') {
     throw new TypeError('Global fetch is not available in this runtime. Use Node.js 18+ or provide a fetch polyfill.');
@@ -323,13 +317,6 @@ export async function cancelReviewTask(taskId: string): Promise<void> {
 
 export async function syncAll(): Promise<void> {
   await apiRequest<void>('/sync', {
-    method: 'POST',
-  });
-}
-
-export async function syncByTrackRootId(trackRootId: number): Promise<void> {
-  requireTrackRootId(trackRootId);
-  await apiRequest<void>(`/sync/${trackRootId}`, {
     method: 'POST',
   });
 }

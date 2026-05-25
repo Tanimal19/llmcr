@@ -26,13 +26,13 @@ public class APIExceptionHandler {
     @ExceptionHandler(APIServiceException.class)
     public ResponseEntity<ErrorResponse> handleApiServiceException(APIServiceException ex, HttpServletRequest request) {
         HttpStatus status = ex.getStatus();
-        logger.error("[APIService] {} on {}: {}", ex.getErrorCode().code(), request.getRequestURI(), ex.getMessage(),
+        logger.error("{} on {}: {}", ex.getErrorCode().code(), request.getRequestURI(), ex.getMessage(),
                 ex);
 
         ErrorResponse response = new ErrorResponse(
                 ex.getErrorCode().code(),
                 status.getReasonPhrase(),
-                messageOrDefault(ex, ex.getErrorCode().defaultMessage()),
+                ex.getMessage(),
                 status.value(),
                 request.getRequestURI(),
                 Instant.now());
@@ -48,11 +48,11 @@ public class APIExceptionHandler {
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleBadRequest(Exception ex, HttpServletRequest request) {
-        logger.warn("[APIService] Bad request on {}: {}", request.getRequestURI(), ex.getMessage());
+        logger.warn("Bad request on {}: {}", request.getRequestURI(), ex.getMessage());
         return new ErrorResponse(
                 "illegalargument",
                 "Bad Request",
-                messageOrDefault(ex, "Invalid request payload or parameters"),
+                "Invalid request payload or parameters",
                 HttpStatus.BAD_REQUEST.value(),
                 request.getRequestURI(),
                 Instant.now());
@@ -61,7 +61,7 @@ public class APIExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleUnexpected(Exception ex, HttpServletRequest request) {
-        logger.error("[APIService] Unexpected error on {}", request.getRequestURI(), ex);
+        logger.error("Unexpected error on {}", request.getRequestURI(), ex);
         return new ErrorResponse(
                 "internalerror",
                 "Internal Server Error",
@@ -70,12 +70,4 @@ public class APIExceptionHandler {
                 request.getRequestURI(),
                 Instant.now());
     }
-
-    private static String messageOrDefault(Exception ex, String fallback) {
-        if (ex.getMessage() == null || ex.getMessage().isBlank()) {
-            return fallback;
-        }
-        return ex.getMessage();
-    }
-
 }

@@ -5,29 +5,24 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.llmcr.service.etl.ETLService;
 import com.llmcr.service.sync.SourceSyncService;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "sync")
 public class SyncRunner implements CommandLineRunner {
     private final SourceSyncService syncService;
-    private final ETLService etlService;
     private final JdbcTemplate jdbcTemplate;
 
     public SyncRunner(
             SourceSyncService syncService,
-            ETLService etlService,
             JdbcTemplate jdbcTemplate) {
         this.syncService = syncService;
-        this.etlService = etlService;
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public void run(String... args) throws Exception {
         syncService.syncAllTrackRootSource();
-        etlService.run();
     }
 
     private void resetEntityTables() {

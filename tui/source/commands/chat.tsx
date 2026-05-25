@@ -3,7 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { type CommandProps } from '../types.js';
 import { chat, type ChatResponse } from '../api.js';
-import { ThinkingSpinner } from '../components/thinkingSpinner.js';
+import { ThinkingSpinner } from '../components/thinking-spinner.js';
 
 // ─── 1. 歷史訊息型態宣告 ───
 type Message = {

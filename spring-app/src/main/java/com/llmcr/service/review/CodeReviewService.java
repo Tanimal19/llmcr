@@ -32,11 +32,14 @@ import com.llmcr.agent.SummaryAgent.ItemAnswer;
 import com.llmcr.agent.SummaryAgent.SummaryAgentInput;
 import com.llmcr.agent.SummaryAgent.SummaryAgentOutput;
 import com.llmcr.api.APIServiceException;
+import com.llmcr.api.SseTaskObject;
+import com.llmcr.api.SseTaskManager.TaskProgressEvent;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.service.review.PullRequestParser.PullRequestData;
 
 @Service
-public class CodeReviewService {
+public class CodeReviewService
+        implements SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
 
     private static final Logger logger = LoggerFactory.getLogger(CodeReviewService.class);
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -61,6 +64,12 @@ public class CodeReviewService {
         this.summaryAgent = summaryAgent;
     }
 
+    public record CodeReviewInput(String jsonFilePath, boolean useMockData) {
+    }
+
+    public record CodeReviewOutput(CodeReviewReport reviewReport, Path reportPath) {
+    }
+
     public record CodeChange(String filePath, String diffContent) {
     }
 
@@ -72,10 +81,10 @@ public class CodeReviewService {
             List<ItemAnswer> itemAnswers) {
 
         public String toString() {
-            return buildMarkdownReport(this);
+            return toMarkdown(this);
         }
 
-        private static String buildMarkdownReport(CodeReviewReport report) {
+        private static String toMarkdown(CodeReviewReport report) {
             StringBuilder sb = new StringBuilder();
 
             // Summary Report section
@@ -193,39 +202,30 @@ public class CodeReviewService {
         }
     }
 
-    public record CodeReviewOutput(
-            CodeReviewReport reviewReport,
-            Path reportPath) {
+    public String getTaskName() {
+        return "code_review";
     }
 
-    public record ReviewStageProgress(
-            String stage,
-            String status,
-            String message) {
+    /**
+     * Regular entry point for code review without SSE.
+     */
+    public CodeReviewOutput review(CodeReviewInput input) {
+        return execute(input, null, () -> false);
     }
 
-    public CodeReviewOutput review(String jsonFilePath, boolean useMockData) {
-        return review(jsonFilePath, useMockData, null);
-    }
-
-    public CodeReviewOutput review(String jsonFilePath, boolean useMockData,
-            Consumer<ReviewStageProgress> progressListener) {
-        return review(jsonFilePath, useMockData, progressListener, () -> false);
-    }
-
-    public CodeReviewOutput review(String jsonFilePath, boolean useMockData,
-            Consumer<ReviewStageProgress> progressListener,
+    public CodeReviewOutput execute(CodeReviewInput input,
+            Consumer<TaskProgressEvent> progressListener,
             BooleanSupplier cancellationRequested) {
+
         try {
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "PIPELINE", "STARTED", "Review pipeline started");
+            emitProgress(progressListener, "PIPELINE", "Review pipeline started");
 
-            if (useMockData) {
-                jsonFilePath = MockReviewData.MOCK_PULL_REQUEST_JSON_PATH;
-            }
+            String jsonFilePath = input.useMockData() ? MockReviewData.MOCK_PULL_REQUEST_JSON_PATH
+                    : input.jsonFilePath();
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "PARSE", "STARTED", "Parsing pull request data");
+            emitProgress(progressListener, "PIPELINE", "Parsing pull request data");
             PullRequestData prData;
             try {
                 prData = PullRequestParser.parseJsonFile(jsonFilePath);
@@ -233,10 +233,8 @@ public class CodeReviewService {
                 throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PARSE_FAILED,
                         "Failed to parse pull request data: " + jsonFilePath, ex);
             }
-            emitProgress(progressListener, "PARSE", "COMPLETED",
-                    "Parsed pull request data for PR " + prData.prId());
-
-            logger.info("[REVIEW] start prId={} title={}", prData.prId(), prData.title());
+            emitProgress(progressListener, "PIPELINE",
+                    "Starting review for PR #" + prData.prId() + ": " + prData.title());
 
             List<CodeChange> codeChanges = prData.changedFiles().stream()
                     .map(file -> new CodeChange(file.path(), file.patch()))
@@ -247,106 +245,80 @@ public class CodeReviewService {
 
             InterpretationAgentOutput interpretation;
             PlanningAgentOutput planning;
-            if (!useMockData) {
+            if (!input.useMockData()) {
                 throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "INTERPRETATION", "STARTED",
-                        "Running interpretation stage");
-                logger.info("[REVIEW] interpretation:start");
+                emitProgress(progressListener, "INTERPRETATION", "Start interpretation stage");
                 try {
                     interpretation = interpretationAgent.execute(
                             new InterpretationAgentInput(codeChanges));
                 } catch (Exception ex) {
-                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED,
-                            "Review interpretation stage failed", ex);
+                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
                 }
-                emitProgress(progressListener, "INTERPRETATION", "COMPLETED",
-                        "Interpretation stage completed");
+                emitProgress(progressListener, "INTERPRETATION", "Interpretation stage completed");
 
                 throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "PLANNING", "STARTED",
-                        "Running planning stage");
-                logger.info("[REVIEW] planning:start");
+                emitProgress(progressListener, "PLANNING", "Start planning stage");
                 try {
                     planning = planningAgent.execute(
                             new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
                 } catch (Exception ex) {
-                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED,
-                            "Review planning stage failed", ex);
+                    throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
                 }
-                emitProgress(progressListener, "PLANNING", "COMPLETED",
-                        "Planning stage completed");
+                emitProgress(progressListener, "PLANNING", "Planning stage completed");
+
             } else {
                 throwIfCancelled(cancellationRequested);
                 interpretation = MockReviewData.MOCK_INTERPRETATION;
                 planning = MockReviewData.MOCK_PLANNING;
-                logger.info("[REVIEW] using mock interpretation/planning");
-                emitProgress(progressListener, "INTERPRETATION", "COMPLETED",
-                        "Using mock interpretation");
-                emitProgress(progressListener, "PLANNING", "COMPLETED",
-                        "Using mock planning");
+                emitProgress(progressListener, "INTERPRETATION", "Using mock interpretation");
+                emitProgress(progressListener, "PLANNING", "Using mock planning");
             }
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "COMPUTATION", "STARTED",
-                    "Running checklist computations");
-            logger.info("[REVIEW] computation:start items={}", planning.checklistItems().size());
+            emitProgress(progressListener, "COMPUTATION", "Running checklist computations");
+
             List<ItemAnswer> itemAnswers = new ArrayList<>();
             int totalItems = planning.checklistItems().size();
             int itemIndex = 0;
             for (String item : planning.checklistItems()) {
                 throwIfCancelled(cancellationRequested);
+                emitProgress(progressListener, "COMPUTATION",
+                        "Running checklist item " + itemIndex + "/" + totalItems + ": " + item);
                 itemIndex++;
-                emitProgress(progressListener, "COMPUTATION", "IN_PROGRESS",
-                        "Checklist item " + itemIndex + "/" + totalItems + ": " + item);
-                logger.debug("[REVIEW] computation:item={}", item);
-                ComputationAgentOutput answer;
+
                 try {
-                    answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
+                    ComputationAgentOutput answer = computationAgent
+                            .execute(new ComputationAgentInput(codeChanges, item));
+                    itemAnswers.add(new ItemAnswer(item, answer));
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
                             "Review computation stage failed for checklist item: " + item, ex);
                 }
-                itemAnswers.add(new ItemAnswer(item, answer));
             }
-            emitProgress(progressListener, "COMPUTATION", "COMPLETED",
-                    "Computation stage completed");
+            emitProgress(progressListener, "COMPUTATION", "Computation stage completed");
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "SUMMARY", "STARTED",
-                    "Running summary stage");
-            logger.info("[REVIEW] summary:start");
+            emitProgress(progressListener, "SUMMARY", "Running summary stage");
             SummaryAgentOutput reviewResult;
             try {
-                reviewResult = summaryAgent.execute(
-                        new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
+                reviewResult = summaryAgent.execute(new SummaryAgentInput(codeChanges, codeAnalysis, itemAnswers));
             } catch (Exception ex) {
-                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_SUMMARY_FAILED,
-                        "Review summary stage failed", ex);
+                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_SUMMARY_FAILED, ex);
             }
-            emitProgress(progressListener, "SUMMARY", "COMPLETED",
-                    "Summary stage completed");
+            emitProgress(progressListener, "SUMMARY", "Summary stage completed");
 
             throwIfCancelled(cancellationRequested);
+            emitProgress(progressListener, "PIPELINE", "Writing review report");
             CodeReviewReport review = new CodeReviewReport(
                     prData.prId(), prData.title(), reviewResult, interpretation, itemAnswers);
-            emitProgress(progressListener, "WRITE_REPORT", "STARTED",
-                    "Writing review report");
             Path reportPath = writeReport(review);
-            emitProgress(progressListener, "WRITE_REPORT", "COMPLETED",
-                    "Review report written to " + reportPath);
-            emitProgress(progressListener, "PIPELINE", "COMPLETED",
-                    "Review pipeline completed");
 
-            logger.info("[REVIEW] done reportPath={}", reportPath);
+            emitProgress(progressListener, "PIPELINE",
+                    "Review pipeline completed, report generated at: " + reportPath.toString());
 
             return new CodeReviewOutput(review, reportPath);
+
         } catch (APIServiceException ex) {
-            throw ex;
-        } catch (RuntimeException ex) {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_CANCELLED,
-                        "Review task cancelled by client", ex);
-            }
             throw ex;
         } catch (Exception ex) {
             throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
@@ -362,14 +334,14 @@ public class CodeReviewService {
     }
 
     private static void emitProgress(
-            Consumer<ReviewStageProgress> progressListener,
+            Consumer<TaskProgressEvent> progressListener,
             String stage,
-            String status,
             String message) {
+        logger.info("stage={} message={}", stage, message);
         if (progressListener == null) {
             return;
         }
-        progressListener.accept(new ReviewStageProgress(stage, status, message));
+        progressListener.accept(new TaskProgressEvent(false, stage, message));
     }
 
     private Path writeReport(CodeReviewReport report) {
@@ -386,5 +358,4 @@ public class CodeReviewService {
                     "Failed to write review report", e);
         }
     }
-
 }

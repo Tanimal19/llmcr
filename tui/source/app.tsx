@@ -16,7 +16,7 @@ const MainMenu = ({ onSelect }: { onSelect: (screen: string) => void }) => {
     { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
     { cmd: 'review', desc: 'Generate code review', value: 'review_flow' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
-    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync_flow' },
+    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
     { cmd: 'help', desc: 'Show this command list', value: 'help' },
   ];
@@ -112,12 +112,10 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
   const [reviewArg, setReviewArg] = useState<string | undefined>(undefined);
   const [reviewUseMock, setReviewUseMock] = useState(false);
-  const [syncArg, setSyncArg] = useState<string | undefined>(undefined);
 
   const handleBack = () => {
     setReviewArg(undefined);
     setReviewUseMock(false);
-    setSyncArg(undefined);
     setCurrentScreen('menu');
   };
 
@@ -146,22 +144,8 @@ export default function App() {
       return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
     }
 
-    case 'sync_flow': {
-      return (
-        <ArgInput
-          title="Please Project Root)"
-          placeholder="C:/example_project/"
-          onCancel={handleBack}
-          onSubmit={value => {
-            setSyncArg(value);
-            setCurrentScreen('sync');
-          }}
-        />
-      );
-    }
-
     case 'sync': {
-      return <SyncCommand onBack={handleBack} targetPath={syncArg} />;
+      return <SyncCommand onBack={handleBack} />;
     }
 
     case 'chat': {
