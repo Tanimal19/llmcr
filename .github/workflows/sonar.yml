@@ -1,4 +1,4 @@
-name: SonarCloud Single Project Analysis
+name: SonarCloud Analysis
 
 on:
   push:
@@ -44,8 +44,10 @@ jobs:
 
       # --------------------------------------------------------
       # 步驟 2：前端測試（安裝依賴，並用 c8 幫 AVA 生成 lcov 報告）
+      # 不論後端成功或失敗，前端測試都必須執行
       # --------------------------------------------------------
       - name: Run Frontend Tests
+        if: success() || failure()
         run: |
           cd tui
           npm ci --ignore-scripts
@@ -53,8 +55,10 @@ jobs:
 
       # --------------------------------------------------------
       # 步驟 3：綜合掃描（自動讀取 sonar-project.properties 裡設定好的報告路徑）
+      # 不論前後端測試結果如何，都要把當前的報告與程式碼送上雲端
       # --------------------------------------------------------
       - name: Combined SonarQube Scan
+        if: success() || failure()
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
