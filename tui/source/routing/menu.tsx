@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import { info } from './menu.api.js'; // 就近引入自己模組的 API
+import { type AppScreen } from '#routing/router.js';
 
 type MainMenuProps = {
-  onSelect: (screen: string) => void;
+  onSelect: (screen: AppScreen) => void; // 🎯 這裡不再是 string，而是限制範圍的 AppScreen
+};
+
+type MenuOption = {
+  cmd: string;
+  desc: string;
+  value: AppScreen; // 強迫 value 必須是合法的畫面名稱
 };
 
 export const MainMenu = ({ onSelect }: MainMenuProps) => {
@@ -42,10 +49,10 @@ export const MainMenu = ({ onSelect }: MainMenuProps) => {
     };
   }, []); // 空陣列即可，只有當選單元件被渲染（即回到主選單）時才觸發
 
-  const options = [
+  const options: MenuOption[] = [
     { cmd: 'review', desc: 'Generate code review', value: 'review' },
     { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
-    { cmd: 'setrag', desc: 'Modify RAG scope of chat mode', value: 'setrag' },
+    { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
     { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'help', desc: 'Show this command list', value: 'help' },
@@ -56,12 +63,10 @@ export const MainMenu = ({ onSelect }: MainMenuProps) => {
     if (key.downArrow) setActiveIndex(prev => (prev + 1) % options.length);
     if (key.return) {
       const selected = options[activeIndex]?.value ?? 'help';
-      onSelect(selected);
+      onSelect(selected); // 👍 這裡傳出去的絕對是安全的型態
     }
 
-    if (input === 'q' || key.escape) {
-      exit();
-    }
+    if (input === 'q' || key.escape) exit();
   });
 
   return (

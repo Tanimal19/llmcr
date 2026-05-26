@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
+import { MainMenu } from './menu.js';
 import { ChatCommand } from '#features/chat/chat.cmd.js';
 import { SetRagCommand } from '#features/chat/setrag.cmd.js';
 import { ReviewCommand } from '#features/code-review/review.cmd.js';
 import { LsDbCommand } from '#features/knowledge-base/lsdb.cmd.js';
 import { SyncCommand } from '#features/knowledge-base/sync.cmd.js';
-import { MainMenu } from '#features/menu/menu.js';
+
+export type AppScreen = 'menu' | 'chat' | 'review' | 'sync' | 'lsdb' | 'setrag' | 'help';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<string>('menu');
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
 
   const handleBack = () => {
     setCurrentScreen('menu');
@@ -16,7 +18,7 @@ export default function App() {
 
   switch (currentScreen) {
     case 'menu': {
-      return <MainMenu onSelect={setCurrentScreen} />; // 🎯 變得超級乾淨！
+      return <MainMenu onSelect={setCurrentScreen} />;
     }
 
     case 'review': {
@@ -49,10 +51,6 @@ export default function App() {
           <PlaceholderBackKey onBack={handleBack} />
         </Box>
       );
-    }
-
-    default: {
-      return <Text>Unknown command</Text>;
     }
   }
 }
