@@ -1,9 +1,9 @@
 package com.llmcr.etl;
 
 import com.llmcr.api.APIServiceException;
-import com.llmcr.api.sse.VoidSseTaskObject;
 import com.llmcr.database.repository.ContextRepository;
 import com.llmcr.database.repository.SourceRepository;
+import com.llmcr.sse.VoidSseTaskObject;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;

@@ -1,4 +1,4 @@
-package com.llmcr.api.sse;
+package com.llmcr.sse;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;

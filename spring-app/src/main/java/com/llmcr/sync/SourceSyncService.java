@@ -1,7 +1,7 @@
 package com.llmcr.sync;
 
 import com.llmcr.api.APIServiceException;
-import com.llmcr.api.sse.SseTaskObject;
+import com.llmcr.sse.SseTaskObject;
 import com.llmcr.database.entity.Chunk;
 import com.llmcr.database.entity.ChunkCollection;
 import com.llmcr.database.entity.Source;

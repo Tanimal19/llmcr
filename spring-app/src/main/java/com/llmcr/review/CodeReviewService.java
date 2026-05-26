@@ -1,7 +1,6 @@
 package com.llmcr.review;
 
 import com.llmcr.api.APIServiceException;
-import com.llmcr.api.sse.SseTaskObject;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.review.CodeReviewReport.ChecklistItem;
 import com.llmcr.review.CodeReviewReport.ChecklistItemAnswer;
@@ -18,6 +17,8 @@ import com.llmcr.review.agent.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.review.agent.PlanningAgent.PlanningAgentInput;
 import com.llmcr.review.agent.PlanningAgent.PlanningAgentOutput;
 import com.llmcr.review.agent.SummaryAgent.SummaryAgentInput;
+import com.llmcr.sse.SseTaskObject;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

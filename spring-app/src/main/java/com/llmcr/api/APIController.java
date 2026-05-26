@@ -2,12 +2,12 @@ package com.llmcr.api;
 
 import com.llmcr.ChatService;
 import com.llmcr.ChatService.ChatResponse;
-import com.llmcr.api.sse.SseTaskManager;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.config.ConfigReader;
 import com.llmcr.etl.LoadService;
 import com.llmcr.review.CodeReviewService;
 import com.llmcr.review.CodeReviewService.CodeReviewInput;
+import com.llmcr.sse.SseTaskManager;
 import com.llmcr.sync.ConfigSyncService;
 import com.llmcr.sync.SourceSyncService;
 import com.llmcr.sync.SourceSyncService.TrackRootPreview;
