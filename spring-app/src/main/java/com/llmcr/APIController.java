@@ -10,7 +10,7 @@ import com.llmcr.feature.review.CodeReviewService.CodeReviewInput;
 import com.llmcr.feature.sync.ConfigSyncService;
 import com.llmcr.feature.sync.SourceSyncService;
 import com.llmcr.feature.sync.SourceSyncService.TrackRootPreview;
-import com.llmcr.infrastructure.etl.LoadService;
+import com.llmcr.feature.sync.etl.LoadService;
 
 import java.util.List;
 import java.util.Map;

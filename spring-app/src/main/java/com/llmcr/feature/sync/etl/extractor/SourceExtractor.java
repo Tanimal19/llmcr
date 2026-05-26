@@ -1,4 +1,4 @@
-package com.llmcr.infrastructure.etl.extractor;
+package com.llmcr.feature.sync.etl.extractor;
 
 import java.util.List;
 import java.util.function.Function;

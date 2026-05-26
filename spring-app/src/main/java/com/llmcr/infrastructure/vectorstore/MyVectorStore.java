@@ -14,9 +14,6 @@ import com.llmcr.domain.entity.Chunk;
  */
 public abstract class MyVectorStore {
 
-    public record ChunkIdScorePair(Long chunkId, float score) {
-    }
-
     /**
      * Add chunks to a collection.
      */

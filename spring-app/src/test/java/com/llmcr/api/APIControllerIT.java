@@ -18,8 +18,8 @@ import com.llmcr.domain.exception.APIServiceException.ErrorCode;
 import com.llmcr.domain.repository.ChunkCollectionRepository;
 import com.llmcr.domain.repository.TrackRootRepository;
 import com.llmcr.feature.chat.ChatService;
+import com.llmcr.feature.sync.etl.LoadService;
 import com.llmcr.infrastructure.agent.logging.AgentLoggerAdvisor;
-import com.llmcr.infrastructure.etl.LoadService;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
 import com.llmcr.infrastructure.vectorstore.faiss.FaissService;
 

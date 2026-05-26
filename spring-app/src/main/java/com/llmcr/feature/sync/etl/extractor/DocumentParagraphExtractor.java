@@ -1,9 +1,9 @@
-package com.llmcr.infrastructure.etl.extractor;
+package com.llmcr.feature.sync.etl.extractor;
 
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.entity.Context.ContextType;
-import com.llmcr.infrastructure.etl.reader.AsciiDocumentReader;
+import com.llmcr.feature.sync.etl.reader.AsciiDocumentReader;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;

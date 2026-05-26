@@ -1,4 +1,4 @@
-package com.llmcr.infrastructure.etl.transformer;
+package com.llmcr.feature.sync.etl.transformer;
 
 import com.llmcr.domain.entity.Chunk;
 import com.llmcr.domain.entity.Context;

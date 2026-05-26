@@ -1,6 +1,6 @@
 package com.llmcr.infrastructure.rag;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.RerankingModelConfigProvider;
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.repository.ContextRepository;
@@ -9,9 +9,10 @@ import com.llmcr.infrastructure.ai.reranking.RerankingModel;
 import com.llmcr.infrastructure.ai.reranking.RerankingResponse;
 import com.llmcr.infrastructure.rag.fusion.FusionStrategy;
 import com.llmcr.infrastructure.rag.fusion.RankFusionStrategy;
+import com.llmcr.infrastructure.rag.select.AdaptiveKStrategy;
 import com.llmcr.infrastructure.rag.select.TopKSelectionStrategy;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
-import com.llmcr.infrastructure.vectorstore.MyVectorStore.ChunkIdScorePair;
+import com.llmcr.infrastructure.vectorstore.ChunkIdScorePair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,24 +39,28 @@ public class QueryContextRetriever {
      *                be performed for each query and the results will
      *                be fused using the RRF fusion strategy.
      */
-    public record ContextRetrievalRequest(List<String> queries, ContextRetrievalConfiguration config) {
+    public record QueryContextRetrievalRequest(List<String> queries, QueryContextRetrievalConfig config) {
     }
 
     /**
+     * @param collectionName        the name of the vector store collection to
+     *                              search for relevant chunks.
      * @param topK                  the number of contexts to return after retrieval
      *                              and reranking.
      * @param topKSelectionStrategy the strategy to select topK contexts from the
      *                              ranked contexts.
-     * @param collectionName        the name of the vector store collection to
-     *                              search for relevant chunks.
+     * @param fusionStrategy        the strategy to fuse multiple lists of contexts
+     *                              when there are multiple queries.
      * @param useReranker           whether to use the reranking model to rerank the
      *                              retrieved contexts.
      */
-    public record ContextRetrievalConfiguration(
-            int topK,
-            TopKSelectionStrategy topKSelectionStrategy,
-            String collectionName,
+    public record QueryContextRetrievalConfig(
+            String collectionName, int topK, TopKSelectionStrategy topKSelectionStrategy, FusionStrategy fusionStrategy,
             boolean useReranker) {
+
+        public QueryContextRetrievalConfig(String collectionName, int topK) {
+            this(collectionName, topK, new AdaptiveKStrategy(), new RankFusionStrategy(), false);
+        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(QueryContextRetriever.class);
@@ -68,18 +73,17 @@ public class QueryContextRetriever {
     private final RerankingModel rerankingModel;
 
     public QueryContextRetriever(
-            SystemConfig applicationProperties,
+            RerankingModelConfigProvider rerankingModelConfigProvider,
             MyVectorStore vectorStore,
             ContextRepository contextRepository,
             ModelClientFactory modelClientFactory) {
         this.vectorStore = vectorStore;
         this.contextRepository = contextRepository;
-        this.rerankingModel = modelClientFactory.createRerankingModel(
-                applicationProperties.getRerankingModel().getProvider(),
-                applicationProperties.getRerankingModel().getName());
+        this.rerankingModel = modelClientFactory
+                .createRerankingModel(rerankingModelConfigProvider.getRerankingModelConfig());
     }
 
-    public List<ContextScorePair> retrieve(ContextRetrievalRequest request) {
+    public List<ContextScorePair> retrieve(QueryContextRetrievalRequest request) {
         if (request == null || request.config() == null) {
             throw new APIServiceException(
                     APIServiceException.ErrorCode.INVALID_REQUEST,
@@ -115,7 +119,7 @@ public class QueryContextRetriever {
                 String query = processedQueries.get(0);
                 retrievedContexts = retrieveSingleQuery(query, request.config());
             } else {
-                retrievedContexts = retrieveMultiQuery(processedQueries, request.config(), new RankFusionStrategy());
+                retrievedContexts = retrieveMultiQuery(processedQueries, request.config());
             }
 
             logger.info(
@@ -139,7 +143,7 @@ public class QueryContextRetriever {
         }
     }
 
-    private List<ContextScorePair> retrieveSingleQuery(String query, ContextRetrievalConfiguration config) {
+    private List<ContextScorePair> retrieveSingleQuery(String query, QueryContextRetrievalConfig config) {
         if (query == null || query.isBlank()) {
             throw new APIServiceException(
                     APIServiceException.ErrorCode.INVALID_REQUEST,
@@ -194,17 +198,14 @@ public class QueryContextRetriever {
         }
     }
 
-    private List<ContextScorePair> retrieveMultiQuery(
-            List<String> queries,
-            ContextRetrievalConfiguration config,
-            FusionStrategy fusionStrategy) {
+    private List<ContextScorePair> retrieveMultiQuery(List<String> queries, QueryContextRetrievalConfig config) {
         try {
             List<List<ContextScorePair>> contextLists = queries
                     .stream()
                     .map(q -> retrieveSingleQuery(q, config))
                     .toList();
 
-            return fusionStrategy.fuse(contextLists, config.topK());
+            return config.fusionStrategy().fuse(contextLists, config.topK());
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {

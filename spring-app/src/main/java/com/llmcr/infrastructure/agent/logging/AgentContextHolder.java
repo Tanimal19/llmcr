@@ -6,20 +6,21 @@ import java.util.function.Consumer;
 
 public final class AgentContextHolder {
 
-    private static final ThreadLocal<Deque<AgentCallEntry>> CONTEXT_STACK = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<Deque<AgentCallContext>> CONTEXT_STACK = ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<Deque<Integer>> ITERATION_MARKERS = ThreadLocal.withInitial(ArrayDeque::new);
-    private static final ThreadLocal<Deque<AgentCallEntry>> ITERATION_STACK = ThreadLocal.withInitial(ArrayDeque::new);
-    private static volatile Consumer<AgentCallEntry> onContextFinished;
+    private static final ThreadLocal<Deque<AgentCallContext>> ITERATION_STACK = ThreadLocal
+            .withInitial(ArrayDeque::new);
+    private static volatile Consumer<AgentCallContext> onContextFinished;
 
     private AgentContextHolder() {
     }
 
-    public static void setOnContextFinished(Consumer<AgentCallEntry> callback) {
+    public static void setOnContextFinished(Consumer<AgentCallContext> callback) {
         onContextFinished = callback;
     }
 
     public static void beginContext(String agentName, String modelName) {
-        AgentCallEntry entry = new AgentCallEntry();
+        AgentCallContext entry = new AgentCallContext();
         entry.agentName = agentName;
         entry.modelName = modelName;
         entry.startedAt = System.currentTimeMillis();
@@ -27,16 +28,16 @@ public final class AgentContextHolder {
         ITERATION_MARKERS.get().push(ITERATION_STACK.get().size());
     }
 
-    public static AgentCallEntry endContext() {
-        Deque<AgentCallEntry> contextStack = CONTEXT_STACK.get();
+    public static AgentCallContext endContext() {
+        Deque<AgentCallContext> contextStack = CONTEXT_STACK.get();
         if (contextStack.isEmpty()) {
             return null;
         }
 
-        AgentCallEntry finished = contextStack.pop();
+        AgentCallContext finished = contextStack.pop();
         finished.finish();
 
-        AgentCallEntry parent = contextStack.peek();
+        AgentCallContext parent = contextStack.peek();
         if (parent != null) {
             parent.addIteration(finished);
         }
@@ -44,7 +45,7 @@ public final class AgentContextHolder {
         Deque<Integer> iterationMarkers = ITERATION_MARKERS.get();
         if (!iterationMarkers.isEmpty()) {
             int targetDepth = iterationMarkers.pop();
-            Deque<AgentCallEntry> iterationStack = ITERATION_STACK.get();
+            Deque<AgentCallContext> iterationStack = ITERATION_STACK.get();
             while (iterationStack.size() > targetDepth) {
                 iterationStack.pop();
             }
@@ -60,17 +61,17 @@ public final class AgentContextHolder {
         return finished;
     }
 
-    public static AgentCallEntry currentContext() {
+    public static AgentCallContext currentContext() {
         return CONTEXT_STACK.get().peek();
     }
 
     public static void beginIteration(Object input) {
-        AgentCallEntry currentContext = currentContext();
+        AgentCallContext currentContext = currentContext();
         if (currentContext == null) {
             return;
         }
 
-        AgentCallEntry iteration = new AgentCallEntry();
+        AgentCallContext iteration = new AgentCallContext();
         iteration.agentName = currentContext.agentName;
         iteration.modelName = currentContext.modelName;
         iteration.input = input;
@@ -79,16 +80,16 @@ public final class AgentContextHolder {
     }
 
     public static void completeIteration(Object output) {
-        Deque<AgentCallEntry> iterationStack = ITERATION_STACK.get();
+        Deque<AgentCallContext> iterationStack = ITERATION_STACK.get();
         if (iterationStack.isEmpty()) {
             return;
         }
 
-        AgentCallEntry iteration = iterationStack.pop();
+        AgentCallContext iteration = iterationStack.pop();
         iteration.output = output;
         iteration.finish();
 
-        AgentCallEntry currentContext = currentContext();
+        AgentCallContext currentContext = currentContext();
         if (currentContext != null) {
             currentContext.addIteration(iteration);
         }

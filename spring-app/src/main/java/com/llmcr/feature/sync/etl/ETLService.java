@@ -1,4 +1,4 @@
-package com.llmcr.infrastructure.etl;
+package com.llmcr.feature.sync.etl;
 
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.repository.ContextRepository;

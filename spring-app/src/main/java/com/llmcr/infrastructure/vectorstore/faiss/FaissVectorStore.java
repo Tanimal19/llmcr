@@ -1,8 +1,10 @@
 package com.llmcr.infrastructure.vectorstore.faiss;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.EmbeddingModelConfigProvider;
 import com.llmcr.domain.entity.Chunk;
+import com.llmcr.domain.repository.ChunkRepository;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
+import com.llmcr.infrastructure.vectorstore.ChunkIdScorePair;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
 import com.llmcr.infrastructure.vectorstore.faiss.FaissService.AddVectorsRequest;
 import com.llmcr.infrastructure.vectorstore.faiss.FaissService.SearchVectorsRequest;
@@ -18,24 +20,33 @@ import org.springframework.stereotype.Repository;
 public class FaissVectorStore extends MyVectorStore {
 
     private final FaissService faissService;
+    private final ChunkRepository chunkRepository;
     private final EmbeddingModel embeddingModel;
 
     public FaissVectorStore(
-            SystemConfig applicationProperties,
             FaissService faissService,
+            EmbeddingModelConfigProvider configProvider,
+            ChunkRepository chunkRepository,
             ModelClientFactory modelClientFactory) {
         this.faissService = faissService;
-        this.embeddingModel = modelClientFactory.createEmbeddingModel(
-                applicationProperties.getEmbeddingModel().getProvider(),
-                applicationProperties.getEmbeddingModel().getName());
+        this.chunkRepository = chunkRepository;
+        this.embeddingModel = modelClientFactory.createEmbeddingModel(configProvider.getEmbeddingModelConfig());
     }
 
-    @Override
     public void addChunks(List<Chunk> chunks, String collectionName) {
         if (chunks.isEmpty()) {
             return;
         }
 
+        // generate embeddings for chunks that don't have embedding yet, and save to db
+        for (Chunk chunk : chunks) {
+            if (chunk.getEmbedding() == null || chunk.getEmbedding().length == 0) {
+                chunk.setEmbedding(embeddingModel.embed(chunk.getContent()));
+            }
+            chunkRepository.save(chunk);
+        }
+
+        // get ids and embeddings for all chunks
         List<Long> ids = chunks.stream().map(Chunk::getId).collect(Collectors.toList());
         List<float[]> embeddings = chunks
                 .stream()

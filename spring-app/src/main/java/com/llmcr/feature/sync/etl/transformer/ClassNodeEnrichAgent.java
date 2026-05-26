@@ -1,18 +1,16 @@
-package com.llmcr.infrastructure.etl.transformer;
+package com.llmcr.feature.sync.etl.transformer;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.infrastructure.agent.SingleCallAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.infrastructure.rag.select.AdaptiveKStrategy;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -62,24 +60,29 @@ public class ClassNodeEnrichAgent
             """;
 
     private static final String AGENT_NAME = "class-node-enrich";
-    private final ContextRetrievalConfiguration retrievalConfiguration;
-    private final QueryContextRetriever queryContextRetriever;
+    private static final int RETRIEVAL_TOP_K = 10;
+    private final QueryContextRetrievalConfig retrievalConfig;
+    private final QueryContextRetriever retriever;
 
     public ClassNodeEnrichAgent(
-            SystemConfig applicationProperties,
+            AgentConfigProvider configProvider,
             ModelClientFactory modelClientFactory,
-            QueryContextRetriever queryContextRetriever) {
-        super(
-                AGENT_NAME,
-                applicationProperties,
-                modelClientFactory,
-                new BeanOutputConverter<>(ClassNodeEnrichOutput.class));
-        this.retrievalConfiguration = new ContextRetrievalConfiguration(
-                10,
-                new AdaptiveKStrategy(),
-                applicationProperties.getAgents().get(AGENT_NAME).getCollection(),
-                false);
-        this.queryContextRetriever = queryContextRetriever;
+            QueryContextRetriever retriever) {
+        super(configProvider, modelClientFactory);
+
+        this.retrievalConfig = new QueryContextRetrievalConfig(
+                configProvider.getAgentCollectionConfig(AGENT_NAME), RETRIEVAL_TOP_K);
+        this.retriever = retriever;
+    }
+
+    @Override
+    protected String getAgentName() {
+        return AGENT_NAME;
+    }
+
+    @Override
+    protected Class<ClassNodeEnrichOutput> getOutputClass() {
+        return ClassNodeEnrichOutput.class;
     }
 
     @Override
@@ -100,8 +103,8 @@ public class ClassNodeEnrichAgent
 
     private String retrieveContext(ClassNodeEnrichInput input) {
         List<String> queries = input.buildQueries();
-        List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(
-                new ContextRetrievalRequest(queries, retrievalConfiguration));
+        List<ContextScorePair> retrievedContexts = retriever.retrieve(
+                new QueryContextRetrievalRequest(queries, retrievalConfig));
         return String.join("\n---\n", retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
     }
 }

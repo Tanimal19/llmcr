@@ -1,8 +1,8 @@
-package com.llmcr.infrastructure.etl;
+package com.llmcr.feature.sync.etl;
 
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.repository.ContextRepository;
-import com.llmcr.infrastructure.etl.transformer.ContextSplitter;
+import com.llmcr.feature.sync.etl.transformer.ContextSplitter;
 
 import java.util.List;
 import org.slf4j.Logger;

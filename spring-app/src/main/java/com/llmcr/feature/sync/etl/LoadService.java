@@ -1,13 +1,10 @@
-package com.llmcr.infrastructure.etl;
+package com.llmcr.feature.sync.etl;
 
-import com.llmcr.config.SystemConfig;
 import com.llmcr.domain.entity.Chunk;
 import com.llmcr.domain.entity.ChunkCollection;
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.repository.ChunkCollectionRepository;
-import com.llmcr.domain.repository.ChunkRepository;
 import com.llmcr.domain.repository.ContextRepository;
-import com.llmcr.infrastructure.ai.ModelClientFactory;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
 
 import jakarta.persistence.EntityManager;
@@ -17,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,35 +27,23 @@ public class LoadService {
 
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final ContextRepository contextRepository;
-    private final ChunkRepository chunkRepository;
     private final MyVectorStore vectorStore;
-    private final EmbeddingModel embeddingClient;
 
     public LoadService(
-            SystemConfig applicationProperties,
             ChunkCollectionRepository chunkCollectionRepository,
             ContextRepository contextRepository,
-            ChunkRepository chunkRepository,
-            MyVectorStore vectorStore,
-            ModelClientFactory modelClientFactory) {
+            MyVectorStore vectorStore) {
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.contextRepository = contextRepository;
-        this.chunkRepository = chunkRepository;
         this.vectorStore = vectorStore;
-        this.embeddingClient = modelClientFactory.createEmbeddingModel(
-                applicationProperties.getEmbeddingModel().getProvider(),
-                applicationProperties.getEmbeddingModel().getName());
     }
 
     /**
-     * This method do the following:
-     * 1. Generate embeddings for all chunks of the context if not exist
-     * 2. Save them to the database
-     * 3. Add the chunks to the vector store under the collections defined by the
-     * track root of the context's source.
+     * Load the chunks of a context to the vector store under the collections
+     * defined by the rack root of the context's source.
      */
     @Transactional
-    public void loadContextChunks(Long contextId) {
+    public void loadContext(Long contextId) {
         Context context = contextRepository
                 .findById(contextId)
                 .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
@@ -68,22 +52,14 @@ public class LoadService {
             return;
         }
 
-        // generate embeddings for chunks if not exist
-        Set<Chunk> chunks = context.getChunks();
-        for (Chunk chunk : chunks) {
-            if (chunk.getEmbedding() == null || chunk.getEmbedding().length == 0) {
-                chunk.setEmbedding(embeddingClient.embed(chunk.getContent()));
-            }
-            chunkRepository.save(chunk);
-        }
-
         // load chunks into vector store
         Set<ChunkCollection> targetCollections = context.getSource().getTrackRoot().getInCollections();
         for (ChunkCollection chunkCollection : targetCollections) {
             // only load chunks that are not already in the collection to avoid duplication
             // in vector store
             Set<Chunk> collectionChunks = chunkCollection.getChunks();
-            List<Chunk> chunksToAdd = chunks.stream().filter(chunk -> collectionChunks.contains(chunk)).toList();
+            List<Chunk> chunksToAdd = context.getChunks().stream().filter(chunk -> collectionChunks.contains(chunk))
+                    .toList();
 
             if (!chunksToAdd.isEmpty()) {
                 vectorStore.addChunks(chunksToAdd, chunkCollection.getName());
@@ -199,9 +175,7 @@ public class LoadService {
                 """;
 
         int inserted = entityManager.createNativeQuery(sql).executeUpdate();
-
         entityManager.flush();
-
         return inserted;
     }
 }

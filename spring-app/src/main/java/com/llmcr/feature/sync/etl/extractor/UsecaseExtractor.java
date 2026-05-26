@@ -1,4 +1,4 @@
-package com.llmcr.infrastructure.etl.extractor;
+package com.llmcr.feature.sync.etl.extractor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,20 +1,18 @@
 package com.llmcr.feature.review.agent;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.CodeReviewReport.CodeChange;
 import com.llmcr.feature.review.CodeReviewReport.InterpretationContent;
 import com.llmcr.infrastructure.agent.SingleCallAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.infrastructure.rag.select.AdaptiveKStrategy;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,24 +42,29 @@ public class InterpretationAgent
             """;
 
     private static final String AGENT_NAME = "interpretation";
-    private final ContextRetrievalConfiguration retrievalConfiguration;
-    private final QueryContextRetriever queryContextRetriever;
+    private static final int RETRIEVAL_TOP_K = 10;
+    private final QueryContextRetriever retriever;
+    private final QueryContextRetrievalConfig retrievalConfig;
 
     public InterpretationAgent(
-            SystemConfig applicationProperties,
+            AgentConfigProvider configProvider,
             ModelClientFactory modelClientFactory,
-            QueryContextRetriever queryContextRetriever) {
-        super(
-                AGENT_NAME,
-                applicationProperties,
-                modelClientFactory,
-                new BeanOutputConverter<>(InterpretationContent.class));
-        this.retrievalConfiguration = new ContextRetrievalConfiguration(
-                10,
-                new AdaptiveKStrategy(),
-                applicationProperties.getAgents().get(AGENT_NAME).getCollection(),
-                false);
-        this.queryContextRetriever = queryContextRetriever;
+            QueryContextRetriever retriever) {
+        super(configProvider, modelClientFactory);
+
+        this.retriever = retriever;
+        this.retrievalConfig = new QueryContextRetrievalConfig(
+                configProvider.getAgentCollectionConfig(AGENT_NAME), RETRIEVAL_TOP_K);
+    }
+
+    @Override
+    protected String getAgentName() {
+        return AGENT_NAME;
+    }
+
+    @Override
+    protected Class<InterpretationContent> getOutputClass() {
+        return InterpretationContent.class;
     }
 
     @Override
@@ -78,9 +81,7 @@ public class InterpretationAgent
     protected Map<String, Object> buildInputVariables(InterpretationAgentInput input) {
         String codeChangesText = String.join(
                 "\n----\n",
-                input
-                        .codeChanges()
-                        .stream()
+                input.codeChanges().stream()
                         .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                         .toList());
         String contextText = retrieveContext(input);
@@ -94,8 +95,8 @@ public class InterpretationAgent
             queries.add(change.diffContent());
         }
 
-        List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(
-                new ContextRetrievalRequest(queries, retrievalConfiguration));
+        List<ContextScorePair> retrievedContexts = retriever.retrieve(
+                new QueryContextRetrievalRequest(queries, retrievalConfig));
         return String.join("\n---\n", retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
     }
 }

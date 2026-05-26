@@ -1,6 +1,6 @@
 package com.llmcr.feature.review.agent;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.CodeReviewReport.ChecklistItem;
 import com.llmcr.feature.review.CodeReviewReport.CodeChange;
 import com.llmcr.feature.review.CodeReviewReport.ReportContent;
@@ -9,7 +9,6 @@ import com.llmcr.infrastructure.ai.ModelClientFactory;
 
 import java.util.List;
 import java.util.Map;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,12 +50,18 @@ public class SummaryAgent extends SingleCallAgent<SummaryAgent.SummaryAgentInput
             """;
     private static final String AGENT_NAME = "summary";
 
-    public SummaryAgent(SystemConfig applicationProperties, ModelClientFactory modelClientFactory) {
-        super(
-                AGENT_NAME,
-                applicationProperties,
-                modelClientFactory,
-                new BeanOutputConverter<>(ReportContent.class));
+    public SummaryAgent(AgentConfigProvider configProvider, ModelClientFactory modelClientFactory) {
+        super(configProvider, modelClientFactory);
+    }
+
+    @Override
+    protected String getAgentName() {
+        return AGENT_NAME;
+    }
+
+    @Override
+    protected Class<ReportContent> getOutputClass() {
+        return ReportContent.class;
     }
 
     @Override

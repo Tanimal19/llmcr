@@ -1,4 +1,4 @@
-package com.llmcr.infrastructure.etl.reader;
+package com.llmcr.feature.sync.etl.reader;
 
 import java.io.IOException;
 import java.nio.file.Files;

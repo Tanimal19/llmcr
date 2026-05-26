@@ -1,6 +1,7 @@
 package com.llmcr.infrastructure.ai;
 
 import com.google.genai.Client;
+import com.llmcr.config.SystemConfig.ModelConfig;
 import com.llmcr.infrastructure.ai.reranking.OpenAiRerankingApi;
 import com.llmcr.infrastructure.ai.reranking.OpenAiRerankingModel;
 import com.llmcr.infrastructure.ai.reranking.RerankingModel;
@@ -46,44 +47,44 @@ public class ModelClientFactory {
         this.retryTemplate.setBackOffPolicy(new LocalModelBackOffPolicy());
     }
 
-    public ChatClient createChatClient(String provider, String model) {
-        if (provider.equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
+    public ChatClient createChatClient(ModelConfig config) {
+        if (config.provider().equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
             return ChatClient.builder(
                     GoogleGenAiChatModel.builder()
                             .genAiClient(Client.builder().apiKey(geminiApiKey).build())
-                            .defaultOptions(GoogleGenAiChatOptions.builder().model(model).build())
+                            .defaultOptions(GoogleGenAiChatOptions.builder().model(config.name()).build())
                             .build())
                     .build();
-        } else if (provider.equalsIgnoreCase(OPENAI_PROVIDER_NAME)) {
+        } else if (config.provider().equalsIgnoreCase(OPENAI_PROVIDER_NAME)) {
             return ChatClient.builder(
                     OpenAiChatModel.builder()
                             .openAiApi(baseOpenAiApi)
-                            .defaultOptions(OpenAiChatOptions.builder().model(model).build())
+                            .defaultOptions(OpenAiChatOptions.builder().model(config.name()).build())
                             .retryTemplate(retryTemplate)
                             .build())
                     .build();
         } else {
-            throw new IllegalArgumentException("Unsupported chat model provider: " + provider);
+            throw new IllegalArgumentException("Unsupported chat model provider: " + config.provider());
         }
     }
 
-    public EmbeddingModel createEmbeddingModel(String provider, String model) {
-        if (provider.equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
+    public EmbeddingModel createEmbeddingModel(ModelConfig config) {
+        if (config.provider().equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
             return new OpenAiEmbeddingModel(
                     baseOpenAiApi,
                     MetadataMode.EMBED,
-                    OpenAiEmbeddingOptions.builder().model(model).build(),
+                    OpenAiEmbeddingOptions.builder().model(config.name()).build(),
                     retryTemplate);
         } else {
-            throw new IllegalArgumentException("Unsupported embedding model provider: " + provider);
+            throw new IllegalArgumentException("Unsupported embedding model provider: " + config.provider());
         }
     }
 
-    public RerankingModel createRerankingModel(String provider, String model) {
-        if (provider.equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
-            return new OpenAiRerankingModel(new OpenAiRerankingApi(openAiBaseUrl), model, retryTemplate);
+    public RerankingModel createRerankingModel(ModelConfig config) {
+        if (config.provider().equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
+            return new OpenAiRerankingModel(new OpenAiRerankingApi(openAiBaseUrl), config.name(), retryTemplate);
         } else {
-            throw new IllegalArgumentException("Unsupported reranking model provider: " + provider);
+            throw new IllegalArgumentException("Unsupported reranking model provider: " + config.provider());
         }
     }
 }

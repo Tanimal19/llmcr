@@ -78,7 +78,7 @@ public class APIServiceException extends RuntimeException {
         INTERNAL_ERROR("internalerror", "An unexpected error occurred",
                 HttpStatus.INTERNAL_SERVER_ERROR),
 
-        LLM_RESPONSE_FAILED("llmresponsefailed", "Failed to get response from LLM",
+        LLM_RESPONSE_CONVERSION_FAILED("llmresponseconversionfailed", "Failed to convert LLM response",
                 HttpStatus.INTERNAL_SERVER_ERROR),
         SSE_TASK_CANCELLED("ssetaskcancelled", "SSE task was cancelled",
                 HttpStatus.CONFLICT);

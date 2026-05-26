@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.LoggingConfigProvider;
 
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -26,6 +26,7 @@ public class AgentContextLogger {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentContextLogger.class);
     private static final ObjectMapper objectMapper = buildObjectMapper();
+    private final Object fileWriteLock = new Object();
 
     private static ObjectMapper buildObjectMapper() {
         SimpleModule fallbackModule = new SimpleModule();
@@ -41,7 +42,7 @@ public class AgentContextLogger {
                             return new JsonSerializer<Object>() {
                                 @Override
                                 public void serialize(Object value, JsonGenerator gen, SerializerProvider provider)
-                                        throws java.io.IOException {
+                                        throws IOException {
                                     gen.writeString(value.getClass().getSimpleName() + "(" + value + ")");
                                 }
                             };
@@ -57,39 +58,80 @@ public class AgentContextLogger {
                 .registerModule(fallbackModule);
     }
 
-    private final Path agentLogFilePath;
+    public static final String DEFAULT_LOG_FILE_NAME = "agent_history.json";
+    private final Path logFilePath;
 
-    public AgentContextLogger(SystemConfig applicationProperties) {
-        this.agentLogFilePath = Paths.get(applicationProperties.getLogging().getReviewOutputDir() + "/agent_logs.json");
+    public AgentContextLogger(LoggingConfigProvider loggingConfigProvider) {
+        this.logFilePath = Paths.get(loggingConfigProvider.getReviewOutputDirectory(), DEFAULT_LOG_FILE_NAME);
     }
 
     @PostConstruct
     public void init() {
-        if (agentLogFilePath != null) {
+        if (logFilePath != null) {
             try {
-                Files.createDirectories(agentLogFilePath.getParent());
-                logger.debug("Agent logging service initialized with file: {}", agentLogFilePath);
+                Files.createDirectories(logFilePath.getParent());
+                initializeLogFile();
+                logger.debug("Agent logging service initialized with file: {}", logFilePath);
                 // Register this service's logging function to context holder
                 AgentContextHolder.setOnContextFinished(this::logAgentExecution);
             } catch (IOException e) {
-                logger.warn("Failed to initialize agent log file path: {}", agentLogFilePath, e);
+                logger.warn("Failed to initialize agent log file path: {}", logFilePath, e);
             }
         } else {
             logger.debug("Agent logging disabled (llmcr.agent.log.file not configured)");
         }
     }
 
-    public void logAgentExecution(AgentCallEntry entry) {
-        if (agentLogFilePath == null || entry == null) {
+    public void logAgentExecution(AgentCallContext entry) {
+        if (logFilePath == null || entry == null) {
             return;
         }
 
         try {
-            String jsonLine = objectMapper.writeValueAsString(entry) + "\n";
-            Files.write(agentLogFilePath, jsonLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            appendEntry(entry);
             logger.debug("Logged agent execution for: {}", entry.agentName);
         } catch (IOException e) {
-            logger.error("Failed to write agent log entry to {}", agentLogFilePath, e);
+            logger.error("Failed to write agent log entry to {}", logFilePath, e);
+        }
+    }
+
+    private void initializeLogFile() throws IOException {
+        if (!Files.exists(logFilePath) || Files.size(logFilePath) == 0) {
+            Files.writeString(
+                    logFilePath,
+                    "[]\n",
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE);
+        }
+    }
+
+    private void appendEntry(AgentCallContext entry) throws IOException {
+        String serializedEntry = objectMapper.writeValueAsString(entry);
+
+        synchronized (fileWriteLock) {
+            initializeLogFile();
+
+            String currentContent = Files.readString(logFilePath).trim();
+            String updatedContent;
+
+            if (currentContent.isEmpty() || "[]".equals(currentContent)) {
+                updatedContent = "[\n" + serializedEntry + "\n]\n";
+            } else if (currentContent.endsWith("]")) {
+                String contentWithoutClosingBracket = currentContent.substring(0, currentContent.length() - 1)
+                        .stripTrailing();
+                updatedContent = contentWithoutClosingBracket + ",\n" + serializedEntry + "\n]\n";
+            } else {
+                updatedContent = "[\n" + serializedEntry + "\n]\n";
+                logger.warn("Agent log file {} was not valid JSON array content. It has been reset.", logFilePath);
+            }
+
+            Files.writeString(
+                    logFilePath,
+                    updatedContent,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE);
         }
     }
 }

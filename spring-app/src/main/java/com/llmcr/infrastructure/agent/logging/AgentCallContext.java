@@ -3,7 +3,7 @@ package com.llmcr.infrastructure.agent.logging;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AgentCallEntry {
+public class AgentCallContext {
 
     public String agentName;
     public String modelName;
@@ -12,9 +12,9 @@ public class AgentCallEntry {
     public Long durationMs;
     public Object input;
     public Object output;
-    public final List<AgentCallEntry> iterationHistory = new ArrayList<>();
+    public final List<AgentCallContext> iterationHistory = new ArrayList<>();
 
-    public void addIteration(AgentCallEntry iteration) {
+    public void addIteration(AgentCallContext iteration) {
         if (iteration != null) {
             this.iterationHistory.add(iteration);
         }

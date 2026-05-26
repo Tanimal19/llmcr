@@ -1,10 +1,10 @@
-package com.llmcr.infrastructure.etl;
+package com.llmcr.feature.sync.etl;
 
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.domain.repository.SourceRepository;
-import com.llmcr.infrastructure.etl.extractor.SourceExtractor;
+import com.llmcr.feature.sync.etl.extractor.SourceExtractor;
 
 import java.util.ArrayList;
 import java.util.List;
