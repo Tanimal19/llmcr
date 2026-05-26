@@ -16,8 +16,9 @@ import com.llmcr.domain.repository.SourceRepository;
 import com.llmcr.infrastructure.ai.reranking.RerankingModel;
 import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
+import com.llmcr.infrastructure.rag.fusion.FusionStrategy;
 import com.llmcr.infrastructure.rag.select.TopKSelectionStrategy;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
 import com.llmcr.infrastructure.vectorstore.faiss.FaissService;
@@ -63,13 +64,19 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
 
     private EmbeddingModel embeddingModel;
 
-    private final TopKSelectionStrategy mockTopStrategy = spy(
-            new TopKSelectionStrategy() {
-                @Override
-                public List<ContextScorePair> select(List<ContextScorePair> contexts, int k) {
-                    return contexts.stream().limit(k).toList();
-                }
-            });
+    private final TopKSelectionStrategy mockTopStrategy = spy(new TopKSelectionStrategy() {
+        @Override
+        public List<ContextScorePair> select(List<ContextScorePair> contexts, int k) {
+            return contexts.stream().limit(k).toList();
+        }
+    });
+
+    private final FusionStrategy mockFuseStrategy = spy(new FusionStrategy() {
+        @Override
+        public List<ContextScorePair> fuse(List<List<ContextScorePair>> contextLists, int topK) {
+            return contextLists.get(0);
+        }
+    });
 
     private static final Logger logger = LoggerFactory.getLogger(ContextRepositoryIT.class);
 
@@ -109,12 +116,13 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
         SearchVectorsResponse fakeFaissResponse = new SearchVectorsResponse(List.of(chunkId), List.of(0.95f));
         when(faissService.searchVectors(any())).thenReturn(fakeFaissResponse);
 
-        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(
+        QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(
+                "text_collection",
                 5,
                 mockTopStrategy,
-                "text_collection",
+                mockFuseStrategy,
                 false);
-        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("How to test RAG?"), config);
+        QueryContextRetrievalRequest request = new QueryContextRetrievalRequest(List.of("How to test RAG?"), config);
         List<ContextScorePair> results = queryContextRetriever.retrieve(request);
 
         assertThat(results).isNotEmpty();
@@ -137,12 +145,13 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
         Long chunkId2 = setupMockDataAndGetChunkId("contextB");
 
         int expectedk = 10;
-        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(
+        QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(
+                "text_collection",
                 expectedk,
                 mockTopStrategy,
-                "text_collection",
+                mockFuseStrategy,
                 false);
-        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
+        QueryContextRetrievalRequest request = new QueryContextRetrievalRequest(List.of("test"), config);
 
         when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f });
         when(faissService.searchVectors(any())).thenReturn(
@@ -166,12 +175,13 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
     void testS3_3_1() {
         when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("Api Error during query embedding"));
 
-        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(
+        QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(
+                "text_collection",
                 5,
                 mockTopStrategy,
-                "text_collection",
+                mockFuseStrategy,
                 false);
-        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
+        QueryContextRetrievalRequest request = new QueryContextRetrievalRequest(List.of("test"), config);
         assertThatThrownBy(() -> queryContextRetriever.retrieve(request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage(ErrorCode.RAG_VECTOR_SEARCH_FAILED.message());
@@ -184,12 +194,13 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
         when(faissService.searchVectors(any())).thenThrow(
                 new RuntimeException("Database connection timeout during data retrieval"));
 
-        ContextRetrievalConfiguration config = new ContextRetrievalConfiguration(
+        QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(
+                "text_collection",
                 5,
                 mockTopStrategy,
-                "text_collection",
+                mockFuseStrategy,
                 false);
-        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of("test"), config);
+        QueryContextRetrievalRequest request = new QueryContextRetrievalRequest(List.of("test"), config);
 
         assertThatThrownBy(() -> queryContextRetriever.retrieve(request))
                 .isInstanceOf(RuntimeException.class)

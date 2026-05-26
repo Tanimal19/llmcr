@@ -101,7 +101,7 @@ public class APIControllerIT extends BaseIntegrationTest {
         CallResponseSpec callResponseSpec = mock(ChatClient.CallResponseSpec.class);
 
         when(queryContextRetriever.retrieve(any())).thenReturn(List.of());
-        when(modelClientFactory.createChatClient(any(), any())).thenReturn(chatClient);
+        when(modelClientFactory.createChatClient(any())).thenReturn(chatClient);
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system(any(String.class))).thenReturn(requestSpec);
         when(requestSpec.user(any(String.class))).thenReturn(requestSpec);
@@ -112,7 +112,7 @@ public class APIControllerIT extends BaseIntegrationTest {
         assertThatThrownBy(() -> chatService.chat(query))
                 .isInstanceOf(APIServiceException.class)
                 .satisfies(ex -> assertThat(((APIServiceException) ex).getErrorCode())
-                        .isEqualTo(ErrorCode.LLM_RESPONSE_FAILED));
+                        .isEqualTo(ErrorCode.CHAT_MODEL_RESPONSE_FAILED));
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.llmcr.feature.review.CodeReviewService.CodeReviewInput;
 import com.llmcr.feature.sync.ConfigSyncService;
 import com.llmcr.feature.sync.SourceSyncService;
 import com.llmcr.feature.sync.SourceSyncService.TrackRootPreview;
+import com.llmcr.feature.sync.SourceSyncTask;
 import com.llmcr.feature.sync.etl.LoadService;
 
 import java.util.List;
@@ -43,6 +44,7 @@ public class APIController {
     private final ChatService chatService;
     private final CodeReviewService codeReviewService;
     private final SourceSyncService sourceSyncService;
+    private final SourceSyncTask sourceSyncTask;
 
     public APIController(
             SseTaskManager sseTaskManager,
@@ -52,6 +54,7 @@ public class APIController {
             CodeReviewService codeReviewService,
             ConfigSyncService configSyncService,
             SourceSyncService sourceSyncService,
+            SourceSyncTask sourceSyncTask,
             LoadService loadService) {
         this.sseTaskManager = sseTaskManager;
         this.applicationProperties = applicationProperties;
@@ -60,6 +63,7 @@ public class APIController {
         this.chatService = chatService;
         this.codeReviewService = codeReviewService;
         this.sourceSyncService = sourceSyncService;
+        this.sourceSyncTask = sourceSyncTask;
 
         // On application startup, we want to ensure that the track roots and
         // collections are in sync with the configuration.
@@ -141,7 +145,7 @@ public class APIController {
     @PostMapping(value = "/sync", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter sync() {
         logger.info("Sync request received");
-        return sseTaskManager.start(sourceSyncService, null);
+        return sseTaskManager.start(sourceSyncTask, null);
     }
 
     @PostMapping("/cancel/{taskId}")
