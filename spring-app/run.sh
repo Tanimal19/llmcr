@@ -1,5 +1,3 @@
-source ../.env
-
 usage() {
     echo "Usage: ./run.sh [mode] [mode-specific-arguments] -a [additional-properties-file]"
     echo ""

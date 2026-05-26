@@ -1,5 +1,3 @@
-source ../.env
-
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 LOG_FILE="./logs/system-test-$TIMESTAMP.log"
 

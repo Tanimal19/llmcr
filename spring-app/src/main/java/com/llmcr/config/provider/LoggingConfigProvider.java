@@ -1,7 +1,10 @@
 package com.llmcr.config.provider;
 
+import org.springframework.stereotype.Component;
+
 import com.llmcr.config.SystemConfig;
 
+@Component
 public class LoggingConfigProvider {
     private final SystemConfig config;
 

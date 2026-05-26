@@ -4,8 +4,11 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Component;
+
 import com.llmcr.config.SystemConfig;
 
+@Component
 public class TrackRootConfigProvider {
     private final SystemConfig config;
 
