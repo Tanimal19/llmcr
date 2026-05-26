@@ -27,6 +27,8 @@ public class SourceSyncService {
 
     private static final Logger logger = LoggerFactory.getLogger(SourceSyncService.class);
 
+    private static final String STAGE_NAME = "SYNC";
+
     private final TrackRootRepository trackRootRepository;
     private final SourcePreviewService sourcePreviewService;
     private final SourceChangeApplier sourceChangeApplier;
@@ -104,7 +106,7 @@ public class SourceSyncService {
             BooleanSupplier cancellationRequested) {
         try {
             SseTaskObject.throwIfCancelled(cancellationRequested);
-            SseTaskObject.emitProgress(progressListener, "SYNC", "Syncing track root: " + trackRootId);
+            SseTaskObject.emitProgress(progressListener, STAGE_NAME, "Syncing track root: " + trackRootId);
 
             TrackRoot trackRoot = trackRootRepository.findById(trackRootId).orElseThrow();
             TrackRootPreview trackRootPreview = sourcePreviewService.getOrCreateTrackRootPreview(trackRootId);
@@ -118,7 +120,7 @@ public class SourceSyncService {
             SseTaskObject.throwIfCancelled(cancellationRequested);
             SseTaskObject.emitProgress(
                     progressListener,
-                    "SYNC",
+                    STAGE_NAME,
                     "Removing " + sourcesToRemove.size() + " sources for track root: " + trackRoot.getPath());
             sourceChangeApplier.batchRemoveSources(sourcesToRemove);
 
@@ -127,7 +129,7 @@ public class SourceSyncService {
             sourcePreviewService.evictTrackRootPreview(trackRootId);
 
             SseTaskObject.throwIfCancelled(cancellationRequested);
-            SseTaskObject.emitProgress(progressListener, "SYNC",
+            SseTaskObject.emitProgress(progressListener, STAGE_NAME,
                     "Completed syncing track root: " + trackRoot.getPath());
         } catch (APIServiceException ex) {
             throw ex;
@@ -137,7 +139,7 @@ public class SourceSyncService {
     }
 
     private void markTrackRootSyncedAndSkip(TrackRoot trackRoot, Consumer<SseTaskProgress> progressListener) {
-        SseTaskObject.emitProgress(progressListener, "SYNC",
+        SseTaskObject.emitProgress(progressListener, STAGE_NAME,
                 "Track root already synced, skipping: " + trackRoot.getPath());
         trackRoot.setLastSyncTime(LocalDateTime.now());
         trackRootRepository.save(trackRoot);

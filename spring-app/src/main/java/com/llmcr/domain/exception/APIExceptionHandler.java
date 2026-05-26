@@ -2,8 +2,6 @@ package com.llmcr.domain.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,8 +9,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class APIExceptionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger(APIExceptionHandler.class);
 
     public record ErrorResponse(
             String code,
@@ -25,7 +21,6 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(APIServiceException.class)
     public ResponseEntity<ErrorResponse> handleApiServiceException(APIServiceException ex, HttpServletRequest request) {
-        logger.error("{} on {}: {}", ex.getErrorCode().code(), request.getRequestURI(), ex.getMessage(), ex);
         return buildResponse(
                 ex.getErrorCode(),
                 resolveMessage(ex),
@@ -35,7 +30,6 @@ public class APIExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex,
             HttpServletRequest request) {
-        logger.warn("Bad request on {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(
                 APIServiceException.ErrorCode.INVALID_REQUEST,
                 resolveMessage(ex, APIServiceException.ErrorCode.INVALID_REQUEST),
@@ -44,7 +38,6 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
-        logger.error("Unexpected error on {}", request.getRequestURI(), ex);
         return buildResponse(
                 APIServiceException.ErrorCode.INTERNAL_ERROR,
                 APIServiceException.ErrorCode.INTERNAL_ERROR.message(),

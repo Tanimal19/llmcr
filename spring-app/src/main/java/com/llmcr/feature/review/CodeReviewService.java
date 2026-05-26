@@ -31,11 +31,16 @@ public class CodeReviewService
 
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
+    private static final String STAGE_REVIEW = "REVIEW";
+    private static final String STAGE_INTERPRETATION = "INTERPRETATION";
+    private static final String STAGE_PLANNING = "PLANNING";
+    private static final String STAGE_COMPUTATION = "COMPUTATION";
+    private static final String STAGE_SUMMARY = "SUMMARY";
+
     private final InterpretationAgent interpretationAgent;
     private final PlanningAgent planningAgent;
     private final ComputationAgent computationAgent;
     private final SummaryAgent summaryAgent;
-
     private String outputDir;
 
     public CodeReviewService(
@@ -68,14 +73,14 @@ public class CodeReviewService
             BooleanSupplier cancellationRequested) {
         try {
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "PIPELINE", "Review pipeline started");
+            emitProgress(progressListener, STAGE_REVIEW, "Review pipeline started");
 
             String jsonFilePath = input.useMockData()
                     ? MockReviewData.MOCK_PULL_REQUEST_JSON_PATH
                     : input.jsonFilePath();
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "PIPELINE", "Parsing pull request data");
+            emitProgress(progressListener, STAGE_REVIEW, "Parsing pull request data");
             PullRequestData prData;
             try {
                 prData = PullRequestParser.parseJsonFile(jsonFilePath);
@@ -103,34 +108,34 @@ public class CodeReviewService
             PlanningAgentOutput plan;
             if (!input.useMockData()) {
                 throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "INTERPRETATION", "Start interpretation stage");
+                emitProgress(progressListener, STAGE_INTERPRETATION, "Start interpretation stage");
                 try {
                     interpretation = interpretationAgent.execute(new InterpretationAgentInput(codeChanges));
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
                 }
-                emitProgress(progressListener, "INTERPRETATION",
+                emitProgress(progressListener, STAGE_INTERPRETATION,
                         "Interpretation stage completed:\n{}".formatted(interpretation));
 
                 throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "PLANNING", "Start planning stage");
+                emitProgress(progressListener, STAGE_PLANNING, "Start planning stage");
                 try {
                     plan = planningAgent.execute(new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
                 }
-                emitProgress(progressListener, "PLANNING", "Planning stage completed:\n{}".formatted(plan));
+                emitProgress(progressListener, STAGE_PLANNING, "Planning stage completed:\n{}".formatted(plan));
             } else {
                 throwIfCancelled(cancellationRequested);
                 interpretation = MockReviewData.MOCK_INTERPRETATION_OUTPUT;
                 plan = MockReviewData.MOCK_PLANNING_OUTPUT;
-                emitProgress(progressListener, "INTERPRETATION",
+                emitProgress(progressListener, STAGE_INTERPRETATION,
                         "Using mock interpretation:\n{}".formatted(interpretation));
-                emitProgress(progressListener, "PLANNING", "Using mock planning\n{}".formatted(plan));
+                emitProgress(progressListener, STAGE_PLANNING, "Using mock planning\n{}".formatted(plan));
             }
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "COMPUTATION", "Running checklist computations");
+            emitProgress(progressListener, STAGE_COMPUTATION, "Running checklist computations");
 
             List<ChecklistItem> items = new ArrayList<>();
             int totalItems = plan.checklistItems().size();
@@ -139,7 +144,7 @@ public class CodeReviewService
                 throwIfCancelled(cancellationRequested);
                 emitProgress(
                         progressListener,
-                        "COMPUTATION",
+                        STAGE_COMPUTATION,
                         "Running checklist item " + itemIndex + "/" + totalItems + ": " + item);
                 itemIndex++;
 
@@ -149,7 +154,7 @@ public class CodeReviewService
                     items.add(new ChecklistItem(item, answer));
                     emitProgress(
                             progressListener,
-                            "COMPUTATION",
+                            STAGE_COMPUTATION,
                             "Completed checklist item, answer:\n{}".formatted(answer));
                 } catch (Exception ex) {
                     throw new APIServiceException(
@@ -158,20 +163,20 @@ public class CodeReviewService
                             ex);
                 }
             }
-            emitProgress(progressListener, "COMPUTATION", "Computation stage completed");
+            emitProgress(progressListener, STAGE_COMPUTATION, "Computation stage completed");
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "SUMMARY", "Running summary stage");
+            emitProgress(progressListener, STAGE_SUMMARY, "Running summary stage");
             ReportContent reviewResult;
             try {
                 reviewResult = summaryAgent.execute(new SummaryAgentInput(codeChanges, codeAnalysis, items));
             } catch (Exception ex) {
                 throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_SUMMARY_FAILED, ex);
             }
-            emitProgress(progressListener, "SUMMARY", "Summary stage completed");
+            emitProgress(progressListener, STAGE_SUMMARY, "Summary stage completed");
 
             throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "PIPELINE", "Writing review report");
+            emitProgress(progressListener, STAGE_REVIEW, "Writing review report");
             CodeReviewReport review = new CodeReviewReport(
                     prData.prId(),
                     prData.title(),
@@ -182,7 +187,7 @@ public class CodeReviewService
 
             emitProgress(
                     progressListener,
-                    "PIPELINE",
+                    STAGE_REVIEW,
                     "Review pipeline completed, report generated at: " + reportPath.toString());
 
             return new CodeReviewOutput(review, reportPath);

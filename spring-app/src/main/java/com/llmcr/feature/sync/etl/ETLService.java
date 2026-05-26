@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ETLService {
 
+    private static final String STAGE_NAME = "ETL";
+
     private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
     private final ExtractService extractService;
@@ -41,18 +43,18 @@ public class ETLService {
 
     public void run(Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
         SseTaskObject.throwIfCancelled(cancellationRequested);
-        SseTaskObject.emitProgress(progressListener, "ETL", "Starting ETL pipeline");
+        SseTaskObject.emitProgress(progressListener, STAGE_NAME, "Starting ETL pipeline");
 
         long pipelineStart = System.currentTimeMillis();
         try {
             try {
                 SseTaskObject.throwIfCancelled(cancellationRequested);
-                SseTaskObject.emitProgress(progressListener, "ETL", "Running extract stage");
+                SseTaskObject.emitProgress(progressListener, STAGE_NAME, "Running extract stage");
                 long t0 = System.currentTimeMillis();
                 sourceRepository.findAllUnextractedIds().forEach(id -> extractService.extract(id));
                 SseTaskObject.emitProgress(
                         progressListener,
-                        "ETL",
+                        STAGE_NAME,
                         "Extract stage completed in " + (System.currentTimeMillis() - t0) + " ms");
             } catch (Exception ex) {
                 throw new APIServiceException(APIServiceException.ErrorCode.ETL_EXTRACT_FAILED, ex);
@@ -61,12 +63,12 @@ public class ETLService {
             // split and load
             try {
                 SseTaskObject.throwIfCancelled(cancellationRequested);
-                SseTaskObject.emitProgress(progressListener, "ETL", "Running split stage");
+                SseTaskObject.emitProgress(progressListener, STAGE_NAME, "Running split stage");
                 long t1 = System.currentTimeMillis();
                 contextRepository.findAllUnsplittedIds().forEach(id -> splitService.split(id));
                 SseTaskObject.emitProgress(
                         progressListener,
-                        "ETL",
+                        STAGE_NAME,
                         "Split stage completed in " + (System.currentTimeMillis() - t1) + " ms");
             } catch (Exception ex) {
                 throw new APIServiceException(APIServiceException.ErrorCode.ETL_SPLIT_FAILED, ex);
@@ -74,12 +76,12 @@ public class ETLService {
 
             try {
                 SseTaskObject.throwIfCancelled(cancellationRequested);
-                SseTaskObject.emitProgress(progressListener, "ETL", "Running load stage after split");
+                SseTaskObject.emitProgress(progressListener, STAGE_NAME, "Running load stage after split");
                 long t2 = System.currentTimeMillis();
                 contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContext(id));
                 SseTaskObject.emitProgress(
                         progressListener,
-                        "ETL",
+                        STAGE_NAME,
                         "Load after split stage completed in " + (System.currentTimeMillis() - t2) + " ms");
             } catch (Exception ex) {
                 throw new APIServiceException(
@@ -92,11 +94,11 @@ public class ETLService {
             // enrichment may require the complete set of chunks in a context.
             // try {
             // throwIfCancelled(cancellationRequested);
-            // emitProgress(progressListener, "ETL", "Running enrich stage");
+            // emitProgress(progressListener, STAGE_NAME, "Running enrich stage");
             // long t3 = System.currentTimeMillis();
             // contextRepository.findAllUnenrichedIds().forEach(id ->
             // enrichService.enrich(id));
-            // emitProgress(progressListener, "ETL",
+            // emitProgress(progressListener, STAGE_NAME,
             // "Enrich stage completed in " + (System.currentTimeMillis() - t3) + " ms");
             // } catch (Exception ex) {
             // throw new
@@ -105,11 +107,12 @@ public class ETLService {
 
             // try {
             // throwIfCancelled(cancellationRequested);
-            // emitProgress(progressListener, "ETL", "Running load stage after enrich");
+            // emitProgress(progressListener, STAGE_NAME, "Running load stage after
+            // enrich");
             // long t4 = System.currentTimeMillis();
             // contextRepository.findAllUnloadedIds().forEach(id ->
             // loadService.loadContextChunks(id));
-            // emitProgress(progressListener, "ETL",
+            // emitProgress(progressListener, STAGE_NAME,
             // "Load after enrich stage completed in " + (System.currentTimeMillis() - t4) +
             // " ms");
             // } catch (Exception ex) {
@@ -119,7 +122,7 @@ public class ETLService {
 
             SseTaskObject.emitProgress(
                     progressListener,
-                    "ETL",
+                    STAGE_NAME,
                     "ETL pipeline completed in " + (System.currentTimeMillis() - pipelineStart) + " ms");
         } catch (APIServiceException ex) {
             throw ex;
