@@ -19,36 +19,42 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * A custom model factory to allow initialization of multiple providers and
+ * model types. We do not rely on Spring AI's auto-configuration and model
+ * factory because it does not support multiple providers
+ * co-existing in the same application context.
+ */
 @Component
 public class ModelClientFactory {
 
+    private static final String GOOGLE_PROVIDER_NAME = "google";
+    private static final String OPENAI_PROVIDER_NAME = "openai";
+
     @Value("${spring.ai.openai.base-url}")
-    private String OPENAI_BASE_URL;
+    private String openAiBaseUrl;
 
     @Value("${spring.ai.google.genai.api-key}")
-    private String GEMINI_API_KEY;
-
-    private static final String OPENAI_PROVIDER = "openai";
+    private String geminiApiKey;
 
     private final OpenAiApi baseOpenAiApi;
     private final RetryTemplate retryTemplate;
 
     public ModelClientFactory(OpenAiApi baseOpenAiApi) {
         this.baseOpenAiApi = baseOpenAiApi;
-
         this.retryTemplate = RetryTemplate.builder().maxAttempts(3).build();
         this.retryTemplate.setBackOffPolicy(new LocalModelBackOffPolicy());
     }
 
     public ChatClient createChatClient(String provider, String model) {
-        if (provider.equalsIgnoreCase("google")) {
+        if (provider.equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
             return ChatClient.builder(
                     GoogleGenAiChatModel.builder()
-                            .genAiClient(Client.builder().apiKey(GEMINI_API_KEY).build())
+                            .genAiClient(Client.builder().apiKey(geminiApiKey).build())
                             .defaultOptions(GoogleGenAiChatOptions.builder().model(model).build())
                             .build())
                     .build();
-        } else if (provider.equalsIgnoreCase(OPENAI_PROVIDER)) {
+        } else if (provider.equalsIgnoreCase(OPENAI_PROVIDER_NAME)) {
             return ChatClient.builder(
                     OpenAiChatModel.builder()
                             .openAiApi(baseOpenAiApi)
@@ -62,7 +68,7 @@ public class ModelClientFactory {
     }
 
     public EmbeddingModel createEmbeddingModel(String provider, String model) {
-        if (provider.equalsIgnoreCase(OPENAI_PROVIDER)) {
+        if (provider.equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
             return new OpenAiEmbeddingModel(
                     baseOpenAiApi,
                     MetadataMode.EMBED,
@@ -74,8 +80,8 @@ public class ModelClientFactory {
     }
 
     public RerankingModel createRerankingModel(String provider, String model) {
-        if (provider.equalsIgnoreCase(OPENAI_PROVIDER)) {
-            return new OpenAiRerankingModel(new OpenAiRerankingApi(OPENAI_BASE_URL, "no-key"), model, retryTemplate);
+        if (provider.equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
+            return new OpenAiRerankingModel(new OpenAiRerankingApi(openAiBaseUrl), model, retryTemplate);
         } else {
             throw new IllegalArgumentException("Unsupported reranking model provider: " + provider);
         }

@@ -5,6 +5,11 @@ import org.springframework.retry.backoff.BackOffContext;
 import org.springframework.retry.backoff.BackOffInterruptedException;
 import org.springframework.retry.backoff.BackOffPolicy;
 
+/**
+ * A custom BackOffPolicy implementation for handling retries when calling local
+ * AI models. It wait longer when the failure is due to HTTP 502 or 503 errors,
+ * which may indicate that the local model is starting up.
+ */
 public final class LocalModelBackOffPolicy implements BackOffPolicy {
 
     private static final long DEFAULT_BACKOFF_MILLIS = 10_000L;
