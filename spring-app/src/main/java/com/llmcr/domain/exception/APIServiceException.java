@@ -74,7 +74,7 @@ public class APIServiceException extends RuntimeException {
                 HttpStatus.INTERNAL_SERVER_ERROR),
 
         INVALID_REQUEST("invalidrequest", "Invalid request payload or parameters",
-                HttpStatus.INTERNAL_SERVER_ERROR),
+                HttpStatus.BAD_REQUEST),
         INTERNAL_ERROR("internalerror", "An unexpected error occurred",
                 HttpStatus.INTERNAL_SERVER_ERROR),
 

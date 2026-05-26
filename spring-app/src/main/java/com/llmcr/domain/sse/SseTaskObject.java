@@ -14,6 +14,15 @@ public abstract class SseTaskObject<I, O> {
     public record SseTaskProgress(Boolean isError, String stage, String message) {
     }
 
+    public abstract String getTaskName();
+
+    public abstract O execute(I input, Consumer<SseTaskProgress> progressListener,
+            BooleanSupplier cancellationRequested);
+
+    public O execute(I input) {
+        return execute(input, null, () -> false);
+    }
+
     protected boolean isCancellationRequested() {
         return cancellationRequested.get();
     }
@@ -32,15 +41,6 @@ public abstract class SseTaskObject<I, O> {
             currentFuture.cancel(true);
         }
     }
-
-    public abstract String getTaskName();
-
-    public O execute(I input) {
-        return execute(input, null, () -> false);
-    }
-
-    public abstract O execute(I input, Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested);
 
     protected static void throwIfCancelled(BooleanSupplier cancellationRequested) {
         if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {

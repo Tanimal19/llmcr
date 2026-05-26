@@ -6,12 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class APIExceptionHandler {
@@ -29,48 +25,56 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(APIServiceException.class)
     public ResponseEntity<ErrorResponse> handleApiServiceException(APIServiceException ex, HttpServletRequest request) {
-        HttpStatus status = ex.getStatus();
         logger.error("{} on {}: {}", ex.getErrorCode().code(), request.getRequestURI(), ex.getMessage(), ex);
-
-        ErrorResponse response = new ErrorResponse(
-                ex.getErrorCode().code(),
-                status.getReasonPhrase(),
-                ex.getMessage(),
-                status.value(),
-                request.getRequestURI(),
-                Instant.now());
-
-        return ResponseEntity.status(status).body(response);
+        return buildResponse(
+                ex.getErrorCode(),
+                resolveMessage(ex),
+                request.getRequestURI());
     }
 
-    @ExceptionHandler({
-            IllegalArgumentException.class,
-            HttpMessageNotReadableException.class,
-            MethodArgumentTypeMismatchException.class,
-            MethodArgumentNotValidException.class,
-    })
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleBadRequest(Exception ex, HttpServletRequest request) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex,
+            HttpServletRequest request) {
         logger.warn("Bad request on {}: {}", request.getRequestURI(), ex.getMessage());
-        return new ErrorResponse(
-                "illegalargument",
-                "Bad Request",
-                "Invalid request payload or parameters",
-                HttpStatus.BAD_REQUEST.value(),
-                request.getRequestURI(),
-                Instant.now());
+        return buildResponse(
+                APIServiceException.ErrorCode.INVALID_REQUEST,
+                resolveMessage(ex, APIServiceException.ErrorCode.INVALID_REQUEST),
+                request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleUnexpected(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
         logger.error("Unexpected error on {}", request.getRequestURI(), ex);
-        return new ErrorResponse(
-                "internalerror",
-                "Internal Server Error",
-                "An unexpected error occurred",
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                request.getRequestURI(),
+        return buildResponse(
+                APIServiceException.ErrorCode.INTERNAL_ERROR,
+                APIServiceException.ErrorCode.INTERNAL_ERROR.message(),
+                request.getRequestURI());
+    }
+
+    private ResponseEntity<ErrorResponse> buildResponse(
+            APIServiceException.ErrorCode errorCode,
+            String message,
+            String path) {
+        HttpStatus status = errorCode.status();
+        ErrorResponse response = new ErrorResponse(
+                errorCode.code(),
+                status.getReasonPhrase(),
+                message,
+                status.value(),
+                path,
                 Instant.now());
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private String resolveMessage(APIServiceException ex) {
+        return resolveMessage(ex, ex.getErrorCode());
+    }
+
+    private String resolveMessage(Exception ex, APIServiceException.ErrorCode fallback) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            return fallback.message();
+        }
+        return message;
     }
 }
