@@ -2,7 +2,7 @@ import process from 'node:process';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8081/api';
 
-export const API_BASE_URL = (process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL).replace(/\/+$/v, '');
+export const API_BASE_URL = process.env['LLMCR_API_BASE_URL'] ?? DEFAULT_API_BASE_URL;
 
 export type ChatResponse = {
   answer: string;
