@@ -6,7 +6,7 @@ import com.llmcr.model.ModelClientFactory;
 import com.llmcr.rag.QueryContextRetriever;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.ContextScorePair;
 import com.llmcr.rag.select.AdaptiveKStrategy;
 import com.llmcr.review.CodeReviewService.CodeChange;
 import com.llmcr.review.agent.InterpretationAgent.InterpretationAgentOutput;

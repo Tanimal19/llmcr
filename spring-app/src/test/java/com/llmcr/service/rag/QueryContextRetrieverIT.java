@@ -17,7 +17,7 @@ import com.llmcr.model.reranking.RerankingModel;
 import com.llmcr.rag.QueryContextRetriever;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.ContextScorePair;
 import com.llmcr.rag.select.TopKSelectionStrategy;
 import com.llmcr.repository.ContextRepositoryIT;
 import com.llmcr.vectorstore.MyVectorStore;

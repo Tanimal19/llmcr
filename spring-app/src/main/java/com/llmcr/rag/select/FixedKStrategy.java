@@ -2,7 +2,7 @@ package com.llmcr.rag.select;
 
 import java.util.List;
 
-import com.llmcr.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.ContextScorePair;
 
 public class FixedKStrategy implements TopKSelectionStrategy {
 

@@ -57,9 +57,6 @@ public class QueryContextRetriever {
             boolean useReranker) {
     }
 
-    public record ContextScorePair(Context context, float score) {
-    }
-
     private static final Logger logger = LoggerFactory.getLogger(QueryContextRetriever.class);
 
     private static final int TOP_N = 1000;

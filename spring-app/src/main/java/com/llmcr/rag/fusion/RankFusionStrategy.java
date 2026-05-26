@@ -1,7 +1,7 @@
 package com.llmcr.rag.fusion;
 
 import com.llmcr.database.entity.Context;
-import com.llmcr.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.ContextScorePair;
 
 import java.util.HashMap;
 import java.util.List;

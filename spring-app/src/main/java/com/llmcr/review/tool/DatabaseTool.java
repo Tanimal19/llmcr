@@ -4,7 +4,7 @@ import com.llmcr.database.repository.ContextRepository;
 import com.llmcr.rag.QueryContextRetriever;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.rag.QueryContextRetriever.ContextScorePair;
+import com.llmcr.rag.ContextScorePair;
 import com.llmcr.rag.select.FixedKStrategy;
 import com.llmcr.util.StringUtils;
 import java.util.ArrayList;
