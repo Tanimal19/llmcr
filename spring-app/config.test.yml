@@ -6,7 +6,7 @@
 # and will be used to perform RAG.
 track-roots:
   "test-root":
-    path: "./src/test/resources/test_datasets/"
+    path: "src/test/resources/test_datasets/"
     allowed-source-types:
       - ASCIIDOC
       - MARKDOWN
