@@ -15,6 +15,20 @@
     "test": "ava",
     "test:coverage": "c8 --reporter=lcov ava"
   },
+  "imports": {
+    "#components": {
+      "development": "./source/components/index.js",
+      "default": "./dist/components/index.js"
+    },
+    "#hooks": {
+      "development": "./source/hooks/index.js",
+      "default": "./dist/hooks/index.js"
+    },
+    "#*": {
+      "development": "./source/*",
+      "default": "./dist/*"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -50,7 +64,8 @@
       "tsx"
     ],
     "nodeArguments": [
-      "--import=tsx"
+      "--import=tsx",
+      "--conditions=development"
     ]
   },
   "xo": {
