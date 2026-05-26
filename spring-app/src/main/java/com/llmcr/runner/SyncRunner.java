@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.feature.sync.SourceSyncService;
+import com.llmcr.feature.sync.source.SourceSyncService;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "sync")

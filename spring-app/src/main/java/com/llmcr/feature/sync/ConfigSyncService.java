@@ -1,6 +1,8 @@
 package com.llmcr.feature.sync;
 
 import com.llmcr.domain.exception.APIServiceException;
+import com.llmcr.feature.sync.collection.CollectionConfigSynchronizer;
+import com.llmcr.feature.sync.trackroot.TrackRootConfigSynchronizer;
 
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;

@@ -8,10 +8,10 @@ import com.llmcr.feature.chat.ChatService.ChatResponse;
 import com.llmcr.feature.review.CodeReviewService;
 import com.llmcr.feature.review.CodeReviewService.CodeReviewInput;
 import com.llmcr.feature.sync.ConfigSyncService;
-import com.llmcr.feature.sync.SourceSyncService;
-import com.llmcr.feature.sync.SourceSyncService.TrackRootPreview;
 import com.llmcr.feature.sync.SourceSyncTask;
 import com.llmcr.feature.sync.etl.LoadService;
+import com.llmcr.feature.sync.source.SourceSyncService;
+import com.llmcr.feature.sync.source.TrackRootPreview;
 
 import java.util.List;
 import java.util.Map;

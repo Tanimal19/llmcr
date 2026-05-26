@@ -7,7 +7,9 @@ import static org.mockito.Mockito.*;
 import com.llmcr.BaseIntegrationTest;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.exception.APIServiceException.ErrorCode;
-import com.llmcr.feature.sync.SourceSyncService.TrackRootPreview;
+import com.llmcr.feature.sync.source.SourcePreviewService;
+import com.llmcr.feature.sync.source.SourceSyncService;
+import com.llmcr.feature.sync.source.TrackRootPreview;
 
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
