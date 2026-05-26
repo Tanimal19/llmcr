@@ -1,16 +1,37 @@
 import faiss
 import os
 import numpy as np
+import re
 from typing import Any, List
 
 DATA_DIR = "./app/data"
+DATA_DIR_ABS = os.path.abspath(DATA_DIR)
+INDEX_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+
+
+def _validate_index_name(index_name: str) -> str:
+    safe_name = index_name.strip()
+    if not safe_name:
+        raise ValueError("index_name must not be empty")
+    if "/" in safe_name or "\\" in safe_name or ".." in safe_name:
+        raise ValueError("index_name contains invalid path characters")
+    if not INDEX_NAME_PATTERN.fullmatch(safe_name):
+        raise ValueError(
+            "index_name must use only letters, digits, dot, underscore, or dash"
+        )
+    return safe_name
 
 
 def get_index_path(index_name: str) -> str:
-    return os.path.join(DATA_DIR, f"{index_name}.index")
+    safe_name = _validate_index_name(index_name)
+    path = os.path.abspath(os.path.join(DATA_DIR_ABS, f"{safe_name}.index"))
+    if os.path.commonpath([DATA_DIR_ABS, path]) != DATA_DIR_ABS:
+        raise ValueError("index_name resolves outside data directory")
+    return path
 
 
 def create_index(index_name: str, dim: int) -> faiss.Index:
+    os.makedirs(DATA_DIR_ABS, exist_ok=True)
     base = faiss.IndexFlatIP(dim)
     index = faiss.IndexIDMap2(base)
     faiss.write_index(index, get_index_path(index_name))
@@ -109,10 +130,10 @@ def remove_index(index_name: str) -> None:
 def list_indexes_with_counts() -> List[dict[str, Any]]:
     indexes = []
 
-    if not os.path.isdir(DATA_DIR):
+    if not os.path.isdir(DATA_DIR_ABS):
         return indexes
 
-    for filename in sorted(os.listdir(DATA_DIR)):
+    for filename in sorted(os.listdir(DATA_DIR_ABS)):
         if not filename.endswith(".index"):
             continue
 

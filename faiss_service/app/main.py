@@ -52,22 +52,34 @@ async def root():
 
 @app.post("/index/add_ids", response_model=AddVectorsResponse)
 async def add_vectors_endpoint(request: AddVectorsRequest):
-    add_index_ids(request.index_name, request.ids, request.vectors)
+    try:
+        add_index_ids(request.index_name, request.ids, request.vectors)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AddVectorsResponse(status="success", added_count=len(request.ids))
 
 
 @app.post("/index/search_ids", response_model=SearchResponse)
 async def search_vectors_endpoint(request: SearchRequest):
-    scores, ids = search(request.index_name, request.qvector, request.top_k)
+    try:
+        scores, ids = search(request.index_name, request.qvector, request.top_k)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return SearchResponse(ids=ids, scores=scores)
 
 
 @app.post("/index/remove")
 async def remove_index_endpoint(request: RemoveIndexRequest):
-    return remove_index(request.index_name)
+    try:
+        return remove_index(request.index_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/index/remove_ids", response_model=RemoveVectorsResponse)
 async def remove_vectors_endpoint(request: RemoveVectorsRequest):
-    remove_index_ids(request.index_name, request.ids)
+    try:
+        remove_index_ids(request.index_name, request.ids)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return RemoveVectorsResponse(status="success", removed_count=len(request.ids))
