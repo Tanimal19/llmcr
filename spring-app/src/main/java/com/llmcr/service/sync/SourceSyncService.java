@@ -52,14 +52,15 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     private final SourceSyncService self;
 
     public record TrackRootPreview(
-        Long id,
-        String path,
-        Boolean isSynced,
-        LocalDateTime lastSyncTime,
-        List<SourcePreview> sources
-    ) {}
+            Long id,
+            String path,
+            Boolean isSynced,
+            LocalDateTime lastSyncTime,
+            List<SourcePreview> sources) {
+    }
 
-    public record SourcePreview(Long id, String path, SourceType type, SyncStatus syncStatus) {}
+    public record SourcePreview(Long id, String path, SourceType type, SyncStatus syncStatus) {
+    }
 
     public enum SyncStatus {
         SYNCED,
@@ -71,12 +72,11 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     private Map<Long, TrackRootPreview> trackRootPreviewCache = new HashMap<>();
 
     public SourceSyncService(
-        TrackRootRepository trackRootRepository,
-        SourceRepository sourceRepository,
-        MyVectorStore vectorStore,
-        ETLService etlService,
-        @Lazy SourceSyncService self
-    ) {
+            TrackRootRepository trackRootRepository,
+            SourceRepository sourceRepository,
+            MyVectorStore vectorStore,
+            ETLService etlService,
+            @Lazy SourceSyncService self) {
         this.trackRootRepository = trackRootRepository;
         this.sourceRepository = sourceRepository;
         this.vectorStore = vectorStore;
@@ -91,20 +91,19 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     public String getLastAllSyncTime() {
         try {
             LocalDateTime lastAllSyncTime = trackRootRepository
-                .findAll()
-                .stream()
-                .map(TrackRoot::getLastSyncTime)
-                .filter(Objects::nonNull)
-                .min(LocalDateTime::compareTo)
-                .orElse(null);
+                    .findAll()
+                    .stream()
+                    .map(TrackRoot::getLastSyncTime)
+                    .filter(Objects::nonNull)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(null);
             logger.info("Getting last sync time for all track roots, lastAllSyncTime={}", lastAllSyncTime);
             return lastAllSyncTime == null ? "Never" : lastAllSyncTime.toString();
         } catch (Exception ex) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.SOURCE_SYNC_GET_SYNC_TIME_FAILED,
-                "Failed to get last sync time",
-                ex
-            );
+                    APIServiceException.ErrorCode.SOURCE_SYNC_GET_SYNC_TIME_FAILED,
+                    "Failed to get last sync time",
+                    ex);
         }
     }
 
@@ -112,18 +111,17 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
         logger.info("previewAll:start");
         try {
             List<TrackRootPreview> previews = trackRootRepository
-                .findAllIds()
-                .stream()
-                .map(trackRootId -> self.getTrackRootPreview(trackRootId))
-                .toList();
+                    .findAllIds()
+                    .stream()
+                    .map(trackRootId -> self.getTrackRootPreview(trackRootId))
+                    .toList();
             logger.info("previewAll:done count={}", previews.size());
             return previews;
         } catch (Exception ex) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED,
-                "Failed to list track root previews",
-                ex
-            );
+                    APIServiceException.ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED,
+                    "Failed to list track root previews",
+                    ex);
         }
     }
 
@@ -132,17 +130,17 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     }
 
     public Void execute(
-        Void input,
-        Consumer<TaskProgressEvent> progressListener,
-        BooleanSupplier cancellationRequested
-    ) {
+            Void input,
+            Consumer<TaskProgressEvent> progressListener,
+            BooleanSupplier cancellationRequested) {
         try {
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, "SYNC", "Starting to sync all track roots");
             trackRootRepository
-                .findAllIds()
-                .stream()
-                .forEach(trackRootId -> self.syncTrackRootSource(trackRootId, progressListener, cancellationRequested));
+                    .findAllIds()
+                    .stream()
+                    .forEach(trackRootId -> self.syncTrackRootSource(trackRootId, progressListener,
+                            cancellationRequested));
 
             emitProgress(progressListener, "SYNC", "Completed syncing all track roots");
 
@@ -168,19 +166,11 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     @Transactional
     public TrackRootPreview getTrackRootPreview(Long trackRootId) {
         try {
-            TrackRootPreview trackRootPreview = trackRootPreviewCache.get(trackRootId);
-            if (trackRootPreview != null) {
-                return trackRootPreview;
-            }
-
             TrackRoot trackRoot = trackRootRepository
-                .findById(trackRootId)
-                .orElseThrow(() ->
-                    new APIServiceException(
-                        APIServiceException.ErrorCode.INVALID_REQUEST,
-                        "TrackRoot not found: " + trackRootId
-                    )
-                );
+                    .findById(trackRootId)
+                    .orElseThrow(() -> new APIServiceException(
+                            APIServiceException.ErrorCode.INVALID_REQUEST,
+                            "TrackRoot not found: " + trackRootId));
 
             logger.info("preview:start trackRoot={}", trackRoot.getPath());
 
@@ -188,11 +178,11 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
             List<Source> dbSources = sourceRepository.findAllByTrackRootId(trackRootId);
 
             Map<String, Source> localSourcesByPath = localSources
-                .stream()
-                .collect(Collectors.toMap(Source::getPath, source -> source));
+                    .stream()
+                    .collect(Collectors.toMap(Source::getPath, source -> source));
             Map<String, Source> dbSourcesByPath = dbSources
-                .stream()
-                .collect(Collectors.toMap(Source::getPath, source -> source));
+                    .stream()
+                    .collect(Collectors.toMap(Source::getPath, source -> source));
 
             List<SourcePreview> sourcePreviews = new ArrayList<>();
 
@@ -202,22 +192,21 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
                 if (localSource == null) {
                     logger.debug("preview:removed path={}", dbSource.getPath());
                     sourcePreviews.add(
-                        new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(), SyncStatus.REMOVED)
-                    );
+                            new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(),
+                                    SyncStatus.REMOVED));
                     hasChanges = true;
                     continue;
                 }
 
                 SyncStatus syncStatus = Objects.equals(dbSource.getContentHash(), localSource.getContentHash())
-                    ? SyncStatus.SYNCED
-                    : SyncStatus.MODIFIED;
+                        ? SyncStatus.SYNCED
+                        : SyncStatus.MODIFIED;
                 if (syncStatus != SyncStatus.SYNCED) {
                     logger.debug("preview:modified path={}", dbSource.getPath());
                     hasChanges = true;
                 }
                 sourcePreviews.add(
-                    new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(), syncStatus)
-                );
+                        new SourcePreview(dbSource.getId(), dbSource.getPath(), dbSource.getType(), syncStatus));
             }
 
             for (Source localSource : localSources) {
@@ -227,31 +216,27 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
 
                 logger.debug("preview:added path={}", localSource.getPath());
                 sourcePreviews.add(
-                    new SourcePreview(
-                        localSource.getId(),
-                        localSource.getPath(),
-                        localSource.getType(),
-                        SyncStatus.ADDED
-                    )
-                );
+                        new SourcePreview(
+                                localSource.getId(),
+                                localSource.getPath(),
+                                localSource.getType(),
+                                SyncStatus.ADDED));
                 hasChanges = true;
             }
 
-            trackRootPreview = new TrackRootPreview(
-                trackRoot.getId(),
-                trackRoot.getPath(),
-                !hasChanges,
-                trackRoot.getLastSyncTime(),
-                sourcePreviews
-            );
+            TrackRootPreview trackRootPreview = new TrackRootPreview(
+                    trackRoot.getId(),
+                    trackRoot.getPath(),
+                    !hasChanges,
+                    trackRoot.getLastSyncTime(),
+                    sourcePreviews);
             trackRootPreviewCache.put(trackRootId, trackRootPreview);
 
             logger.info(
-                "preview:done trackRoot={} sourceCount={} synced={}",
-                trackRoot.getPath(),
-                sourcePreviews.size(),
-                !hasChanges
-            );
+                    "preview:done trackRoot={} sourceCount={} synced={}",
+                    trackRoot.getPath(),
+                    sourcePreviews.size(),
+                    !hasChanges);
 
             return trackRootPreview;
         } catch (APIServiceException ex) {
@@ -292,17 +277,16 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
         if (Files.isDirectory(rootPath)) {
             try (Stream<Path> pathStream = Files.walk(rootPath)) {
                 pathStream
-                    .filter(Files::isRegularFile)
-                    .sorted(Comparator.comparing(Path::toString))
-                    .map(path -> createSource(path, allowedTypes))
-                    .filter(Objects::nonNull)
-                    .forEach(sources::add);
+                        .filter(Files::isRegularFile)
+                        .sorted(Comparator.comparing(Path::toString))
+                        .map(path -> createSource(path, allowedTypes))
+                        .filter(Objects::nonNull)
+                        .forEach(sources::add);
             } catch (IOException e) {
                 throw new APIServiceException(
-                    APIServiceException.ErrorCode.SOURCE_SYNC_LOCAL_SCAN_FAILED,
-                    "Failed to walk track root: " + trackRoot.getPath(),
-                    e
-                );
+                        APIServiceException.ErrorCode.SOURCE_SYNC_LOCAL_SCAN_FAILED,
+                        "Failed to walk track root: " + trackRoot.getPath(),
+                        e);
             }
             return sources;
         }
@@ -367,10 +351,9 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
             return hex.toString();
         } catch (IOException e) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED,
-                "Failed to read file for hashing: " + path,
-                e
-            );
+                    APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED,
+                    "Failed to read file for hashing: " + path,
+                    e);
         } catch (NoSuchAlgorithmException e) {
             throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_HASH_FAILED, e);
         }
@@ -383,10 +366,9 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
      */
     @Transactional
     public void syncTrackRootSource(
-        Long trackRootId,
-        Consumer<TaskProgressEvent> progressListener,
-        BooleanSupplier cancellationRequested
-    ) {
+            Long trackRootId,
+            Consumer<TaskProgressEvent> progressListener,
+            BooleanSupplier cancellationRequested) {
         try {
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, "SYNC", "Syncing track root: " + trackRootId);
@@ -411,10 +393,9 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
                 switch (syncStatus) {
                     case ADDED -> {
                         Source newSource = new Source(
-                            sourcePreview.path(),
-                            computeContentHash(Path.of(sourcePreview.path())),
-                            sourcePreview.type()
-                        );
+                                sourcePreview.path(),
+                                computeContentHash(Path.of(sourcePreview.path())),
+                                sourcePreview.type());
                         trackRoot.addSource(newSource);
                         sourceRepository.save(newSource);
                     }
@@ -432,18 +413,16 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
                         // no action needed
                     }
                     default -> throw new APIServiceException(
-                        APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
-                        "Unhandled sync status: " + syncStatus
-                    );
+                            APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
+                            "Unhandled sync status: " + syncStatus);
                 }
             }
 
             throwIfCancelled(cancellationRequested);
             emitProgress(
-                progressListener,
-                "SYNC",
-                "Removing " + sourcesToRemove.size() + " sources for track root: " + trackRoot.getPath()
-            );
+                    progressListener,
+                    "SYNC",
+                    "Removing " + sourcesToRemove.size() + " sources for track root: " + trackRoot.getPath());
             batchRemoveSources(sourcesToRemove);
 
             trackRoot.setLastSyncTime(LocalDateTime.now());
@@ -463,9 +442,8 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
         Source source = resolveExistingSource(preview);
         if (source == null) {
             throw new APIServiceException(
-                APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
-                "Source not found: " + preview.path()
-            );
+                    APIServiceException.ErrorCode.SOURCE_SYNC_TRACK_ROOT_FAILED,
+                    "Source not found: " + preview.path());
         }
         return source;
     }
@@ -488,10 +466,10 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     private void batchRemoveSourceChunks(List<Source> sources) {
         try {
             List<Chunk> chunks = sources
-                .stream()
-                .flatMap(source -> source.getContexts().stream())
-                .flatMap(context -> context.getChunks().stream())
-                .toList();
+                    .stream()
+                    .flatMap(source -> source.getContexts().stream())
+                    .flatMap(context -> context.getChunks().stream())
+                    .toList();
 
             if (chunks.isEmpty()) {
                 return;
