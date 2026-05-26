@@ -1,6 +1,6 @@
 package com.llmcr.feature.review.agent;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.tool.DatabaseTool;
 import com.llmcr.feature.review.tool.MyToolCallingManager;
 import com.llmcr.feature.review.tool.MyToolCallingManager.ToolCall;
@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
@@ -66,18 +65,16 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
             """;
 
     private static final String AGENT_NAME = "retrieval";
+
     private final MyToolCallingManager toolCallingManager;
     private List<String> toolResults;
 
     public RetrievalAgent(
-            SystemConfig applicationProperties,
+            AgentConfigProvider configProvider,
             ModelClientFactory modelClientFactory,
             DatabaseTool databaseTool) {
-        super(
-                AGENT_NAME,
-                applicationProperties,
-                modelClientFactory,
-                new BeanOutputConverter<>(RetrievalModelResponse.class));
+        super(configProvider, modelClientFactory);
+
         ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool);
         this.toolCallingManager = new MyToolCallingManager(toolCallbacks);
 
@@ -86,6 +83,11 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
             toolDefBuilder.append(callback.getToolDefinition()).append("\n----\n");
         }
         this.systemPrompt = this.systemPrompt.replace("{tool_definitions}", toolDefBuilder.toString());
+    }
+
+    @Override
+    protected String getAgentName() {
+        return AGENT_NAME;
     }
 
     @Override
@@ -120,8 +122,11 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
                         "\nUse above information to determine your next action.");
     }
 
+    /**
+     * Return the last tool result as the final output of the agent.
+     */
     @Override
-    protected String buildFinalResponse(RetrievalModelResponse response) {
+    protected String buildAgentOutput(RetrievalModelResponse response) {
         return toolResults.isEmpty() ? "No information was retrieved." : toolResults.get(toolResults.size() - 1);
     }
 

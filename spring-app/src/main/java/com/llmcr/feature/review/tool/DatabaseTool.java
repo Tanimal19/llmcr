@@ -4,8 +4,9 @@ import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.domain.util.StringUtils;
 import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalRequest;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
+import com.llmcr.infrastructure.rag.fusion.RankFusionStrategy;
 import com.llmcr.infrastructure.rag.select.FixedKStrategy;
 
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class DatabaseTool {
 
     private static final int MAX_RESULT_ROWS = 20;
+    private static final String COLLECTION_NAME = "all";
 
     private final ContextRepository contextRepository;
     private final QueryContextRetriever queryContextRetriever;
@@ -37,12 +39,10 @@ public class DatabaseTool {
             errorResponse.put("error", "query must not be blank");
             return StringUtils.jsonString(errorResponse);
         }
-        ContextRetrievalConfiguration retrievalConfiguration = new ContextRetrievalConfiguration(
-                MAX_RESULT_ROWS,
-                new FixedKStrategy(),
-                "all",
-                false);
-        ContextRetrievalRequest request = new ContextRetrievalRequest(List.of(query.trim()), retrievalConfiguration);
+        QueryContextRetrievalConfig retrievalConfiguration = new QueryContextRetrievalConfig(
+                COLLECTION_NAME, MAX_RESULT_ROWS, new FixedKStrategy(), new RankFusionStrategy(), false);
+        QueryContextRetrievalRequest request = new QueryContextRetrievalRequest(
+                List.of(query.trim()), retrievalConfiguration);
         List<ContextScorePair> retrievedContexts = queryContextRetriever.retrieve(request);
 
         if (retrievedContexts.isEmpty()) {

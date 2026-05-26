@@ -1,6 +1,6 @@
 package com.llmcr.feature.review.agent;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.CodeReviewReport.ChecklistItemAnswer;
 import com.llmcr.feature.review.CodeReviewReport.CodeChange;
 import com.llmcr.feature.review.CodeReviewReport.EvidenceItem;
@@ -11,12 +11,10 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ComputationAgent
-        extends
+public class ComputationAgent extends
         BaseAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ChecklistItemAnswer> {
 
     public record ComputationAgentInput(List<CodeChange> codeChanges, String checklistItem) {
@@ -85,20 +83,26 @@ public class ComputationAgent
             Code changes:
             <code_changes>
             """;
-    private static final String AGENT_NAME = "computation";
 
+    private static final String AGENT_NAME = "computation";
     private final RetrievalAgent retrievalAgent;
 
     public ComputationAgent(
-            SystemConfig applicationProperties,
+            AgentConfigProvider configProvider,
             ModelClientFactory modelClientFactory,
             RetrievalAgent retrievalAgent) {
-        super(
-                AGENT_NAME,
-                applicationProperties,
-                modelClientFactory,
-                new BeanOutputConverter<>(ComputationModelResponse.class));
+        super(configProvider, modelClientFactory);
         this.retrievalAgent = retrievalAgent;
+    }
+
+    @Override
+    protected String getAgentName() {
+        return AGENT_NAME;
+    }
+
+    @Override
+    protected Class<ComputationModelResponse> getOutputClass() {
+        return ComputationModelResponse.class;
     }
 
     @Override
@@ -152,7 +156,7 @@ public class ComputationAgent
     }
 
     @Override
-    protected ChecklistItemAnswer buildFinalResponse(ComputationModelResponse response) {
+    protected ChecklistItemAnswer buildAgentOutput(ComputationModelResponse response) {
         return new ChecklistItemAnswer(response.finalAnswer(), response.analysis(), response.evidence());
     }
 }
