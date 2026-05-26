@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
-import { TableBrowser, type TableBrowserItem, toLabel } from './components/table-browser.js';
+import { LoadingSpinner, TableBrowser, type TableBrowserItem, toLabel } from '#components';
 import { getRagScope, setRagScope } from '#api.js';
 import { type CommandProps } from '#commands/types.js';
-import { LoadingSpinner } from '#components/loading-spinner.js';
 
 type RagScopeItem = {
   id: string;

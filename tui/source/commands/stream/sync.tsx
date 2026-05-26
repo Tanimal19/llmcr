@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import { useSseTaskLifecycle } from './hooks/use-sse-task-lifecycle.js';
 import { type CommandProps } from '#commands/types.js';
 import { cancelSseTask, lsdb, syncWithProgress, type SseTaskStartEvent, type TrackRootPreview } from '#api.js';
-import { LoadingSpinner } from '#components/loading-spinner.js';
+import { LoadingSpinner } from '#components';
 
 export const SyncCommand = ({ onBack }: CommandProps) => {
   const {

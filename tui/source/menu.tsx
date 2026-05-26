@@ -16,9 +16,9 @@ export const MainMenu = ({ onSelect, configLoaded, lastSynced, isInfoLoading, in
   const options = [
     { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
     { cmd: 'review', desc: 'Generate code review', value: 'review' },
+    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
     { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
-    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'help', desc: 'Show this command list', value: 'help' },
   ];
 

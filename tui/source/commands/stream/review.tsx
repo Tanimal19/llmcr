@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { useSseTaskLifecycle } from './hooks/use-sse-task-lifecycle.js';
-import { ArgInput } from './components/arg-input.js';
 import { type CommandProps } from '#commands/types.js';
-import { LoadingSpinner } from '#components/loading-spinner.js';
+import { ArgInput, LoadingSpinner } from '#components';
 import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '#api.js';
 
 // ─── 1. 獨立且乾淨的參數型態宣告 ───

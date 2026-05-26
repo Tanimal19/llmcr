@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
-import { TableBrowser, type TableBrowserItem, toLabel } from './components/table-browser.js';
+import { TableBrowser, type TableBrowserItem, toLabel } from '#components';
 import { lsdb } from '#api.js';
 import { type CommandProps } from '#commands/types.js';
 
