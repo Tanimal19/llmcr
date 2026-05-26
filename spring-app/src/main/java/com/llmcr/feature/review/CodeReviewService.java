@@ -1,23 +1,16 @@
 package com.llmcr.feature.review;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.provider.LoggingConfigProvider;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.sse.SseTaskObject;
-import com.llmcr.feature.review.CodeReviewReport.ChecklistItem;
-import com.llmcr.feature.review.CodeReviewReport.ChecklistItemAnswer;
-import com.llmcr.feature.review.CodeReviewReport.CodeChange;
-import com.llmcr.feature.review.CodeReviewReport.InterpretationContent;
-import com.llmcr.feature.review.CodeReviewReport.ReportContent;
-import com.llmcr.feature.review.PullRequestParser.PullRequestData;
-import com.llmcr.feature.review.agent.ComputationAgent;
-import com.llmcr.feature.review.agent.InterpretationAgent;
-import com.llmcr.feature.review.agent.PlanningAgent;
-import com.llmcr.feature.review.agent.SummaryAgent;
+import com.llmcr.feature.review.agent.*;
 import com.llmcr.feature.review.agent.ComputationAgent.ComputationAgentInput;
 import com.llmcr.feature.review.agent.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentInput;
 import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentOutput;
 import com.llmcr.feature.review.agent.SummaryAgent.SummaryAgentInput;
+import com.llmcr.feature.review.CodeReviewReport.*;
+import com.llmcr.feature.review.PullRequestParser.PullRequestData;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,15 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CodeReviewService
         extends SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
 
-    private static final Logger logger = LoggerFactory.getLogger(CodeReviewService.class);
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     private final InterpretationAgent interpretationAgent;
@@ -49,12 +39,12 @@ public class CodeReviewService
     private String outputDir;
 
     public CodeReviewService(
-            SystemConfig applicationProperties,
+            LoggingConfigProvider configProvider,
             InterpretationAgent interpretationAgent,
             PlanningAgent planningAgent,
             ComputationAgent computationAgent,
             SummaryAgent summaryAgent) {
-        this.outputDir = applicationProperties.getLogging().getReviewOutputDir();
+        this.outputDir = configProvider.getReviewOutputDirectory();
         this.interpretationAgent = interpretationAgent;
         this.planningAgent = planningAgent;
         this.computationAgent = computationAgent;
@@ -110,7 +100,7 @@ public class CodeReviewService
             String codeAnalysis = null;
 
             InterpretationContent interpretation;
-            PlanningAgentOutput planning;
+            PlanningAgentOutput plan;
             if (!input.useMockData()) {
                 throwIfCancelled(cancellationRequested);
                 emitProgress(progressListener, "INTERPRETATION", "Start interpretation stage");
@@ -119,31 +109,33 @@ public class CodeReviewService
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
                 }
-                emitProgress(progressListener, "INTERPRETATION", "Interpretation stage completed");
+                emitProgress(progressListener, "INTERPRETATION",
+                        "Interpretation stage completed:\n{}".formatted(interpretation));
 
                 throwIfCancelled(cancellationRequested);
                 emitProgress(progressListener, "PLANNING", "Start planning stage");
                 try {
-                    planning = planningAgent.execute(new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+                    plan = planningAgent.execute(new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
                 }
-                emitProgress(progressListener, "PLANNING", "Planning stage completed");
+                emitProgress(progressListener, "PLANNING", "Planning stage completed:\n{}".formatted(plan));
             } else {
                 throwIfCancelled(cancellationRequested);
-                interpretation = MockReviewData.MOCK_INTERPRETATION;
-                planning = MockReviewData.MOCK_PLANNING;
-                emitProgress(progressListener, "INTERPRETATION", "Using mock interpretation");
-                emitProgress(progressListener, "PLANNING", "Using mock planning");
+                interpretation = MockReviewData.MOCK_INTERPRETATION_OUTPUT;
+                plan = MockReviewData.MOCK_PLANNING_OUTPUT;
+                emitProgress(progressListener, "INTERPRETATION",
+                        "Using mock interpretation:\n{}".formatted(interpretation));
+                emitProgress(progressListener, "PLANNING", "Using mock planning\n{}".formatted(plan));
             }
 
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, "COMPUTATION", "Running checklist computations");
 
             List<ChecklistItem> items = new ArrayList<>();
-            int totalItems = planning.checklistItems().size();
+            int totalItems = plan.checklistItems().size();
             int itemIndex = 0;
-            for (String item : planning.checklistItems()) {
+            for (String item : plan.checklistItems()) {
                 throwIfCancelled(cancellationRequested);
                 emitProgress(
                         progressListener,
@@ -155,6 +147,10 @@ public class CodeReviewService
                     ChecklistItemAnswer answer = computationAgent.execute(
                             new ComputationAgentInput(codeChanges, item));
                     items.add(new ChecklistItem(item, answer));
+                    emitProgress(
+                            progressListener,
+                            "COMPUTATION",
+                            "Completed checklist item, answer:\n{}".formatted(answer));
                 } catch (Exception ex) {
                     throw new APIServiceException(
                             APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,

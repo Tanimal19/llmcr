@@ -1,6 +1,7 @@
 package com.llmcr.feature.chat;
 
-import com.llmcr.config.SystemConfig;
+import com.llmcr.config.SystemConfig.ModelConfig;
+import com.llmcr.config.provider.ChatServiceConfigProvider;
 import com.llmcr.domain.entity.ChunkCollection;
 import com.llmcr.domain.entity.TrackRoot;
 import com.llmcr.domain.exception.APIServiceException;
@@ -12,9 +13,8 @@ import com.llmcr.infrastructure.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalConfiguration;
-import com.llmcr.infrastructure.rag.QueryContextRetriever.ContextRetrievalRequest;
-import com.llmcr.infrastructure.rag.select.AdaptiveKStrategy;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
+import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
 
 import java.util.HashSet;
 import java.util.List;
@@ -47,36 +47,32 @@ public class ChatService {
             Answer:
             """;
 
-    public static final String AGENT_NAME = "question-answer";
-    public static final String COLLECTION_NAME = "question-answer";
+    public static final int RETRIEVAL_TOP_K = 10;
+    public static final String COLLECTION_NAME = "chat-service";
 
-    private final SystemConfig applicationProperties;
+    private final ModelConfig chatModelConfig;
     private final ModelClientFactory modelClientFactory;
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final TrackRootRepository trackRootRepository;
     private final LoadService loadService;
     private final QueryContextRetriever queryContextRetriever;
-
-    private final ContextRetrievalConfiguration retrievalConfiguration;
+    private final QueryContextRetrievalConfig retrievalConfiguration;
 
     public ChatService(
-            SystemConfig applicationProperties,
+            ChatServiceConfigProvider configProvider,
             ModelClientFactory modelClientFactory,
             ChunkCollectionRepository chunkCollectionRepository,
             TrackRootRepository trackRootRepository,
             LoadService loadService,
             QueryContextRetriever queryContextRetriever) {
-        this.applicationProperties = applicationProperties;
+        this.chatModelConfig = configProvider.getChatServiceModelConfig();
+
         this.modelClientFactory = modelClientFactory;
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.trackRootRepository = trackRootRepository;
         this.loadService = loadService;
 
-        this.retrievalConfiguration = new ContextRetrievalConfiguration(
-                10,
-                new AdaptiveKStrategy(),
-                COLLECTION_NAME,
-                false);
+        this.retrievalConfiguration = new QueryContextRetrievalConfig(COLLECTION_NAME, RETRIEVAL_TOP_K);
         this.queryContextRetriever = queryContextRetriever;
     }
 
@@ -84,16 +80,12 @@ public class ChatService {
     }
 
     public ChatResponse chat(String query) {
-        if (query == null || query.isBlank()) {
-            return new ChatResponse("(no query provided)", Map.of());
-        }
-
         List<ContextScorePair> retrievedContexts;
         try {
             retrievedContexts = queryContextRetriever.retrieve(
-                    new ContextRetrievalRequest(List.of(query), retrievalConfiguration));
+                    new QueryContextRetrievalRequest(List.of(query), retrievalConfiguration));
         } catch (Exception ex) {
-            throw new APIServiceException(ErrorCode.RAG_RETRIEVAL_FAILED, "Failed to retrieve contexts for query", ex);
+            throw new APIServiceException(ErrorCode.RAG_RETRIEVAL_FAILED, ex);
         }
 
         String contextString = String.join(
@@ -106,9 +98,7 @@ public class ChatService {
                 .build()
                 .render(Map.of("query", query, "context", contextString));
 
-        ChatClient chatClient = modelClientFactory.createChatClient(
-                applicationProperties.getAgents().get(AGENT_NAME).getChatModelProperties().getProvider(),
-                applicationProperties.getAgents().get(AGENT_NAME).getChatModelProperties().getName());
+        ChatClient chatClient = modelClientFactory.createChatClient(chatModelConfig);
         ChatClientRequestSpec requestSpec = chatClient
                 .prompt()
                 .system(SYSTEM_PROMPT)
@@ -119,7 +109,7 @@ public class ChatService {
         try {
             answer = requestSpec.call().content();
         } catch (Exception ex) {
-            throw new APIServiceException(ErrorCode.LLM_RESPONSE_FAILED, "Failed to get response from LLM", ex);
+            throw new APIServiceException(ErrorCode.CHAT_MODEL_RESPONSE_FAILED, ex);
         }
         Map<String, Float> retrievedContextMap = retrievedContexts
                 .stream()

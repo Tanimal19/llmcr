@@ -48,7 +48,7 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
             AgentConfigProvider configProvider,
             ModelClientFactory modelClientFactory) {
         this.chatClient = modelClientFactory.createChatClient(configProvider.getAgentChatModelConfig(getAgentName()));
-        if (getOutputClass() != String.class) {
+        if (getOutputClass() != null && getOutputClass() != String.class) {
             this.outputConverter = new BeanOutputConverter<>(getOutputClass());
         } else {
             this.outputConverter = null;
@@ -145,7 +145,7 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
                 rawResponse = retryRequest.call().content();
             }
         }
-        throw new APIServiceException(APIServiceException.ErrorCode.LLM_RESPONSE_CONVERSION_FAILED);
+        throw new APIServiceException(APIServiceException.ErrorCode.CHAT_MODEL_RESPONSE_CONVERSION_FAILED);
     }
 
     protected O doExecute(I input) {
@@ -166,7 +166,12 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
                     .prompt(prompt)
                     .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
 
-            chatResponse = requestSpec.call().chatResponse();
+            try {
+                chatResponse = requestSpec.call().chatResponse();
+            } catch (Exception ex) {
+                throw new APIServiceException(APIServiceException.ErrorCode.CHAT_MODEL_RESPONSE_FAILED, ex);
+            }
+
             modelResponse = convertRawResponse(chatResponse.getResult().getOutput().getText());
 
             if (shouldTerminate(modelResponse)) {

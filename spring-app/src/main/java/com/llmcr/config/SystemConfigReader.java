@@ -25,6 +25,8 @@ public class SystemConfigReader {
 
     private static final SystemConfig.ModelConfig EMPTY_MODEL = new SystemConfig.ModelConfig(null, null);
     private static final SystemConfig.LoggingConfig EMPTY_LOGGING = new SystemConfig.LoggingConfig(null);
+    private static final SystemConfig.ChatServiceConfig EMPTY_CHAT_SERVICE =
+            new SystemConfig.ChatServiceConfig(null, EMPTY_MODEL);
 
     private final String configFilePath;
     private final ObjectMapper objectMapper;
@@ -51,13 +53,15 @@ public class SystemConfigReader {
 
     private SystemConfig normalize(SystemConfig raw) {
         Map<String, SystemConfig.ModelConfig> chatModels = normalizeChatModels(raw.chatModels());
+        SystemConfig.ChatServiceConfig chatService = normalizeChatService(raw.chatService(), chatModels);
         return new SystemConfig(
                 normalizeTrackRoots(raw.trackRoots()),
                 normalizeCollections(raw.collections()),
                 chatModels,
                 normalizeModel(raw.embeddingModel()),
                 normalizeModel(raw.rerankingModel()),
-                normalizeAgents(raw.agents(), chatModels),
+            normalizeAgents(raw.agents(), chatModels),
+                chatService,
                 normalizeLogging(raw.logging()));
     }
 
@@ -94,6 +98,18 @@ public class SystemConfigReader {
                     modelProperties,
                     value == null ? null : value.collection());
         });
+    }
+
+    private SystemConfig.ChatServiceConfig normalizeChatService(
+            SystemConfig.ChatServiceConfig chatService,
+            Map<String, SystemConfig.ModelConfig> chatModels) {
+        if (chatService == null) {
+            return EMPTY_CHAT_SERVICE;
+        }
+
+        String chatModelKey = chatService.chatModelName();
+        SystemConfig.ModelConfig modelProperties = chatModels.getOrDefault(chatModelKey, EMPTY_MODEL);
+        return new SystemConfig.ChatServiceConfig(chatModelKey, modelProperties);
     }
 
     private <T, R> Map<String, R> mapValues(Map<String, T> source, BiFunction<String, T, R> mapper) {

@@ -17,6 +17,7 @@ public record SystemConfig(
         @JsonProperty("embedding-model") ModelConfig embeddingModel,
         @JsonProperty("reranking-model") ModelConfig rerankingModel,
         Map<String, AgentConfig> agents,
+        @JsonProperty("chat-service") ChatServiceConfig chatService,
         LoggingConfig logging) {
 
     public record TrackRootConfig(
@@ -37,6 +38,11 @@ public record SystemConfig(
             String collection) {
     }
 
+    public record ChatServiceConfig(
+            @JsonProperty("chat-model") String chatModelName,
+            ModelConfig chatModelProperties) {
+    }
+
     public record LoggingConfig(@JsonProperty("review-output-dir") String reviewOutputDir) {
     }
 
@@ -54,6 +60,8 @@ public record SystemConfig(
                 rerankingModel,
                 "agents",
                 agents,
+                "chatService",
+                chatService,
                 "logging",
                 logging);
     }

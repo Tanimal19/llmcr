@@ -5,6 +5,12 @@ import org.springframework.http.HttpStatus;
 public class APIServiceException extends RuntimeException {
 
     public enum ErrorCode {
+        CHAT_MODEL_RESPONSE_CONVERSION_FAILED("chatmodelresponseconversionfailed",
+                "Failed to convert chat model response",
+                HttpStatus.INTERNAL_SERVER_ERROR),
+        CHAT_MODEL_RESPONSE_FAILED("chatmodelresponsefailed", "Failed to get response from chat model",
+                HttpStatus.INTERNAL_SERVER_ERROR),
+
         RAG_RETRIEVAL_FAILED("ragretrievalfailed", "Failed to retrieve contexts",
                 HttpStatus.INTERNAL_SERVER_ERROR),
         RAG_SCOPE_GET_FAILED("ragscopegetfailed", "Failed to get RAG scope",
@@ -78,8 +84,6 @@ public class APIServiceException extends RuntimeException {
         INTERNAL_ERROR("internalerror", "An unexpected error occurred",
                 HttpStatus.INTERNAL_SERVER_ERROR),
 
-        LLM_RESPONSE_CONVERSION_FAILED("llmresponseconversionfailed", "Failed to convert LLM response",
-                HttpStatus.INTERNAL_SERVER_ERROR),
         SSE_TASK_CANCELLED("ssetaskcancelled", "SSE task was cancelled",
                 HttpStatus.CONFLICT);
 
