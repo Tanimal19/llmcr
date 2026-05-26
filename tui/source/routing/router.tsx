@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { MainMenu } from './menu.js';
 import { ChatCommand } from '#features/chat/chat.cmd.js';
-import { SetRagCommand } from '#features/chat/setrag.cmd.js';
+import { SetRagCommand } from '#features/setrag/setrag.cmd.js';
 import { ReviewCommand } from '#features/code-review/review.cmd.js';
-import { LsDbCommand } from '#features/knowledge-base/lsdb.cmd.js';
-import { SyncCommand } from '#features/knowledge-base/sync.cmd.js';
+import { LsDbCommand } from '#features/lsdb/lsdb.cmd.js';
+import { SyncCommand } from '#features/sync/sync.cmd.js';
 
 export type AppScreen = 'menu' | 'chat' | 'review' | 'sync' | 'lsdb' | 'setrag' | 'help';
 
