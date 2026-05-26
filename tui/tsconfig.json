@@ -6,5 +6,8 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
-  "include": ["source", "source/test.tsx"]
+  "include": ["source", "source/test.tsx"],
+  "paths": {
+    "#*": ["./source/*"]
+  }
 }

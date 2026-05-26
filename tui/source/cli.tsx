@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 import { render } from 'ink';
-import App from './app.js';
+import App from '#routing/router.js';
 
 render(<App />);

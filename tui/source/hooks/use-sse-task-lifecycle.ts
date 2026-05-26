@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useInput } from 'ink';
-import { type ReviewErrorEvent, type ReviewStageProgress, type SseTaskStartEvent } from '../api.js';
+import { type SseTaskErrorEvent, type SseTaskStageProgress, type SseTaskStartEvent } from '#api/client.js';
 
 type TaskStatus = 'running' | 'success' | 'error';
 
@@ -27,8 +27,8 @@ type UseSseTaskLifecycleResult = {
   appendLog: (message: string) => void;
   startRun: (startLogMessage: string) => AbortController;
   handleTaskStart: (event: SseTaskStartEvent, onStarted?: (event: SseTaskStartEvent) => void) => void;
-  handleProgress: (event: ReviewStageProgress) => void;
-  handleError: (event: ReviewErrorEvent) => void;
+  handleProgress: (event: SseTaskStageProgress) => void;
+  handleError: (event: SseTaskErrorEvent) => void;
   completeRun: (successStageMessage: string, successLogMessage: string) => void;
   handleRunFailure: (error: unknown, abortController: AbortController, abortLogMessage: string) => void;
   cleanupRun: (abortController: AbortController) => void;
@@ -117,13 +117,13 @@ export function useSseTaskLifecycle(options: UseSseTaskLifecycleOptions): UseSse
     }
   };
 
-  const handleProgress = (event: ReviewStageProgress): void => {
+  const handleProgress = (event: SseTaskStageProgress): void => {
     const level = event.isError ? 'ERROR' : 'INFO';
     setStageMessage(`${event.stage} - ${event.message}`);
     appendLog(`[${event.stage}] ${level} - ${event.message}`);
   };
 
-  const handleError = (event: ReviewErrorEvent): void => {
+  const handleError = (event: SseTaskErrorEvent): void => {
     setStatus('error');
     setErrorMessage(`${event.code}: ${event.message}`);
     setStageMessage(options.failedStageMessage);

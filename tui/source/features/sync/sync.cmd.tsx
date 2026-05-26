@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { type CommandProps } from '../types.js';
-import { cancelSseTask, lsdb, syncWithProgress, type SseTaskStartEvent, type TrackRootPreview } from '../api.js';
-import { LoadingSpinner } from '../components/loading-spinner.js';
-import { useSseTaskLifecycle } from './use-sse-task-lifecycle.js';
+import { syncWithProgress } from './sync.api.js';
+import { lsdb, type TrackRootPreview } from '#features/lsdb/lsdb.api.js';
+import { useSseTaskLifecycle } from '#hooks';
+import { type CommandProps } from '#features/types.js';
+import { cancelSseTask, type SseTaskStartEvent } from '#api/client.js';
+import { LoadingSpinner } from '#components';
 
 export const SyncCommand = ({ onBack }: CommandProps) => {
   const {
