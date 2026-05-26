@@ -107,11 +107,11 @@ public class SseTaskManager {
     public void requestCancellation(String taskId, String reason) {
         TaskContext taskContext = currentTasks.get(taskId);
         if (taskContext == null) {
-            logger.info("cancel ignored (task not found): taskId={} reason={}", taskId, reason);
+            logger.info("cancel ignored (task not found)");
             return;
         }
 
         taskContext.requestCancellation();
-        logger.info("cancellation requested: taskId={} reason={}", taskId, reason);
+        logger.info("cancellation requested");
     }
 }
