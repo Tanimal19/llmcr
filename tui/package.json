@@ -15,9 +15,9 @@
     "test:coverage": "c8 --reporter=lcov ava"
   },
   "imports": {
-    "#components": "./source/components/index.js",
-    "#hooks": "./source/hooks/index.js",
-    "#*": "./source/*"
+    "#components": "./dist/components/index.js",
+    "#hooks": "./dist/hooks/index.js",
+    "#*": "./dist/*"
   },
   "files": [
     "dist"

@@ -1,73 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { info } from '#features/menu/menu.api.js';
 import { ChatCommand } from '#features/chat/chat.cmd.js';
+import { SetRagCommand } from '#features/chat/setrag.cmd.js';
 import { ReviewCommand } from '#features/code-review/review.cmd.js';
-import { SyncCommand } from '#features/knowledge-base/sync.cmd.js';
-import { SetRagCommand } from '#features/knowledge-base/setrag.cmd.js';
 import { LsDbCommand } from '#features/knowledge-base/lsdb.cmd.js';
+import { SyncCommand } from '#features/knowledge-base/sync.cmd.js';
 import { MainMenu } from '#features/menu/menu.js';
 
-// Router of the application
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
-  const [configLoaded, setconfigLoaded] = useState('Loading...');
-  const [lastSynced, setLastSynced] = useState('Loading...');
-  const [isInfoLoading, setIsInfoLoading] = useState(true);
-  const [infoError, setInfoError] = useState<string | undefined>(undefined);
-
-  useEffect(() => {
-    if (currentScreen !== 'menu') return;
-
-    let disposed = false;
-    const loadInfo = async (): Promise<void> => {
-      setIsInfoLoading(true);
-      setInfoError(undefined);
-      try {
-        const result = await info();
-        if (disposed) return;
-        setconfigLoaded(result.configPath || 'N/A');
-        setLastSynced(result.lastSyncTime ? String(result.lastSyncTime) : 'N/A');
-      } catch (error) {
-        if (disposed) return;
-        setconfigLoaded('N/A');
-        setLastSynced('N/A');
-        setInfoError(error instanceof Error ? error.message : String(error));
-      } finally {
-        if (!disposed) setIsInfoLoading(false);
-      }
-    };
-
-    void loadInfo();
-    return () => {
-      disposed = true;
-    };
-  }, [currentScreen]);
 
   const handleBack = () => {
-    setCurrentScreen('menu'); // 狀態清空收攏到各 Command 內部，App 只管切回主選單
+    setCurrentScreen('menu');
   };
 
   switch (currentScreen) {
     case 'menu': {
-      return (
-        <MainMenu
-          onSelect={setCurrentScreen}
-          configLoaded={configLoaded}
-          lastSynced={lastSynced}
-          isInfoLoading={isInfoLoading}
-          infoError={infoError}
-        />
-      );
+      return <MainMenu onSelect={setCurrentScreen} />; // 🎯 變得超級乾淨！
     }
 
     case 'review': {
-      // 外殼路由器不再關心參數，直接把控制權交給 Review
       return <ReviewCommand onBack={handleBack} />;
-    }
-
-    case 'sync': {
-      return <SyncCommand onBack={handleBack} />;
     }
 
     case 'chat': {
@@ -80,6 +33,10 @@ export default function App() {
 
     case 'lsdb': {
       return <LsDbCommand onBack={handleBack} />;
+    }
+
+    case 'sync': {
+      return <SyncCommand onBack={handleBack} />;
     }
 
     case 'help': {

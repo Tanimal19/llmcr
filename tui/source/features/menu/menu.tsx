@@ -1,24 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
+import { info } from './menu.api.js'; // 就近引入自己模組的 API
 
 type MainMenuProps = {
   onSelect: (screen: string) => void;
-  configLoaded: string;
-  lastSynced: string;
-  isInfoLoading: boolean;
-  infoError: string | undefined;
 };
 
-export const MainMenu = ({ onSelect, configLoaded, lastSynced, isInfoLoading, infoError }: MainMenuProps) => {
+export const MainMenu = ({ onSelect }: MainMenuProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const { exit } = useApp();
 
+  // ─── 🧠 把原本在 App 的狀態與副作用移到這裡 ───
+  const [configLoaded, setconfigLoaded] = useState('Loading...');
+  const [lastSynced, setLastSynced] = useState('Loading...');
+  const [isInfoLoading, setIsInfoLoading] = useState(true);
+  const [infoError, setInfoError] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let disposed = false;
+    const loadInfo = async (): Promise<void> => {
+      setIsInfoLoading(true);
+      setInfoError(undefined);
+      try {
+        const result = await info();
+        if (disposed) return;
+        setconfigLoaded(result.configPath || 'N/A');
+        setLastSynced(result.lastSyncTime ? String(result.lastSyncTime) : 'N/A');
+      } catch (error) {
+        if (disposed) return;
+        setconfigLoaded('N/A');
+        setLastSynced('N/A');
+        setInfoError(error instanceof Error ? error.message : String(error));
+      } finally {
+        if (!disposed) setIsInfoLoading(false);
+      }
+    };
+
+    void loadInfo();
+    return () => {
+      disposed = true;
+    };
+  }, []); // 空陣列即可，只有當選單元件被渲染（即回到主選單）時才觸發
+
   const options = [
-    { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
     { cmd: 'review', desc: 'Generate code review', value: 'review' },
-    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
+    { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
+    { cmd: 'setrag', desc: 'Modify RAG scope of chat mode', value: 'setrag' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
-    { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
+    { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'help', desc: 'Show this command list', value: 'help' },
   ];
 
@@ -60,7 +89,6 @@ export const MainMenu = ({ onSelect, configLoaded, lastSynced, isInfoLoading, in
                     {isSelected ? '  >' : '   '}
                   </Text>
                 </Box>
-                {/* 💡 這裡很關鍵：只固定「內部左側欄位」寬度，確保不論視窗多寬，後方描述永遠完美對齊 */}
                 <Box width={10}>
                   <Text color={isSelected ? 'green' : 'white'} bold={isSelected}>
                     {opt.cmd}
