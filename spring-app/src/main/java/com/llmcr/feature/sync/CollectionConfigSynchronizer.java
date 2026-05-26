@@ -1,8 +1,9 @@
 package com.llmcr.feature.sync;
 
-import com.llmcr.config.SystemConfig;
 import com.llmcr.config.SystemConfig.CollectionConfig;
 import com.llmcr.config.SystemConfig.TrackRootConfig;
+import com.llmcr.config.provider.CollectionConfigProvider;
+import com.llmcr.config.provider.TrackRootConfigProvider;
 import com.llmcr.domain.entity.ChunkCollection;
 import com.llmcr.domain.entity.TrackRoot;
 import com.llmcr.domain.exception.APIServiceException;
@@ -27,25 +28,31 @@ public class CollectionConfigSynchronizer {
     private static final Logger logger = LoggerFactory.getLogger(CollectionConfigSynchronizer.class);
     private static final String ALL_COLLECTION_NAME = "all";
 
+    private final CollectionConfigProvider collectionConfigProvider;
+    private final TrackRootConfigProvider trackRootConfigProvider;
     private final TrackRootRepository trackRootRepository;
     private final ChunkCollectionRepository chunkCollectionRepository;
     private final MyVectorStore vectorStore;
 
     public CollectionConfigSynchronizer(
+            CollectionConfigProvider collectionConfigProvider,
+            TrackRootConfigProvider trackRootConfigProvider,
             TrackRootRepository trackRootRepository,
             ChunkCollectionRepository chunkCollectionRepository,
             MyVectorStore vectorStore) {
+        this.collectionConfigProvider = collectionConfigProvider;
+        this.trackRootConfigProvider = trackRootConfigProvider;
         this.trackRootRepository = trackRootRepository;
         this.chunkCollectionRepository = chunkCollectionRepository;
         this.vectorStore = vectorStore;
     }
 
-    public boolean syncCollections(SystemConfig properties) {
+    public boolean syncCollections() {
         syncDefaultCollections();
-        boolean changed = removeUnconfiguredCollections(properties);
+        boolean changed = removeUnconfiguredCollections();
 
-        Map<String, TrackRoot> trackRootsByName = loadTrackRootsByName(properties);
-        changed |= upsertConfiguredCollections(properties, trackRootsByName);
+        Map<String, TrackRoot> trackRootsByName = loadTrackRootsByName();
+        changed |= upsertConfiguredCollections(trackRootsByName);
         return changed;
     }
 
@@ -75,10 +82,11 @@ public class CollectionConfigSynchronizer {
         }
     }
 
-    private boolean removeUnconfiguredCollections(SystemConfig properties) {
+    private boolean removeUnconfiguredCollections() {
         boolean changed = false;
         for (ChunkCollection collection : chunkCollectionRepository.findAll()) {
-            boolean existsInConfig = properties.collections().containsKey(collection.getName());
+            boolean existsInConfig = collectionConfigProvider.getAllConfiguredCollectionNames()
+                    .contains(collection.getName());
             if (!existsInConfig && !isProtectedCollection(collection.getName())) {
                 chunkCollectionRepository.delete(collection);
                 vectorStore.removeCollection(collection.getName());
@@ -89,9 +97,10 @@ public class CollectionConfigSynchronizer {
         return changed;
     }
 
-    private Map<String, TrackRoot> loadTrackRootsByName(SystemConfig properties) {
+    private Map<String, TrackRoot> loadTrackRootsByName() {
         Map<String, TrackRoot> trackRootsByName = new HashMap<>();
-        for (Map.Entry<String, TrackRootConfig> entry : properties.trackRoots().entrySet()) {
+        for (Map.Entry<String, TrackRootConfig> entry : trackRootConfigProvider.getAllConfiguredTrackRoots()
+                .entrySet()) {
             String path = entry.getValue().path();
             TrackRoot trackRoot = trackRootRepository.findByPath(path);
             if (trackRoot != null) {
@@ -101,9 +110,10 @@ public class CollectionConfigSynchronizer {
         return trackRootsByName;
     }
 
-    private boolean upsertConfiguredCollections(SystemConfig properties, Map<String, TrackRoot> trackRootsByName) {
+    private boolean upsertConfiguredCollections(Map<String, TrackRoot> trackRootsByName) {
         boolean changed = false;
-        for (Map.Entry<String, CollectionConfig> entry : properties.collections().entrySet()) {
+        for (Map.Entry<String, CollectionConfig> entry : collectionConfigProvider.getAllConfiguredCollections()
+                .entrySet()) {
             String collectionName = entry.getKey();
             CollectionConfig configuredCollection = entry.getValue();
             Set<TrackRoot> targetTrackRoots = configuredCollection

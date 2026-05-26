@@ -1,6 +1,6 @@
 package com.llmcr.config.provider;
 
-import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -15,8 +15,8 @@ public class CollectionConfigProvider {
         this.config = config;
     }
 
-    public Collection<SystemConfig.CollectionConfig> getAllConfiguredCollections() {
-        return config.collections().values();
+    public Map<String, SystemConfig.CollectionConfig> getAllConfiguredCollections() {
+        return config.collections();
     }
 
     public Set<String> getAllConfiguredCollectionNames() {

@@ -1,6 +1,5 @@
 package com.llmcr.feature.sync;
 
-import com.llmcr.config.SystemConfig;
 import com.llmcr.domain.exception.APIServiceException;
 
 import jakarta.transaction.Transactional;
@@ -18,15 +17,12 @@ public class ConfigSyncService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigSyncService.class);
 
-    private final SystemConfig properties;
     private final TrackRootConfigSynchronizer trackRootSynchronizer;
     private final CollectionConfigSynchronizer collectionSynchronizer;
 
     public ConfigSyncService(
-            SystemConfig properties,
             TrackRootConfigSynchronizer trackRootSynchronizer,
             CollectionConfigSynchronizer collectionSynchronizer) {
-        this.properties = properties;
         this.trackRootSynchronizer = trackRootSynchronizer;
         this.collectionSynchronizer = collectionSynchronizer;
     }
@@ -38,7 +34,7 @@ public class ConfigSyncService {
     public boolean syncTrackRoots() {
         logger.info("trackRoots:start");
         try {
-            boolean changed = trackRootSynchronizer.syncTrackRoots(properties);
+            boolean changed = trackRootSynchronizer.syncTrackRoots();
 
             logger.info("trackRoots:done changed={}", changed);
             return changed;
@@ -57,7 +53,7 @@ public class ConfigSyncService {
     public boolean syncConfiguredCollections() {
         logger.info("collections:start");
         try {
-            boolean changed = collectionSynchronizer.syncCollections(properties);
+            boolean changed = collectionSynchronizer.syncCollections();
 
             logger.info("collections:done changed={}", changed);
             return changed;

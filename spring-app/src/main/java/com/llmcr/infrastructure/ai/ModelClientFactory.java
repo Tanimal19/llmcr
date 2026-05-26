@@ -69,7 +69,7 @@ public class ModelClientFactory {
     }
 
     public EmbeddingModel createEmbeddingModel(ModelConfig config) {
-        if (config.provider().equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
+        if (config.provider().equalsIgnoreCase(OPENAI_PROVIDER_NAME)) {
             return new OpenAiEmbeddingModel(
                     baseOpenAiApi,
                     MetadataMode.EMBED,
@@ -81,7 +81,7 @@ public class ModelClientFactory {
     }
 
     public RerankingModel createRerankingModel(ModelConfig config) {
-        if (config.provider().equalsIgnoreCase(GOOGLE_PROVIDER_NAME)) {
+        if (config.provider().equalsIgnoreCase(OPENAI_PROVIDER_NAME)) {
             return new OpenAiRerankingModel(new OpenAiRerankingApi(openAiBaseUrl), config.name(), retryTemplate);
         } else {
             throw new IllegalArgumentException("Unsupported reranking model provider: " + config.provider());

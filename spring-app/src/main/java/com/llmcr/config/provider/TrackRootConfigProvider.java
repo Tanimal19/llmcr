@@ -1,6 +1,6 @@
 package com.llmcr.config.provider;
 
-import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -16,12 +16,13 @@ public class TrackRootConfigProvider {
         this.config = config;
     }
 
-    public Collection<SystemConfig.TrackRootConfig> getAllConfiguredTrackRoots() {
-        return config.trackRoots().values();
+    public Map<String, SystemConfig.TrackRootConfig> getAllConfiguredTrackRoots() {
+        return config.trackRoots();
     }
 
     public Set<String> getAllConfiguredTrackRootPaths() {
-        return config.trackRoots().values().stream().map(SystemConfig.TrackRootConfig::path)
+        return config.trackRoots().values().stream()
+                .map(SystemConfig.TrackRootConfig::path)
                 .collect(Collectors.toSet());
     }
 }
