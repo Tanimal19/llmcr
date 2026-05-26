@@ -115,7 +115,7 @@ public class CodeReviewService
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
                 }
                 emitProgress(progressListener, STAGE_INTERPRETATION,
-                        "Interpretation stage completed:\n{}".formatted(interpretation));
+                        "Interpretation stage completed:\n%s".formatted(interpretation));
 
                 throwIfCancelled(cancellationRequested);
                 emitProgress(progressListener, STAGE_PLANNING, "Start planning stage");
@@ -124,14 +124,14 @@ public class CodeReviewService
                 } catch (Exception ex) {
                     throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
                 }
-                emitProgress(progressListener, STAGE_PLANNING, "Planning stage completed:\n{}".formatted(plan));
+                emitProgress(progressListener, STAGE_PLANNING, "Planning stage completed:\n%s".formatted(plan));
             } else {
                 throwIfCancelled(cancellationRequested);
                 interpretation = MockReviewData.MOCK_INTERPRETATION_OUTPUT;
                 plan = MockReviewData.MOCK_PLANNING_OUTPUT;
                 emitProgress(progressListener, STAGE_INTERPRETATION,
-                        "Using mock interpretation:\n{}".formatted(interpretation));
-                emitProgress(progressListener, STAGE_PLANNING, "Using mock planning\n{}".formatted(plan));
+                        "Using mock interpretation:\n%s".formatted(interpretation));
+                emitProgress(progressListener, STAGE_PLANNING, "Using mock planning\n%s".formatted(plan));
             }
 
             throwIfCancelled(cancellationRequested);
@@ -155,7 +155,7 @@ public class CodeReviewService
                     emitProgress(
                             progressListener,
                             STAGE_COMPUTATION,
-                            "Completed checklist item, answer:\n{}".formatted(answer));
+                            "Completed checklist item, answer:\n%s".formatted(answer));
                 } catch (Exception ex) {
                     throw new APIServiceException(
                             APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
