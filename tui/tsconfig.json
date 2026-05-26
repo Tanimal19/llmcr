@@ -8,8 +8,6 @@
   },
   "include": ["source", "source/test.tsx"],
   "paths": {
-    "#features/*": ["./source/features/*"],
-    "#api/*": ["./source/api/*"],
     "#*": ["./source/*"]
   }
 }
