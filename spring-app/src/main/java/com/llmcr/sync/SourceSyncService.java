@@ -1,7 +1,7 @@
 package com.llmcr.sync;
 
 import com.llmcr.api.APIServiceException;
-import com.llmcr.api.SseTaskManager.TaskProgressEvent;
+import com.llmcr.api.sse.SseTaskObject;
 import com.llmcr.database.entity.Chunk;
 import com.llmcr.database.entity.ChunkCollection;
 import com.llmcr.database.entity.Source;
@@ -9,7 +9,6 @@ import com.llmcr.database.entity.TrackRoot;
 import com.llmcr.database.entity.Source.SourceType;
 import com.llmcr.database.repository.SourceRepository;
 import com.llmcr.database.repository.TrackRootRepository;
-import com.llmcr.api.SseTaskObject;
 import com.llmcr.etl.ETLService;
 import com.llmcr.vectorstore.MyVectorStore;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Service for managing data sources (files)
  */
 @Service
-public class SourceSyncService implements SseTaskObject<Void, Void> {
+public class SourceSyncService extends SseTaskObject<Void, Void> {
 
     private static final Logger logger = LoggerFactory.getLogger(SourceSyncService.class);
 
@@ -135,7 +134,7 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     @Override
     public Void execute(
             Void input,
-            Consumer<TaskProgressEvent> progressListener,
+            Consumer<SseTaskProgress> progressListener,
             BooleanSupplier cancellationRequested) {
         try {
             throwIfCancelled(cancellationRequested);
@@ -144,7 +143,7 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
 
             emitProgress(progressListener, "SYNC", "Completed syncing all track roots");
 
-            etlService.run(progressListener, cancellationRequested);
+            etlService.execute(progressListener, cancellationRequested);
         } catch (Exception ex) {
             throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_FAILED, ex);
         }
@@ -198,7 +197,7 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     }
 
     private void syncAllTrackRoots(
-            Consumer<TaskProgressEvent> progressListener,
+            Consumer<SseTaskProgress> progressListener,
             BooleanSupplier cancellationRequested) {
         trackRootRepository
                 .findAllIds()
@@ -410,7 +409,7 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
     @Transactional
     public void syncTrackRootSource(
             Long trackRootId,
-            Consumer<TaskProgressEvent> progressListener,
+            Consumer<SseTaskProgress> progressListener,
             BooleanSupplier cancellationRequested) {
         try {
             throwIfCancelled(cancellationRequested);
@@ -463,7 +462,7 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
         return getTrackRootPreview(trackRootId);
     }
 
-    private void markTrackRootSyncedAndSkip(TrackRoot trackRoot, Consumer<TaskProgressEvent> progressListener) {
+    private void markTrackRootSyncedAndSkip(TrackRoot trackRoot, Consumer<SseTaskProgress> progressListener) {
         emitProgress(progressListener, "SYNC", "Track root already synced, skipping: " + trackRoot.getPath());
         trackRoot.setLastSyncTime(LocalDateTime.now());
         trackRootRepository.save(trackRoot);
@@ -571,19 +570,5 @@ public class SourceSyncService implements SseTaskObject<Void, Void> {
         } catch (Exception ex) {
             throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_REMOVE_CHUNKS_FAILED, ex);
         }
-    }
-
-    private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
-        if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SOURCE_SYNC_CANCELLED);
-        }
-    }
-
-    private static void emitProgress(Consumer<TaskProgressEvent> progressListener, String stage, String message) {
-        logger.info("stage={} message={}", stage, message);
-        if (progressListener == null) {
-            return;
-        }
-        progressListener.accept(new TaskProgressEvent(false, stage, message));
     }
 }

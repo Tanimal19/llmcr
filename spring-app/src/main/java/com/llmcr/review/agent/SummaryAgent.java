@@ -3,8 +3,9 @@ package com.llmcr.review.agent;
 import com.llmcr.agent.SingleCallAgent;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.model.ModelClientFactory;
-import com.llmcr.review.CodeReviewService.CodeChange;
-import com.llmcr.review.agent.ComputationAgent.ComputationAgentOutput;
+import com.llmcr.review.CodeReviewReport.ChecklistItem;
+import com.llmcr.review.CodeReviewReport.CodeChange;
+import com.llmcr.review.CodeReviewReport.ReportContent;
 
 import java.util.List;
 import java.util.Map;
@@ -12,27 +13,10 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SummaryAgent extends SingleCallAgent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput> {
+public class SummaryAgent extends SingleCallAgent<SummaryAgent.SummaryAgentInput, ReportContent> {
 
-    public record ItemAnswer(String checklistItemTitle, ComputationAgentOutput answer) {
-    }
-
-    public record SummaryAgentInput(List<CodeChange> codeChanges, String codeAnalysis, List<ItemAnswer> itemAnswers) {
-    }
-
-    public record Issue(String title, String detail, String location, String type) {
-    }
-
-    public record ImplementationDetails(String filename, List<String> details) {
-    }
-
-    public record SummaryAgentOutput(
-            String motivation,
-            List<String> goodPoints,
-            List<String> badPoints,
-            String suggestion,
-            List<ImplementationDetails> implementationDetails,
-            List<Issue> issues) {
+    public record SummaryAgentInput(List<CodeChange> codeChanges, String codeAnalysis,
+            List<ChecklistItem> items) {
     }
 
     private static final String SYSTEM_PROMPT = """
@@ -72,7 +56,7 @@ public class SummaryAgent extends SingleCallAgent<SummaryAgent.SummaryAgentInput
                 AGENT_NAME,
                 applicationProperties,
                 modelClientFactory,
-                new BeanOutputConverter<>(SummaryAgentOutput.class));
+                new BeanOutputConverter<>(ReportContent.class));
     }
 
     @Override
@@ -98,9 +82,9 @@ public class SummaryAgent extends SingleCallAgent<SummaryAgent.SummaryAgentInput
         String itemAnswersText = String.join(
                 "\n----\n",
                 input
-                        .itemAnswers()
+                        .items()
                         .stream()
-                        .map(answer -> "ItemTitle: " + answer.checklistItemTitle() + "\nAnswer:\n"
+                        .map(answer -> "ItemTitle: " + answer.title() + "\nAnswer:\n"
                                 + answer.answer().toString())
                         .toList());
 

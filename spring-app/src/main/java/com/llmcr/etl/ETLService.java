@@ -1,7 +1,7 @@
 package com.llmcr.etl;
 
 import com.llmcr.api.APIServiceException;
-import com.llmcr.api.SseTaskManager.TaskProgressEvent;
+import com.llmcr.api.sse.VoidSseTaskObject;
 import com.llmcr.database.repository.ContextRepository;
 import com.llmcr.database.repository.SourceRepository;
 
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ETLService {
+public class ETLService extends VoidSseTaskObject {
 
     private static final Logger logger = LoggerFactory.getLogger(ETLService.class);
 
@@ -38,7 +38,11 @@ public class ETLService {
         this.loadService = loadService;
     }
 
-    public void run(Consumer<TaskProgressEvent> progressListener, BooleanSupplier cancellationRequested) {
+    public String getTaskName() {
+        return "Extract-Split-Load";
+    }
+
+    public void execute(Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
         throwIfCancelled(cancellationRequested);
         emitProgress(progressListener, "ETL", "Starting ETL pipeline");
 
@@ -128,19 +132,5 @@ public class ETLService {
                     "ETL pipeline execution failed",
                     ex);
         }
-    }
-
-    private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
-        if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
-            throw new APIServiceException(APIServiceException.ErrorCode.ETL_CANCELLED, "Sync task cancelled by client");
-        }
-    }
-
-    private static void emitProgress(Consumer<TaskProgressEvent> progressListener, String stage, String message) {
-        logger.info("stage={} message={}", stage, message);
-        if (progressListener == null) {
-            return;
-        }
-        progressListener.accept(new TaskProgressEvent(false, stage, message));
     }
 }

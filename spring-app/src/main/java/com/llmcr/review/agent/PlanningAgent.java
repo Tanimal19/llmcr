@@ -8,8 +8,8 @@ import com.llmcr.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalRequest;
 import com.llmcr.rag.ContextScorePair;
 import com.llmcr.rag.select.AdaptiveKStrategy;
-import com.llmcr.review.CodeReviewService.CodeChange;
-import com.llmcr.review.agent.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.review.CodeReviewReport.CodeChange;
+import com.llmcr.review.CodeReviewReport.InterpretationContent;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class PlanningAgent
 
     public record PlanningAgentInput(
             List<CodeChange> codeChanges,
-            InterpretationAgentOutput codeInterpretation,
+            InterpretationContent codeInterpretation,
             String codeAnalysis) {
     }
 
@@ -105,7 +105,7 @@ public class PlanningAgent
                         .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
                         .toList());
 
-        InterpretationAgentOutput interpretation = input.codeInterpretation();
+        InterpretationContent interpretation = input.codeInterpretation();
         String descriptionText = interpretation.changeMotivation() + "\n" + interpretation.changeDescription();
         String contextText = retrieveContext(input, descriptionText);
 

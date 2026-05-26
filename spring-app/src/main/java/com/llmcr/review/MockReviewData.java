@@ -2,14 +2,14 @@ package com.llmcr.review;
 
 import java.util.List;
 
-import com.llmcr.review.agent.InterpretationAgent.InterpretationAgentOutput;
+import com.llmcr.review.CodeReviewReport.InterpretationContent;
 import com.llmcr.review.agent.PlanningAgent.PlanningAgentOutput;
 
 public final class MockReviewData {
 
     public static final String MOCK_PULL_REQUEST_JSON_PATH = "src/test/resources/example_pull_request.json";
 
-    public static final InterpretationAgentOutput MOCK_INTERPRETATION = new InterpretationAgentOutput(
+    public static final InterpretationContent MOCK_INTERPRETATION = new InterpretationContent(
             "The `BeanOutputConverter` now delegates JSON schema generation to `JsonSchemaGenerator`. This aligns structured output conversion with the JSON schema behavior used for tool calling, including OpenAPI format hints and default requiredness rules. The `postProcessSchema` extension point has been removed and replaced by overriding `generateSchema`.",
             "The original `BeanOutputConverter` had its own JSON schema generation logic which was not fully aligned with the `JsonSchemaGenerator` used for tool calls. This change centralizes schema generation, ensuring consistency. By delegating to `JsonSchemaGenerator`, it benefits from existing logic for handling various annotations, Kotlin specifics (optional properties are not required), and OpenAPI format hints for primitive types. The removal of `postProcessSchema` simplifies the API and encourages overriding the more comprehensive `generateSchema` method for customizations.");
 

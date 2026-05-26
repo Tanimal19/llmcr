@@ -8,7 +8,8 @@ import com.llmcr.rag.QueryContextRetriever.ContextRetrievalConfiguration;
 import com.llmcr.rag.QueryContextRetriever.ContextRetrievalRequest;
 import com.llmcr.rag.ContextScorePair;
 import com.llmcr.rag.select.AdaptiveKStrategy;
-import com.llmcr.review.CodeReviewService.CodeChange;
+import com.llmcr.review.CodeReviewReport.CodeChange;
+import com.llmcr.review.CodeReviewReport.InterpretationContent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +20,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class InterpretationAgent
         extends
-        SingleCallAgent<InterpretationAgent.InterpretationAgentInput, InterpretationAgent.InterpretationAgentOutput> {
+        SingleCallAgent<InterpretationAgent.InterpretationAgentInput, InterpretationContent> {
 
     public record InterpretationAgentInput(List<CodeChange> codeChanges) {
-    }
-
-    public record InterpretationAgentOutput(String changeDescription, String changeMotivation) {
     }
 
     private static final String SYSTEM_PROMPT = """
@@ -57,7 +55,7 @@ public class InterpretationAgent
                 AGENT_NAME,
                 applicationProperties,
                 modelClientFactory,
-                new BeanOutputConverter<>(InterpretationAgentOutput.class));
+                new BeanOutputConverter<>(InterpretationContent.class));
         this.retrievalConfiguration = new ContextRetrievalConfiguration(
                 10,
                 new AdaptiveKStrategy(),
