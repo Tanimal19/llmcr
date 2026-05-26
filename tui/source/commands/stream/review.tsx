@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { useSseTaskLifecycle } from './hooks/use-sse-task-lifecycle.js';
 import { ArgInput } from './components/arg-input.js';
-import { type CommandProps } from '#screens/types.js';
+import { type CommandProps } from '#commands/types.js';
 import { LoadingSpinner } from '#components/loading-spinner.js';
 import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '#api.js';
 
