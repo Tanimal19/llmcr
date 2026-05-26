@@ -5,8 +5,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.llmcr.ChatService;
-import com.llmcr.ChatService.ChatResponse;
+import com.llmcr.feature.chat.ChatService;
+import com.llmcr.feature.chat.ChatService.ChatResponse;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "chat")

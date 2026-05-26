@@ -3,10 +3,10 @@ package com.llmcr.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.llmcr.BaseIntegrationTest;
-import com.llmcr.database.entity.*;
-import com.llmcr.database.entity.Context.ContextType;
-import com.llmcr.database.entity.Source.SourceType;
-import com.llmcr.database.repository.ContextRepository;
+import com.llmcr.domain.entity.*;
+import com.llmcr.domain.entity.Context.ContextType;
+import com.llmcr.domain.entity.Source.SourceType;
+import com.llmcr.domain.repository.ContextRepository;
 
 import jakarta.persistence.EntityManager;
 import java.util.Arrays;

@@ -62,6 +62,7 @@ chat-models:
     name: "gemini-2.5-flash-lite"
     provider: "google"
 
+# There should be only one embedding model and one reranking model, which are used globally for RAG.
 embedding-model:
   name: "harrier-0.6b"
   provider: "openai"

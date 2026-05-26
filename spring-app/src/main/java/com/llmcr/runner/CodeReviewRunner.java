@@ -6,8 +6,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.llmcr.review.CodeReviewService;
-import com.llmcr.review.CodeReviewService.CodeReviewInput;
+import com.llmcr.feature.review.CodeReviewService;
+import com.llmcr.feature.review.CodeReviewService.CodeReviewInput;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "review")

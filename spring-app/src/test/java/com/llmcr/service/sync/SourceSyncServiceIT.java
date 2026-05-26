@@ -5,13 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.llmcr.BaseIntegrationTest;
-import com.llmcr.api.APIServiceException;
-import com.llmcr.api.APIServiceException.ErrorCode;
-import com.llmcr.database.entity.Source;
-import com.llmcr.database.entity.TrackRoot;
-import com.llmcr.database.repository.TrackRootRepository;
-import com.llmcr.sync.SourceSyncService;
-import com.llmcr.sync.SourceSyncService.TrackRootPreview;
+import com.llmcr.domain.entity.Source;
+import com.llmcr.domain.entity.TrackRoot;
+import com.llmcr.domain.exception.APIServiceException;
+import com.llmcr.domain.exception.APIServiceException.ErrorCode;
+import com.llmcr.domain.repository.TrackRootRepository;
+import com.llmcr.feature.sync.SourceSyncService;
+import com.llmcr.feature.sync.SourceSyncService.TrackRootPreview;
 
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
