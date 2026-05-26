@@ -3,7 +3,9 @@ package com.llmcr.review.agent;
 import com.llmcr.agent.BaseAgent;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.model.ModelClientFactory;
-import com.llmcr.review.CodeReviewService.CodeChange;
+import com.llmcr.review.CodeReviewReport.ChecklistItemAnswer;
+import com.llmcr.review.CodeReviewReport.CodeChange;
+import com.llmcr.review.CodeReviewReport.EvidenceItem;
 
 import java.util.List;
 import java.util.Map;
@@ -15,12 +17,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ComputationAgent
         extends
-        BaseAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ComputationAgent.ComputationAgentOutput> {
+        BaseAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ChecklistItemAnswer> {
 
     public record ComputationAgentInput(List<CodeChange> codeChanges, String checklistItem) {
-    }
-
-    public record EvidenceItem(String file, String lines, String reason) {
     }
 
     public record ComputationModelResponse(
@@ -29,28 +28,6 @@ public class ComputationAgent
             String finalAnswer,
             boolean needsAdditionalData,
             String dataQuery) {
-    }
-
-    public record ComputationAgentOutput(String finalAnswer, String analysis, List<EvidenceItem> evidence) {
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Final Answer: ").append(finalAnswer).append("\n");
-            sb.append("Analysis: ").append(analysis).append("\n");
-            sb.append("Evidence:\n");
-            if (evidence != null) {
-                for (EvidenceItem item : evidence) {
-                    sb
-                            .append("- File: ")
-                            .append(item.file())
-                            .append(", Lines: ")
-                            .append(item.lines())
-                            .append(", Reason: ")
-                            .append(item.reason())
-                            .append("\n");
-                }
-            }
-            return sb.toString();
-        }
     }
 
     private static final String SYSTEM_PROMPT = """
@@ -175,7 +152,7 @@ public class ComputationAgent
     }
 
     @Override
-    protected ComputationAgentOutput buildFinalResponse(ComputationModelResponse response) {
-        return new ComputationAgentOutput(response.finalAnswer(), response.analysis(), response.evidence());
+    protected ChecklistItemAnswer buildFinalResponse(ComputationModelResponse response) {
+        return new ChecklistItemAnswer(response.finalAnswer(), response.analysis(), response.evidence());
     }
 }
