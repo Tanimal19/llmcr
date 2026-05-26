@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import { info } from './menu.api.js'; // 就近引入自己模組的 API
-import { type AppScreen } from '#routing/router.js';
+import { type AppScreen } from './types.js';
 
 type MainMenuProps = {
   onSelect: (screen: AppScreen) => void; // 🎯 這裡不再是 string，而是限制範圍的 AppScreen

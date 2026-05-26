@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { MainMenu } from './menu.js';
+import { type AppScreen } from './types.js';
 import { ChatCommand } from '#features/chat/chat.cmd.js';
 import { SetRagCommand } from '#features/setrag/setrag.cmd.js';
-import { ReviewCommand } from '#features/code-review/review.cmd.js';
+import { ReviewCommand } from '#features/review/review.cmd.js';
 import { LsDbCommand } from '#features/lsdb/lsdb.cmd.js';
 import { SyncCommand } from '#features/sync/sync.cmd.js';
-
-export type AppScreen = 'menu' | 'chat' | 'review' | 'sync' | 'lsdb' | 'setrag' | 'help';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
