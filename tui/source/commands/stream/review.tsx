@@ -1,19 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { type CommandProps } from '#commands/types.js';
-import { LoadingSpinner } from '#components';
-import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '#api.js';
 import { useSseTaskLifecycle } from './hooks/use-sse-task-lifecycle.js';
+import { ArgInput } from './components/arg-input.js';
+import { type CommandProps } from '#commands/types.js';
+import { LoadingSpinner } from '#components/loading-spinner.js';
+import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '#api.js';
 
+// ─── 1. 獨立且乾淨的參數型態宣告 ───
 type ReviewCommandProps = {
   diffPath?: string;
   useMock?: boolean;
 } & CommandProps;
 
+type ReviewArgs = {
+  diffPath: string;
+  useMock: boolean;
+};
+
 const MAX_ISSUE_PREVIEW_COUNT = 5;
 
 export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewCommandProps) => {
+  const [args, setArgs] = useState<ReviewArgs | undefined>(() => {
+    if (diffPath !== undefined) {
+      return { diffPath, useMock };
+    }
+
+    return undefined;
+  });
+
   const [reviewResult, setReviewResult] = useState<CodeReviewOutput | undefined>(undefined);
+
   const {
     stageMessage,
     status,
@@ -43,7 +59,14 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
   });
 
   useEffect(() => {
-    if ((!diffPath || diffPath.trim().length === 0) && !useMock) {
+    // 💡 守衛條件：如果 args 是 undefined，代表使用者還在輸入，靜靜等待
+    if (!args) {
+      return;
+    }
+
+    const { diffPath: activePath, useMock: activeMock } = args;
+
+    if ((!activePath || activePath.trim().length === 0) && !activeMock) {
       setStatus('error');
       setErrorMessage('Diff path is required.');
       setStageMessage('Review did not start');
@@ -51,7 +74,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       return;
     }
 
-    if (useMock) {
+    if (activeMock) {
       setStageMessage('Using mock review data...');
       appendLog('[INFO] Using mock review data');
     }
@@ -60,14 +83,14 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
 
     reviewWithProgress(
       {
-        jsonFilePath: diffPath ?? '',
-        useMockData: useMock,
+        jsonFilePath: activePath ?? '',
+        useMockData: activeMock,
       },
       {
         onStart: handleTaskStart,
         onProgress: handleProgress,
         onError: handleError,
-        useMock,
+        useMock: activeMock,
         onResult(result) {
           setReviewResult(result);
           completeRun('Review completed successfully', '[DONE] Review completed successfully');
@@ -81,45 +104,33 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
     return () => {
       cleanupRun(abortController);
     };
-  }, [diffPath, useMock]);
+  }, [args]);
 
-  // ─── 1. 預先建立日誌列元件陣列 ───
-  const renderedLogs = [];
-  for (const [i, progressLog] of progressLogs.entries()) {
-    renderedLogs.push(
-      <Text key={`review-progress-log-${i}`} color="gray">
-        {progressLog}
-      </Text>,
+  // ─── 第一階段視圖：若 args 為 undefined，展示輸入畫面 ───
+  if (!args) {
+    return (
+      <ArgInput
+        title="Please enter the path to the pull request JSON file for review"
+        placeholder="./example.diff (leave empty to use mock data)"
+        usePlaceholderOnEmpty={false}
+        onCancel={onBack}
+        onSubmit={value => {
+          setArgs({
+            diffPath: value,
+            useMock: value.length === 0,
+          });
+        }}
+      />
     );
   }
 
-  // ─── 2. 預先建立 Issue 預覽列元件陣列 ───
-  const renderedIssues = [];
-  if (status === 'success' && reviewResult) {
-    const issuesList = reviewResult.reviewReport.mainReport.issues;
-    const previewCount = Math.min(issuesList.length, MAX_ISSUE_PREVIEW_COUNT);
-    for (let i = 0; i < previewCount; i++) {
-      const issue = issuesList[i];
-
-      // 型別守衛
-      if (!issue) {
-        continue;
-      }
-
-      // 攤平巢狀模板字面量，符合 S4624
-      const locationSuffix = issue.location ? ` @ ${issue.location}` : '';
-      renderedIssues.push(
-        <Text key={`review-issue-item-${i}`} color="gray">
-          {`${i + 1}. [${issue.type}] ${issue.title}${locationSuffix}`}
-        </Text>,
-      );
-    }
-  }
+  // ─── 第二階段視圖：串流日誌與結果渲染（這裡 TypeScript 會完美自動推導 args 絕對有值） ───
+  const { diffPath: activePath, useMock: activeMock } = args;
 
   return (
     <Box flexDirection="column" padding={1}>
-      {diffPath && <Text color="yellow">Performing code review on: {diffPath}</Text>}
-      {useMock && <Text color="yellow">Performing code review using mock data</Text>}
+      {activePath && <Text color="yellow">Performing code review on: {activePath}</Text>}
+      {activeMock && <Text color="yellow">Performing code review using mock data</Text>}
       <Text color="gray">(Press esc to cancel)</Text>
 
       {status === 'running' ? (
@@ -127,14 +138,21 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       ) : (
         <Text color={status === 'error' ? 'red' : 'white'}>{stageMessage}</Text>
       )}
+
       <Box flexDirection="column" marginTop={1}>
         <Text color="cyan">Progress Log:</Text>
         {progressLogs.length === 0 && <Text color="gray">(no events yet)</Text>}
-        {renderedLogs}
+        {progressLogs.map((log, index) => (
+          <Text key={index} color="gray">
+            {log}
+          </Text>
+        ))}
       </Box>
+
       {awaitingExitConfirm && <Text color="yellow">Cancellation requested. Press ESC again to return.</Text>}
       {status === 'success' && <Text color="green">Review done. Press ESC to return.</Text>}
       {status === 'error' && errorMessage && <Text color="red">Error: {errorMessage}</Text>}
+
       {status === 'success' && reviewResult && (
         <Box flexDirection="column" marginTop={1}>
           <Text color="cyan">Review Result Summary:</Text>
@@ -153,7 +171,11 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
           {reviewResult.reviewReport.mainReport.issues.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
               <Text color="cyan">Issue Preview:</Text>
-              {renderedIssues}
+              {reviewResult.reviewReport.mainReport.issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => (
+                <Text key={`issue-${index}`} color="gray">
+                  {`${index + 1}. [${issue.type}] ${issue.title}${issue.location ? ` @ ${issue.location}` : ''}`}
+                </Text>
+              ))}
               {reviewResult.reviewReport.mainReport.issues.length > MAX_ISSUE_PREVIEW_COUNT && (
                 <Text color="gray">
                   ... and {reviewResult.reviewReport.mainReport.issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues

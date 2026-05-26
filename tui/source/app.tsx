@@ -6,64 +6,45 @@ import { ReviewCommand } from '#commands/stream/review.js';
 import { SetRagCommand } from '#commands/database/setrag.js';
 import { LsDbCommand } from '#commands/database/lsdb.js';
 import { SyncCommand } from '#commands/stream/sync.js';
-import { ArgInput } from '#components';
 import { MainMenu } from '#menu.js';
 
-// 核心路由器
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
-  const [reviewArg, setReviewArg] = useState<string | undefined>(undefined);
-  const [reviewUseMock, setReviewUseMock] = useState(false);
   const [configLoaded, setconfigLoaded] = useState('Loading...');
   const [lastSynced, setLastSynced] = useState('Loading...');
   const [isInfoLoading, setIsInfoLoading] = useState(true);
   const [infoError, setInfoError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (currentScreen !== 'menu') {
-      return;
-    }
+    if (currentScreen !== 'menu') return;
 
     let disposed = false;
-
     const loadInfo = async (): Promise<void> => {
       setIsInfoLoading(true);
       setInfoError(undefined);
-
       try {
         const result = await info();
-        if (disposed) {
-          return;
-        }
-
+        if (disposed) return;
         setconfigLoaded(result.configPath || 'N/A');
         setLastSynced(result.lastSyncTime ? String(result.lastSyncTime) : 'N/A');
       } catch (error) {
-        if (disposed) {
-          return;
-        }
-
+        if (disposed) return;
         setconfigLoaded('N/A');
         setLastSynced('N/A');
         setInfoError(error instanceof Error ? error.message : String(error));
       } finally {
-        if (!disposed) {
-          setIsInfoLoading(false);
-        }
+        if (!disposed) setIsInfoLoading(false);
       }
     };
 
     void loadInfo();
-
     return () => {
       disposed = true;
     };
   }, [currentScreen]);
 
   const handleBack = () => {
-    setReviewArg(undefined);
-    setReviewUseMock(false);
-    setCurrentScreen('menu');
+    setCurrentScreen('menu'); // 狀態清空收攏到各 Command 內部，App 只管切回主選單
   };
 
   switch (currentScreen) {
@@ -79,24 +60,9 @@ export default function App() {
       );
     }
 
-    case 'review_flow': {
-      return (
-        <ArgInput
-          title="Please enter the path to the pull request JSON file for review"
-          placeholder="./example.diff (leave empty to use mock data)"
-          usePlaceholderOnEmpty={false}
-          onCancel={handleBack}
-          onSubmit={value => {
-            setReviewArg(value);
-            setReviewUseMock(value.length === 0);
-            setCurrentScreen('review');
-          }}
-        />
-      );
-    }
-
     case 'review': {
-      return <ReviewCommand onBack={handleBack} diffPath={reviewArg} useMock={reviewUseMock} />;
+      // 外殼路由器不再關心參數，直接把控制權交給 Review
+      return <ReviewCommand onBack={handleBack} />;
     }
 
     case 'sync': {

@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Box, Text, useInput, type Key } from 'ink';
-import { LoadingSpinner } from '#components';
+import { LoadingSpinner } from '#components/loading-spinner.js';
 
 const DEFAULT_PAGE_SIZE = 15;
 const CURSOR_SYMBOL = '-> ';
