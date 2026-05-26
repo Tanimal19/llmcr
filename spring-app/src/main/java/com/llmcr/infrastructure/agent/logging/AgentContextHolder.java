@@ -2,6 +2,7 @@ package com.llmcr.infrastructure.agent.logging;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public final class AgentContextHolder {
@@ -10,13 +11,13 @@ public final class AgentContextHolder {
     private static final ThreadLocal<Deque<Integer>> ITERATION_MARKERS = ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<Deque<AgentCallContext>> ITERATION_STACK = ThreadLocal
             .withInitial(ArrayDeque::new);
-    private static volatile Consumer<AgentCallContext> onContextFinished;
+    private static final AtomicReference<Consumer<AgentCallContext>> onContextFinished = new AtomicReference<>();
 
     private AgentContextHolder() {
     }
 
     public static void setOnContextFinished(Consumer<AgentCallContext> callback) {
-        onContextFinished = callback;
+        onContextFinished.set(callback);
     }
 
     public static void beginContext(String agentName, String modelName) {
@@ -53,8 +54,9 @@ public final class AgentContextHolder {
 
         // If this is the outermost context completion, trigger callback
         boolean isOutermostContext = contextStack.isEmpty();
-        if (isOutermostContext && onContextFinished != null) {
-            onContextFinished.accept(finished);
+        Consumer<AgentCallContext> callback = onContextFinished.get();
+        if (isOutermostContext && callback != null) {
+            callback.accept(finished);
         }
 
         cleanupIfEmpty();

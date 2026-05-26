@@ -2,6 +2,7 @@ package com.llmcr.domain.sse;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -13,7 +14,7 @@ import com.llmcr.domain.exception.APIServiceException;
 public abstract class SseTaskObject<I, O> {
     private static final Logger logger = LoggerFactory.getLogger(SseTaskObject.class);
     private final AtomicBoolean cancellationRequested = new AtomicBoolean(false);
-    private volatile CompletableFuture<Void> future;
+    private final AtomicReference<CompletableFuture<Void>> future = new AtomicReference<>();
 
     public record SseTaskProgress(Boolean isError, String stage, String message) {
     }
@@ -32,7 +33,7 @@ public abstract class SseTaskObject<I, O> {
     }
 
     protected void setFuture(CompletableFuture<Void> future) {
-        this.future = future;
+        this.future.set(future);
         if (cancellationRequested.get()) {
             future.cancel(true);
         }
@@ -40,7 +41,7 @@ public abstract class SseTaskObject<I, O> {
 
     protected void requestCancellation() {
         cancellationRequested.set(true);
-        CompletableFuture<Void> currentFuture = future;
+        CompletableFuture<Void> currentFuture = future.get();
         if (currentFuture != null) {
             currentFuture.cancel(true);
         }

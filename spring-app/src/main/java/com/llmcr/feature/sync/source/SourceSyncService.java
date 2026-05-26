@@ -61,14 +61,17 @@ public class SourceSyncService {
         }
     }
 
+    @Transactional
     public List<TrackRootPreview> getAllTrackRootPreview() {
         return sourcePreviewService.getAllTrackRootPreview();
     }
 
+    @Transactional
     public void syncAllTrackRootSource() {
         syncAllTrackRootSource(null, () -> false);
     }
 
+    @Transactional
     public void syncAllTrackRootSource(
             Consumer<SseTaskProgress> progressListener,
             BooleanSupplier cancellationRequested) {
