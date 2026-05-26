@@ -1,4 +1,4 @@
-package com.llmcr.service.rag;
+package com.llmcr.infrastructure.rag;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,17 +13,12 @@ import com.llmcr.domain.exception.APIServiceException.ErrorCode;
 import com.llmcr.domain.repository.ChunkRepository;
 import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.domain.repository.SourceRepository;
-import com.llmcr.infrastructure.ai.reranking.RerankingModel;
-import com.llmcr.infrastructure.rag.ContextScorePair;
-import com.llmcr.infrastructure.rag.QueryContextRetriever;
 import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
 import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
 import com.llmcr.infrastructure.rag.fusion.FusionStrategy;
 import com.llmcr.infrastructure.rag.select.TopKSelectionStrategy;
+import com.llmcr.infrastructure.vectorstore.ChunkIdScorePair;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
-import com.llmcr.infrastructure.vectorstore.faiss.FaissService;
-import com.llmcr.infrastructure.vectorstore.faiss.FaissService.SearchVectorsResponse;
-import com.llmcr.repository.ContextRepositoryIT;
 
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,10 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -53,16 +46,8 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
     @Autowired
     private ChunkRepository chunkRepository;
 
-    @Autowired
+    @MockitoBean
     private MyVectorStore vectorStore;
-
-    @MockitoBean
-    private FaissService faissService;
-
-    @MockitoBean
-    private RerankingModel rerankingModel;
-
-    private EmbeddingModel embeddingModel;
 
     private final TopKSelectionStrategy mockTopStrategy = spy(new TopKSelectionStrategy() {
         @Override
@@ -78,18 +63,11 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
         }
     });
 
-    private static final Logger logger = LoggerFactory.getLogger(ContextRepositoryIT.class);
+    private static final Logger logger = LoggerFactory.getLogger(QueryContextRetrieverIT.class);
 
     @BeforeEach
     void setUp(TestInfo testInfo) {
         logger.info("Ready to test: {}", testInfo.getDisplayName());
-        ReflectionTestUtils.setField(queryContextRetriever, "rerankingModel", rerankingModel);
-
-        embeddingModel = mock(EmbeddingModel.class);
-        ReflectionTestUtils.setField(vectorStore, "embeddingModel", embeddingModel);
-        // rerankingModel = mock(RerankingModel.class);
-        // ReflectionTestUtils.setField(queryContextRetriever, "rerankingModel",
-        // rerankingModel);
     }
 
     private Long setupMockDataAndGetChunkId(String contextName) {
@@ -110,11 +88,8 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
     void testS3_1_1() {
         Long chunkId = setupMockDataAndGetChunkId("contextA");
 
-        float[] fakeQueryVector = { 0.1f, 0.2f, 0.3f };
-        when(embeddingModel.embed(anyString())).thenReturn(fakeQueryVector);
-
-        SearchVectorsResponse fakeFaissResponse = new SearchVectorsResponse(List.of(chunkId), List.of(0.95f));
-        when(faissService.searchVectors(any())).thenReturn(fakeFaissResponse);
+        when(vectorStore.similaritySearch(anyString(), anyInt(), anyString()))
+                .thenReturn(List.of(new ChunkIdScorePair(chunkId, 0.95f)));
 
         QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(
                 "text_collection",
@@ -153,9 +128,10 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
                 false);
         QueryContextRetrievalRequest request = new QueryContextRetrievalRequest(List.of("test"), config);
 
-        when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f });
-        when(faissService.searchVectors(any())).thenReturn(
-                new SearchVectorsResponse(List.of(chunkId1, chunkId2), List.of(0.9f, 0.8f)));
+        when(vectorStore.similaritySearch(anyString(), anyInt(), anyString()))
+                .thenReturn(List.of(
+                        new ChunkIdScorePair(chunkId1, 0.9f),
+                        new ChunkIdScorePair(chunkId2, 0.8f)));
 
         List<ContextScorePair> results = queryContextRetriever.retrieve(request);
 
@@ -173,7 +149,8 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
     @Test
     @DisplayName("S3-3-1: Query Embedding fails")
     void testS3_3_1() {
-        when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("Api Error during query embedding"));
+        when(vectorStore.similaritySearch(anyString(), anyInt(), anyString()))
+                .thenThrow(new RuntimeException("Api Error during query embedding"));
 
         QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(
                 "text_collection",
@@ -190,8 +167,7 @@ public class QueryContextRetrieverIT extends BaseIntegrationTest {
     @Test
     @DisplayName("S3-4-1: Retrieval fails")
     void testS3_4_1() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f });
-        when(faissService.searchVectors(any())).thenThrow(
+        when(vectorStore.similaritySearch(anyString(), anyInt(), anyString())).thenThrow(
                 new RuntimeException("Database connection timeout during data retrieval"));
 
         QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(

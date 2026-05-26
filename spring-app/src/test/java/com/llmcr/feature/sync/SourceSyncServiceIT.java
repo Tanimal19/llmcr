@@ -1,16 +1,12 @@
-package com.llmcr.service.sync;
+package com.llmcr.feature.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.llmcr.BaseIntegrationTest;
-import com.llmcr.domain.entity.Source;
-import com.llmcr.domain.entity.TrackRoot;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.exception.APIServiceException.ErrorCode;
-import com.llmcr.domain.repository.TrackRootRepository;
-import com.llmcr.feature.sync.SourceSyncService;
 import com.llmcr.feature.sync.SourceSyncService.TrackRootPreview;
 
 import java.util.*;
@@ -22,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -32,24 +27,21 @@ public class SourceSyncServiceIT extends BaseIntegrationTest {
     SourceSyncService sourceSyncService;
 
     @MockitoBean
-    TrackRootRepository trackRootRepository;
+    SourcePreviewService sourcePreviewService;
 
     private static final Logger logger = LoggerFactory.getLogger(SourceSyncServiceIT.class);
 
     @BeforeEach
     private void setup(TestInfo testInfo) {
         logger.info("Ready to test: {}", testInfo.getDisplayName());
-        ReflectionTestUtils.setField(sourceSyncService, "trackRootRepository", trackRootRepository);
     }
 
     @Test
     @DisplayName("S4-1-1: Successful getAllTrackRootPreview with multiple track roots")
     void testS4_1_1() {
-        TrackRoot trackRoot1 = new TrackRoot("/nonexistent/path/for/test/1", Set.of(Source.SourceType.PDF));
-        TrackRoot trackRoot2 = new TrackRoot("/nonexistent/path/for/test/2", Set.of(Source.SourceType.PDF));
-        when(trackRootRepository.findAllIds()).thenReturn(List.of(1L, 2L));
-        when(trackRootRepository.findById(1L)).thenReturn(Optional.of(trackRoot1));
-        when(trackRootRepository.findById(2L)).thenReturn(Optional.of(trackRoot2));
+        TrackRootPreview preview1 = new TrackRootPreview(1L, "/nonexistent/path/for/test/1", true, null, List.of());
+        TrackRootPreview preview2 = new TrackRootPreview(2L, "/nonexistent/path/for/test/2", true, null, List.of());
+        when(sourcePreviewService.getAllTrackRootPreview()).thenReturn(List.of(preview1, preview2));
 
         List<TrackRootPreview> results = sourceSyncService.getAllTrackRootPreview();
 
@@ -59,24 +51,26 @@ public class SourceSyncServiceIT extends BaseIntegrationTest {
             assertThat(preview.isSynced()).isTrue();
             assertThat(preview.sources()).isEmpty();
         });
-        verify(trackRootRepository).findAllIds();
+        verify(sourcePreviewService).getAllTrackRootPreview();
     }
 
     @Test
     @DisplayName("S4-1-2: Successful getAllTrackRootPreview with no track roots")
     void testS4_1_2() {
-        when(trackRootRepository.findAllIds()).thenReturn(List.of());
+        when(sourcePreviewService.getAllTrackRootPreview()).thenReturn(List.of());
 
         List<TrackRootPreview> results = sourceSyncService.getAllTrackRootPreview();
 
         assertThat(results).isEmpty();
-        verify(trackRootRepository).findAllIds();
+        verify(sourcePreviewService).getAllTrackRootPreview();
     }
 
     @Test
     @DisplayName("S4-3-1: Database access fail when calling getAllTrackRootPreview")
     void testS4_3_1() {
-        when(trackRootRepository.findAllIds()).thenThrow(new RuntimeException("DB connection failed"));
+        when(sourcePreviewService.getAllTrackRootPreview()).thenThrow(new APIServiceException(
+                ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED,
+                "Failed to list track root previews"));
 
         assertThatThrownBy(() -> sourceSyncService.getAllTrackRootPreview())
                 .isInstanceOf(APIServiceException.class)
