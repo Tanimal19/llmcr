@@ -12,18 +12,176 @@ public class StringUtils {
         if (text == null) {
             return "";
         }
-        return text
-            // remove control characters except newlines and tabs
-            .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")
-            // specific cleaning for ANTLR serialized ATN
-            .replaceAll("_serializedATN\\s*=\\s*\"[\\s\\S]*?\";", "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";")
-            // collapse runs of spaces/tabs (but not newlines) into a single space
-            .replaceAll("[ \\t]+", " ")
-            // trim leading/trailing whitespace on each line
-            .replaceAll("(?m)^[ \\t]+|[ \\t]+$", "")
-            // collapse 3+ consecutive blank lines into 2
-            .replaceAll("(\\r?\\n){3,}", "\n\n")
-            .strip();
+        String cleaned = removeControlCharsExceptCrLfTab(text);
+        cleaned = replaceSerializedAtnLiteral(cleaned);
+        cleaned = collapseSpacesAndTabs(cleaned);
+        cleaned = trimSpacesTabsPerLine(cleaned);
+        cleaned = collapseThreeOrMoreLineBreaks(cleaned);
+        return cleaned.strip();
+    }
+
+    private static String removeControlCharsExceptCrLfTab(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (Character.isISOControl(c) && c != '\r' && c != '\n' && c != '\t') {
+                continue;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    private static String replaceSerializedAtnLiteral(String text) {
+        final String marker = "_serializedATN";
+        final String replacement = "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";";
+
+        StringBuilder sb = new StringBuilder(text.length());
+        int cursor = 0;
+
+        while (cursor < text.length()) {
+            int markerPos = text.indexOf(marker, cursor);
+            if (markerPos < 0) {
+                sb.append(text, cursor, text.length());
+                break;
+            }
+
+            sb.append(text, cursor, markerPos);
+
+            int i = markerPos + marker.length();
+            while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
+                i++;
+            }
+            if (i >= text.length() || text.charAt(i) != '=') {
+                sb.append(marker);
+                cursor = markerPos + marker.length();
+                continue;
+            }
+
+            i++;
+            while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
+                i++;
+            }
+            if (i >= text.length() || text.charAt(i) != '"') {
+                sb.append(marker);
+                cursor = markerPos + marker.length();
+                continue;
+            }
+
+            int end = text.indexOf("\";", i + 1);
+            if (end < 0) {
+                sb.append(marker);
+                cursor = markerPos + marker.length();
+                continue;
+            }
+
+            sb.append(replacement);
+            cursor = end + 2;
+        }
+
+        return sb.toString();
+    }
+
+    private static String collapseSpacesAndTabs(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        boolean inSpaceRun = false;
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == ' ' || c == '\t') {
+                if (!inSpaceRun) {
+                    sb.append(' ');
+                    inSpaceRun = true;
+                }
+            } else {
+                inSpaceRun = false;
+                sb.append(c);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static String trimSpacesTabsPerLine(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        int i = 0;
+
+        while (i < text.length()) {
+            int lineStart = i;
+            while (i < text.length() && text.charAt(i) != '\n') {
+                i++;
+            }
+
+            int lineEnd = i;
+            boolean hasLf = i < text.length() && text.charAt(i) == '\n';
+            boolean hasCrBeforeLf = lineEnd > lineStart && text.charAt(lineEnd - 1) == '\r';
+            int contentEnd = hasCrBeforeLf ? lineEnd - 1 : lineEnd;
+
+            int left = lineStart;
+            while (left < contentEnd && (text.charAt(left) == ' ' || text.charAt(left) == '\t')) {
+                left++;
+            }
+
+            int right = contentEnd;
+            while (right > left && (text.charAt(right - 1) == ' ' || text.charAt(right - 1) == '\t')) {
+                right--;
+            }
+
+            sb.append(text, left, right);
+            if (hasCrBeforeLf) {
+                sb.append('\r');
+            }
+            if (hasLf) {
+                sb.append('\n');
+                i++;
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static String collapseThreeOrMoreLineBreaks(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        int i = 0;
+
+        while (i < text.length()) {
+            int tokenLen = lineBreakTokenLength(text, i);
+            if (tokenLen == 0) {
+                sb.append(text.charAt(i));
+                i++;
+                continue;
+            }
+
+            int runStart = i;
+            int breaks = 0;
+            while (i < text.length()) {
+                int len = lineBreakTokenLength(text, i);
+                if (len == 0) {
+                    break;
+                }
+                breaks++;
+                i += len;
+            }
+
+            if (breaks >= 3) {
+                sb.append("\n\n");
+            } else {
+                sb.append(text, runStart, i);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static int lineBreakTokenLength(String text, int index) {
+        char c = text.charAt(index);
+        if (c == '\n') {
+            return 1;
+        }
+        if (c == '\r' && index + 1 < text.length() && text.charAt(index + 1) == '\n') {
+            return 2;
+        }
+        return 0;
     }
 
     public static String jsonString(Object obj) {

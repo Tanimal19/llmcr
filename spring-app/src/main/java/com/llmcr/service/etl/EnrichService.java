@@ -25,8 +25,8 @@ public class EnrichService {
     @Transactional
     public void enrich(Long contextId) {
         Context context = contextRepository
-            .findById(contextId)
-            .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
+                .findById(contextId)
+                .orElseThrow(() -> new RuntimeException("Context not found: " + contextId));
         if (context.isEnriched()) {
             logger.info("Context '{}' already context, skipping enriching", context.getName());
             return;
@@ -46,7 +46,7 @@ public class EnrichService {
         }
 
         context.setEnriched(true);
-        if (context.getChunkCount() != originalChunkCount) {
+        if (!context.getChunkCount().equals(originalChunkCount)) {
             context.setChunkLoaded(false);
         }
         contextRepository.save(context);
