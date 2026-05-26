@@ -3,14 +3,15 @@ package com.llmcr.feature.sync.etl;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.domain.repository.SourceRepository;
-import com.llmcr.domain.sse.VoidSseTaskObject;
+import com.llmcr.domain.sse.SseTaskObject;
+import com.llmcr.domain.sse.SseTaskObject.SseTaskProgress;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ETLService extends VoidSseTaskObject {
+public class ETLService {
 
     private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
@@ -38,18 +39,18 @@ public class ETLService extends VoidSseTaskObject {
         return "Extract-Split-Load";
     }
 
-    public void execute(Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
-        throwIfCancelled(cancellationRequested);
-        emitProgress(progressListener, "ETL", "Starting ETL pipeline");
+    public void run(Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
+        SseTaskObject.throwIfCancelled(cancellationRequested);
+        SseTaskObject.emitProgress(progressListener, "ETL", "Starting ETL pipeline");
 
         long pipelineStart = System.currentTimeMillis();
         try {
             try {
-                throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "ETL", "Running extract stage");
+                SseTaskObject.throwIfCancelled(cancellationRequested);
+                SseTaskObject.emitProgress(progressListener, "ETL", "Running extract stage");
                 long t0 = System.currentTimeMillis();
                 sourceRepository.findAllUnextractedIds().forEach(id -> extractService.extract(id));
-                emitProgress(
+                SseTaskObject.emitProgress(
                         progressListener,
                         "ETL",
                         "Extract stage completed in " + (System.currentTimeMillis() - t0) + " ms");
@@ -59,11 +60,11 @@ public class ETLService extends VoidSseTaskObject {
 
             // split and load
             try {
-                throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "ETL", "Running split stage");
+                SseTaskObject.throwIfCancelled(cancellationRequested);
+                SseTaskObject.emitProgress(progressListener, "ETL", "Running split stage");
                 long t1 = System.currentTimeMillis();
                 contextRepository.findAllUnsplittedIds().forEach(id -> splitService.split(id));
-                emitProgress(
+                SseTaskObject.emitProgress(
                         progressListener,
                         "ETL",
                         "Split stage completed in " + (System.currentTimeMillis() - t1) + " ms");
@@ -72,11 +73,11 @@ public class ETLService extends VoidSseTaskObject {
             }
 
             try {
-                throwIfCancelled(cancellationRequested);
-                emitProgress(progressListener, "ETL", "Running load stage after split");
+                SseTaskObject.throwIfCancelled(cancellationRequested);
+                SseTaskObject.emitProgress(progressListener, "ETL", "Running load stage after split");
                 long t2 = System.currentTimeMillis();
                 contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContext(id));
-                emitProgress(
+                SseTaskObject.emitProgress(
                         progressListener,
                         "ETL",
                         "Load after split stage completed in " + (System.currentTimeMillis() - t2) + " ms");
@@ -116,7 +117,7 @@ public class ETLService extends VoidSseTaskObject {
             // "ETL load-after-enrich stage failed", ex);
             // }
 
-            emitProgress(
+            SseTaskObject.emitProgress(
                     progressListener,
                     "ETL",
                     "ETL pipeline completed in " + (System.currentTimeMillis() - pipelineStart) + " ms");

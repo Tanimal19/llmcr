@@ -26,6 +26,6 @@ public class SourceSyncTask extends VoidSseTaskObject {
     @Override
     public void execute(Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
         sourceSyncService.syncAllTrackRootSource(progressListener, cancellationRequested);
-        etlService.execute(null, cancellationRequested);
+        etlService.run(progressListener, cancellationRequested);
     }
 }

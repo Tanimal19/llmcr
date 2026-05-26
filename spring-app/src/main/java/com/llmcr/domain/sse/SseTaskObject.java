@@ -46,14 +46,14 @@ public abstract class SseTaskObject<I, O> {
         }
     }
 
-    protected static void throwIfCancelled(BooleanSupplier cancellationRequested) {
+    public static void throwIfCancelled(BooleanSupplier cancellationRequested) {
         if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
             throw new APIServiceException(
                     APIServiceException.ErrorCode.SSE_TASK_CANCELLED);
         }
     }
 
-    protected static void emitProgress(Consumer<SseTaskProgress> progressListener, String stage, String message) {
+    public static void emitProgress(Consumer<SseTaskProgress> progressListener, String stage, String message) {
         if (progressListener == null) {
             return;
         }

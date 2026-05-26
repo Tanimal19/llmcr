@@ -5,6 +5,7 @@ import com.llmcr.domain.entity.Source.SourceType;
 import com.llmcr.domain.entity.TrackRoot;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.repository.TrackRootRepository;
+import com.llmcr.domain.sse.SseTaskObject;
 import com.llmcr.domain.sse.SseTaskObject.SseTaskProgress;
 
 import java.time.LocalDateTime;
@@ -102,8 +103,8 @@ public class SourceSyncService {
             Consumer<SseTaskProgress> progressListener,
             BooleanSupplier cancellationRequested) {
         try {
-            throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "SYNC", "Syncing track root: " + trackRootId);
+            SseTaskObject.throwIfCancelled(cancellationRequested);
+            SseTaskObject.emitProgress(progressListener, "SYNC", "Syncing track root: " + trackRootId);
 
             TrackRoot trackRoot = trackRootRepository.findById(trackRootId).orElseThrow();
             TrackRootPreview trackRootPreview = sourcePreviewService.getOrCreateTrackRootPreview(trackRootId);
@@ -114,8 +115,8 @@ public class SourceSyncService {
 
             List<Source> sourcesToRemove = processSourceChanges(trackRoot, trackRootPreview, cancellationRequested);
 
-            throwIfCancelled(cancellationRequested);
-            emitProgress(
+            SseTaskObject.throwIfCancelled(cancellationRequested);
+            SseTaskObject.emitProgress(
                     progressListener,
                     "SYNC",
                     "Removing " + sourcesToRemove.size() + " sources for track root: " + trackRoot.getPath());
@@ -125,8 +126,9 @@ public class SourceSyncService {
             trackRootRepository.save(trackRoot);
             sourcePreviewService.evictTrackRootPreview(trackRootId);
 
-            throwIfCancelled(cancellationRequested);
-            emitProgress(progressListener, "SYNC", "Completed syncing track root: " + trackRoot.getPath());
+            SseTaskObject.throwIfCancelled(cancellationRequested);
+            SseTaskObject.emitProgress(progressListener, "SYNC",
+                    "Completed syncing track root: " + trackRoot.getPath());
         } catch (APIServiceException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -135,7 +137,8 @@ public class SourceSyncService {
     }
 
     private void markTrackRootSyncedAndSkip(TrackRoot trackRoot, Consumer<SseTaskProgress> progressListener) {
-        emitProgress(progressListener, "SYNC", "Track root already synced, skipping: " + trackRoot.getPath());
+        SseTaskObject.emitProgress(progressListener, "SYNC",
+                "Track root already synced, skipping: " + trackRoot.getPath());
         trackRoot.setLastSyncTime(LocalDateTime.now());
         trackRootRepository.save(trackRoot);
     }
@@ -146,26 +149,12 @@ public class SourceSyncService {
             BooleanSupplier cancellationRequested) {
         List<Source> sourcesToRemove = new ArrayList<>();
         for (SourcePreview sourcePreview : trackRootPreview.sources()) {
-            throwIfCancelled(cancellationRequested);
+            SseTaskObject.throwIfCancelled(cancellationRequested);
             Source sourceToRemove = sourceChangeApplier.applySourceSyncStatus(trackRoot, sourcePreview);
             if (sourceToRemove != null) {
                 sourcesToRemove.add(sourceToRemove);
             }
         }
         return sourcesToRemove;
-    }
-
-    private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
-        if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
-            throw new APIServiceException(APIServiceException.ErrorCode.SSE_TASK_CANCELLED);
-        }
-    }
-
-    private static void emitProgress(Consumer<SseTaskProgress> progressListener, String stage, String message) {
-        if (progressListener == null) {
-            return;
-        }
-        logger.info("[{}] {}", stage, message);
-        progressListener.accept(new SseTaskProgress(false, stage, message));
     }
 }
