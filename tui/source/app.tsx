@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { info } from '#api.js';
-import { ChatCommand } from '#commands/interactive/chat.js';
-import { ReviewCommand } from '#commands/stream/review.js';
-import { SyncCommand } from '#commands/stream/sync.js';
-import { SetRagCommand } from '#commands/database/setrag.js';
-import { LsDbCommand } from '#commands/database/lsdb.js';
-import { MainMenu } from '#menu.js';
+import { info } from '#features/menu/menu.api.js';
+import { ChatCommand } from '#features/chat/chat.cmd.js';
+import { ReviewCommand } from '#features/code-review/review.cmd.js';
+import { SyncCommand } from '#features/knowledge-base/sync.cmd.js';
+import { SetRagCommand } from '#features/knowledge-base/setrag.cmd.js';
+import { LsDbCommand } from '#features/knowledge-base/lsdb.cmd.js';
+import { MainMenu } from '#features/menu/menu.js';
 
+// Router of the application
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('menu');
   const [configLoaded, setconfigLoaded] = useState('Loading...');

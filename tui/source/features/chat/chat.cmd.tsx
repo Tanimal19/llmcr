@@ -2,8 +2,8 @@ import crypto from 'node:crypto';
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
-import { type CommandProps } from '#commands/types.js';
-import { chat, type ChatResponse } from '#api.js';
+import { chat, type ChatResponse } from './chat.api.js';
+import { type CommandProps } from '#features/types.js';
 import { LoadingSpinner } from '#components';
 
 // ─── 1. 歷史訊息型態宣告 ───

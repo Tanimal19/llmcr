@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
+import { lsdb } from './lsdb.api.js';
 import { TableBrowser, type TableBrowserItem, toLabel } from '#components';
-import { lsdb } from '#api.js';
-import { type CommandProps } from '#commands/types.js';
+import { type CommandProps } from '#features/types.js';
 
 const STATUS_STYLE: Record<
   'SYNCED' | 'REMOVED' | 'ADDED' | 'MODIFIED',
