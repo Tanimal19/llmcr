@@ -9,15 +9,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.llmcr.api.APIController;
-
 /**
  * This class manages the lifecycle of SSE (Server Sent Envents) tasks.
  */
 @Component
 public class SseTaskManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(APIController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SseTaskManager.class);
 
     private final ConcurrentMap<String, SseTaskObject<?, ?>> currentTasks = new ConcurrentHashMap<>();
 
