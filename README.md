@@ -3,47 +3,6 @@
 Project for Software Engineering Lab.
 
 
-## Project Structure
-```
-llmcr/
-├── docker-compose.yml
-├── llama-swap.yml
-├── data/                       # Data preparation scripts
-├── faiss_service/              # Python FAISS microservice
-├── models/                     # .gguf files
-├── logs/
-├── spring-app/
-│   ├── config.default.yml           # Default user application config
-│   ├── resources/
-│   │   └── application.properties   # spring application config 
-│   └── java/com/llmcr/
-│       ├── LlmcrApplication.java
-│       ├── agent/                   # Agents
-│       ├── config/
-│       ├── entity/                  # JPA entities
-│       ├── rag/                     # RAG components
-│       ├── repository/              # Spring Data repositories
-│       ├── runner/                  # Application entrypoints
-│       ├── service/
-│       │   ├── etl/                 # ETL pipeline
-│       │   ├── review/              # Code review service
-│       │   ├── sync/                # Sync service
-│       ├── tool/                    # Tools for agent tool calling
-│       ├── util/
-│       └── vectorstore/             # Vector database
-├── _datasets/
-└── _backups/                  # Pre-built index & DB dump
-```
-
-### Important Classes
-- `agent/`: Agent implementations
-- `rag/retrieve/QueryContextRetriever.java`: RAG retriever that retrieves relevant contexts based on input query
-- `vectorstore/MyVectorStore.java`: The interface for a vector store that can be used for storing and retrieving chunks
-- `service/etl/ETLPipeline.java`: ETL pipeline entrypoint
-- `service/review/CodeReviewService.java`: Code review service entrypoint
-- `service/sync/SyncService.java`: Sync service entrypoint
-
-
 # Design Concepts
 
 ## Multi-Agent Code Review Workflow
@@ -174,3 +133,14 @@ docker-compose up -d
 #### Can not find JAVA_HOME (Windows)
 1. Set `JAVA_HOME` in System Environment Variables, e.g. `C:\Program Files\Java\jdk-xx `
 2. Please use git bash instead of WSL bash/sh in powershell (WSL bash cannot find your JAVA_HOME)，add git bash in `PATH` System Environment Variables, e.g. `C:\Program Files\Git\bin`
+
+#### Testcontainer can not connect to Docker
+1. Run `docker context ls` to check the available docker context
+2. Add the following environment variables to `.env` file
+```
+export DOCKER_HOST="your-docker.sock"
+```
+3. (MacOS, Colima) If encounter `ryuk` container operation not support, add the following environment variable
+```
+export TESTCONTAINERS_RYUK_DISABLED=true
+```
