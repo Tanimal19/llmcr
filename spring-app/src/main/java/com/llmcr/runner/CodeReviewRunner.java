@@ -24,7 +24,7 @@ public class CodeReviewRunner implements ApplicationRunner {
         List<String> nonOptionArgs = args.getNonOptionArgs();
 
         if (args.containsOption("use-mock")) {
-            codeReviewService.review(new CodeReviewInput(null, true));
+            codeReviewService.execute(new CodeReviewInput(null, true));
             return;
         }
         if (nonOptionArgs.isEmpty()) {
@@ -32,6 +32,6 @@ public class CodeReviewRunner implements ApplicationRunner {
         }
 
         String jsonFilePath = nonOptionArgs.get(0);
-        codeReviewService.review(new CodeReviewInput(jsonFilePath, false));
+        codeReviewService.execute(new CodeReviewInput(jsonFilePath, false));
     }
 }

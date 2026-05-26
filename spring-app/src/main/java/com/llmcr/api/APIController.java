@@ -2,6 +2,7 @@ package com.llmcr.api;
 
 import com.llmcr.ChatService;
 import com.llmcr.ChatService.ChatResponse;
+import com.llmcr.api.sse.SseTaskManager;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.config.ConfigReader;
 import com.llmcr.etl.LoadService;

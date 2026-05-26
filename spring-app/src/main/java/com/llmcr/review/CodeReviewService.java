@@ -1,8 +1,7 @@
 package com.llmcr.review;
 
 import com.llmcr.api.APIServiceException;
-import com.llmcr.api.SseTaskManager.TaskProgressEvent;
-import com.llmcr.api.SseTaskObject;
+import com.llmcr.api.sse.SseTaskObject;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.review.CodeReviewReport.ChecklistItem;
 import com.llmcr.review.CodeReviewReport.ChecklistItemAnswer;
@@ -36,7 +35,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CodeReviewService
-        implements SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
+        extends SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
 
     private static final Logger logger = LoggerFactory.getLogger(CodeReviewService.class);
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -71,17 +70,10 @@ public class CodeReviewService
         return "code_review";
     }
 
-    /**
-     * Regular entry point for code review without SSE.
-     */
-    public CodeReviewOutput review(CodeReviewInput input) {
-        return execute(input, null, () -> false);
-    }
-
     @Override
     public CodeReviewOutput execute(
             CodeReviewInput input,
-            Consumer<TaskProgressEvent> progressListener,
+            Consumer<SseTaskProgress> progressListener,
             BooleanSupplier cancellationRequested) {
         try {
             throwIfCancelled(cancellationRequested);
@@ -205,22 +197,6 @@ public class CodeReviewService
                     "Code review pipeline execution failed",
                     ex);
         }
-    }
-
-    private static void throwIfCancelled(BooleanSupplier cancellationRequested) {
-        if (Thread.currentThread().isInterrupted() || cancellationRequested.getAsBoolean()) {
-            throw new APIServiceException(
-                    APIServiceException.ErrorCode.REVIEW_CANCELLED,
-                    "Review task cancelled by client");
-        }
-    }
-
-    private static void emitProgress(Consumer<TaskProgressEvent> progressListener, String stage, String message) {
-        logger.info("stage={} message={}", stage, message);
-        if (progressListener == null) {
-            return;
-        }
-        progressListener.accept(new TaskProgressEvent(false, stage, message));
     }
 
     private Path writeReport(CodeReviewReport report) {
