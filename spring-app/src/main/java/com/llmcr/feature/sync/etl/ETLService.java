@@ -7,14 +7,10 @@ import com.llmcr.domain.sse.VoidSseTaskObject;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ETLService extends VoidSseTaskObject {
-
-    private static final Logger logger = LoggerFactory.getLogger(ETLService.class);
 
     private final SourceRepository sourceRepository;
     private final ContextRepository contextRepository;
@@ -79,7 +75,7 @@ public class ETLService extends VoidSseTaskObject {
                 throwIfCancelled(cancellationRequested);
                 emitProgress(progressListener, "ETL", "Running load stage after split");
                 long t2 = System.currentTimeMillis();
-                contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContextChunks(id));
+                contextRepository.findAllUnloadedIds().forEach(id -> loadService.loadContext(id));
                 emitProgress(
                         progressListener,
                         "ETL",

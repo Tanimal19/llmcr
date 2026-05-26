@@ -62,7 +62,6 @@ chat-models:
     name: "gemini-2.5-flash-lite"
     provider: "google"
 
-# There should be only one embedding model and one reranking model, which are used globally for RAG.
 embedding-model:
   name: "harrier-0.6b"
   provider: "openai"
@@ -94,8 +93,8 @@ agents:
   "summary":
     chat-model: "gemini-2.5-flash-lite"
 
-  "question-answer":
-    chat-model: "nemotron-3-4b"
+chat-service:
+  chat-model: "nemotron-3-4b"
 
 logging:
   review-output-dir: "./logs/reviews"

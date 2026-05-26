@@ -2,7 +2,7 @@ package com.llmcr.feature.sync.etl.transformer;
 
 import com.llmcr.domain.entity.Chunk;
 import com.llmcr.domain.entity.Context;
-import com.llmcr.domain.util.StringUtils;
+import com.llmcr.domain.util.TextCleaner;
 
 import java.util.List;
 import org.springframework.ai.document.Document;
@@ -30,7 +30,7 @@ public class ContextContentSplitter implements ContextSplitter {
 
         // split the content into chunks
         List<Chunk> contentChunks = splitter
-                .split(new Document(StringUtils.clean(context.getContent())))
+                .split(new Document(TextCleaner.clean(context.getContent())))
                 .stream()
                 .map(doc -> new Chunk(doc.getText()))
                 .toList();

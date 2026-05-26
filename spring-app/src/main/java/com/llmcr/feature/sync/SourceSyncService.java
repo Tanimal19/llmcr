@@ -1,16 +1,12 @@
 package com.llmcr.feature.sync;
 
-import com.llmcr.database.entity.Chunk;
-import com.llmcr.database.entity.ChunkCollection;
-import com.llmcr.database.entity.Source;
-import com.llmcr.database.entity.TrackRoot;
-import com.llmcr.database.entity.Source.SourceType;
-import com.llmcr.database.repository.SourceRepository;
-import com.llmcr.database.repository.TrackRootRepository;
+import com.llmcr.domain.entity.Source.SourceType;
 import com.llmcr.domain.exception.APIServiceException;
-import com.llmcr.domain.sse.SseTaskObject;
+import com.llmcr.domain.repository.SourceRepository;
+import com.llmcr.domain.repository.TrackRootRepository;
+import com.llmcr.domain.sse.VoidSseTaskObject;
+import com.llmcr.feature.sync.etl.ETLService;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
-import com.llmcr.share.etl.ETLService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Service for managing data sources (files)
  */
 @Service
-public class SourceSyncService extends SseTaskObject<Void, Void> {
+public class SourceSyncService extends VoidSseTaskObject {
 
     private static final Logger logger = LoggerFactory.getLogger(SourceSyncService.class);
 

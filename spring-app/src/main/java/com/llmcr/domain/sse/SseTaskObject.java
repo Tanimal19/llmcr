@@ -5,9 +5,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.llmcr.domain.exception.APIServiceException;
 
 public abstract class SseTaskObject<I, O> {
+    private static final Logger logger = LoggerFactory.getLogger(SseTaskObject.class);
     private final AtomicBoolean cancellationRequested = new AtomicBoolean(false);
     private volatile CompletableFuture<Void> future;
 
@@ -53,6 +57,7 @@ public abstract class SseTaskObject<I, O> {
         if (progressListener == null) {
             return;
         }
+        logger.info("[{}] {}", stage, message);
         progressListener.accept(new SseTaskProgress(false, stage, message));
     }
 }
