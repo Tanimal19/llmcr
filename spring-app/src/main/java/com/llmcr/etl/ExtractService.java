@@ -1,0 +1,68 @@
+package com.llmcr.etl;
+
+import com.llmcr.database.entity.Context;
+import com.llmcr.database.entity.Source;
+import com.llmcr.database.repository.ContextRepository;
+import com.llmcr.database.repository.SourceRepository;
+import com.llmcr.etl.extractor.SourceExtractor;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class ExtractService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExtractService.class);
+
+    private final SourceRepository sourceRepository;
+    private final ContextRepository contextRepository;
+    private final List<SourceExtractor> extractors;
+
+    public ExtractService(
+            SourceRepository sourceRepository,
+            ContextRepository contextRepository,
+            List<SourceExtractor> extractors) {
+        this.sourceRepository = sourceRepository;
+        this.contextRepository = contextRepository;
+        this.extractors = extractors;
+    }
+
+    @Transactional
+    public void extract(Long sourceId) {
+        Source source = sourceRepository
+                .findById(sourceId)
+                .orElseThrow(() -> new RuntimeException("Source not found: " + sourceId));
+        if (source.isExtracted()) {
+            logger.info("Source '{}' already extracted, skipping", source.getSourceName());
+            return;
+        }
+
+        logger.info("Start extracting context from source '{}'", source.getSourceName());
+        List<Context> contexts = new ArrayList<>();
+        for (SourceExtractor extractor : extractors) {
+            if (!extractor.supports(source)) {
+                continue;
+            }
+            try {
+                List<Context> extracted = extractor.apply(source);
+                contexts.addAll(extracted);
+                logger.info(
+                        "{} extracted {} context(s) from source '{}'",
+                        extractor.getClass().getSimpleName(),
+                        extracted.size(),
+                        source.getSourceName());
+            } catch (Exception e) {
+                throw new RuntimeException("Error extracting context from source " + source.getSourceName(), e);
+            }
+        }
+        if (!contexts.isEmpty()) {
+            contextRepository.saveAll(contexts);
+        }
+        source.setExtracted(true);
+        sourceRepository.save(source);
+    }
+}

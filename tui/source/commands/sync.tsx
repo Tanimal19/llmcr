@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { type CommandProps } from '../types.js';
-import { cancelSseTask, lsdb, syncWithProgress } from '../api.js';
+import { cancelSseTask, lsdb, syncWithProgress, type SseTaskStartEvent, type TrackRootPreview } from '../api.js';
 import { LoadingSpinner } from '../components/loading-spinner.js';
 import { useSseTaskLifecycle } from './use-sse-task-lifecycle.js';
 
@@ -32,39 +32,38 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
     cancelTask: cancelSseTask,
   });
 
+  const logTrackRootsPreview = async (stage: 'before' | 'after') => {
+    try {
+      const trackRoots: TrackRootPreview[] = await lsdb();
+      const unsynced = trackRoots.filter(trackRoot => !trackRoot.isSynced).length;
+      appendLog(`[INFO] Track roots ${stage} sync: ${trackRoots.length} total, ${unsynced} unsynced`);
+    } catch (error: unknown) {
+      appendLog(
+        `[WARN] Failed to load ${stage}-sync preview: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  };
+
+  const handleSyncStart = (event: SseTaskStartEvent) => {
+    handleTaskStart(event, startedEvent => {
+      setStageMessage(`Sync task started: ${startedEvent.name}`);
+    });
+  };
+
   useEffect(() => {
     const abortController = startRun('[INFO] Sync started');
 
-    void lsdb()
-      .then(trackRoots => {
-        const unsynced = trackRoots.filter(trackRoot => !trackRoot.isSynced).length;
-        appendLog(`[INFO] Track roots before sync: ${trackRoots.length} total, ${unsynced} unsynced`);
-      })
-      .catch((error: unknown) => {
-        appendLog(`[WARN] Failed to load pre-sync preview: ${error instanceof Error ? error.message : String(error)}`);
-      });
+    // 執行同步前預覽
+    void logTrackRootsPreview('before');
 
     syncWithProgress({
-      onStart(event) {
-        handleTaskStart(event, startedEvent => {
-          setStageMessage(`Sync task started: ${startedEvent.name}`);
-        });
-      },
+      onStart: handleSyncStart,
       onProgress: handleProgress,
       onError: handleError,
       onResult() {
         completeRun('Sync completed successfully', '[DONE] Sync completed successfully');
-
-        void lsdb()
-          .then(trackRoots => {
-            const unsynced = trackRoots.filter(trackRoot => !trackRoot.isSynced).length;
-            appendLog(`[INFO] Track roots after sync: ${trackRoots.length} total, ${unsynced} unsynced`);
-          })
-          .catch((error: unknown) => {
-            appendLog(
-              `[WARN] Failed to load post-sync preview: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
+        // 執行同步後預覽
+        void logTrackRootsPreview('after');
       },
       signal: abortController.signal,
     }).catch((error: unknown) => {
@@ -75,6 +74,16 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
       cleanupRun(abortController);
     };
   }, []);
+
+  // ─── 💡 修正 S6479：利用常規 for 迴圈預先建立日誌列元件陣列 ───
+  const renderedLogs = [];
+  for (const [i, progressLog] of progressLogs.entries()) {
+    renderedLogs.push(
+      <Text key={`sync-progress-log-${i}`} color="gray">
+        {progressLog}
+      </Text>,
+    );
+  }
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -90,11 +99,9 @@ export const SyncCommand = ({ onBack }: CommandProps) => {
       <Box flexDirection="column" marginTop={1}>
         <Text color="cyan">Progress Log:</Text>
         {progressLogs.length === 0 && <Text color="gray">(no events yet)</Text>}
-        {progressLogs.map((log, index) => (
-          <Text key={index} color="gray">
-            {log}
-          </Text>
-        ))}
+
+        {/* 渲染預先生成的日誌列表 */}
+        {renderedLogs}
       </Box>
 
       {awaitingExitConfirm && <Text color="yellow">Cancellation requested. Press ESC again to return.</Text>}

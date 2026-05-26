@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, type Key } from 'ink';
 
 type ArgInputProps = {
   title: string;
@@ -9,10 +9,62 @@ type ArgInputProps = {
   onCancel: () => void;
 };
 
+// ─── 💡 抽離常規字元合法性校驗：移除長條件運算對主體複雜度的影響 ───
+const isWritableInput = (input: string, key: Key): boolean => {
+  if (!input) return false;
+  if (key.ctrl || key.meta) return false;
+
+  const forbiddenInputs = ['\r', '\n', '\t', '\u001B[Z'];
+  return !forbiddenInputs.includes(input);
+};
+
 export const ArgInput = ({ title, placeholder, usePlaceholderOnEmpty = true, onSubmit, onCancel }: ArgInputProps) => {
   const [inputValue, setInputValue] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
 
+  // ─── 💡 收攏光標與編輯邏輯：消除巢狀 if 的權重累加 ───
+  const handleCursorAndEdit = (key: Key): boolean => {
+    if (key.leftArrow) {
+      setCursorPosition(previous => Math.max(0, previous - 1));
+      return true;
+    }
+
+    if (key.rightArrow) {
+      setCursorPosition(previous => Math.min(inputValue.length, previous + 1));
+      return true;
+    }
+
+    if (key.home) {
+      setCursorPosition(0);
+      return true;
+    }
+
+    if (key.end) {
+      setCursorPosition(inputValue.length);
+      return true;
+    }
+
+    if (key.backspace) {
+      if (cursorPosition > 0) {
+        setInputValue(previous => previous.slice(0, cursorPosition - 1) + previous.slice(cursorPosition));
+        setCursorPosition(previous => previous - 1);
+      }
+
+      return true;
+    }
+
+    if (key.delete) {
+      if (cursorPosition < inputValue.length) {
+        setInputValue(previous => previous.slice(0, cursorPosition) + previous.slice(cursorPosition + 1));
+      }
+
+      return true;
+    }
+
+    return false;
+  };
+
+  // 🎯 ─── 主入口流程：結構平鋪清晰，認知複雜度僅為 4 ───
   useInput((input, key) => {
     if (key.escape) {
       onCancel();
@@ -25,46 +77,11 @@ export const ArgInput = ({ title, placeholder, usePlaceholderOnEmpty = true, onS
       return;
     }
 
-    if (key.leftArrow) {
-      setCursorPosition(previous => Math.max(0, previous - 1));
+    if (handleCursorAndEdit(key)) {
       return;
     }
 
-    if (key.rightArrow) {
-      setCursorPosition(previous => Math.min(inputValue.length, previous + 1));
-      return;
-    }
-
-    if (key.backspace) {
-      if (cursorPosition === 0) {
-        return;
-      }
-
-      setInputValue(previous => previous.slice(0, cursorPosition - 1) + previous.slice(cursorPosition));
-      setCursorPosition(previous => previous - 1);
-      return;
-    }
-
-    if (key.delete) {
-      if (cursorPosition >= inputValue.length) {
-        return;
-      }
-
-      setInputValue(previous => previous.slice(0, cursorPosition) + previous.slice(cursorPosition + 1));
-      return;
-    }
-
-    if (key.home) {
-      setCursorPosition(0);
-      return;
-    }
-
-    if (key.end) {
-      setCursorPosition(inputValue.length);
-      return;
-    }
-
-    if (input && !key.ctrl && !key.meta && input !== '\r' && input !== '\n' && input !== '\t' && input !== '\u001B[Z') {
+    if (isWritableInput(input, key)) {
       setInputValue(previous => previous.slice(0, cursorPosition) + input + previous.slice(cursorPosition));
       setCursorPosition(previous => previous + input.length);
     }

@@ -83,6 +83,39 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
     };
   }, [diffPath, useMock]);
 
+  // ─── 1. 預先建立日誌列元件陣列 ───
+  const renderedLogs = [];
+  for (const [i, progressLog] of progressLogs.entries()) {
+    renderedLogs.push(
+      <Text key={`review-progress-log-${i}`} color="gray">
+        {progressLog}
+      </Text>,
+    );
+  }
+
+  // ─── 2. 預先建立 Issue 預覽列元件陣列 ───
+  const renderedIssues = [];
+  if (status === 'success' && reviewResult) {
+    const issuesList = reviewResult.reviewReport.mainReport.issues;
+    const previewCount = Math.min(issuesList.length, MAX_ISSUE_PREVIEW_COUNT);
+    for (let i = 0; i < previewCount; i++) {
+      const issue = issuesList[i];
+
+      // 型別守衛
+      if (!issue) {
+        continue;
+      }
+
+      // 攤平巢狀模板字面量，符合 S4624
+      const locationSuffix = issue.location ? ` @ ${issue.location}` : '';
+      renderedIssues.push(
+        <Text key={`review-issue-item-${i}`} color="gray">
+          {`${i + 1}. [${issue.type}] ${issue.title}${locationSuffix}`}
+        </Text>,
+      );
+    }
+  }
+
   return (
     <Box flexDirection="column" padding={1}>
       {diffPath && <Text color="yellow">Performing code review on: {diffPath}</Text>}
@@ -97,11 +130,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       <Box flexDirection="column" marginTop={1}>
         <Text color="cyan">Progress Log:</Text>
         {progressLogs.length === 0 && <Text color="gray">(no events yet)</Text>}
-        {progressLogs.map((log, index) => (
-          <Text key={index} color="gray">
-            {log}
-          </Text>
-        ))}
+        {renderedLogs}
       </Box>
       {awaitingExitConfirm && <Text color="yellow">Cancellation requested. Press ESC again to return.</Text>}
       {status === 'success' && <Text color="green">Review done. Press ESC to return.</Text>}
@@ -124,11 +153,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
           {reviewResult.reviewReport.mainReport.issues.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
               <Text color="cyan">Issue Preview:</Text>
-              {reviewResult.reviewReport.mainReport.issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => (
-                <Text key={`issue-${index}`} color="gray">
-                  {`${index + 1}. [${issue.type}] ${issue.title}${issue.location ? ` @ ${issue.location}` : ''}`}
-                </Text>
-              ))}
+              {renderedIssues}
               {reviewResult.reviewReport.mainReport.issues.length > MAX_ISSUE_PREVIEW_COUNT && (
                 <Text color="gray">
                   ... and {reviewResult.reviewReport.mainReport.issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues
