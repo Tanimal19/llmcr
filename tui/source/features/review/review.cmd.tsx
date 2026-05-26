@@ -123,8 +123,11 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
     );
   }
 
-  // ─── 第二階段視圖：串流日誌與結果渲染（這裡 TypeScript 會完美自動推導 args 絕對有值） ───
+  // ─── 第二階段視圖 ───
   const { diffPath: activePath, useMock: activeMock } = args;
+
+  // 用於動態生成穩定且不重複日誌 key 的計數器（每次 Render 重置）
+  const logCounts = new Map<string, number>();
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -141,11 +144,16 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       <Box flexDirection="column" marginTop={1}>
         <Text color="cyan">Progress Log:</Text>
         {progressLogs.length === 0 && <Text color="gray">(no events yet)</Text>}
-        {progressLogs.map((log, index) => (
-          <Text key={index} color="gray">
-            {log}
-          </Text>
-        ))}
+        {progressLogs.map(log => {
+          // 計算當前字串在此輪渲染是第幾次出現，確保 key 絕對唯一且不依賴 Array index
+          const currentCount = (logCounts.get(log) ?? 0) + 1;
+          logCounts.set(log, currentCount);
+          return (
+            <Text key={`${log}-${currentCount}`} color="gray">
+              {log}
+            </Text>
+          );
+        })}
       </Box>
 
       {awaitingExitConfirm && <Text color="yellow">Cancellation requested. Press ESC again to return.</Text>}
@@ -170,11 +178,18 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
           {reviewResult.reviewReport.mainReport.issues.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
               <Text color="cyan">Issue Preview:</Text>
-              {reviewResult.reviewReport.mainReport.issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => (
-                <Text key={`issue-${index}`} color="gray">
-                  {`${index + 1}. [${issue.type}] ${issue.title}${issue.location ? ` @ ${issue.location}` : ''}`}
-                </Text>
-              ))}
+              {reviewResult.reviewReport.mainReport.issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => {
+                // 1. 將巢狀樣板字串提取至外部變數，修正 S4624
+                const locationStr = issue.location ? ` @ ${issue.location}` : '';
+                // 2. 使用業務欄位組合成唯一 key，修正 S6479
+                const issueKey = `${issue.type}-${issue.title}-${issue.location}`;
+
+                return (
+                  <Text key={issueKey} color="gray">
+                    {`${index + 1}. [${issue.type}] ${issue.title}${locationStr}`}
+                  </Text>
+                );
+              })}
               {reviewResult.reviewReport.mainReport.issues.length > MAX_ISSUE_PREVIEW_COUNT && (
                 <Text color="gray">
                   ... and {reviewResult.reviewReport.mainReport.issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues
