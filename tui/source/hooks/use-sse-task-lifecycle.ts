@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useInput } from 'ink';
-import { type ReviewErrorEvent, type ReviewStageProgress, type SseTaskStartEvent } from '../../../api.js';
+import { type ReviewErrorEvent, type ReviewStageProgress, type SseTaskStartEvent } from '#api.js';
 
 type TaskStatus = 'running' | 'success' | 'error';
 

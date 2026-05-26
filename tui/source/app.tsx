@@ -3,9 +3,9 @@ import { Box, Text, useInput } from 'ink';
 import { info } from '#api.js';
 import { ChatCommand } from '#commands/interactive/chat.js';
 import { ReviewCommand } from '#commands/stream/review.js';
+import { SyncCommand } from '#commands/stream/sync.js';
 import { SetRagCommand } from '#commands/database/setrag.js';
 import { LsDbCommand } from '#commands/database/lsdb.js';
-import { SyncCommand } from '#commands/stream/sync.js';
 import { MainMenu } from '#menu.js';
 
 export default function App() {

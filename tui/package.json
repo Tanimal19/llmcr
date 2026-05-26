@@ -16,6 +16,7 @@
   },
   "imports": {
     "#components": "./source/components/index.js",
+    "#hooks": "./source/hooks/index.js",
     "#*": "./source/*"
   },
   "files": [
