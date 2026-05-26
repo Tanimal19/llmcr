@@ -1,15 +1,16 @@
 package com.llmcr.api;
 
+import com.llmcr.ChatService;
+import com.llmcr.ChatService.ChatResponse;
 import com.llmcr.config.ApplicationProperties;
 import com.llmcr.config.ConfigReader;
-import com.llmcr.service.ChatService;
-import com.llmcr.service.ChatService.ChatResponse;
-import com.llmcr.service.etl.LoadService;
-import com.llmcr.service.review.CodeReviewService;
-import com.llmcr.service.review.CodeReviewService.CodeReviewInput;
-import com.llmcr.service.sync.ConfigSyncService;
-import com.llmcr.service.sync.SourceSyncService;
-import com.llmcr.service.sync.SourceSyncService.TrackRootPreview;
+import com.llmcr.etl.LoadService;
+import com.llmcr.review.CodeReviewService;
+import com.llmcr.review.CodeReviewService.CodeReviewInput;
+import com.llmcr.sync.ConfigSyncService;
+import com.llmcr.sync.SourceSyncService;
+import com.llmcr.sync.SourceSyncService.TrackRootPreview;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

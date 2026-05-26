@@ -1,11 +1,12 @@
 package com.llmcr.runner;
 
-import com.llmcr.service.ChatService;
-import com.llmcr.service.ChatService.ChatResponse;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.llmcr.ChatService;
+import com.llmcr.ChatService.ChatResponse;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "chat")

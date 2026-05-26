@@ -1,6 +1,5 @@
 package com.llmcr;
 
-import com.llmcr.service.ModelClientFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -10,6 +9,8 @@ import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.llmcr.model.ModelClientFactory;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
@@ -17,9 +18,9 @@ public abstract class BaseIntegrationTest {
 
     @Container
     protected static final MariaDBContainer<?> mariaDBContainer = new MariaDBContainer<>("mariadb:11")
-        .withDatabaseName("ragdb_test")
-        .withUsername("testuser")
-        .withPassword("testpass");
+            .withDatabaseName("ragdb_test")
+            .withUsername("testuser")
+            .withPassword("testpass");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {

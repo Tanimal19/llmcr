@@ -1,10 +1,11 @@
 package com.llmcr.runner;
 
-import com.llmcr.service.sync.SourceSyncService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import com.llmcr.sync.SourceSyncService;
 
 @Component
 @ConditionalOnProperty(name = "app.mode", havingValue = "sync")

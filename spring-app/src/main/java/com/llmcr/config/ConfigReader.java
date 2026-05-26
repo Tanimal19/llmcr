@@ -3,7 +3,7 @@ package com.llmcr.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.llmcr.entity.Source.SourceType;
+import com.llmcr.database.entity.Source.SourceType;
 import com.llmcr.util.PathUtils;
 
 import java.io.File;
