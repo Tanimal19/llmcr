@@ -11,6 +11,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "prettier --check . && xo",
+    "lint:fix": "prettier --write . && xo --fix",
     "test": "ava",
     "test:coverage": "c8 --reporter=lcov ava"
   },
