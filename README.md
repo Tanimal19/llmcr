@@ -15,7 +15,7 @@ llmcr/
 ├── spring-app/
 │   ├── config.default.yml           # Default user application config
 │   ├── resources/
-│   │   └── application.properties   # spring application config 
+│   │   └── application.properties   # spring application config
 │   └── java/com/llmcr/
 │       ├── LlmcrApplication.java
 │       ├── agent/                   # Agents
@@ -174,3 +174,13 @@ docker-compose up -d
 #### Can not find JAVA_HOME (Windows)
 1. Set `JAVA_HOME` in System Environment Variables, e.g. `C:\Program Files\Java\jdk-xx `
 2. Please use git bash instead of WSL bash/sh in powershell (WSL bash cannot find your JAVA_HOME)，add git bash in `PATH` System Environment Variables, e.g. `C:\Program Files\Git\bin`
+
+# Terminal UI Build and Run
+
+```sh
+$ cd tui
+$ npm intall
+$ npm run build
+$ npm link
+$ llmcr
+```
