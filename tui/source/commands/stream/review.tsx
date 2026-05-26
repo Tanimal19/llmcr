@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { type CommandProps } from '../types.js';
-import { LoadingSpinner } from '../components/loading-spinner.js';
-import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '../api.js';
-import { useSseTaskLifecycle } from './use-sse-task-lifecycle.js';
+import { type CommandProps } from '#commands/types.js';
+import { LoadingSpinner } from '#components';
+import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from '#api.js';
+import { useSseTaskLifecycle } from './hooks/use-sse-task-lifecycle.js';
 
 type ReviewCommandProps = {
   diffPath?: string;

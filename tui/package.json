@@ -14,6 +14,10 @@
     "test": "ava",
     "test:coverage": "c8 --reporter=lcov ava"
   },
+  "imports": {
+    "#components": "./source/components/index.js",
+    "#*": "./source/*"
+  },
   "files": [
     "dist"
   ],

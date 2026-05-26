@@ -3,11 +3,11 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import test from 'ava';
 import { render } from 'ink-testing-library';
-import { ChatCommand } from './commands/chat.js';
-import { LsDbCommand } from './commands/lsdb.js';
-import { ReviewCommand } from './commands/review.js';
-import { SetRagCommand } from './commands/setrag.js';
-import { SyncCommand } from './commands/sync.js';
+import { ChatCommand } from '#commands/interactive/chat.js';
+import { ReviewCommand } from '#commands/stream/review.js';
+import { SyncCommand } from '#commands/stream/sync.js';
+import { LsDbCommand } from '#commands/database/lsdb.js';
+import { SetRagCommand } from '#commands/database/setrag.js';
 
 const delay = async (ms: number) =>
   new Promise<void>(resolve => {
