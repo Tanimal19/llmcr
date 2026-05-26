@@ -75,6 +75,7 @@ public class ClassNodeExtractor implements SourceExtractor {
                                         .toList());
                     });
         } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         return classNodes;

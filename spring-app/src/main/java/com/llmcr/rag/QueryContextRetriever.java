@@ -121,8 +121,7 @@ public class QueryContextRetriever {
                     "Retrieved contexts: {}",
                     retrievedContexts
                             .stream()
-                            .map(c -> String.format(
-                                    "\n[Context: %s (id=%d), Score: %.4f]",
+                            .map(c -> String.format("\n[Context: %s (id=%d), Score: %.4f]",
                                     c.context().getName(),
                                     c.context().getId(),
                                     c.score()))
@@ -158,10 +157,6 @@ public class QueryContextRetriever {
                     APIServiceException.ErrorCode.INVALID_REQUEST,
                     "topK selection strategy cannot be null");
         }
-
-        logger.info(
-                "Retrieving contexts for query: {}",
-                query.substring(0, Math.min(100, query.length())) + (query.length() > 100 ? "..." : ""));
 
         List<ChunkIdScorePair> topNChunks;
         try {
