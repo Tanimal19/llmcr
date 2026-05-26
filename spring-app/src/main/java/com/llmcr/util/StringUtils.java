@@ -7,7 +7,14 @@ import java.util.Map;
 public class StringUtils {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String SERIALIZED_ATN_MARKER = "_serializedATN";
+    private static final String SERIALIZED_ATN_REPLACEMENT = "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";";
 
+    /**
+     * Cleans the input text by removing control characters (except CR, LF, and
+     * TAB), replacing serialized ATN literals, collapsing multiple spaces/tabs into
+     * one.
+     */
     public static String clean(String text) {
         if (text == null) {
             return "";
@@ -33,14 +40,11 @@ public class StringUtils {
     }
 
     private static String replaceSerializedAtnLiteral(String text) {
-        final String marker = "_serializedATN";
-        final String replacement = "_serializedATN = \"<ANTLR_SERIALIZED_ATN>\";";
-
         StringBuilder sb = new StringBuilder(text.length());
         int cursor = 0;
 
         while (cursor < text.length()) {
-            int markerPos = text.indexOf(marker, cursor);
+            int markerPos = text.indexOf(SERIALIZED_ATN_MARKER, cursor);
             if (markerPos < 0) {
                 sb.append(text, cursor, text.length());
                 break;
@@ -48,38 +52,41 @@ public class StringUtils {
 
             sb.append(text, cursor, markerPos);
 
-            int i = markerPos + marker.length();
-            while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
-                i++;
+            int assignmentEnd = findSerializedAtnAssignmentEnd(text, markerPos);
+            if (assignmentEnd < 0) {
+                sb.append(SERIALIZED_ATN_MARKER);
+                cursor = markerPos + SERIALIZED_ATN_MARKER.length();
+            } else {
+                sb.append(SERIALIZED_ATN_REPLACEMENT);
+                cursor = assignmentEnd;
             }
-            if (i >= text.length() || text.charAt(i) != '=') {
-                sb.append(marker);
-                cursor = markerPos + marker.length();
-                continue;
-            }
-
-            i++;
-            while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
-                i++;
-            }
-            if (i >= text.length() || text.charAt(i) != '"') {
-                sb.append(marker);
-                cursor = markerPos + marker.length();
-                continue;
-            }
-
-            int end = text.indexOf("\";", i + 1);
-            if (end < 0) {
-                sb.append(marker);
-                cursor = markerPos + marker.length();
-                continue;
-            }
-
-            sb.append(replacement);
-            cursor = end + 2;
         }
 
         return sb.toString();
+    }
+
+    private static int findSerializedAtnAssignmentEnd(String text, int markerPos) {
+        int i = markerPos + SERIALIZED_ATN_MARKER.length();
+        i = skipWhitespace(text, i);
+        if (i >= text.length() || text.charAt(i) != '=') {
+            return -1;
+        }
+
+        i = skipWhitespace(text, i + 1);
+        if (i >= text.length() || text.charAt(i) != '"') {
+            return -1;
+        }
+
+        int end = text.indexOf("\";", i + 1);
+        return end < 0 ? -1 : end + 2;
+    }
+
+    private static int skipWhitespace(String text, int index) {
+        int i = index;
+        while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
+            i++;
+        }
+        return i;
     }
 
     private static String collapseSpacesAndTabs(String text) {
@@ -88,7 +95,7 @@ public class StringUtils {
 
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (c == ' ' || c == '\t') {
+            if (isSpaceOrTab(c)) {
                 if (!inSpaceRun) {
                     sb.append(' ');
                     inSpaceRun = true;
@@ -118,12 +125,12 @@ public class StringUtils {
             int contentEnd = hasCrBeforeLf ? lineEnd - 1 : lineEnd;
 
             int left = lineStart;
-            while (left < contentEnd && (text.charAt(left) == ' ' || text.charAt(left) == '\t')) {
+            while (left < contentEnd && isSpaceOrTab(text.charAt(left))) {
                 left++;
             }
 
             int right = contentEnd;
-            while (right > left && (text.charAt(right - 1) == ' ' || text.charAt(right - 1) == '\t')) {
+            while (right > left && isSpaceOrTab(text.charAt(right - 1))) {
                 right--;
             }
 
@@ -145,25 +152,25 @@ public class StringUtils {
         int i = 0;
 
         while (i < text.length()) {
-            int tokenLen = lineBreakTokenLength(text, i);
-            if (tokenLen == 0) {
+            int runStart = i;
+            int breakCount = 0;
+
+            while (i < text.length()) {
+                int tokenLen = lineBreakLengthAt(text, i);
+                if (tokenLen == 0) {
+                    break;
+                }
+                breakCount++;
+                i += tokenLen;
+            }
+
+            if (breakCount == 0) {
                 sb.append(text.charAt(i));
                 i++;
                 continue;
             }
 
-            int runStart = i;
-            int breaks = 0;
-            while (i < text.length()) {
-                int len = lineBreakTokenLength(text, i);
-                if (len == 0) {
-                    break;
-                }
-                breaks++;
-                i += len;
-            }
-
-            if (breaks >= 3) {
+            if (breakCount >= 3) {
                 sb.append("\n\n");
             } else {
                 sb.append(text, runStart, i);
@@ -173,7 +180,7 @@ public class StringUtils {
         return sb.toString();
     }
 
-    private static int lineBreakTokenLength(String text, int index) {
+    private static int lineBreakLengthAt(String text, int index) {
         char c = text.charAt(index);
         if (c == '\n') {
             return 1;
@@ -184,6 +191,14 @@ public class StringUtils {
         return 0;
     }
 
+    private static boolean isSpaceOrTab(char c) {
+        return c == ' ' || c == '\t';
+    }
+
+    /**
+     * Changes the given object to a JSON string. If conversion fails, returns a
+     * JSON string with an error message.
+     */
     public static String jsonString(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);
