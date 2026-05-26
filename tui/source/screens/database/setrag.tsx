@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
 import { TableBrowser, type TableBrowserItem, toLabel } from './components/table-browser.js';
 import { getRagScope, setRagScope } from '#api.js';
-import { type CommandProps } from '#commands/types.js';
+import { type CommandProps } from '#screens/types.js';
 import { LoadingSpinner } from '#components/loading-spinner.js';
 
 type RagScopeItem = {

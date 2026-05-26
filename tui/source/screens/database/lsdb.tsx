@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, Text } from 'ink';
 import { TableBrowser, type TableBrowserItem, toLabel } from './components/table-browser.js';
 import { lsdb } from '#api.js';
-import { type CommandProps } from '#commands/types.js';
+import { type CommandProps } from '#screens/types.js';
 
 const STATUS_STYLE: Record<
   'SYNCED' | 'REMOVED' | 'ADDED' | 'MODIFIED',
