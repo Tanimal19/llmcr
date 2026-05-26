@@ -7,10 +7,12 @@ import static org.mockito.Mockito.*;
 import com.llmcr.BaseIntegrationTest;
 import com.llmcr.api.APIServiceException;
 import com.llmcr.api.APIServiceException.ErrorCode;
-import com.llmcr.entity.Source;
-import com.llmcr.entity.TrackRoot;
-import com.llmcr.repository.TrackRootRepository;
-import com.llmcr.service.sync.SourceSyncService.TrackRootPreview;
+import com.llmcr.database.entity.Source;
+import com.llmcr.database.entity.TrackRoot;
+import com.llmcr.database.repository.TrackRootRepository;
+import com.llmcr.sync.SourceSyncService;
+import com.llmcr.sync.SourceSyncService.TrackRootPreview;
+
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -77,8 +79,8 @@ public class SourceSyncServiceIT extends BaseIntegrationTest {
         when(trackRootRepository.findAllIds()).thenThrow(new RuntimeException("DB connection failed"));
 
         assertThatThrownBy(() -> sourceSyncService.getAllTrackRootPreview())
-            .isInstanceOf(APIServiceException.class)
-            .extracting(e -> ((APIServiceException) e).getErrorCode())
-            .isEqualTo(ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED);
+                .isInstanceOf(APIServiceException.class)
+                .extracting(e -> ((APIServiceException) e).getErrorCode())
+                .isEqualTo(ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED);
     }
 }

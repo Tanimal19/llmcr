@@ -7,19 +7,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.llmcr.BaseIntegrationTest;
+import com.llmcr.ChatService;
 import com.llmcr.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.api.APIServiceException.ErrorCode;
-import com.llmcr.entity.Chunk;
-import com.llmcr.entity.ChunkCollection;
-import com.llmcr.entity.Context;
-import com.llmcr.entity.Source;
-import com.llmcr.entity.TrackRoot;
-import com.llmcr.repository.ChunkCollectionRepository;
-import com.llmcr.repository.TrackRootRepository;
-import com.llmcr.service.ChatService;
-import com.llmcr.service.FaissService;
-import com.llmcr.service.etl.LoadService;
-import com.llmcr.service.rag.QueryContextRetriever;
+import com.llmcr.database.entity.Chunk;
+import com.llmcr.database.entity.ChunkCollection;
+import com.llmcr.database.entity.Context;
+import com.llmcr.database.entity.Source;
+import com.llmcr.database.entity.TrackRoot;
+import com.llmcr.database.repository.ChunkCollectionRepository;
+import com.llmcr.database.repository.TrackRootRepository;
+import com.llmcr.etl.LoadService;
+import com.llmcr.rag.QueryContextRetriever;
+import com.llmcr.vectorstore.faiss.FaissService;
+
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -85,10 +86,9 @@ public class APIControllerIT extends BaseIntegrationTest {
         String query = "test query";
         when(queryContextRetriever.retrieve(any())).thenThrow(new RuntimeException("retrieve failed"));
         assertThatThrownBy(() -> chatService.chat(query))
-            .isInstanceOf(APIServiceException.class)
-            .satisfies(ex ->
-                assertThat(((APIServiceException) ex).getErrorCode()).isEqualTo(ErrorCode.RAG_RETRIEVAL_FAILED)
-            );
+                .isInstanceOf(APIServiceException.class)
+                .satisfies(ex -> assertThat(((APIServiceException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.RAG_RETRIEVAL_FAILED));
     }
 
     @Test
@@ -108,10 +108,9 @@ public class APIControllerIT extends BaseIntegrationTest {
         when(callResponseSpec.content()).thenThrow(new RuntimeException("LLM error"));
 
         assertThatThrownBy(() -> chatService.chat(query))
-            .isInstanceOf(APIServiceException.class)
-            .satisfies(ex ->
-                assertThat(((APIServiceException) ex).getErrorCode()).isEqualTo(ErrorCode.LLM_RESPONSE_FAILED)
-            );
+                .isInstanceOf(APIServiceException.class)
+                .satisfies(ex -> assertThat(((APIServiceException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.LLM_RESPONSE_FAILED));
     }
 
     @Test
@@ -133,8 +132,8 @@ public class APIControllerIT extends BaseIntegrationTest {
         when(trackRootRepository.findByPaths(paths)).thenReturn(List.of(trackRoot));
         when(chunkCollectionRepository.findByName(ChatService.COLLECTION_NAME)).thenReturn(Optional.of(collection));
 
-        assertThatCode(() -> apiController.setRagScope(new APIController.SetRagRequest(paths))
-        ).doesNotThrowAnyException();
+        assertThatCode(() -> apiController.setRagScope(new APIController.SetRagRequest(paths)))
+                .doesNotThrowAnyException();
 
         verify(chunkCollectionRepository).save(collection);
         assertThat(collection.getTrackRoots()).containsExactly(trackRoot);
@@ -147,23 +146,20 @@ public class APIControllerIT extends BaseIntegrationTest {
         when(trackRootRepository.findAll()).thenThrow(new RuntimeException("DB unavailable"));
 
         assertThatThrownBy(() -> apiController.getRagScope())
-            .isInstanceOf(APIServiceException.class)
-            .satisfies(ex ->
-                assertThat(((APIServiceException) ex).getErrorCode()).isEqualTo(ErrorCode.RAG_SCOPE_GET_FAILED)
-            );
+                .isInstanceOf(APIServiceException.class)
+                .satisfies(ex -> assertThat(((APIServiceException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.RAG_SCOPE_GET_FAILED));
     }
 
     @Test
     @DisplayName("S5-4-1: Failed to update the configuration")
     void testS5_4_1() {
         when(chunkCollectionRepository.findByName(ChatService.COLLECTION_NAME)).thenThrow(
-            new RuntimeException("DB unavailable")
-        );
+                new RuntimeException("DB unavailable"));
 
         assertThatThrownBy(() -> apiController.setRagScope(new APIController.SetRagRequest(Set.of("/some/path"))))
-            .isInstanceOf(APIServiceException.class)
-            .satisfies(ex ->
-                assertThat(((APIServiceException) ex).getErrorCode()).isEqualTo(ErrorCode.RAG_SCOPE_SET_FAILED)
-            );
+                .isInstanceOf(APIServiceException.class)
+                .satisfies(ex -> assertThat(((APIServiceException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.RAG_SCOPE_SET_FAILED));
     }
 }

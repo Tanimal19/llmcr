@@ -1,19 +1,19 @@
 package com.llmcr.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.llmcr.entity.Source.SourceType;
+import com.llmcr.database.entity.Source.SourceType;
+
 import java.util.List;
 import java.util.Map;
 
 public record ApplicationProperties(
-    @JsonProperty("track-roots") Map<String, TrackRootProperties> trackRoots,
-    Map<String, CollectionProperties> collections,
-    @JsonProperty("chat-models") Map<String, ModelProperties> chatModels,
-    @JsonProperty("embedding-model") ModelProperties embeddingModel,
-    @JsonProperty("reranking-model") ModelProperties rerankingModel,
-    Map<String, AgentProperties> agents,
-    LoggingProperties logging
-) {
+        @JsonProperty("track-roots") Map<String, TrackRootProperties> trackRoots,
+        Map<String, CollectionProperties> collections,
+        @JsonProperty("chat-models") Map<String, ModelProperties> chatModels,
+        @JsonProperty("embedding-model") ModelProperties embeddingModel,
+        @JsonProperty("reranking-model") ModelProperties rerankingModel,
+        Map<String, AgentProperties> agents,
+        LoggingProperties logging) {
     public Map<String, TrackRootProperties> getTrackRoots() {
         return trackRoots;
     }
@@ -43,10 +43,9 @@ public record ApplicationProperties(
     }
 
     public record TrackRootProperties(
-        String id,
-        String path,
-        @JsonProperty("allowed-source-types") List<SourceType> allowedSourceTypes
-    ) {
+            String id,
+            String path,
+            @JsonProperty("allowed-source-types") List<SourceType> allowedSourceTypes) {
         public String getId() {
             return id;
         }
@@ -77,10 +76,9 @@ public record ApplicationProperties(
     }
 
     public record AgentProperties(
-        @JsonProperty("chat-model") String chat,
-        ModelProperties chatModelProperties,
-        String collection
-    ) {
+            @JsonProperty("chat-model") String chat,
+            ModelProperties chatModelProperties,
+            String collection) {
         public String getChat() {
             return chat;
         }
@@ -102,20 +100,19 @@ public record ApplicationProperties(
 
     public Map<String, Object> toMap() {
         return Map.of(
-            "trackRoots",
-            trackRoots,
-            "collections",
-            collections,
-            "chatModels",
-            chatModels,
-            "embeddingModel",
-            embeddingModel,
-            "rerankingModel",
-            rerankingModel,
-            "agents",
-            agents,
-            "logging",
-            logging
-        );
+                "trackRoots",
+                trackRoots,
+                "collections",
+                collections,
+                "chatModels",
+                chatModels,
+                "embeddingModel",
+                embeddingModel,
+                "rerankingModel",
+                rerankingModel,
+                "agents",
+                agents,
+                "logging",
+                logging);
     }
 }
