@@ -15,7 +15,6 @@ import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
 import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
 import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +29,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class ChatService {
 
-    private static final String SYSTEM_PROMPT = """
+  private static final String SYSTEM_PROMPT =
+      """
             You are a software engineering assistant.
 
             Your task is to answer the user's query using the provided project context.
             Do not make any assumptions or use any information that is not included in the provided context, even if it seems obvious to you as a software engineer. If the answer cannot be found in the provided context, say you don't know instead of trying to infer or guess.
             """;
 
-    private static final String USER_MESSAGE_TEMPLATE = """
+  private static final String USER_MESSAGE_TEMPLATE =
+      """
             User query:
             <query>
 
@@ -47,118 +48,126 @@ public class ChatService {
             Answer:
             """;
 
-    public static final int RETRIEVAL_TOP_K = 10;
-    public static final String COLLECTION_NAME = "chat-service";
+  public static final int RETRIEVAL_TOP_K = 10;
+  public static final String COLLECTION_NAME = "chat-service";
 
-    private final ModelConfig chatModelConfig;
-    private final ModelClientFactory modelClientFactory;
-    private final ChunkCollectionRepository chunkCollectionRepository;
-    private final TrackRootRepository trackRootRepository;
-    private final LoadService loadService;
-    private final QueryContextRetriever queryContextRetriever;
-    private final QueryContextRetrievalConfig retrievalConfiguration;
+  private final ModelConfig chatModelConfig;
+  private final ModelClientFactory modelClientFactory;
+  private final ChunkCollectionRepository chunkCollectionRepository;
+  private final TrackRootRepository trackRootRepository;
+  private final LoadService loadService;
+  private final QueryContextRetriever queryContextRetriever;
+  private final QueryContextRetrievalConfig retrievalConfiguration;
 
-    public ChatService(
-            ChatServiceConfigProvider configProvider,
-            ModelClientFactory modelClientFactory,
-            ChunkCollectionRepository chunkCollectionRepository,
-            TrackRootRepository trackRootRepository,
-            LoadService loadService,
-            QueryContextRetriever queryContextRetriever) {
-        this.chatModelConfig = configProvider.getChatServiceModelConfig();
+  public ChatService(
+      ChatServiceConfigProvider configProvider,
+      ModelClientFactory modelClientFactory,
+      ChunkCollectionRepository chunkCollectionRepository,
+      TrackRootRepository trackRootRepository,
+      LoadService loadService,
+      QueryContextRetriever queryContextRetriever) {
+    this.chatModelConfig = configProvider.getChatServiceModelConfig();
 
-        this.modelClientFactory = modelClientFactory;
-        this.chunkCollectionRepository = chunkCollectionRepository;
-        this.trackRootRepository = trackRootRepository;
-        this.loadService = loadService;
+    this.modelClientFactory = modelClientFactory;
+    this.chunkCollectionRepository = chunkCollectionRepository;
+    this.trackRootRepository = trackRootRepository;
+    this.loadService = loadService;
 
-        this.retrievalConfiguration = new QueryContextRetrievalConfig(COLLECTION_NAME, RETRIEVAL_TOP_K);
-        this.queryContextRetriever = queryContextRetriever;
+    this.retrievalConfiguration = new QueryContextRetrievalConfig(COLLECTION_NAME, RETRIEVAL_TOP_K);
+    this.queryContextRetriever = queryContextRetriever;
+  }
+
+  public record ChatResponse(String answer, Map<String, Float> retrievedContexts) {}
+
+  public ChatResponse chat(String query) {
+    List<ContextScorePair> retrievedContexts;
+    try {
+      retrievedContexts =
+          queryContextRetriever.retrieve(
+              new QueryContextRetrievalRequest(List.of(query), retrievalConfiguration));
+    } catch (Exception ex) {
+      throw new APIServiceException(ErrorCode.RAG_RETRIEVAL_FAILED, ex);
     }
 
-    public record ChatResponse(String answer, Map<String, Float> retrievedContexts) {
+    String contextString =
+        String.join(
+            "\n---\n",
+            retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
+
+    String userMessage =
+        PromptTemplate.builder()
+            .renderer(
+                StTemplateRenderer.builder()
+                    .startDelimiterToken('<')
+                    .endDelimiterToken('>')
+                    .build())
+            .template(USER_MESSAGE_TEMPLATE)
+            .build()
+            .render(Map.of("query", query, "context", contextString));
+
+    ChatClient chatClient = modelClientFactory.createChatClient(chatModelConfig);
+    ChatClientRequestSpec requestSpec =
+        chatClient
+            .prompt()
+            .system(SYSTEM_PROMPT)
+            .user(userMessage)
+            .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
+
+    String answer;
+    try {
+      answer = requestSpec.call().content();
+    } catch (Exception ex) {
+      throw new APIServiceException(ErrorCode.CHAT_MODEL_RESPONSE_FAILED, ex);
     }
+    Map<String, Float> retrievedContextMap =
+        retrievedContexts.stream()
+            .collect(Collectors.toMap(pair -> pair.context().getName(), ContextScorePair::score));
+    return new ChatResponse(answer, retrievedContextMap);
+  }
 
-    public ChatResponse chat(String query) {
-        List<ContextScorePair> retrievedContexts;
-        try {
-            retrievedContexts = queryContextRetriever.retrieve(
-                    new QueryContextRetrievalRequest(List.of(query), retrievalConfiguration));
-        } catch (Exception ex) {
-            throw new APIServiceException(ErrorCode.RAG_RETRIEVAL_FAILED, ex);
-        }
-
-        String contextString = String.join(
-                "\n---\n",
-                retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
-
-        String userMessage = PromptTemplate.builder()
-                .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-                .template(USER_MESSAGE_TEMPLATE)
-                .build()
-                .render(Map.of("query", query, "context", contextString));
-
-        ChatClient chatClient = modelClientFactory.createChatClient(chatModelConfig);
-        ChatClientRequestSpec requestSpec = chatClient
-                .prompt()
-                .system(SYSTEM_PROMPT)
-                .user(userMessage)
-                .advisors(new AgentLoggerAdvisor(this.getClass().getSimpleName()));
-
-        String answer;
-        try {
-            answer = requestSpec.call().content();
-        } catch (Exception ex) {
-            throw new APIServiceException(ErrorCode.CHAT_MODEL_RESPONSE_FAILED, ex);
-        }
-        Map<String, Float> retrievedContextMap = retrievedContexts
-                .stream()
-                .collect(Collectors.toMap(pair -> pair.context().getName(), ContextScorePair::score));
-        return new ChatResponse(answer, retrievedContextMap);
+  /**
+   * Return all track root paths with true/false indicating whether they are included in the RAG
+   * scope.
+   */
+  public Map<String, Boolean> getRagScope() {
+    try {
+      List<String> allTrackRoots =
+          trackRootRepository.findAll().stream().map(TrackRoot::getPath).toList();
+      ChunkCollection collection =
+          chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
+      if (collection == null) {
+        return allTrackRoots.stream().collect(Collectors.toMap(path -> path, path -> false));
+      }
+      Set<String> includedTrackRootPaths =
+          collection.getTrackRoots().stream().map(TrackRoot::getPath).collect(Collectors.toSet());
+      return allTrackRoots.stream()
+          .collect(Collectors.toMap(path -> path, includedTrackRootPaths::contains));
+    } catch (Exception ex) {
+      throw new APIServiceException(ErrorCode.RAG_SCOPE_GET_FAILED, "Failed to get RAG scope", ex);
     }
+  }
 
-    /**
-     * Return all track root paths with true/false indicating whether they are
-     * included in the RAG scope.
-     */
-    public Map<String, Boolean> getRagScope() {
-        try {
-            List<String> allTrackRoots = trackRootRepository.findAll().stream().map(TrackRoot::getPath).toList();
-            ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
-            if (collection == null) {
-                return allTrackRoots.stream().collect(Collectors.toMap(path -> path, path -> false));
-            }
-            Set<String> includedTrackRootPaths = collection
-                    .getTrackRoots()
-                    .stream()
-                    .map(TrackRoot::getPath)
-                    .collect(Collectors.toSet());
-            return allTrackRoots.stream().collect(Collectors.toMap(path -> path, includedTrackRootPaths::contains));
-        } catch (Exception ex) {
-            throw new APIServiceException(ErrorCode.RAG_SCOPE_GET_FAILED, "Failed to get RAG scope", ex);
-        }
+  public void setRagScope(Set<String> trackRootPaths) {
+    try {
+      Set<TrackRoot> newTrackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
+      ChunkCollection collection =
+          chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
+      if (collection == null) {
+        collection = new ChunkCollection(COLLECTION_NAME, newTrackRoots);
+        collection.setName(COLLECTION_NAME);
+        chunkCollectionRepository.save(collection);
+      }
+
+      if (newTrackRoots.equals(collection.getTrackRoots())) {
+        return;
+      }
+
+      collection.clearTrackRoots();
+      collection.addTrackRoots(newTrackRoots);
+      chunkCollectionRepository.save(collection);
+      loadService.reloadCollection(COLLECTION_NAME);
+    } catch (Exception ex) {
+      throw new APIServiceException(ErrorCode.RAG_SCOPE_SET_FAILED, "Faild to set RAG scope", ex);
     }
-
-    public void setRagScope(Set<String> trackRootPaths) {
-        try {
-            Set<TrackRoot> newTrackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
-            ChunkCollection collection = chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
-            if (collection == null) {
-                collection = new ChunkCollection(COLLECTION_NAME, newTrackRoots);
-                collection.setName(COLLECTION_NAME);
-                chunkCollectionRepository.save(collection);
-            }
-
-            if (newTrackRoots.equals(collection.getTrackRoots())) {
-                return;
-            }
-
-            collection.clearTrackRoots();
-            collection.addTrackRoots(newTrackRoots);
-            chunkCollectionRepository.save(collection);
-            loadService.reloadCollection(COLLECTION_NAME);
-        } catch (Exception ex) {
-            throw new APIServiceException(ErrorCode.RAG_SCOPE_SET_FAILED, "Faild to set RAG scope", ex);
-        }
-    }
+  }
 }

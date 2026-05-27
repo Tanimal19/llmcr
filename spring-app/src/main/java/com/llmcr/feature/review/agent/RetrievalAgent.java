@@ -6,7 +6,6 @@ import com.llmcr.feature.review.tool.MyToolCallingManager;
 import com.llmcr.feature.review.tool.MyToolCallingManager.ToolCall;
 import com.llmcr.infrastructure.agent.BaseAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,12 +16,13 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalModelResponse, String> {
+public class RetrievalAgent
+    extends BaseAgent<String, RetrievalAgent.RetrievalModelResponse, String> {
 
-    public record RetrievalModelResponse(boolean hasToolCall, ToolCall toolCall) {
-    }
+  public record RetrievalModelResponse(boolean hasToolCall, ToolCall toolCall) {}
 
-    private String systemPrompt = """
+  private String systemPrompt =
+      """
             You are a retrieval planning agent.
             Your task is to determine the next best action based on the user's query and previous tool results.
             You do NOT answer the user's query directly.
@@ -59,80 +59,81 @@ public class RetrievalAgent extends BaseAgent<String, RetrievalAgent.RetrievalMo
             {tool_definitions}
             """;
 
-    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
+  private static final String INITIAL_USER_MESSAGE_TEMPLATE =
+      """
             User Query:
             <query>
             """;
 
-    private static final String AGENT_NAME = "retrieval";
+  private static final String AGENT_NAME = "retrieval";
 
-    private final MyToolCallingManager toolCallingManager;
-    private List<String> toolResults;
+  private final MyToolCallingManager toolCallingManager;
+  private List<String> toolResults;
 
-    public RetrievalAgent(
-            AgentConfigProvider configProvider,
-            ModelClientFactory modelClientFactory,
-            DatabaseTool databaseTool) {
-        super(configProvider, modelClientFactory);
+  public RetrievalAgent(
+      AgentConfigProvider configProvider,
+      ModelClientFactory modelClientFactory,
+      DatabaseTool databaseTool) {
+    super(configProvider, modelClientFactory);
 
-        ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool);
-        this.toolCallingManager = new MyToolCallingManager(toolCallbacks);
+    ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool);
+    this.toolCallingManager = new MyToolCallingManager(toolCallbacks);
 
-        StringBuilder toolDefBuilder = new StringBuilder();
-        for (ToolCallback callback : toolCallbacks) {
-            toolDefBuilder.append(callback.getToolDefinition()).append("\n----\n");
-        }
-        this.systemPrompt = this.systemPrompt.replace("{tool_definitions}", toolDefBuilder.toString());
+    StringBuilder toolDefBuilder = new StringBuilder();
+    for (ToolCallback callback : toolCallbacks) {
+      toolDefBuilder.append(callback.getToolDefinition()).append("\n----\n");
     }
+    this.systemPrompt = this.systemPrompt.replace("{tool_definitions}", toolDefBuilder.toString());
+  }
 
-    @Override
-    protected String getAgentName() {
-        return AGENT_NAME;
-    }
+  @Override
+  protected String getAgentName() {
+    return AGENT_NAME;
+  }
 
-    @Override
-    protected String getSystemMessage() {
-        return systemPrompt;
-    }
+  @Override
+  protected String getSystemMessage() {
+    return systemPrompt;
+  }
 
-    @Override
-    protected String getInitialUserMessageTemplate() {
-        return INITIAL_USER_MESSAGE_TEMPLATE;
-    }
+  @Override
+  protected String getInitialUserMessageTemplate() {
+    return INITIAL_USER_MESSAGE_TEMPLATE;
+  }
 
-    @Override
-    protected Map<String, Object> buildInputVariables(String input) {
-        return Map.of("query", input);
-    }
+  @Override
+  protected Map<String, Object> buildInputVariables(String input) {
+    return Map.of("query", input);
+  }
 
-    @Override
-    protected boolean shouldTerminate(RetrievalModelResponse response) {
-        return !response.hasToolCall();
-    }
+  @Override
+  protected boolean shouldTerminate(RetrievalModelResponse response) {
+    return !response.hasToolCall();
+  }
 
-    @Override
-    protected Message buildNextUserMessage(int iteration, RetrievalModelResponse response) {
-        String toolResult = toolCallingManager.executeToolCall(response.toolCall());
+  @Override
+  protected Message buildNextUserMessage(int iteration, RetrievalModelResponse response) {
+    String toolResult = toolCallingManager.executeToolCall(response.toolCall());
 
-        return new UserMessage(
-                "You have called a tool: " +
-                        response.toolCall().toString() +
-                        "\nThe tool returned the following result:\n" +
-                        toolResult +
-                        "\nUse above information to determine your next action.");
-    }
+    return new UserMessage(
+        "You have called a tool: "
+            + response.toolCall().toString()
+            + "\nThe tool returned the following result:\n"
+            + toolResult
+            + "\nUse above information to determine your next action.");
+  }
 
-    /**
-     * Return the last tool result as the final output of the agent.
-     */
-    @Override
-    protected String buildAgentOutput(RetrievalModelResponse response) {
-        return toolResults.isEmpty() ? "No information was retrieved." : toolResults.get(toolResults.size() - 1);
-    }
+  /** Return the last tool result as the final output of the agent. */
+  @Override
+  protected String buildAgentOutput(RetrievalModelResponse response) {
+    return toolResults.isEmpty()
+        ? "No information was retrieved."
+        : toolResults.get(toolResults.size() - 1);
+  }
 
-    @Override
-    protected String doExecute(String input) {
-        this.toolResults = new ArrayList<>();
-        return super.doExecute(input);
-    }
+  @Override
+  protected String doExecute(String input) {
+    this.toolResults = new ArrayList<>();
+    return super.doExecute(input);
+  }
 }

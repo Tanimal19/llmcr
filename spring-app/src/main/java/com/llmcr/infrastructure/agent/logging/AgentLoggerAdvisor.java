@@ -13,52 +13,57 @@ import org.springframework.ai.chat.model.Generation;
 
 public class AgentLoggerAdvisor implements BaseAdvisor {
 
-    private static final Logger logger = LoggerFactory.getLogger(AgentLoggerAdvisor.class);
-    private final int order = 0;
-    private final String agentName;
+  private static final Logger logger = LoggerFactory.getLogger(AgentLoggerAdvisor.class);
+  private final int order = 0;
+  private final String agentName;
 
-    public AgentLoggerAdvisor(String agentName) {
-        this.agentName = agentName;
+  public AgentLoggerAdvisor(String agentName) {
+    this.agentName = agentName;
+  }
+
+  @Override
+  public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+    logger.info(
+        "{} input: {}",
+        agentName,
+        chatClientRequest.prompt().getLastUserOrToolResponseMessage().getText());
+    AgentContextHolder.beginIteration(chatClientRequest.prompt().getInstructions());
+    return chatClientRequest;
+  }
+
+  @Override
+  public ChatClientResponse after(
+      ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+    String responseText = extractText(chatClientResponse.chatResponse());
+    if (responseText != null && !responseText.isBlank()) {
+      logger.info("{} output: {}", agentName, responseText);
     }
 
-    @Override
-    public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-        logger.info("{} input: {}", agentName, chatClientRequest.prompt().getLastUserOrToolResponseMessage().getText());
-        AgentContextHolder.beginIteration(chatClientRequest.prompt().getInstructions());
-        return chatClientRequest;
-    }
+    AgentContextHolder.completeIteration(
+        responseText != null ? responseText : chatClientResponse.chatResponse());
+    return chatClientResponse;
+  }
 
-    @Override
-    public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
-        String responseText = extractText(chatClientResponse.chatResponse());
-        if (responseText != null && !responseText.isBlank()) {
-            logger.info("{} output: {}", agentName, responseText);
-        }
+  private static String extractText(ChatResponse chatResponse) {
+    return Optional.ofNullable(chatResponse)
+        .map(ChatResponse::getResult)
+        .map(Generation::getOutput)
+        .map(AbstractMessage::getText)
+        .orElse(null);
+  }
 
-        AgentContextHolder.completeIteration(responseText != null ? responseText : chatClientResponse.chatResponse());
-        return chatClientResponse;
-    }
+  @Override
+  public String getName() {
+    return this.getClass().getSimpleName();
+  }
 
-    private static String extractText(ChatResponse chatResponse) {
-        return Optional.ofNullable(chatResponse)
-                .map(ChatResponse::getResult)
-                .map(Generation::getOutput)
-                .map(AbstractMessage::getText)
-                .orElse(null);
-    }
+  @Override
+  public int getOrder() {
+    return this.order;
+  }
 
-    @Override
-    public String getName() {
-        return this.getClass().getSimpleName();
-    }
-
-    @Override
-    public int getOrder() {
-        return this.order;
-    }
-
-    @Override
-    public String toString() {
-        return AgentLoggerAdvisor.class.getSimpleName();
-    }
+  @Override
+  public String toString() {
+    return AgentLoggerAdvisor.class.getSimpleName();
+  }
 }

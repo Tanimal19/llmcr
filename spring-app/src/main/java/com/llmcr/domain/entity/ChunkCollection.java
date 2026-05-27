@@ -15,145 +15,152 @@ import java.util.Set;
 import org.hibernate.Hibernate;
 
 @Entity
-@Table(name = "chunk_collection", uniqueConstraints = { @UniqueConstraint(columnNames = "name") })
+@Table(
+    name = "chunk_collection",
+    uniqueConstraints = {@UniqueConstraint(columnNames = "name")})
 public class ChunkCollection {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id", nullable = false)
+  private Long id;
 
-    @Column(name = "name", columnDefinition = "TEXT", nullable = false, unique = true)
-    private String name;
+  @Column(name = "name", columnDefinition = "TEXT", nullable = false, unique = true)
+  private String name;
 
-    @ManyToMany
-    @JoinTable(name = "collection_have_track_roots", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "track_root_id"))
-    private Set<TrackRoot> havedTrackRoots = new HashSet<>();
+  @ManyToMany
+  @JoinTable(
+      name = "collection_have_track_roots",
+      joinColumns = @JoinColumn(name = "chunk_collection_id"),
+      inverseJoinColumns = @JoinColumn(name = "track_root_id"))
+  private Set<TrackRoot> havedTrackRoots = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(name = "collection_have_chunks", joinColumns = @JoinColumn(name = "chunk_collection_id"), inverseJoinColumns = @JoinColumn(name = "chunk_id"))
-    private Set<Chunk> havedChunks = new HashSet<>();
+  @ManyToMany
+  @JoinTable(
+      name = "collection_have_chunks",
+      joinColumns = @JoinColumn(name = "chunk_collection_id"),
+      inverseJoinColumns = @JoinColumn(name = "chunk_id"))
+  private Set<Chunk> havedChunks = new HashSet<>();
 
-    protected ChunkCollection() {
+  protected ChunkCollection() {}
+
+  public ChunkCollection(String name, Set<TrackRoot> havedTrackRoots) {
+    this.name = name;
+    for (TrackRoot trackRoot : havedTrackRoots) {
+      addTrackRoot(trackRoot);
+    }
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String chunkCollectionName) {
+    this.name = chunkCollectionName;
+  }
+
+  public Set<Chunk> getChunks() {
+    return havedChunks;
+  }
+
+  public Set<TrackRoot> getTrackRoots() {
+    return havedTrackRoots;
+  }
+
+  public void addTrackRoots(Set<TrackRoot> trackRoots) {
+    for (TrackRoot trackRoot : trackRoots) {
+      addTrackRoot(trackRoot);
+    }
+  }
+
+  public void addTrackRoot(TrackRoot trackRoot) {
+    if (trackRoot == null) {
+      return;
     }
 
-    public ChunkCollection(String name, Set<TrackRoot> havedTrackRoots) {
-        this.name = name;
-        for (TrackRoot trackRoot : havedTrackRoots) {
-            addTrackRoot(trackRoot);
-        }
+    if (Hibernate.isInitialized(havedTrackRoots) && !havedTrackRoots.contains(trackRoot)) {
+      havedTrackRoots.add(trackRoot);
     }
 
-    public Long getId() {
-        return id;
+    if (Hibernate.isInitialized(trackRoot.getInCollections())
+        && !trackRoot.getInCollections().contains(this)) {
+      trackRoot.getInCollections().add(this);
+    }
+  }
+
+  public void removeTrackRoot(TrackRoot trackRoot) {
+    if (trackRoot == null) {
+      return;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    havedTrackRoots.remove(trackRoot);
+    trackRoot.getInCollections().remove(this);
+  }
+
+  public void clearTrackRoots() {
+    for (TrackRoot trackRoot : new HashSet<>(havedTrackRoots)) {
+      trackRoot.getInCollections().remove(this);
+    }
+    havedTrackRoots.clear();
+  }
+
+  public void addChunks(Set<Chunk> chunks) {
+    for (Chunk chunk : chunks) {
+      addChunk(chunk);
+    }
+  }
+
+  public void addChunk(Chunk chunk) {
+    if (chunk == null) {
+      return;
     }
 
-    public String getName() {
-        return name;
+    if (!havedChunks.contains(chunk)) {
+      havedChunks.add(chunk);
     }
 
-    public void setName(String chunkCollectionName) {
-        this.name = chunkCollectionName;
+    if (Hibernate.isInitialized(chunk.getChunkCollections())
+        && !chunk.getChunkCollections().contains(this)) {
+      chunk.getChunkCollections().add(this);
+    }
+  }
+
+  public void removeChunk(Chunk chunk) {
+    if (chunk == null) {
+      return;
     }
 
-    public Set<Chunk> getChunks() {
-        return havedChunks;
+    havedChunks.remove(chunk);
+
+    if (Hibernate.isInitialized(chunk.getChunkCollections())) {
+      chunk.getChunkCollections().remove(this);
     }
+  }
 
-    public Set<TrackRoot> getTrackRoots() {
-        return havedTrackRoots;
+  public void clearChunks() {
+    for (Chunk chunk : new HashSet<>(havedChunks)) {
+      chunk.getChunkCollections().remove(this);
     }
+    havedChunks.clear();
+  }
 
-    public void addTrackRoots(Set<TrackRoot> trackRoots) {
-        for (TrackRoot trackRoot : trackRoots) {
-            addTrackRoot(trackRoot);
-        }
-    }
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof ChunkCollection)) return false;
+    ChunkCollection other = (ChunkCollection) o;
+    return id != null && id.equals(other.id);
+  }
 
-    public void addTrackRoot(TrackRoot trackRoot) {
-        if (trackRoot == null) {
-            return;
-        }
-
-        if (Hibernate.isInitialized(havedTrackRoots) && !havedTrackRoots.contains(trackRoot)) {
-            havedTrackRoots.add(trackRoot);
-        }
-
-        if (Hibernate.isInitialized(trackRoot.getInCollections()) && !trackRoot.getInCollections().contains(this)) {
-            trackRoot.getInCollections().add(this);
-        }
-    }
-
-    public void removeTrackRoot(TrackRoot trackRoot) {
-        if (trackRoot == null) {
-            return;
-        }
-
-        havedTrackRoots.remove(trackRoot);
-        trackRoot.getInCollections().remove(this);
-    }
-
-    public void clearTrackRoots() {
-        for (TrackRoot trackRoot : new HashSet<>(havedTrackRoots)) {
-            trackRoot.getInCollections().remove(this);
-        }
-        havedTrackRoots.clear();
-    }
-
-    public void addChunks(Set<Chunk> chunks) {
-        for (Chunk chunk : chunks) {
-            addChunk(chunk);
-        }
-    }
-
-    public void addChunk(Chunk chunk) {
-        if (chunk == null) {
-            return;
-        }
-
-        if (!havedChunks.contains(chunk)) {
-            havedChunks.add(chunk);
-        }
-
-        if (Hibernate.isInitialized(chunk.getChunkCollections()) && !chunk.getChunkCollections().contains(this)) {
-            chunk.getChunkCollections().add(this);
-        }
-    }
-
-    public void removeChunk(Chunk chunk) {
-        if (chunk == null) {
-            return;
-        }
-
-        havedChunks.remove(chunk);
-
-        if (Hibernate.isInitialized(chunk.getChunkCollections())) {
-            chunk.getChunkCollections().remove(this);
-        }
-    }
-
-    public void clearChunks() {
-        for (Chunk chunk : new HashSet<>(havedChunks)) {
-            chunk.getChunkCollections().remove(this);
-        }
-        havedChunks.clear();
-    }
-
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof ChunkCollection))
-            return false;
-        ChunkCollection other = (ChunkCollection) o;
-        return id != null && id.equals(other.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+  @Override
+  public int hashCode() {
+    return getClass().hashCode();
+  }
 }

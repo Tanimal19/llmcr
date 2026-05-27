@@ -10,7 +10,6 @@ import com.llmcr.domain.exception.APIServiceException.ErrorCode;
 import com.llmcr.feature.sync.source.SourcePreviewService;
 import com.llmcr.feature.sync.source.SourceSyncService;
 import com.llmcr.feature.sync.source.TrackRootPreview;
-
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,58 +24,61 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class SourceSyncServiceIT extends BaseIntegrationTest {
 
-    @Autowired
-    SourceSyncService sourceSyncService;
+  @Autowired SourceSyncService sourceSyncService;
 
-    @MockitoBean
-    SourcePreviewService sourcePreviewService;
+  @MockitoBean SourcePreviewService sourcePreviewService;
 
-    private static final Logger logger = LoggerFactory.getLogger(SourceSyncServiceIT.class);
+  private static final Logger logger = LoggerFactory.getLogger(SourceSyncServiceIT.class);
 
-    @BeforeEach
-    private void setup(TestInfo testInfo) {
-        logger.info("Ready to test: {}", testInfo.getDisplayName());
-    }
+  @BeforeEach
+  private void setup(TestInfo testInfo) {
+    logger.info("Ready to test: {}", testInfo.getDisplayName());
+  }
 
-    @Test
-    @DisplayName("S4-1-1: Successful getAllTrackRootPreview with multiple track roots")
-    void testS4_1_1() {
-        TrackRootPreview preview1 = new TrackRootPreview(1L, "/nonexistent/path/for/test/1", true, null, List.of());
-        TrackRootPreview preview2 = new TrackRootPreview(2L, "/nonexistent/path/for/test/2", true, null, List.of());
-        when(sourcePreviewService.getAllTrackRootPreview()).thenReturn(List.of(preview1, preview2));
+  @Test
+  @DisplayName("S4-1-1: Successful getAllTrackRootPreview with multiple track roots")
+  void testS4_1_1() {
+    TrackRootPreview preview1 =
+        new TrackRootPreview(1L, "/nonexistent/path/for/test/1", true, null, List.of());
+    TrackRootPreview preview2 =
+        new TrackRootPreview(2L, "/nonexistent/path/for/test/2", true, null, List.of());
+    when(sourcePreviewService.getAllTrackRootPreview()).thenReturn(List.of(preview1, preview2));
 
-        List<TrackRootPreview> results = sourceSyncService.getAllTrackRootPreview();
+    List<TrackRootPreview> results = sourceSyncService.getAllTrackRootPreview();
 
-        assertThat(results).hasSize(2);
-        assertThat(results).allSatisfy(preview -> {
-            assertThat(preview).isNotNull();
-            assertThat(preview.isSynced()).isTrue();
-            assertThat(preview.sources()).isEmpty();
-        });
-        verify(sourcePreviewService).getAllTrackRootPreview();
-    }
+    assertThat(results).hasSize(2);
+    assertThat(results)
+        .allSatisfy(
+            preview -> {
+              assertThat(preview).isNotNull();
+              assertThat(preview.isSynced()).isTrue();
+              assertThat(preview.sources()).isEmpty();
+            });
+    verify(sourcePreviewService).getAllTrackRootPreview();
+  }
 
-    @Test
-    @DisplayName("S4-1-2: Successful getAllTrackRootPreview with no track roots")
-    void testS4_1_2() {
-        when(sourcePreviewService.getAllTrackRootPreview()).thenReturn(List.of());
+  @Test
+  @DisplayName("S4-1-2: Successful getAllTrackRootPreview with no track roots")
+  void testS4_1_2() {
+    when(sourcePreviewService.getAllTrackRootPreview()).thenReturn(List.of());
 
-        List<TrackRootPreview> results = sourceSyncService.getAllTrackRootPreview();
+    List<TrackRootPreview> results = sourceSyncService.getAllTrackRootPreview();
 
-        assertThat(results).isEmpty();
-        verify(sourcePreviewService).getAllTrackRootPreview();
-    }
+    assertThat(results).isEmpty();
+    verify(sourcePreviewService).getAllTrackRootPreview();
+  }
 
-    @Test
-    @DisplayName("S4-3-1: Database access fail when calling getAllTrackRootPreview")
-    void testS4_3_1() {
-        when(sourcePreviewService.getAllTrackRootPreview()).thenThrow(new APIServiceException(
-                ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED,
-                "Failed to list track root previews"));
+  @Test
+  @DisplayName("S4-3-1: Database access fail when calling getAllTrackRootPreview")
+  void testS4_3_1() {
+    when(sourcePreviewService.getAllTrackRootPreview())
+        .thenThrow(
+            new APIServiceException(
+                ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED, "Failed to list track root previews"));
 
-        assertThatThrownBy(() -> sourceSyncService.getAllTrackRootPreview())
-                .isInstanceOf(APIServiceException.class)
-                .extracting(e -> ((APIServiceException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED);
-    }
+    assertThatThrownBy(() -> sourceSyncService.getAllTrackRootPreview())
+        .isInstanceOf(APIServiceException.class)
+        .extracting(e -> ((APIServiceException) e).getErrorCode())
+        .isEqualTo(ErrorCode.SOURCE_SYNC_PREVIEW_LIST_FAILED);
+  }
 }

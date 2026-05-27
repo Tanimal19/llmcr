@@ -24,252 +24,236 @@ import org.hibernate.Hibernate;
 @Inheritance(strategy = InheritanceType.JOINED)
 public class Context {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id", nullable = false)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id", nullable = false)
-    private Source source;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "source_id", nullable = false)
+  private Source source;
 
-    /**
-     * The index of the context in the source. This is used to distinguish different
-     * contexts from the same source, and also used to sort the contexts when
-     * retrieving from the database.
-     */
-    @Column(name = "context_index", nullable = false)
-    private Integer contextIndex;
+  /**
+   * The index of the context in the source. This is used to distinguish different contexts from the
+   * same source, and also used to sort the contexts when retrieving from the database.
+   */
+  @Column(name = "context_index", nullable = false)
+  private Integer contextIndex;
 
-    /**
-     * A human-readable name for the context Used when displaying in the UI.
-     */
-    @Column(name = "name", columnDefinition = "TEXT", nullable = false)
-    private String name;
+  /** A human-readable name for the context Used when displaying in the UI. */
+  @Column(name = "name", columnDefinition = "TEXT", nullable = false)
+  private String name;
 
-    /**
-     * The content that actually pass to LLM.
-     */
-    @Column(name = "content", columnDefinition = "LONGTEXT")
-    private String content;
+  /** The content that actually pass to LLM. */
+  @Column(name = "content", columnDefinition = "LONGTEXT")
+  private String content;
 
-    /**
-     * Whether all the chunks of the context have loaded into vector store.
-     */
-    @Column(name = "chunk_loaded", nullable = false)
-    private boolean chunkLoaded = false;
+  /** Whether all the chunks of the context have loaded into vector store. */
+  @Column(name = "chunk_loaded", nullable = false)
+  private boolean chunkLoaded = false;
 
-    /**
-     * Whether the context has been splitted by splitters.
-     */
-    @Column(name = "splitted", nullable = false)
-    private boolean splitted = false;
+  /** Whether the context has been splitted by splitters. */
+  @Column(name = "splitted", nullable = false)
+  private boolean splitted = false;
 
-    /**
-     * Whether the context has been transformed by enrichers.
-     */
-    @Column(name = "enriched", nullable = false)
-    private boolean enriched = false;
+  /** Whether the context has been transformed by enrichers. */
+  @Column(name = "enriched", nullable = false)
+  private boolean enriched = false;
 
-    /**
-     * The type of the context, which is used to determine how to split / enrich the
-     * context.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 32)
-    private ContextType type;
+  /** The type of the context, which is used to determine how to split / enrich the context. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "type", nullable = false, length = 32)
+  private ContextType type;
 
-    /**
-     * A set of chunk that represent the context in vector store. This is used for
-     * retrieval-augmented generation (RAG).
-     */
-    @OneToMany(mappedBy = "context", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Chunk> chunks = new HashSet<>();
+  /**
+   * A set of chunk that represent the context in vector store. This is used for retrieval-augmented
+   * generation (RAG).
+   */
+  @OneToMany(mappedBy = "context", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<Chunk> chunks = new HashSet<>();
 
-    /**
-     * Current number of chunks attached to this context.
-     */
-    @Column(name = "chunk_count", nullable = false)
-    private Integer chunkCount = 0;
+  /** Current number of chunks attached to this context. */
+  @Column(name = "chunk_count", nullable = false)
+  private Integer chunkCount = 0;
 
-    public enum ContextType {
-        CLASSNODE,
-        DOCUMENT,
-        USECASE,
-        TOOLDEF,
+  public enum ContextType {
+    CLASSNODE,
+    DOCUMENT,
+    USECASE,
+    TOOLDEF,
+  }
+
+  protected Context() {}
+
+  public Context(
+      Source source, Integer contextIndex, String name, String content, ContextType type) {
+    setSource(source);
+    this.contextIndex = contextIndex;
+    this.name = name;
+    this.content = content;
+    this.type = type;
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public Source getSource() {
+    return source;
+  }
+
+  // package-private to prevent external call
+  void setSource(Source source) {
+    if (this.source == source) {
+      return;
     }
 
-    protected Context() {
+    Source oldSource = this.source;
+    this.source = null;
+    if (oldSource != null) {
+      oldSource.removeContext(this);
     }
 
-    public Context(Source source, Integer contextIndex, String name, String content, ContextType type) {
-        setSource(source);
-        this.contextIndex = contextIndex;
-        this.name = name;
-        this.content = content;
-        this.type = type;
+    this.source = source;
+    if (source != null
+        && Hibernate.isInitialized(source.getContexts())
+        && !source.getContexts().contains(this)) {
+      source.getContexts().add(this);
+    }
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String contextName) {
+    this.name = contextName;
+  }
+
+  public String getContent() {
+    return content;
+  }
+
+  public void setContent(String content) {
+    this.content = content;
+  }
+
+  public boolean isChunkLoaded() {
+    return chunkLoaded;
+  }
+
+  public void setChunkLoaded(boolean chunkLoaded) {
+    this.chunkLoaded = chunkLoaded;
+  }
+
+  public boolean isSplitted() {
+    return splitted;
+  }
+
+  public void setSplitted(boolean splitted) {
+    this.splitted = splitted;
+  }
+
+  public boolean isEnriched() {
+    return enriched;
+  }
+
+  public void setEnriched(boolean enriched) {
+    this.enriched = enriched;
+  }
+
+  public Integer getContextIndex() {
+    return contextIndex;
+  }
+
+  public void setContextIndex(Integer contextIndex) {
+    this.contextIndex = contextIndex;
+  }
+
+  public ContextType getType() {
+    return type;
+  }
+
+  public void setType(ContextType type) {
+    this.type = type;
+  }
+
+  public Set<Chunk> getChunks() {
+    return chunks;
+  }
+
+  public void setChunks(Set<Chunk> chunks) {
+    if (Hibernate.isInitialized(this.chunks)) {
+      Set<Chunk> currentChunks = new HashSet<>(this.chunks);
+      for (Chunk chunk : currentChunks) {
+        removeChunk(chunk);
+      }
     }
 
-    public Long getId() {
-        return id;
+    if (chunks == null) {
+      return;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    for (Chunk chunk : chunks) {
+      addChunk(chunk);
+    }
+  }
+
+  public void addChunk(Chunk chunk) {
+    if (chunk == null) {
+      return;
     }
 
-    public Source getSource() {
-        return source;
+    if (!chunks.contains(chunk)) {
+      chunks.add(chunk);
+      chunkCount++;
+
+      if (chunk.getChunkIndex() == null) {
+        chunk.setChunkIndex(chunkCount);
+      }
+      if (chunk.getContext() != this) {
+        chunk.setContext(this);
+      }
+    }
+  }
+
+  public void removeChunk(Chunk chunk) {
+    if (chunk == null) {
+      return;
     }
 
-    // package-private to prevent external call
-    void setSource(Source source) {
-        if (this.source == source) {
-            return;
-        }
-
-        Source oldSource = this.source;
-        this.source = null;
-        if (oldSource != null) {
-            oldSource.removeContext(this);
-        }
-
-        this.source = source;
-        if (source != null && Hibernate.isInitialized(source.getContexts()) && !source.getContexts().contains(this)) {
-            source.getContexts().add(this);
-        }
+    boolean removed = chunks.remove(chunk);
+    if (removed && chunkCount > 0) {
+      chunkCount--;
     }
 
-    public String getName() {
-        return name;
+    if (chunk.getContext() == this) {
+      chunk.setContext(null);
     }
+  }
 
-    public void setName(String contextName) {
-        this.name = contextName;
-    }
+  public Integer getChunkCount() {
+    return chunkCount;
+  }
 
-    public String getContent() {
-        return content;
-    }
+  public void setChunkCount(Integer chunkCount) {
+    this.chunkCount = chunkCount == null ? 0 : chunkCount;
+  }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Context)) return false;
+    Context other = (Context) o;
+    return id != null && id.equals(other.id);
+  }
 
-    public boolean isChunkLoaded() {
-        return chunkLoaded;
-    }
-
-    public void setChunkLoaded(boolean chunkLoaded) {
-        this.chunkLoaded = chunkLoaded;
-    }
-
-    public boolean isSplitted() {
-        return splitted;
-    }
-
-    public void setSplitted(boolean splitted) {
-        this.splitted = splitted;
-    }
-
-    public boolean isEnriched() {
-        return enriched;
-    }
-
-    public void setEnriched(boolean enriched) {
-        this.enriched = enriched;
-    }
-
-    public Integer getContextIndex() {
-        return contextIndex;
-    }
-
-    public void setContextIndex(Integer contextIndex) {
-        this.contextIndex = contextIndex;
-    }
-
-    public ContextType getType() {
-        return type;
-    }
-
-    public void setType(ContextType type) {
-        this.type = type;
-    }
-
-    public Set<Chunk> getChunks() {
-        return chunks;
-    }
-
-    public void setChunks(Set<Chunk> chunks) {
-        if (Hibernate.isInitialized(this.chunks)) {
-            Set<Chunk> currentChunks = new HashSet<>(this.chunks);
-            for (Chunk chunk : currentChunks) {
-                removeChunk(chunk);
-            }
-        }
-
-        if (chunks == null) {
-            return;
-        }
-
-        for (Chunk chunk : chunks) {
-            addChunk(chunk);
-        }
-    }
-
-    public void addChunk(Chunk chunk) {
-        if (chunk == null) {
-            return;
-        }
-
-        if (!chunks.contains(chunk)) {
-            chunks.add(chunk);
-            chunkCount++;
-
-            if (chunk.getChunkIndex() == null) {
-                chunk.setChunkIndex(chunkCount);
-            }
-            if (chunk.getContext() != this) {
-                chunk.setContext(this);
-            }
-        }
-    }
-
-    public void removeChunk(Chunk chunk) {
-        if (chunk == null) {
-            return;
-        }
-
-        boolean removed = chunks.remove(chunk);
-        if (removed && chunkCount > 0) {
-            chunkCount--;
-        }
-
-        if (chunk.getContext() == this) {
-            chunk.setContext(null);
-        }
-    }
-
-    public Integer getChunkCount() {
-        return chunkCount;
-    }
-
-    public void setChunkCount(Integer chunkCount) {
-        this.chunkCount = chunkCount == null ? 0 : chunkCount;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof Context))
-            return false;
-        Context other = (Context) o;
-        return id != null && id.equals(other.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+  @Override
+  public int hashCode() {
+    return getClass().hashCode();
+  }
 }

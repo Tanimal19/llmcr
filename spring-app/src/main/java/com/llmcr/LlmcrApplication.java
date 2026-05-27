@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class LlmcrApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(LlmcrApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(LlmcrApplication.class, args);
+  }
 }

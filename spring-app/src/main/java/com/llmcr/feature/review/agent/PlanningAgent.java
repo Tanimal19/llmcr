@@ -9,25 +9,23 @@ import com.llmcr.infrastructure.rag.ContextScorePair;
 import com.llmcr.infrastructure.rag.QueryContextRetriever;
 import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalConfig;
 import com.llmcr.infrastructure.rag.QueryContextRetriever.QueryContextRetrievalRequest;
-
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PlanningAgent
-        extends SingleCallAgent<PlanningAgent.PlanningAgentInput, PlanningAgent.PlanningAgentOutput> {
+    extends SingleCallAgent<PlanningAgent.PlanningAgentInput, PlanningAgent.PlanningAgentOutput> {
 
-    public record PlanningAgentInput(
-            List<CodeChange> codeChanges,
-            InterpretationContent codeInterpretation,
-            String codeAnalysis) {
-    }
+  public record PlanningAgentInput(
+      List<CodeChange> codeChanges,
+      InterpretationContent codeInterpretation,
+      String codeAnalysis) {}
 
-    public record PlanningAgentOutput(String innerThought, List<String> checklistItems) {
-    }
+  public record PlanningAgentOutput(String innerThought, List<String> checklistItems) {}
 
-    private static final String SYSTEM_PROMPT = """
+  private static final String SYSTEM_PROMPT =
+      """
             You are now a software engineer experienced at Java and Spring Framework.
 
             Your task is to generate a checklist for code review. Here are aspects you should consider, including but not limited to:
@@ -46,7 +44,8 @@ public class PlanningAgent
             Think step by step internally before answering.
             """;
 
-    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
+  private static final String INITIAL_USER_MESSAGE_TEMPLATE =
+      """
             Below is the code change:
             <code_changes>
 
@@ -62,73 +61,76 @@ public class PlanningAgent
             <format_instructions>
             """;
 
-    private static final String AGENT_NAME = "planning";
-    private static final int RETRIEVAL_TOP_K = 10;
-    private final QueryContextRetrievalConfig retrievalConfig;
-    private final QueryContextRetriever retriever;
+  private static final String AGENT_NAME = "planning";
+  private static final int RETRIEVAL_TOP_K = 10;
+  private final QueryContextRetrievalConfig retrievalConfig;
+  private final QueryContextRetriever retriever;
 
-    public PlanningAgent(
-            AgentConfigProvider configProvider,
-            ModelClientFactory modelClientFactory,
-            QueryContextRetriever retriever) {
-        super(configProvider, modelClientFactory);
+  public PlanningAgent(
+      AgentConfigProvider configProvider,
+      ModelClientFactory modelClientFactory,
+      QueryContextRetriever retriever) {
+    super(configProvider, modelClientFactory);
 
-        this.retrievalConfig = new QueryContextRetrievalConfig(
-                configProvider.getAgentCollectionConfig(AGENT_NAME), RETRIEVAL_TOP_K);
-        this.retriever = retriever;
-    }
+    this.retrievalConfig =
+        new QueryContextRetrievalConfig(
+            configProvider.getAgentCollectionConfig(AGENT_NAME), RETRIEVAL_TOP_K);
+    this.retriever = retriever;
+  }
 
-    @Override
-    protected String getAgentName() {
-        return AGENT_NAME;
-    }
+  @Override
+  protected String getAgentName() {
+    return AGENT_NAME;
+  }
 
-    @Override
-    protected Class<PlanningAgentOutput> getOutputClass() {
-        return PlanningAgentOutput.class;
-    }
+  @Override
+  protected Class<PlanningAgentOutput> getOutputClass() {
+    return PlanningAgentOutput.class;
+  }
 
-    @Override
-    protected String getSystemMessage() {
-        return SYSTEM_PROMPT;
-    }
+  @Override
+  protected String getSystemMessage() {
+    return SYSTEM_PROMPT;
+  }
 
-    @Override
-    protected String getInitialUserMessageTemplate() {
-        return INITIAL_USER_MESSAGE_TEMPLATE;
-    }
+  @Override
+  protected String getInitialUserMessageTemplate() {
+    return INITIAL_USER_MESSAGE_TEMPLATE;
+  }
 
-    @Override
-    protected Map<String, Object> buildInputVariables(PlanningAgentInput input) {
-        String codeChangesText = String.join(
-                "\n----\n",
-                input
-                        .codeChanges()
-                        .stream()
-                        .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
-                        .toList());
+  @Override
+  protected Map<String, Object> buildInputVariables(PlanningAgentInput input) {
+    String codeChangesText =
+        String.join(
+            "\n----\n",
+            input.codeChanges().stream()
+                .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
+                .toList());
 
-        InterpretationContent interpretation = input.codeInterpretation();
-        String descriptionText = interpretation.changeMotivation() + "\n" + interpretation.changeDescription();
-        String contextText = retrieveContext(input, descriptionText);
+    InterpretationContent interpretation = input.codeInterpretation();
+    String descriptionText =
+        interpretation.changeMotivation() + "\n" + interpretation.changeDescription();
+    String contextText = retrieveContext(input, descriptionText);
 
-        return Map.of(
-                "code_changes",
-                codeChangesText,
-                "change_description",
-                descriptionText,
-                "code_analysis",
-                input.codeAnalysis() != null ? input.codeAnalysis() : "(not available)",
-                "context",
-                contextText);
-    }
+    return Map.of(
+        "code_changes",
+        codeChangesText,
+        "change_description",
+        descriptionText,
+        "code_analysis",
+        input.codeAnalysis() != null ? input.codeAnalysis() : "(not available)",
+        "context",
+        contextText);
+  }
 
-    private String retrieveContext(PlanningAgentInput input, String descriptionText) {
-        List<String> queries = java.util.stream.Stream.of(descriptionText, input.codeAnalysis())
-                .filter(q -> q != null && !q.isBlank())
-                .toList();
-        List<ContextScorePair> retrievedContexts = retriever.retrieve(
-                new QueryContextRetrievalRequest(queries, retrievalConfig));
-        return String.join("\n---\n", retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
-    }
+  private String retrieveContext(PlanningAgentInput input, String descriptionText) {
+    List<String> queries =
+        java.util.stream.Stream.of(descriptionText, input.codeAnalysis())
+            .filter(q -> q != null && !q.isBlank())
+            .toList();
+    List<ContextScorePair> retrievedContexts =
+        retriever.retrieve(new QueryContextRetrievalRequest(queries, retrievalConfig));
+    return String.join(
+        "\n---\n", retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
+  }
 }

@@ -1,10 +1,9 @@
 package com.llmcr.feature.sync.etl.extractor;
 
 import com.llmcr.domain.entity.Context;
-import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.entity.Context.ContextType;
+import com.llmcr.domain.entity.Source;
 import com.llmcr.feature.sync.etl.reader.AsciiDocumentReader;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
@@ -23,111 +22,115 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocumentParagraphExtractor implements SourceExtractor {
 
-    private static final Logger logger = LoggerFactory.getLogger(DocumentParagraphExtractor.class);
+  private static final Logger logger = LoggerFactory.getLogger(DocumentParagraphExtractor.class);
 
-    @Override
-    public boolean supports(Source source) {
-        return (source.getType() == Source.SourceType.PDF ||
-                source.getType() == Source.SourceType.MARKDOWN ||
-                source.getType() == Source.SourceType.ASCIIDOC);
+  @Override
+  public boolean supports(Source source) {
+    return (source.getType() == Source.SourceType.PDF
+        || source.getType() == Source.SourceType.MARKDOWN
+        || source.getType() == Source.SourceType.ASCIIDOC);
+  }
+
+  @Override
+  public List<Context> apply(Source source) {
+    List<Document> docs;
+
+    if (source.getType() == Source.SourceType.PDF) {
+      docs = readPdfWithFallback(source);
+    } else {
+      DocumentReader reader = getReader(source);
+      docs = reader.read();
     }
 
-    @Override
-    public List<Context> apply(Source source) {
-        List<Document> docs;
+    AtomicInteger blockIndex = new AtomicInteger(0);
 
-        if (source.getType() == Source.SourceType.PDF) {
-            docs = readPdfWithFallback(source);
-        } else {
-            DocumentReader reader = getReader(source);
-            docs = reader.read();
-        }
+    return docs.stream()
+        .map(
+            doc ->
+                new Context(
+                    source,
+                    blockIndex.getAndIncrement(),
+                    "Paragraph::" + source.getPath() + "::" + blockIndex.get(),
+                    doc.getText(),
+                    ContextType.DOCUMENT))
+        .toList();
+  }
 
-        AtomicInteger blockIndex = new AtomicInteger(0);
-
-        return docs
-                .stream()
-                .map(doc -> new Context(
-                        source,
-                        blockIndex.getAndIncrement(),
-                        "Paragraph::" + source.getPath() + "::" + blockIndex.get(),
-                        doc.getText(),
-                        ContextType.DOCUMENT))
-                .toList();
+  private List<Document> readPdfWithFallback(Source source) {
+    try {
+      logger.info("Attempting to read PDF with ParagraphPdfDocumentReader: {}", source.getPath());
+      DocumentReader reader = createParagraphPdfReader(source);
+      return reader.read();
+    } catch (IllegalArgumentException e) {
+      if (e.getMessage() != null && e.getMessage().contains("table of contents")) {
+        logger.warn(
+            "ParagraphPdfDocumentReader failed due to missing TOC, falling back to PagePdfDocumentReader: {}",
+            source.getPath());
+        DocumentReader fallbackReader = createPagePdfReader(source);
+        return fallbackReader.read();
+      }
+      throw e;
+    } catch (Exception e) {
+      logger.warn(
+          "ParagraphPdfDocumentReader failed, falling back to PagePdfDocumentReader: {} - Error: {}",
+          source.getPath(),
+          e.getMessage());
+      try {
+        DocumentReader fallbackReader = createPagePdfReader(source);
+        return fallbackReader.read();
+      } catch (Exception fallbackException) {
+        logger.error(
+            "Both ParagraphPdfDocumentReader and PagePdfDocumentReader failed for: {}",
+            source.getPath(),
+            fallbackException);
+        throw new RuntimeException("Failed to read PDF with both readers", fallbackException);
+      }
     }
+  }
 
-    private List<Document> readPdfWithFallback(Source source) {
-        try {
-            logger.info("Attempting to read PDF with ParagraphPdfDocumentReader: {}", source.getPath());
-            DocumentReader reader = createParagraphPdfReader(source);
-            return reader.read();
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage() != null && e.getMessage().contains("table of contents")) {
-                logger.warn(
-                        "ParagraphPdfDocumentReader failed due to missing TOC, falling back to PagePdfDocumentReader: {}",
-                        source.getPath());
-                DocumentReader fallbackReader = createPagePdfReader(source);
-                return fallbackReader.read();
-            }
-            throw e;
-        } catch (Exception e) {
-            logger.warn(
-                    "ParagraphPdfDocumentReader failed, falling back to PagePdfDocumentReader: {} - Error: {}",
-                    source.getPath(),
-                    e.getMessage());
-            try {
-                DocumentReader fallbackReader = createPagePdfReader(source);
-                return fallbackReader.read();
-            } catch (Exception fallbackException) {
-                logger.error(
-                        "Both ParagraphPdfDocumentReader and PagePdfDocumentReader failed for: {}",
-                        source.getPath(),
-                        fallbackException);
-                throw new RuntimeException("Failed to read PDF with both readers", fallbackException);
-            }
-        }
-    }
+  private DocumentReader createParagraphPdfReader(Source source) {
+    PdfDocumentReaderConfig config =
+        PdfDocumentReaderConfig.builder()
+            .withPageTopMargin(0)
+            .withPageExtractedTextFormatter(
+                ExtractedTextFormatter.builder()
+                    .withNumberOfTopTextLinesToDelete(3)
+                    .withNumberOfBottomTextLinesToDelete(3)
+                    .withLeftAlignment(true)
+                    .build())
+            .withPagesPerDocument(1)
+            .build();
+    return new ParagraphPdfDocumentReader(new FileSystemResource(source.getPath()), config);
+  }
 
-    private DocumentReader createParagraphPdfReader(Source source) {
-        PdfDocumentReaderConfig config = PdfDocumentReaderConfig.builder()
-                .withPageTopMargin(0)
-                .withPageExtractedTextFormatter(
-                        ExtractedTextFormatter.builder()
-                                .withNumberOfTopTextLinesToDelete(3)
-                                .withNumberOfBottomTextLinesToDelete(3)
-                                .withLeftAlignment(true)
-                                .build())
-                .withPagesPerDocument(1)
-                .build();
-        return new ParagraphPdfDocumentReader(new FileSystemResource(source.getPath()), config);
-    }
+  private DocumentReader createPagePdfReader(Source source) {
+    PdfDocumentReaderConfig config =
+        PdfDocumentReaderConfig.builder()
+            .withPageTopMargin(0)
+            .withPageExtractedTextFormatter(
+                ExtractedTextFormatter.builder()
+                    .withNumberOfTopTextLinesToDelete(3)
+                    .withNumberOfBottomTextLinesToDelete(3)
+                    .withLeftAlignment(true)
+                    .build())
+            .withPagesPerDocument(1)
+            .build();
+    return new PagePdfDocumentReader(new FileSystemResource(source.getPath()), config);
+  }
 
-    private DocumentReader createPagePdfReader(Source source) {
-        PdfDocumentReaderConfig config = PdfDocumentReaderConfig.builder()
-                .withPageTopMargin(0)
-                .withPageExtractedTextFormatter(
-                        ExtractedTextFormatter.builder()
-                                .withNumberOfTopTextLinesToDelete(3)
-                                .withNumberOfBottomTextLinesToDelete(3)
-                                .withLeftAlignment(true)
-                                .build())
-                .withPagesPerDocument(1)
-                .build();
-        return new PagePdfDocumentReader(new FileSystemResource(source.getPath()), config);
+  private DocumentReader getReader(Source source) {
+    if (source.getType() == Source.SourceType.MARKDOWN) {
+      MarkdownDocumentReaderConfig config =
+          MarkdownDocumentReaderConfig.builder()
+              .withHorizontalRuleCreateDocument(true)
+              .withIncludeCodeBlock(false)
+              .withIncludeBlockquote(false)
+              .build();
+      return new MarkdownDocumentReader(new FileSystemResource(source.getPath()), config);
+    } else if (source.getType() == Source.SourceType.ASCIIDOC) {
+      return new AsciiDocumentReader(source.getPath());
+    } else {
+      throw new IllegalArgumentException("Unsupported source type: " + source.getType());
     }
-
-    private DocumentReader getReader(Source source) {
-        if (source.getType() == Source.SourceType.MARKDOWN) {
-            MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
-                    .withHorizontalRuleCreateDocument(true)
-                    .withIncludeCodeBlock(false)
-                    .withIncludeBlockquote(false)
-                    .build();
-            return new MarkdownDocumentReader(new FileSystemResource(source.getPath()), config);
-        } else if (source.getType() == Source.SourceType.ASCIIDOC) {
-            return new AsciiDocumentReader(source.getPath());
-        } else {
-            throw new IllegalArgumentException("Unsupported source type: " + source.getType());
-        }
-    }
+  }
 }

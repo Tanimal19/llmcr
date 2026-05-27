@@ -7,107 +7,109 @@ import java.util.function.Consumer;
 
 public final class AgentContextHolder {
 
-    private static final ThreadLocal<Deque<AgentCallContext>> CONTEXT_STACK = ThreadLocal.withInitial(ArrayDeque::new);
-    private static final ThreadLocal<Deque<Integer>> ITERATION_MARKERS = ThreadLocal.withInitial(ArrayDeque::new);
-    private static final ThreadLocal<Deque<AgentCallContext>> ITERATION_STACK = ThreadLocal
-            .withInitial(ArrayDeque::new);
-    private static final AtomicReference<Consumer<AgentCallContext>> onContextFinished = new AtomicReference<>();
+  private static final ThreadLocal<Deque<AgentCallContext>> CONTEXT_STACK =
+      ThreadLocal.withInitial(ArrayDeque::new);
+  private static final ThreadLocal<Deque<Integer>> ITERATION_MARKERS =
+      ThreadLocal.withInitial(ArrayDeque::new);
+  private static final ThreadLocal<Deque<AgentCallContext>> ITERATION_STACK =
+      ThreadLocal.withInitial(ArrayDeque::new);
+  private static final AtomicReference<Consumer<AgentCallContext>> onContextFinished =
+      new AtomicReference<>();
 
-    private AgentContextHolder() {
+  private AgentContextHolder() {}
+
+  public static void setOnContextFinished(Consumer<AgentCallContext> callback) {
+    onContextFinished.set(callback);
+  }
+
+  public static void beginContext(String agentName, String modelName) {
+    AgentCallContext entry = new AgentCallContext();
+    entry.agentName = agentName;
+    entry.modelName = modelName;
+    entry.startedAt = System.currentTimeMillis();
+    CONTEXT_STACK.get().push(entry);
+    ITERATION_MARKERS.get().push(ITERATION_STACK.get().size());
+  }
+
+  public static AgentCallContext endContext() {
+    Deque<AgentCallContext> contextStack = CONTEXT_STACK.get();
+    if (contextStack.isEmpty()) {
+      return null;
     }
 
-    public static void setOnContextFinished(Consumer<AgentCallContext> callback) {
-        onContextFinished.set(callback);
+    AgentCallContext finished = contextStack.pop();
+    finished.finish();
+
+    AgentCallContext parent = contextStack.peek();
+    if (parent != null) {
+      parent.addIteration(finished);
     }
 
-    public static void beginContext(String agentName, String modelName) {
-        AgentCallContext entry = new AgentCallContext();
-        entry.agentName = agentName;
-        entry.modelName = modelName;
-        entry.startedAt = System.currentTimeMillis();
-        CONTEXT_STACK.get().push(entry);
-        ITERATION_MARKERS.get().push(ITERATION_STACK.get().size());
+    Deque<Integer> iterationMarkers = ITERATION_MARKERS.get();
+    if (!iterationMarkers.isEmpty()) {
+      int targetDepth = iterationMarkers.pop();
+      Deque<AgentCallContext> iterationStack = ITERATION_STACK.get();
+      while (iterationStack.size() > targetDepth) {
+        iterationStack.pop();
+      }
     }
 
-    public static AgentCallContext endContext() {
-        Deque<AgentCallContext> contextStack = CONTEXT_STACK.get();
-        if (contextStack.isEmpty()) {
-            return null;
-        }
-
-        AgentCallContext finished = contextStack.pop();
-        finished.finish();
-
-        AgentCallContext parent = contextStack.peek();
-        if (parent != null) {
-            parent.addIteration(finished);
-        }
-
-        Deque<Integer> iterationMarkers = ITERATION_MARKERS.get();
-        if (!iterationMarkers.isEmpty()) {
-            int targetDepth = iterationMarkers.pop();
-            Deque<AgentCallContext> iterationStack = ITERATION_STACK.get();
-            while (iterationStack.size() > targetDepth) {
-                iterationStack.pop();
-            }
-        }
-
-        // If this is the outermost context completion, trigger callback
-        boolean isOutermostContext = contextStack.isEmpty();
-        Consumer<AgentCallContext> callback = onContextFinished.get();
-        if (isOutermostContext && callback != null) {
-            callback.accept(finished);
-        }
-
-        cleanupIfEmpty();
-        return finished;
+    // If this is the outermost context completion, trigger callback
+    boolean isOutermostContext = contextStack.isEmpty();
+    Consumer<AgentCallContext> callback = onContextFinished.get();
+    if (isOutermostContext && callback != null) {
+      callback.accept(finished);
     }
 
-    public static AgentCallContext currentContext() {
-        return CONTEXT_STACK.get().peek();
+    cleanupIfEmpty();
+    return finished;
+  }
+
+  public static AgentCallContext currentContext() {
+    return CONTEXT_STACK.get().peek();
+  }
+
+  public static void beginIteration(Object input) {
+    AgentCallContext currentContext = currentContext();
+    if (currentContext == null) {
+      return;
     }
 
-    public static void beginIteration(Object input) {
-        AgentCallContext currentContext = currentContext();
-        if (currentContext == null) {
-            return;
-        }
+    AgentCallContext iteration = new AgentCallContext();
+    iteration.agentName = currentContext.agentName;
+    iteration.modelName = currentContext.modelName;
+    iteration.input = input;
+    iteration.startedAt = System.currentTimeMillis();
+    ITERATION_STACK.get().push(iteration);
+  }
 
-        AgentCallContext iteration = new AgentCallContext();
-        iteration.agentName = currentContext.agentName;
-        iteration.modelName = currentContext.modelName;
-        iteration.input = input;
-        iteration.startedAt = System.currentTimeMillis();
-        ITERATION_STACK.get().push(iteration);
+  public static void completeIteration(Object output) {
+    Deque<AgentCallContext> iterationStack = ITERATION_STACK.get();
+    if (iterationStack.isEmpty()) {
+      return;
     }
 
-    public static void completeIteration(Object output) {
-        Deque<AgentCallContext> iterationStack = ITERATION_STACK.get();
-        if (iterationStack.isEmpty()) {
-            return;
-        }
+    AgentCallContext iteration = iterationStack.pop();
+    iteration.output = output;
+    iteration.finish();
 
-        AgentCallContext iteration = iterationStack.pop();
-        iteration.output = output;
-        iteration.finish();
-
-        AgentCallContext currentContext = currentContext();
-        if (currentContext != null) {
-            currentContext.addIteration(iteration);
-        }
-
-        cleanupIfEmpty();
+    AgentCallContext currentContext = currentContext();
+    if (currentContext != null) {
+      currentContext.addIteration(iteration);
     }
 
-    private static void cleanupIfEmpty() {
-        if (CONTEXT_STACK.get().isEmpty()) {
-            CONTEXT_STACK.remove();
-        }
-        if (ITERATION_MARKERS.get().isEmpty()) {
-            ITERATION_MARKERS.remove();
-        }
-        if (ITERATION_STACK.get().isEmpty()) {
-            ITERATION_STACK.remove();
-        }
+    cleanupIfEmpty();
+  }
+
+  private static void cleanupIfEmpty() {
+    if (CONTEXT_STACK.get().isEmpty()) {
+      CONTEXT_STACK.remove();
     }
+    if (ITERATION_MARKERS.get().isEmpty()) {
+      ITERATION_MARKERS.remove();
+    }
+    if (ITERATION_STACK.get().isEmpty()) {
+      ITERATION_STACK.remove();
+    }
+  }
 }

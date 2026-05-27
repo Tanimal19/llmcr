@@ -118,6 +118,13 @@ $ npm link
 $ llmcr
 ```
 
+
+# Static Analysis Tools
+```
+pmd check -f xml -R <config> -d <source>
+java -jar checkstyle.jar -c /google_checks.xml -f xml <source>
+```
+
 # Datasets used
 [Download Datasets](https://drive.google.com/file/d/1N2ZCtnLa7jt6w4i-FOr_kE1YLtJBT6FY/view?usp=drive_link)
 

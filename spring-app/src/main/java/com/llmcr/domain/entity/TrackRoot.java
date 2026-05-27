@@ -2,7 +2,6 @@ package com.llmcr.domain.entity;
 
 import com.llmcr.domain.entity.Source.SourceType;
 import com.llmcr.domain.util.PathUtils;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -30,132 +29,136 @@ import org.hibernate.Hibernate;
 @Table(name = "track_root")
 public class TrackRoot {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, unique = true, length = 1024)
-    private String path;
+  @Column(nullable = false, unique = true, length = 1024)
+  private String path;
 
-    @Column(name = "last_sync_time")
-    private LocalDateTime lastSyncTime;
+  @Column(name = "last_sync_time")
+  private LocalDateTime lastSyncTime;
 
-    /**
-     * Allowed source types for this track root. Source others than these types will
-     * be ignored when refreshing sources for this track root.
-     */
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "track_root_allowed_source_types", joinColumns = @JoinColumn(name = "track_root_id"))
-    @Column(name = "source_type", nullable = false, length = 32)
-    @Enumerated(EnumType.STRING)
-    private Set<SourceType> allowedSourceTypes = new HashSet<>();
+  /**
+   * Allowed source types for this track root. Source others than these types will be ignored when
+   * refreshing sources for this track root.
+   */
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(
+      name = "track_root_allowed_source_types",
+      joinColumns = @JoinColumn(name = "track_root_id"))
+  @Column(name = "source_type", nullable = false, length = 32)
+  @Enumerated(EnumType.STRING)
+  private Set<SourceType> allowedSourceTypes = new HashSet<>();
 
-    /**
-     * The desinated collections that the chunks from this track root should be
-     * loaded into. If empty, it will be loaded into all collections.
-     */
-    @ManyToMany(mappedBy = "havedTrackRoots")
-    private Set<ChunkCollection> inCollections = new HashSet<>();
+  /**
+   * The desinated collections that the chunks from this track root should be loaded into. If empty,
+   * it will be loaded into all collections.
+   */
+  @ManyToMany(mappedBy = "havedTrackRoots")
+  private Set<ChunkCollection> inCollections = new HashSet<>();
 
-    /**
-     * The sources under this track root.
-     */
-    @OneToMany(mappedBy = "trackRoot", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Source> sources = new ArrayList<>();
+  /** The sources under this track root. */
+  @OneToMany(
+      mappedBy = "trackRoot",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  private List<Source> sources = new ArrayList<>();
 
-    protected TrackRoot() {
+  protected TrackRoot() {}
+
+  public TrackRoot(String path, Set<SourceType> allowedSourceTypes) {
+    this.path = PathUtils.toRelativePath(path);
+    this.allowedSourceTypes = allowedSourceTypes;
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public String getPath() {
+    return path;
+  }
+
+  public void setPath(String path) {
+    this.path = path;
+  }
+
+  public LocalDateTime getLastSyncTime() {
+    return lastSyncTime;
+  }
+
+  public void setLastSyncTime(LocalDateTime lastSyncTime) {
+    this.lastSyncTime = lastSyncTime;
+  }
+
+  public Set<SourceType> getAllowedSourceTypes() {
+    return allowedSourceTypes;
+  }
+
+  public void setAllowedSourceTypes(Set<SourceType> allowedSourceTypes) {
+    this.allowedSourceTypes =
+        allowedSourceTypes == null ? new HashSet<>() : new HashSet<>(allowedSourceTypes);
+  }
+
+  public Set<ChunkCollection> getInCollections() {
+    return inCollections;
+  }
+
+  public List<Source> getSources() {
+    return sources;
+  }
+
+  public void setSources(List<Source> sources) {
+    if (Hibernate.isInitialized(this.sources)) {
+      List<Source> currentSources = new ArrayList<>(this.sources);
+      for (Source source : currentSources) {
+        removeSource(source);
+      }
     }
 
-    public TrackRoot(String path, Set<SourceType> allowedSourceTypes) {
-        this.path = PathUtils.toRelativePath(path);
-        this.allowedSourceTypes = allowedSourceTypes;
+    if (sources == null) {
+      return;
     }
 
-    public Long getId() {
-        return id;
+    for (Source source : sources) {
+      addSource(source);
+    }
+  }
+
+  public void addSource(Source source) {
+    if (source == null) {
+      return;
     }
 
-    public String getPath() {
-        return path;
+    if (Hibernate.isInitialized(sources) && !sources.contains(source)) {
+      sources.add(source);
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    if (source.getTrackRoot() != this) {
+      source.setTrackRoot(this);
+    }
+  }
+
+  public void removeSource(Source source) {
+    if (source == null) {
+      return;
     }
 
-    public LocalDateTime getLastSyncTime() {
-        return lastSyncTime;
+    if (Hibernate.isInitialized(sources)) {
+      sources.remove(source);
     }
 
-    public void setLastSyncTime(LocalDateTime lastSyncTime) {
-        this.lastSyncTime = lastSyncTime;
+    if (source.getTrackRoot() == this) {
+      source.setTrackRoot(null);
     }
+  }
 
-    public Set<SourceType> getAllowedSourceTypes() {
-        return allowedSourceTypes;
+  @PreRemove
+  private void preRemove() {
+    for (ChunkCollection collection : new HashSet<>(inCollections)) {
+      collection.removeTrackRoot(this);
     }
-
-    public void setAllowedSourceTypes(Set<SourceType> allowedSourceTypes) {
-        this.allowedSourceTypes = allowedSourceTypes == null ? new HashSet<>() : new HashSet<>(allowedSourceTypes);
-    }
-
-    public Set<ChunkCollection> getInCollections() {
-        return inCollections;
-    }
-
-    public List<Source> getSources() {
-        return sources;
-    }
-
-    public void setSources(List<Source> sources) {
-        if (Hibernate.isInitialized(this.sources)) {
-            List<Source> currentSources = new ArrayList<>(this.sources);
-            for (Source source : currentSources) {
-                removeSource(source);
-            }
-        }
-
-        if (sources == null) {
-            return;
-        }
-
-        for (Source source : sources) {
-            addSource(source);
-        }
-    }
-
-    public void addSource(Source source) {
-        if (source == null) {
-            return;
-        }
-
-        if (Hibernate.isInitialized(sources) && !sources.contains(source)) {
-            sources.add(source);
-        }
-
-        if (source.getTrackRoot() != this) {
-            source.setTrackRoot(this);
-        }
-    }
-
-    public void removeSource(Source source) {
-        if (source == null) {
-            return;
-        }
-
-        if (Hibernate.isInitialized(sources)) {
-            sources.remove(source);
-        }
-
-        if (source.getTrackRoot() == this) {
-            source.setTrackRoot(null);
-        }
-    }
-
-    @PreRemove
-    private void preRemove() {
-        for (ChunkCollection collection : new HashSet<>(inCollections)) {
-            collection.removeTrackRoot(this);
-        }
-    }
+  }
 }
