@@ -58,7 +58,7 @@ public class AgentContextLogger {
                 .registerModule(fallbackModule);
     }
 
-    public static final String DEFAULT_LOG_FILE_NAME = "agent_context";
+    public static final String DEFAULT_LOG_FILE_NAME = "agent_context.json";
     public final String outputDirectory;
     private Path logFilePath;
 
@@ -66,13 +66,11 @@ public class AgentContextLogger {
         this.outputDirectory = loggingConfigProvider.getReviewOutputDirectory();
     }
 
-    public void setLogFilePath(String suffix) {
+    public void enableLog(String prefixDirectory) {
         synchronized (fileWriteLock) {
             try {
-                String logFilePathString = DEFAULT_LOG_FILE_NAME
-                        + (suffix != null && !suffix.isBlank() ? "_" + suffix : "")
-                        + ".json";
-                this.logFilePath = Paths.get(outputDirectory, logFilePathString);
+                Files.createDirectories(Paths.get(outputDirectory, prefixDirectory));
+                this.logFilePath = Paths.get(outputDirectory, prefixDirectory, DEFAULT_LOG_FILE_NAME);
                 initializeLogFile();
                 logger.debug("Agent log file path updated to: {}", logFilePath);
             } catch (IOException e) {
@@ -81,7 +79,7 @@ public class AgentContextLogger {
         }
     }
 
-    public void clearLogFilePath() {
+    public void disableLog() {
         synchronized (fileWriteLock) {
             this.logFilePath = null;
             logger.debug("Agent log file path cleared. Logging is now disabled.");

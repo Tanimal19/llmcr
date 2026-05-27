@@ -33,6 +33,7 @@ public class CodeReviewService
 
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final ObjectMapper REPORT_OBJECT_MAPPER = new ObjectMapper();
+    private static final String DEFAULT_REPORT_FILE_NAME = "review.json";
 
     private static final String STAGE_REVIEW = "REVIEW";
     private static final String STAGE_INTERPRETATION = "INTERPRETATION";
@@ -81,8 +82,8 @@ public class CodeReviewService
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, STAGE_REVIEW, "Review pipeline started");
 
-            String timestamp = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
-            contextLogger.setLogFilePath(timestamp);
+            String prefixDirectory = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
+            contextLogger.enableLog(prefixDirectory);
 
             String jsonFilePath = input.useMockData()
                     ? MockReviewData.MOCK_PULL_REQUEST_JSON_PATH
@@ -192,14 +193,14 @@ public class CodeReviewService
                     reviewResult,
                     interpretation,
                     items);
-            Path reportPath = writeReport(review, timestamp);
+            Path reportPath = writeReport(review, prefixDirectory);
 
             emitProgress(
                     progressListener,
                     STAGE_REVIEW,
                     "Review pipeline completed, report generated at: " + reportPath.toString());
 
-            contextLogger.clearLogFilePath();
+            contextLogger.disableLog();
 
             return new CodeReviewOutput(review, reportPath);
         } catch (APIServiceException ex) {
@@ -212,12 +213,11 @@ public class CodeReviewService
         }
     }
 
-    private Path writeReport(CodeReviewReport report, String timestamp) {
+    private Path writeReport(CodeReviewReport report, String prefixDirectory) {
         try {
-            Path dir = Paths.get(outputDir);
+            Path dir = Paths.get(outputDir, prefixDirectory);
             Files.createDirectories(dir);
-            String fileName = "PR" + report.prId() + "_" + timestamp + ".json";
-            Path reportPath = dir.resolve(fileName);
+            Path reportPath = dir.resolve(DEFAULT_REPORT_FILE_NAME);
             Files.writeString(reportPath, REPORT_OBJECT_MAPPER.writeValueAsString(report));
             return reportPath;
         } catch (IOException e) {

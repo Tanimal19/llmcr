@@ -84,3 +84,57 @@ test.serial('ReviewCommand renders review summary from SSE result', async t => {
 
   unmount();
 });
+
+test.serial('ReviewCommand handles missing summary payload without crashing', async t => {
+  const secureTmpDir = os.tmpdir();
+  const randomDiffPath = path.join(secureTmpDir, `pr-${crypto.randomUUID()}.json`);
+  const randomReportPath = path.join(secureTmpDir, `review-${crypto.randomUUID()}.md`);
+
+  setupMockFetch(url => {
+    if (url.endsWith('/review')) {
+      return createSseResponse([
+        { event: 'start', data: { name: 'review', id: 'review-2' } },
+        { event: 'progress', data: { isError: false, stage: 'ANALYZE', message: 'Reading diff' } },
+        {
+          event: 'result',
+          data: {
+            reportPath: randomReportPath,
+            reviewReport: {
+              prId: 456,
+              prTitle: 'Handle sparse report payload',
+              interpretation: {
+                changeDescription: 'No summary generated',
+                changeMotivation: 'Pipeline returned partial data',
+              },
+              checklistItems: [],
+            },
+          },
+        },
+      ]);
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  });
+
+  const { lastFrame, unmount } = render(
+    <ReviewCommand
+      diffPath={randomDiffPath}
+      onBack={() => {
+        /* No-op */
+      }}
+    />,
+  );
+
+  await delay(180);
+
+  const frameText = lastFrame() ?? '';
+  t.true(frameText.includes('Review done. Press ESC to return.'));
+  t.true(frameText.includes('PR: #456 Handle sparse report payload'));
+  t.true(frameText.includes('Good Points: 0'));
+  t.true(frameText.includes('Bad Points: 0'));
+  t.true(frameText.includes('Implementation Files: 0'));
+  t.true(frameText.includes('Checklist Items: 0'));
+  t.true(frameText.includes('Issues: 0'));
+
+  unmount();
+});

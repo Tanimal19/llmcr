@@ -196,9 +196,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
                 );
               })}
               {issues.length > MAX_ISSUE_PREVIEW_COUNT && (
-                <Text color="gray">
-                  ... and {issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues
-                </Text>
+                <Text color="gray">... and {issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues</Text>
               )}
             </Box>
           )}
