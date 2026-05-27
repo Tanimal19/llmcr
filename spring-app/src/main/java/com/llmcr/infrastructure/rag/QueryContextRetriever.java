@@ -164,7 +164,7 @@ public class QueryContextRetriever {
         }
 
         logger.info("Retrieving contexts for query: '{}'",
-                query.substring(Math.min(100, query.length())));
+                query.substring(0, Math.min(100, query.length())));
 
         List<ChunkIdScorePair> topNChunks;
         try {
