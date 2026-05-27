@@ -5,6 +5,7 @@ import { type AppScreen } from './types.js';
 import { ChatCommand } from '#features/chat/chat.cmd.js';
 import { SetRagCommand } from '#features/setrag/setrag.cmd.js';
 import { ReviewCommand } from '#features/review/review.cmd.js';
+import { PreviewCommand } from '#features/preview/preview.cmd.js';
 import { LsDbCommand } from '#features/lsdb/lsdb.cmd.js';
 import { SyncCommand } from '#features/sync/sync.cmd.js';
 
@@ -22,6 +23,10 @@ export default function App() {
 
     case 'review': {
       return <ReviewCommand onBack={handleBack} />;
+    }
+
+    case 'preview': {
+      return <PreviewCommand onBack={handleBack} />;
     }
 
     case 'chat': {

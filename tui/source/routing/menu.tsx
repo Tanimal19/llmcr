@@ -51,6 +51,7 @@ export const MainMenu = ({ onSelect }: MainMenuProps) => {
 
   const options: MenuOption[] = [
     { cmd: 'review', desc: 'Generate code review', value: 'review' },
+    { cmd: 'preview', desc: 'Preview review report JSON', value: 'preview' },
     { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
     { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },

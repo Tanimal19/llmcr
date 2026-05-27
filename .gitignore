@@ -6,7 +6,6 @@
 *.gguf
 *.sql
 *.jsonl
-*.log
 
 *.DS_Store
 

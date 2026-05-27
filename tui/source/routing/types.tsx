@@ -1,1 +1,1 @@
-export type AppScreen = 'menu' | 'chat' | 'review' | 'sync' | 'lsdb' | 'setrag' | 'help';
+export type AppScreen = 'menu' | 'chat' | 'review' | 'preview' | 'sync' | 'lsdb' | 'setrag' | 'help';
