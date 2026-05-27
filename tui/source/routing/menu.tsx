@@ -53,7 +53,7 @@ export const MainMenu = ({ onSelect }: MainMenuProps) => {
     { cmd: 'review', desc: 'Generate code review', value: 'review' },
     { cmd: 'preview', desc: 'Preview review report JSON', value: 'preview' },
     { cmd: 'chat', desc: 'Enter chat mode', value: 'chat' },
-    { cmd: 'setrag', desc: 'Modify RAG scope', value: 'setrag' },
+    { cmd: 'setrag', desc: 'Modify RAG scope of chat mode', value: 'setrag' },
     { cmd: 'lsdb', desc: 'List all database content', value: 'lsdb' },
     { cmd: 'sync', desc: 'Sync project data to database', value: 'sync' },
     { cmd: 'help', desc: 'Show this command list', value: 'help' },
