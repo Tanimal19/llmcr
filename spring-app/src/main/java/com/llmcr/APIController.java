@@ -129,10 +129,7 @@ public class APIController {
 
     @PostMapping(value = "/review", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter review(@RequestBody CodeReviewInput request) {
-        logger.info(
-                "Code review request received for jsonFilePath={}, useMockData={}",
-                request.jsonFilePath(),
-                request.useMockData());
+        logger.info("Code review request received: {}", request);
         return sseTaskManager.start(codeReviewService, request);
     }
 

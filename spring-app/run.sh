@@ -1,3 +1,5 @@
+source ../.env
+
 usage() {
     echo "Usage: ./run.sh [mode] [mode-specific-arguments] -a [additional-properties-file]"
     echo ""
@@ -10,9 +12,11 @@ usage() {
     echo ""
     echo "  sync: synchronize database with local datasets."
     echo ""
-    echo "  review: review code changes based on a pull request json file."
-    echo "    ./run.sh review <pr-file-path>"
-    echo "    ./run.sh review --use-mock"
+    echo "  review: review code changes based on pull request json/jsonl files."
+    echo "    ./run.sh review (use default mock data)"
+    echo "    ./run.sh review <pr-file.json>"
+    echo "    ./run.sh review <pr-file.jsonl>"
+    echo "    ./run.sh review <pr-file.jsonl> --jsonl-index 3"
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -59,12 +63,22 @@ done
 
 if [[ "$MODE" == "review" ]]; then
     PR_FILE=""
-    USE_MOCK=false
+    JSONL_INDEX=""
+    EXPECT_JSONL_INDEX_VALUE=false
 
     for arg in "${MODE_ARGS[@]}"; do
+        if [[ "$EXPECT_JSONL_INDEX_VALUE" == true ]]; then
+            JSONL_INDEX="$arg"
+            EXPECT_JSONL_INDEX_VALUE=false
+            continue
+        fi
+
         case "$arg" in
-            --use-mock)
-                USE_MOCK=true
+            --jsonl-index)
+                EXPECT_JSONL_INDEX_VALUE=true
+                ;;
+            --jsonl-index=*)
+                JSONL_INDEX="${arg#--jsonl-index=}"
                 ;;
             -h|--help)
                 usage
@@ -81,8 +95,20 @@ if [[ "$MODE" == "review" ]]; then
         esac
     done
 
-    if [[ "$USE_MOCK" != true && -z "$PR_FILE" ]]; then
-        echo "Error: review mode requires a pr file path, or use --use-mock."
+    if [[ "$EXPECT_JSONL_INDEX_VALUE" == true ]]; then
+        echo "Error: --jsonl-index requires a value."
+        usage
+        exit 1
+    fi
+
+    if [[ -n "$JSONL_INDEX" && -z "$PR_FILE" ]]; then
+        echo "Error: --jsonl-index requires a .jsonl file path."
+        usage
+        exit 1
+    fi
+
+    if [[ -n "$JSONL_INDEX" && "$PR_FILE" != *.jsonl ]]; then
+        echo "Error: --jsonl-index can only be used with .jsonl file."
         usage
         exit 1
     fi
@@ -90,8 +116,8 @@ if [[ "$MODE" == "review" ]]; then
     if [[ -n "$PR_FILE" ]]; then
         APP_ARGS+=("$PR_FILE")
     fi
-    if [[ "$USE_MOCK" == true ]]; then
-        APP_ARGS+=("--use-mock")
+    if [[ -n "$JSONL_INDEX" ]]; then
+        APP_ARGS+=("--jsonl-index=$JSONL_INDEX")
     fi
 else
     if [[ ${#MODE_ARGS[@]} -gt 0 ]]; then

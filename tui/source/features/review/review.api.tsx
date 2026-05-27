@@ -48,19 +48,16 @@ export type CodeReviewAnswer = {
 };
 
 export type CodeReviewItemAnswer = {
-  title?: string;
-  checklistItemTitle: string;
+  title: string;
   answer: CodeReviewAnswer;
 };
 
 export type CodeReviewReport = {
   prId: number;
   prTitle: string;
-  content?: CodeReviewSummary;
-  mainReport?: CodeReviewSummary;
+  content: CodeReviewSummary;
   interpretation: CodeReviewInterpretation;
-  checklistItems?: CodeReviewItemAnswer[];
-  itemAnswers?: CodeReviewItemAnswer[];
+  checklistItems: CodeReviewItemAnswer[];
 };
 
 export type CodeReviewOutput = {
@@ -79,7 +76,8 @@ export type ReviewStreamHandlers = {
 };
 
 export type CodeReviewInput = {
-  jsonFilePath: string;
+  inputFilePath: string;
+  jsonlIndex?: number;
   useMockData?: boolean;
 };
 
@@ -98,7 +96,8 @@ export async function reviewWithProgress(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      jsonFilePath: input.jsonFilePath,
+      inputFilePath: input.inputFilePath,
+      jsonlIndex: input.jsonlIndex,
       useMockData: input.useMockData ?? handlers.useMock ?? false,
     }),
     signal: handlers.signal,

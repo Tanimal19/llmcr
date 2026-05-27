@@ -4,28 +4,107 @@ import { cancelReviewTask, type CodeReviewOutput, reviewWithProgress } from './r
 import { useSseTaskLifecycle } from '#hooks';
 import { type CommandProps } from '#features/types.js';
 import { ArgInput, LoadingSpinner } from '#components';
+import { ReviewReportPreview } from '#components/report-preview.js';
 
-// ─── 1. 獨立且乾淨的參數型態宣告 ───
 type ReviewCommandProps = {
   diffPath?: string;
+  jsonlIndex?: number;
   useMock?: boolean;
 } & CommandProps;
 
 type ReviewArgs = {
-  diffPath: string;
+  inputFilePath: string;
+  jsonlIndex?: number;
   useMock: boolean;
 };
 
-const MAX_ISSUE_PREVIEW_COUNT = 5;
+const JSONL_INPUT_WITH_INDEX_PATTERN = /^(?<path>.+)::(?<index>\d+)$/v;
 
-export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewCommandProps) => {
-  const [args, setArgs] = useState<ReviewArgs | undefined>(() => {
-    if (diffPath !== undefined) {
-      return { diffPath, useMock };
-    }
+type ParsedReviewInput = {
+  inputFilePath: string;
+  jsonlIndex?: number;
+  useMock: boolean;
+  errorMessage?: string;
+};
 
+const parseReviewInput = (rawValue: string): ParsedReviewInput => {
+  const value = rawValue.trim();
+  if (value.length === 0) {
+    return {
+      inputFilePath: '',
+      useMock: true,
+    };
+  }
+
+  const parsed = JSONL_INPUT_WITH_INDEX_PATTERN.exec(value);
+  if (!parsed?.groups) {
+    return {
+      inputFilePath: value,
+      useMock: false,
+    };
+  }
+
+  const pathValue = parsed.groups['path'];
+  const indexToken = parsed.groups['index'];
+  const inputFilePath = (pathValue ?? '').trim();
+  const indexValue = Number(indexToken);
+  if (inputFilePath.length === 0 || !Number.isInteger(indexValue) || indexValue < 0) {
+    return {
+      inputFilePath: value,
+      useMock: false,
+      errorMessage: 'Invalid jsonl index format. Use: <path>.jsonl::0',
+    };
+  }
+
+  return {
+    inputFilePath,
+    jsonlIndex: indexValue,
+    useMock: false,
+  };
+};
+
+const getInitialArgs = (
+  diffPath: string | undefined,
+  jsonlIndex: number | undefined,
+  useMock: boolean,
+): ReviewArgs | undefined => {
+  if (diffPath === undefined) {
     return undefined;
-  });
+  }
+
+  return {
+    inputFilePath: diffPath,
+    jsonlIndex,
+    useMock,
+  };
+};
+
+type ValidationLifecycle = {
+  setErrorStatus: () => void;
+  setErrorMessage: (errorMessage: string | undefined) => void;
+  setStageMessage: (stageMessage: string) => void;
+  appendLog: (entry: string) => void;
+};
+
+const validateArgsAndPrepare = (args: ReviewArgs, lifecycle: ValidationLifecycle): boolean => {
+  if ((!args.inputFilePath || args.inputFilePath.trim().length === 0) && !args.useMock) {
+    lifecycle.setErrorStatus();
+    lifecycle.setErrorMessage('Input file path is required.');
+    lifecycle.setStageMessage('Review did not start');
+    lifecycle.appendLog('[ERROR] Review did not start: Input file path is required.');
+    return false;
+  }
+
+  if (args.useMock) {
+    lifecycle.setStageMessage('Using mock review data...');
+    lifecycle.appendLog('[INFO] Using mock review data');
+  }
+
+  return true;
+};
+
+export const ReviewCommand = ({ onBack, diffPath, jsonlIndex, useMock = false }: ReviewCommandProps) => {
+  const [args, setArgs] = useState<ReviewArgs | undefined>(() => getInitialArgs(diffPath, jsonlIndex, useMock));
 
   const [reviewResult, setReviewResult] = useState<CodeReviewOutput | undefined>(undefined);
 
@@ -58,31 +137,31 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
   });
 
   useEffect(() => {
-    // 💡 守衛條件：如果 args 是 undefined，代表使用者還在輸入，靜靜等待
     if (!args) {
       return;
     }
 
-    const { diffPath: activePath, useMock: activeMock } = args;
-
-    if ((!activePath || activePath.trim().length === 0) && !activeMock) {
-      setStatus('error');
-      setErrorMessage('Diff path is required.');
-      setStageMessage('Review did not start');
-      appendLog('[ERROR] Review did not start: Diff path is required.');
+    if (
+      !validateArgsAndPrepare(args, {
+        setErrorStatus() {
+          setStatus('error');
+        },
+        setErrorMessage,
+        setStageMessage,
+        appendLog,
+      })
+    ) {
       return;
     }
 
-    if (activeMock) {
-      setStageMessage('Using mock review data...');
-      appendLog('[INFO] Using mock review data');
-    }
+    const { inputFilePath: activePath, jsonlIndex: activeJsonlIndex, useMock: activeMock } = args;
 
     const abortController = startRun('[INFO] Review started');
 
     reviewWithProgress(
       {
-        jsonFilePath: activePath ?? '',
+        inputFilePath: activePath ?? '',
+        jsonlIndex: activeJsonlIndex,
         useMockData: activeMock,
       },
       {
@@ -105,40 +184,37 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
     };
   }, [args]);
 
-  // ─── 第一階段視圖：若 args 為 undefined，展示輸入畫面 ───
   if (!args) {
     return (
       <ArgInput
-        title="Please enter the path to the pull request JSON file for review"
-        placeholder="./example.diff (leave empty to use mock data)"
+        title="Please enter PR input path (JSON or JSONL)"
+        placeholder="./example.json or ./example.jsonl::0 (leave empty to use mock data)"
         usePlaceholderOnEmpty={false}
         onCancel={onBack}
         onSubmit={value => {
-          setArgs({
-            diffPath: value,
-            useMock: value.length === 0,
-          });
+          const parsedInput = parseReviewInput(value);
+          if (parsedInput.errorMessage) {
+            setStatus('error');
+            setErrorMessage(parsedInput.errorMessage);
+            setStageMessage('Review did not start');
+            appendLog(`[ERROR] Review did not start: ${parsedInput.errorMessage}`);
+            return;
+          }
+
+          setErrorMessage(undefined);
+          setArgs(parsedInput);
         }}
       />
     );
   }
 
-  // ─── 第二階段視圖 ───
-  const { diffPath: activePath, useMock: activeMock } = args;
-  const reviewReport = reviewResult?.reviewReport;
-  const summary = reviewReport?.content ?? reviewReport?.mainReport;
-  const checklistItems = reviewReport?.checklistItems ?? reviewReport?.itemAnswers ?? [];
-  const goodPointsCount = summary?.goodPoints?.length ?? 0;
-  const badPointsCount = summary?.badPoints?.length ?? 0;
-  const implementationFilesCount = summary?.implementationDetails?.length ?? 0;
-  const issues = summary?.issues ?? [];
-
-  // 用於動態生成穩定且不重複日誌 key 的計數器（每次 Render 重置）
+  const { inputFilePath: activePath, jsonlIndex: activeJsonlIndex, useMock: activeMock } = args;
   const logCounts = new Map<string, number>();
 
   return (
     <Box flexDirection="column" padding={1}>
       {activePath && <Text color="yellow">Performing code review on: {activePath}</Text>}
+      {activeJsonlIndex !== undefined && <Text color="yellow">Using JSONL index: {activeJsonlIndex}</Text>}
       {activeMock && <Text color="yellow">Performing code review using mock data</Text>}
       <Text color="gray">(Press esc to cancel)</Text>
 
@@ -168,39 +244,7 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
       {status === 'error' && errorMessage && <Text color="red">Error: {errorMessage}</Text>}
 
       {status === 'success' && reviewResult && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text color="cyan">Review Result Summary:</Text>
-          <Text color="white">
-            PR: #{reviewResult.reviewReport.prId} {reviewResult.reviewReport.prTitle}
-          </Text>
-          <Text color="white">Report Path: {reviewResult.reportPath}</Text>
-          <Text color="white">Good Points: {goodPointsCount}</Text>
-          <Text color="white">Bad Points: {badPointsCount}</Text>
-          <Text color="white">Implementation Files: {implementationFilesCount}</Text>
-          <Text color="white">Checklist Items: {checklistItems.length}</Text>
-          <Text color="white">Issues: {issues.length}</Text>
-
-          {issues.length > 0 && (
-            <Box flexDirection="column" marginTop={1}>
-              <Text color="cyan">Issue Preview:</Text>
-              {issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => {
-                // 1. 將巢狀樣板字串提取至外部變數，修正 S4624
-                const locationStr = issue.location ? ` @ ${issue.location}` : '';
-                // 2. 使用業務欄位組合成唯一 key，修正 S6479
-                const issueKey = `${issue.type}-${issue.title}-${issue.location}`;
-
-                return (
-                  <Text key={issueKey} color="gray">
-                    {`${index + 1}. [${issue.type}] ${issue.title}${locationStr}`}
-                  </Text>
-                );
-              })}
-              {issues.length > MAX_ISSUE_PREVIEW_COUNT && (
-                <Text color="gray">... and {issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues</Text>
-              )}
-            </Box>
-          )}
-        </Box>
+        <ReviewReportPreview reviewReport={reviewResult.reviewReport} reportPath={reviewResult.reportPath} />
       )}
     </Box>
   );

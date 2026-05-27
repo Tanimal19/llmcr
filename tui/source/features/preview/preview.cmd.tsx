@@ -3,8 +3,9 @@ import { basename } from 'node:path';
 import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { ArgInput, LoadingSpinner } from '#components';
+import { ReviewReportPreview } from '#components/report-preview.js';
 import { type CommandProps } from '#features/types.js';
-import { type CodeReviewReport } from '#features/review/review.api.js';
+import { type CodeReviewReport, type CodeReviewSummary } from '#features/review/review.api.js';
 
 type PreviewCommandProps = {
   reportPath?: string;
@@ -13,19 +14,121 @@ type PreviewCommandProps = {
 const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
+const isString = (value: unknown): value is string => typeof value === 'string';
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every(item => isString(item));
+
+const isIssue = (value: unknown): value is CodeReviewSummary['issues'][number] => {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  return (
+    isString(value['type']) && isString(value['title']) && isString(value['location']) && isString(value['detail'])
+  );
+};
+
+const isImplementationDetails = (value: unknown): value is CodeReviewSummary['implementationDetails'][number] => {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  return isString(value['filename']) && isStringArray(value['details']);
+};
+
+const isSummary = (value: unknown): value is CodeReviewSummary => {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  return (
+    isString(value['motivation']) &&
+    isStringArray(value['goodPoints']) &&
+    isStringArray(value['badPoints']) &&
+    isString(value['suggestion']) &&
+    Array.isArray(value['implementationDetails']) &&
+    value['implementationDetails'].every(item => isImplementationDetails(item)) &&
+    Array.isArray(value['issues']) &&
+    value['issues'].every(item => isIssue(item))
+  );
+};
+
+const isItemAnswer = (value: unknown): value is NonNullable<CodeReviewReport['checklistItems']>[number] => {
+  if (!isObjectRecord(value) || !isString(value['title'])) {
+    return false;
+  }
+
+  const { answer } = value;
+  if (!isObjectRecord(answer)) {
+    return false;
+  }
+
+  if (!isString(answer['finalAnswer']) || !isString(answer['analysis']) || !Array.isArray(answer['evidence'])) {
+    return false;
+  }
+
+  return answer['evidence'].every(evidence => {
+    if (!isObjectRecord(evidence)) {
+      return false;
+    }
+
+    return isString(evidence['file']) && isString(evidence['lines']) && isString(evidence['reason']);
+  });
+};
+
+const asChecklistItems = (value: unknown): CodeReviewReport['checklistItems'] => {
+  if (!Array.isArray(value) || !value.every(item => isItemAnswer(item))) {
+    throw new TypeError('Invalid report JSON: checklistItems must be an array of checklist items.');
+  }
+
+  return value;
+};
+
+const asSummary = (value: unknown): CodeReviewSummary => {
+  if (!isSummary(value)) {
+    throw new TypeError('Invalid report JSON: content must be a valid summary object.');
+  }
+
+  return value;
+};
+
+const asInterpretation = (value: unknown): CodeReviewReport['interpretation'] => {
+  if (!isObjectRecord(value)) {
+    throw new TypeError('Invalid report JSON: interpretation must be an object.');
+  }
+
+  if (!isString(value['changeDescription']) || !isString(value['changeMotivation'])) {
+    throw new TypeError(
+      'Invalid report JSON: interpretation.changeDescription and interpretation.changeMotivation must be strings.',
+    );
+  }
+
+  return {
+    changeDescription: value['changeDescription'],
+    changeMotivation: value['changeMotivation'],
+  };
+};
+
 const resolveReviewReport = (payload: unknown): CodeReviewReport => {
   if (!isObjectRecord(payload)) {
-    throw new Error('Report JSON must be an object.');
+    throw new TypeError('Report JSON must be an object.');
   }
 
   const nestedReport = payload['reviewReport'];
-  const candidate = isObjectRecord(nestedReport) ? nestedReport : (payload as Partial<CodeReviewReport>);
+  const candidate = isObjectRecord(nestedReport) ? nestedReport : payload;
 
   if (typeof candidate['prId'] !== 'number' || typeof candidate['prTitle'] !== 'string') {
-    throw new Error('Invalid report JSON: expected reviewReport with prId:number and prTitle:string.');
+    throw new TypeError('Invalid report JSON: expected reviewReport with prId:number and prTitle:string.');
   }
 
-  return candidate as CodeReviewReport;
+  return {
+    prId: candidate['prId'],
+    prTitle: candidate['prTitle'],
+    interpretation: asInterpretation(candidate['interpretation']),
+    content: asSummary(candidate['content']),
+    checklistItems: asChecklistItems(candidate['checklistItems']),
+  };
 };
 
 export const PreviewCommand = ({ onBack, reportPath }: PreviewCommandProps) => {
@@ -94,15 +197,7 @@ export const PreviewCommand = ({ onBack, reportPath }: PreviewCommandProps) => {
     );
   }
 
-  const summary = reviewReport?.content ?? reviewReport?.mainReport;
-  const checklistItems = reviewReport?.checklistItems ?? reviewReport?.itemAnswers ?? [];
-  const goodPoints = summary?.goodPoints ?? [];
-  const badPoints = summary?.badPoints ?? [];
-  const implementationDetails = summary?.implementationDetails ?? [];
-  const issues = summary?.issues ?? [];
   const displayPath = activePath.length > 80 ? basename(activePath) : activePath;
-  const issueKeyCounts = new Map<string, number>();
-  const sectionLineKeyCounts = new Map<string, number>();
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -117,149 +212,7 @@ export const PreviewCommand = ({ onBack, reportPath }: PreviewCommandProps) => {
 
       {!isLoading && errorMessage ? <Text color="red">Error: {errorMessage}</Text> : null}
 
-      {!isLoading && reviewReport ? (
-        <Box flexDirection="column" marginTop={1}>
-          <Text color="cyan">Overview</Text>
-          <Text color="white">
-            PR: #{reviewReport.prId} {reviewReport.prTitle}
-          </Text>
-          <Text color="white">Checklist Items: {checklistItems.length}</Text>
-          <Text color="white">Issues: {issues.length}</Text>
-
-          <Box flexDirection="column" marginTop={1}>
-            <Text color="cyan">Interpretation</Text>
-            <Text color="white">Change Description:</Text>
-            <Text color="gray">{reviewReport.interpretation?.changeDescription ?? '(none)'}</Text>
-            <Text color="white">Change Motivation:</Text>
-            <Text color="gray">{reviewReport.interpretation?.changeMotivation ?? '(none)'}</Text>
-          </Box>
-
-          <Box flexDirection="column" marginTop={1}>
-            <Text color="cyan">Main Report</Text>
-            <Text color="white">Motivation:</Text>
-            <Text color="gray">{summary?.motivation ?? '(none)'}</Text>
-            <Text color="white">Suggestion:</Text>
-            <Text color="gray">{summary?.suggestion ?? '(none)'}</Text>
-          </Box>
-
-          <Box flexDirection="column" marginTop={1}>
-            <Text color="cyan">Good Points</Text>
-            {goodPoints.length === 0 ? <Text color="gray">(none)</Text> : null}
-            {goodPoints.map(point => {
-              const keyCount = (sectionLineKeyCounts.get(`good-${point}`) ?? 0) + 1;
-              sectionLineKeyCounts.set(`good-${point}`, keyCount);
-              return (
-                <Text key={`good-${point}-${keyCount}`} color="gray">
-                  - {point}
-                </Text>
-              );
-            })}
-          </Box>
-
-          <Box flexDirection="column" marginTop={1}>
-            <Text color="cyan">Bad Points</Text>
-            {badPoints.length === 0 ? <Text color="gray">(none)</Text> : null}
-            {badPoints.map(point => {
-              const keyCount = (sectionLineKeyCounts.get(`bad-${point}`) ?? 0) + 1;
-              sectionLineKeyCounts.set(`bad-${point}`, keyCount);
-              return (
-                <Text key={`bad-${point}-${keyCount}`} color="gray">
-                  - {point}
-                </Text>
-              );
-            })}
-          </Box>
-
-          <Box flexDirection="column" marginTop={1}>
-            <Text color="cyan">Implementation Details</Text>
-            {implementationDetails.length === 0 ? <Text color="gray">(none)</Text> : null}
-            {implementationDetails.map(detail => {
-              const detailKeyBase = `${detail.filename}`;
-              const detailKeyCount = (sectionLineKeyCounts.get(detailKeyBase) ?? 0) + 1;
-              sectionLineKeyCounts.set(detailKeyBase, detailKeyCount);
-              const detailKey = `${detailKeyBase}-${detailKeyCount}`;
-
-              return (
-                <Box key={detailKey} flexDirection="column" marginTop={1}>
-                  <Text color="white">File: {detail.filename}</Text>
-                  {detail.details.length === 0 ? <Text color="gray"> - (none)</Text> : null}
-                  {detail.details.map(detailLine => {
-                    const lineKeyBase = `${detail.filename}-${detailLine}`;
-                    const lineKeyCount = (sectionLineKeyCounts.get(lineKeyBase) ?? 0) + 1;
-                    sectionLineKeyCounts.set(lineKeyBase, lineKeyCount);
-                    return (
-                      <Text key={`${lineKeyBase}-${lineKeyCount}`} color="gray">
-                        - {detailLine}
-                      </Text>
-                    );
-                  })}
-                </Box>
-              );
-            })}
-          </Box>
-
-          {issues.length > 0 ? (
-            <Box flexDirection="column" marginTop={1}>
-              <Text color="cyan">Issues</Text>
-              {issues.map((issue, index) => {
-                const locationStr = issue.location ? ` @ ${issue.location}` : '';
-                const issueKeyBase = `${issue.type}-${issue.title}-${issue.location}`;
-                const issueKeyCount = (issueKeyCounts.get(issueKeyBase) ?? 0) + 1;
-                issueKeyCounts.set(issueKeyBase, issueKeyCount);
-                const issueKey = `${issueKeyBase}-${issueKeyCount}`;
-
-                return (
-                  <Box key={issueKey} flexDirection="column" marginTop={1}>
-                    <Text color="white">{`${index + 1}. [${issue.type}] ${issue.title}${locationStr}`}</Text>
-                    <Text color="gray">Detail: {issue.detail || '(none)'}</Text>
-                  </Box>
-                );
-              })}
-            </Box>
-          ) : (
-            <Box flexDirection="column" marginTop={1}>
-              <Text color="cyan">Issues</Text>
-              <Text color="gray">(none)</Text>
-            </Box>
-          )}
-
-          <Box flexDirection="column" marginTop={1}>
-            <Text color="cyan">Checklist</Text>
-            {checklistItems.length === 0 ? <Text color="gray">(none)</Text> : null}
-            {checklistItems.map(item => {
-              const itemTitle = item.title ?? item.checklistItemTitle;
-              const itemKeyBase = `${item.checklistItemTitle}-${item.answer.finalAnswer}`;
-              const itemKeyCount = (sectionLineKeyCounts.get(itemKeyBase) ?? 0) + 1;
-              sectionLineKeyCounts.set(itemKeyBase, itemKeyCount);
-              const itemKey = `${itemKeyBase}-${itemKeyCount}`;
-
-              return (
-                <Box key={itemKey} flexDirection="column" marginTop={1}>
-                  <Text color="white">Item: {itemTitle}</Text>
-                  <Text color="gray">Final Answer: {item.answer.finalAnswer || '(none)'}</Text>
-                  <Text color="gray">Analysis: {item.answer.analysis || '(none)'}</Text>
-                  <Text color="white">Evidence:</Text>
-                  {item.answer.evidence.length === 0 ? <Text color="gray"> - (none)</Text> : null}
-                  {item.answer.evidence.map(evidence => {
-                    const evidenceKeyBase = `${itemTitle}-${evidence.file}-${evidence.lines}-${evidence.reason}`;
-                    const evidenceKeyCount = (sectionLineKeyCounts.get(evidenceKeyBase) ?? 0) + 1;
-                    sectionLineKeyCounts.set(evidenceKeyBase, evidenceKeyCount);
-                    const evidenceKey = `${evidenceKeyBase}-${evidenceKeyCount}`;
-
-                    return (
-                      <Box key={evidenceKey} flexDirection="column" marginTop={0}>
-                        <Text color="gray">- File: {evidence.file || '(none)'}</Text>
-                        <Text color="gray"> Lines: {evidence.lines || '(none)'}</Text>
-                        <Text color="gray"> Reason: {evidence.reason || '(none)'}</Text>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-      ) : null}
+      {!isLoading && reviewReport ? <ReviewReportPreview reviewReport={reviewReport} /> : null}
     </Box>
   );
 };

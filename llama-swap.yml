@@ -84,7 +84,7 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
-      --temp 0.3
+      --temp 0.2
       --ctx-size 32768
       --no-webui
       --port ${PORT}
@@ -95,7 +95,7 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf
-      --temp 0.3
+      --temp 0.2
       --ctx-size 32768
       --no-webui
       --port ${PORT}
@@ -106,7 +106,7 @@ models:
     cmd: >
       llama-server
       -m ${model_dir}/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
-      --temp 0.3
+      --temp 0.2
       --ctx-size 32768
       --no-webui
       --port ${PORT}

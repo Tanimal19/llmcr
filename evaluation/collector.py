@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from scheme import ChangedFileEntry, CommentEntry, PullRequestEntry
 
 REPO = "spring-projects/spring-ai"
-MAX_PRS = 10
+MAX_PRS = 20
 AFTER_RELEASE_RAG = "v2.0.0-M1"
 BEFORE_DATE = "2026-05-15"
 MIN_DESCRIPTION_WORDS = 30

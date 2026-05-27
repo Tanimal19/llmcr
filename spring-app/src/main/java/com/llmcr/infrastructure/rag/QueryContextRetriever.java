@@ -163,6 +163,9 @@ public class QueryContextRetriever {
                     "topK selection strategy cannot be null");
         }
 
+        logger.info("Retrieving contexts for query: '{}'",
+                query.substring(Math.min(100, query.length())));
+
         List<ChunkIdScorePair> topNChunks;
         try {
             topNChunks = vectorStore.similaritySearch(query, TOP_N, config.collectionName());
