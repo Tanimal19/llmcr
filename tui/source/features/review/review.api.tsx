@@ -48,6 +48,7 @@ export type CodeReviewAnswer = {
 };
 
 export type CodeReviewItemAnswer = {
+  title?: string;
   checklistItemTitle: string;
   answer: CodeReviewAnswer;
 };
@@ -55,9 +56,11 @@ export type CodeReviewItemAnswer = {
 export type CodeReviewReport = {
   prId: number;
   prTitle: string;
-  mainReport: CodeReviewSummary;
+  content?: CodeReviewSummary;
+  mainReport?: CodeReviewSummary;
   interpretation: CodeReviewInterpretation;
-  itemAnswers: CodeReviewItemAnswer[];
+  checklistItems?: CodeReviewItemAnswer[];
+  itemAnswers?: CodeReviewItemAnswer[];
 };
 
 export type CodeReviewOutput = {

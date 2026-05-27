@@ -3,12 +3,14 @@ package com.llmcr.feature.review;
 import com.llmcr.config.provider.LoggingConfigProvider;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.sse.SseTaskObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llmcr.feature.review.agent.*;
 import com.llmcr.feature.review.agent.ComputationAgent.ComputationAgentInput;
 import com.llmcr.feature.review.agent.InterpretationAgent.InterpretationAgentInput;
 import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentInput;
 import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentOutput;
 import com.llmcr.feature.review.agent.SummaryAgent.SummaryAgentInput;
+import com.llmcr.infrastructure.agent.logging.AgentContextLogger;
 import com.llmcr.feature.review.CodeReviewReport.*;
 import com.llmcr.feature.review.PullRequestParser.PullRequestData;
 
@@ -30,6 +32,7 @@ public class CodeReviewService
         extends SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
 
     private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final ObjectMapper REPORT_OBJECT_MAPPER = new ObjectMapper();
 
     private static final String STAGE_REVIEW = "REVIEW";
     private static final String STAGE_INTERPRETATION = "INTERPRETATION";
@@ -41,6 +44,7 @@ public class CodeReviewService
     private final PlanningAgent planningAgent;
     private final ComputationAgent computationAgent;
     private final SummaryAgent summaryAgent;
+    private final AgentContextLogger contextLogger;
     private String outputDir;
 
     public CodeReviewService(
@@ -48,12 +52,14 @@ public class CodeReviewService
             InterpretationAgent interpretationAgent,
             PlanningAgent planningAgent,
             ComputationAgent computationAgent,
-            SummaryAgent summaryAgent) {
+            SummaryAgent summaryAgent,
+            AgentContextLogger contextLogger) {
         this.outputDir = configProvider.getReviewOutputDirectory();
         this.interpretationAgent = interpretationAgent;
         this.planningAgent = planningAgent;
         this.computationAgent = computationAgent;
         this.summaryAgent = summaryAgent;
+        this.contextLogger = contextLogger;
     }
 
     public record CodeReviewInput(String jsonFilePath, boolean useMockData) {
@@ -74,6 +80,9 @@ public class CodeReviewService
         try {
             throwIfCancelled(cancellationRequested);
             emitProgress(progressListener, STAGE_REVIEW, "Review pipeline started");
+
+            String timestamp = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
+            contextLogger.setLogFilePath(timestamp);
 
             String jsonFilePath = input.useMockData()
                     ? MockReviewData.MOCK_PULL_REQUEST_JSON_PATH
@@ -183,12 +192,14 @@ public class CodeReviewService
                     reviewResult,
                     interpretation,
                     items);
-            Path reportPath = writeReport(review);
+            Path reportPath = writeReport(review, timestamp);
 
             emitProgress(
                     progressListener,
                     STAGE_REVIEW,
                     "Review pipeline completed, report generated at: " + reportPath.toString());
+
+            contextLogger.clearLogFilePath();
 
             return new CodeReviewOutput(review, reportPath);
         } catch (APIServiceException ex) {
@@ -201,14 +212,13 @@ public class CodeReviewService
         }
     }
 
-    private Path writeReport(CodeReviewReport report) {
+    private Path writeReport(CodeReviewReport report, String timestamp) {
         try {
             Path dir = Paths.get(outputDir);
             Files.createDirectories(dir);
-            String timestamp = REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
-            String fileName = "PR" + report.prId() + "_" + timestamp + ".md";
+            String fileName = "PR" + report.prId() + "_" + timestamp + ".json";
             Path reportPath = dir.resolve(fileName);
-            Files.writeString(reportPath, report.toString());
+            Files.writeString(reportPath, REPORT_OBJECT_MAPPER.writeValueAsString(report));
             return reportPath;
         } catch (IOException e) {
             throw new APIServiceException(

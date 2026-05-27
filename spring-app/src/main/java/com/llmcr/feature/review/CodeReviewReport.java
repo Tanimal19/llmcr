@@ -39,10 +39,7 @@ public record CodeReviewReport(
     public record EvidenceItem(String file, String lines, String reason) {
     }
 
-    /**
-     * Format to markdown string.
-     */
-    public String toString() {
+    public String toMarkdown() {
         StringBuilder sb = new StringBuilder();
 
         // Summary Report section

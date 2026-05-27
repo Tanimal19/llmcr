@@ -58,11 +58,34 @@ public class AgentContextLogger {
                 .registerModule(fallbackModule);
     }
 
-    public static final String DEFAULT_LOG_FILE_NAME = "agent_history.json";
-    private final Path logFilePath;
+    public static final String DEFAULT_LOG_FILE_NAME = "agent_context";
+    public final String outputDirectory;
+    private Path logFilePath;
 
     public AgentContextLogger(LoggingConfigProvider loggingConfigProvider) {
-        this.logFilePath = Paths.get(loggingConfigProvider.getReviewOutputDirectory(), DEFAULT_LOG_FILE_NAME);
+        this.outputDirectory = loggingConfigProvider.getReviewOutputDirectory();
+    }
+
+    public void setLogFilePath(String suffix) {
+        synchronized (fileWriteLock) {
+            try {
+                String logFilePathString = DEFAULT_LOG_FILE_NAME
+                        + (suffix != null && !suffix.isBlank() ? "_" + suffix : "")
+                        + ".json";
+                this.logFilePath = Paths.get(outputDirectory, logFilePathString);
+                initializeLogFile();
+                logger.debug("Agent log file path updated to: {}", logFilePath);
+            } catch (IOException e) {
+                logger.warn("Failed to initialize new agent log file path: {}", logFilePath, e);
+            }
+        }
+    }
+
+    public void clearLogFilePath() {
+        synchronized (fileWriteLock) {
+            this.logFilePath = null;
+            logger.debug("Agent log file path cleared. Logging is now disabled.");
+        }
     }
 
     @PostConstruct

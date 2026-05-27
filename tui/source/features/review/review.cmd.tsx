@@ -125,6 +125,13 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
 
   // ─── 第二階段視圖 ───
   const { diffPath: activePath, useMock: activeMock } = args;
+  const reviewReport = reviewResult?.reviewReport;
+  const summary = reviewReport?.content ?? reviewReport?.mainReport;
+  const checklistItems = reviewReport?.checklistItems ?? reviewReport?.itemAnswers ?? [];
+  const goodPointsCount = summary?.goodPoints?.length ?? 0;
+  const badPointsCount = summary?.badPoints?.length ?? 0;
+  const implementationFilesCount = summary?.implementationDetails?.length ?? 0;
+  const issues = summary?.issues ?? [];
 
   // 用於動態生成穩定且不重複日誌 key 的計數器（每次 Render 重置）
   const logCounts = new Map<string, number>();
@@ -167,18 +174,16 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
             PR: #{reviewResult.reviewReport.prId} {reviewResult.reviewReport.prTitle}
           </Text>
           <Text color="white">Report Path: {reviewResult.reportPath}</Text>
-          <Text color="white">Good Points: {reviewResult.reviewReport.mainReport.goodPoints.length}</Text>
-          <Text color="white">Bad Points: {reviewResult.reviewReport.mainReport.badPoints.length}</Text>
-          <Text color="white">
-            Implementation Files: {reviewResult.reviewReport.mainReport.implementationDetails.length}
-          </Text>
-          <Text color="white">Checklist Items: {reviewResult.reviewReport.itemAnswers.length}</Text>
-          <Text color="white">Issues: {reviewResult.reviewReport.mainReport.issues.length}</Text>
+          <Text color="white">Good Points: {goodPointsCount}</Text>
+          <Text color="white">Bad Points: {badPointsCount}</Text>
+          <Text color="white">Implementation Files: {implementationFilesCount}</Text>
+          <Text color="white">Checklist Items: {checklistItems.length}</Text>
+          <Text color="white">Issues: {issues.length}</Text>
 
-          {reviewResult.reviewReport.mainReport.issues.length > 0 && (
+          {issues.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
               <Text color="cyan">Issue Preview:</Text>
-              {reviewResult.reviewReport.mainReport.issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => {
+              {issues.slice(0, MAX_ISSUE_PREVIEW_COUNT).map((issue, index) => {
                 // 1. 將巢狀樣板字串提取至外部變數，修正 S4624
                 const locationStr = issue.location ? ` @ ${issue.location}` : '';
                 // 2. 使用業務欄位組合成唯一 key，修正 S6479
@@ -190,9 +195,9 @@ export const ReviewCommand = ({ onBack, diffPath, useMock = false }: ReviewComma
                   </Text>
                 );
               })}
-              {reviewResult.reviewReport.mainReport.issues.length > MAX_ISSUE_PREVIEW_COUNT && (
+              {issues.length > MAX_ISSUE_PREVIEW_COUNT && (
                 <Text color="gray">
-                  ... and {reviewResult.reviewReport.mainReport.issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues
+                  ... and {issues.length - MAX_ISSUE_PREVIEW_COUNT} more issues
                 </Text>
               )}
             </Box>

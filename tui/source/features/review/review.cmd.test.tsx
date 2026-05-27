@@ -28,7 +28,7 @@ test.serial('ReviewCommand renders review summary from SSE result', async t => {
             reviewReport: {
               prId: 123,
               prTitle: 'Improve parser stability',
-              mainReport: {
+              content: {
                 motivation: 'Improve reliability',
                 goodPoints: ['Clear separation of concerns'],
                 badPoints: ['Missing edge-case test'],
@@ -53,7 +53,7 @@ test.serial('ReviewCommand renders review summary from SSE result', async t => {
                 changeDescription: 'Parser handling updates',
                 changeMotivation: 'Reduce failures',
               },
-              itemAnswers: [],
+              checklistItems: [],
             },
           },
         },
