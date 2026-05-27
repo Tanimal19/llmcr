@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "spring-app/src/main/java/**"
+      - "tui/source/**"
   pull_request:
     types: [opened, synchronize, reopened]
 
