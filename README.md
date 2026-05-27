@@ -2,48 +2,6 @@
 
 Project for Software Engineering Lab.
 
-
-## Project Structure
-```
-llmcr/
-├── docker-compose.yml
-├── llama-swap.yml
-├── data/                       # Data preparation scripts
-├── faiss_service/              # Python FAISS microservice
-├── models/                     # .gguf files
-├── logs/
-├── spring-app/
-│   ├── config.default.yml           # Default user application config
-│   ├── resources/
-│   │   └── application.properties   # spring application config 
-│   └── java/com/llmcr/
-│       ├── LlmcrApplication.java
-│       ├── agent/                   # Agents
-│       ├── config/
-│       ├── entity/                  # JPA entities
-│       ├── rag/                     # RAG components
-│       ├── repository/              # Spring Data repositories
-│       ├── runner/                  # Application entrypoints
-│       ├── service/
-│       │   ├── etl/                 # ETL pipeline
-│       │   ├── review/              # Code review service
-│       │   ├── sync/                # Sync service
-│       ├── tool/                    # Tools for agent tool calling
-│       ├── util/
-│       └── vectorstore/             # Vector database
-├── _datasets/
-└── _backups/                  # Pre-built index & DB dump
-```
-
-### Important Classes
-- `agent/`: Agent implementations
-- `rag/retrieve/QueryContextRetriever.java`: RAG retriever that retrieves relevant contexts based on input query
-- `vectorstore/MyVectorStore.java`: The interface for a vector store that can be used for storing and retrieving chunks
-- `service/etl/ETLPipeline.java`: ETL pipeline entrypoint
-- `service/review/CodeReviewService.java`: Code review service entrypoint
-- `service/sync/SyncService.java`: Sync service entrypoint
-
-
 # Design Concepts
 
 ## Multi-Agent Code Review Workflow
@@ -150,6 +108,15 @@ docker-compose up -d
 > [!Warning]
 > If you want to run the ETL pipeline with the pre-extracted data, download the datasets in section [Datasets used](#datasets-used). And place the unzipped files under `./_datasets/` folder, and make sure the path configuration in `application.yml` is correct.
 
+# Terminal UI Build and Run
+
+```sh
+$ cd tui
+$ npm intall
+$ npm run build
+$ npm link
+$ llmcr
+```
 
 # Datasets used
 [Download Datasets](https://drive.google.com/file/d/1N2ZCtnLa7jt6w4i-FOr_kE1YLtJBT6FY/view?usp=drive_link)
@@ -186,12 +153,5 @@ export DOCKER_HOST="your-docker.sock"
 export TESTCONTAINERS_RYUK_DISABLED=true
 ```
 
-# Terminal UI Build and Run
-
-```sh
-$ cd tui
-$ npm intall
-$ npm run build
-$ npm link
-$ llmcr
-```
+#### npm test error: TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".tsx"
+update NodeJS to 24
