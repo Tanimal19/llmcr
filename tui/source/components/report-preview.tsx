@@ -160,17 +160,11 @@ const FullPreview = ({ reviewReport }: ReviewReportPreviewProps) => {
       <Text color="cyan">Overview</Text>
       <ReviewHeader reviewReport={reviewReport} checklistCount={checklistItems.length} issueCount={issues.length} />
 
-      <Section title="Interpretation">
-        <Text color="white">Change Description:</Text>
-        <Text color="gray">{reviewReport.interpretation?.changeDescription ?? '(none)'}</Text>
-        <Text color="white">Change Motivation:</Text>
-        <Text color="gray">{reviewReport.interpretation?.changeMotivation ?? '(none)'}</Text>
+      <Section title="Motivation">
+        <Text color="gray">{summary?.motivation ?? '(none)'}</Text>
       </Section>
 
-      <Section title="Main Report">
-        <Text color="white">Motivation:</Text>
-        <Text color="gray">{summary?.motivation ?? '(none)'}</Text>
-        <Text color="white">Suggestion:</Text>
+      <Section title="Suggestion">
         <Text color="gray">{summary?.suggestion ?? '(none)'}</Text>
       </Section>
 

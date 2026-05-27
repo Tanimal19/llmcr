@@ -155,13 +155,9 @@ test.serial('ReviewCommand renders review result preview from SSE result', async
   t.true(frameText.includes('Checklist Items: 0'));
   t.true(frameText.includes('Issues: 2'));
   t.true(frameText.includes('Overview'));
-  t.true(frameText.includes('Interpretation'));
-  t.true(frameText.includes('Change Description:'));
-  t.true(frameText.includes('Parser handling updates'));
-  t.true(frameText.includes('Main Report'));
-  t.true(frameText.includes('Motivation:'));
+  t.true(frameText.includes('Motivation'));
   t.true(frameText.includes('Improve reliability'));
-  t.true(frameText.includes('Suggestion:'));
+  t.true(frameText.includes('Suggestion'));
   t.true(frameText.includes('Add validation test'));
   t.true(frameText.includes('Good Points'));
   t.true(frameText.includes('Clear separation of concerns'));
@@ -222,15 +218,15 @@ test.serial('ReviewCommand handles missing summary payload without crashing', as
   t.true(frameText.includes('Review done. Press ESC to return.'));
   t.true(frameText.includes('PR: #456 Handle sparse report payload'));
   t.true(frameText.includes('Overview'));
-  t.true(frameText.includes('Main Report'));
-  t.true(frameText.includes('Motivation:'));
-  t.true(frameText.includes('Suggestion:'));
+  t.true(frameText.includes('Motivation'));
+  t.true(frameText.includes('Suggestion'));
   t.true(frameText.includes('Good Points'));
   t.true(frameText.includes('Bad Points'));
   t.true(frameText.includes('Implementation Details'));
   t.true(frameText.includes('Checklist'));
   t.true(frameText.includes('Checklist Items: 0'));
   t.true(frameText.includes('Issues: 0'));
+  t.true(frameText.includes('(none)'));
 
   unmount();
 });

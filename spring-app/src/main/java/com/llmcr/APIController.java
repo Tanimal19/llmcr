@@ -35,121 +35,125 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/api")
 public class APIController {
 
-  private static final Logger logger = LoggerFactory.getLogger(APIController.class);
+    private static final Logger logger = LoggerFactory.getLogger(APIController.class);
 
-  private final SseTaskManager sseTaskManager;
-  private final SystemConfig applicationProperties;
-  private final SystemConfigReader configReader;
-  private final ChatService chatService;
-  private final CodeReviewService codeReviewService;
-  private final SourceSyncService sourceSyncService;
-  private final SourceSyncTask sourceSyncTask;
+    private final SseTaskManager sseTaskManager;
+    private final SystemConfig applicationProperties;
+    private final SystemConfigReader configReader;
+    private final ChatService chatService;
+    private final CodeReviewService codeReviewService;
+    private final SourceSyncService sourceSyncService;
+    private final SourceSyncTask sourceSyncTask;
 
-  public APIController(
-      SseTaskManager sseTaskManager,
-      SystemConfig applicationProperties,
-      SystemConfigReader configReader,
-      ChatService chatService,
-      CodeReviewService codeReviewService,
-      ConfigSyncService configSyncService,
-      SourceSyncService sourceSyncService,
-      SourceSyncTask sourceSyncTask,
-      LoadService loadService) {
-    this.sseTaskManager = sseTaskManager;
-    this.applicationProperties = applicationProperties;
-    this.configReader = configReader;
+    public APIController(
+            SseTaskManager sseTaskManager,
+            SystemConfig applicationProperties,
+            SystemConfigReader configReader,
+            ChatService chatService,
+            CodeReviewService codeReviewService,
+            ConfigSyncService configSyncService,
+            SourceSyncService sourceSyncService,
+            SourceSyncTask sourceSyncTask,
+            LoadService loadService) {
+        this.sseTaskManager = sseTaskManager;
+        this.applicationProperties = applicationProperties;
+        this.configReader = configReader;
 
-    this.chatService = chatService;
-    this.codeReviewService = codeReviewService;
-    this.sourceSyncService = sourceSyncService;
-    this.sourceSyncTask = sourceSyncTask;
+        this.chatService = chatService;
+        this.codeReviewService = codeReviewService;
+        this.sourceSyncService = sourceSyncService;
+        this.sourceSyncTask = sourceSyncTask;
 
-    // On application startup, we want to ensure that the track roots and
-    // collections are in sync with the configuration.
-    boolean changed = false;
-    changed = configSyncService.syncTrackRoots();
-    changed = configSyncService.syncConfiguredCollections();
-    if (changed) {
-      // If there is any change in track roots or collections, we need to reload all
-      // chunks to update the collection-chunk mapping in the vector store.
-      loadService.rebuildCollectionChunkMapping();
-      loadService.reloadAllCollections();
-    }
-  }
-
-  public record ChatRequest(String query) {}
-
-  public record SetRagRequest(Set<String> trackRootPaths) {}
-
-  @GetMapping("/health")
-  public String health() {
-    logger.info("Health check endpoint called");
-    return "ok";
-  }
-
-  @GetMapping("/info")
-  public Map<String, Object> getInfo() {
-    logger.info("Get info request received");
-    String configPath = configReader.getConfigFilePath();
-    String lastSyncTime = sourceSyncService.getLastAllSyncTime();
-
-    return Map.of(
-        "configPath", configPath, "config", applicationProperties, "lastSyncTime", lastSyncTime);
-  }
-
-  @PostMapping("/chat")
-  public ChatResponse chat(@RequestBody ChatRequest request) {
-    if (request == null || request.query() == null || request.query().isBlank()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "query must not be blank");
+        // On application startup, we want to ensure that the track roots and
+        // collections are in sync with the configuration.
+        boolean changed = false;
+        changed = configSyncService.syncTrackRoots();
+        changed = configSyncService.syncConfiguredCollections();
+        if (changed) {
+            // If there is any change in track roots or collections, we need to rebuild all
+            // chunks to update the collection-chunk mapping in the vector store.
+            loadService.rebuildCollectionChunkMapping();
+        }
+        // We always reload all collections on startup to ensure the vector store is up
+        // to date with the latest chunks.
+        loadService.reloadAllCollections();
     }
 
-    String query = request.query();
-    logger.info("Chat request received: {}", query);
-
-    return chatService.chat(query);
-  }
-
-  @PostMapping("/getrag")
-  public Map<String, Boolean> getRagScope() {
-    return chatService.getRagScope();
-  }
-
-  @PostMapping("/setrag")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void setRagScope(@RequestBody SetRagRequest request) {
-    if (request == null || request.trackRootPaths() == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "trackRootPaths must not be null");
+    public record ChatRequest(String query) {
     }
 
-    logger.info("Set RAG scope request received: {}", request.trackRootPaths());
-    chatService.setRagScope(request.trackRootPaths());
-  }
-
-  @PostMapping(value = "/review", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public SseEmitter review(@RequestBody CodeReviewInput request) {
-    logger.info("Code review request received: {}", request);
-    return sseTaskManager.start(codeReviewService, request);
-  }
-
-  @GetMapping("/lsdb")
-  public List<TrackRootPreview> lsdb() {
-    logger.info("List track roots request received");
-    return sourceSyncService.getAllTrackRootPreview();
-  }
-
-  @PostMapping(value = "/sync", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public SseEmitter sync() {
-    logger.info("Sync request received");
-    return sseTaskManager.start(sourceSyncTask, null);
-  }
-
-  @PostMapping("/cancel/{taskId}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void cancelSseTask(@PathVariable String taskId) {
-    if (taskId == null || taskId.isBlank()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId must not be blank");
+    public record SetRagRequest(Set<String> trackRootPaths) {
     }
 
-    sseTaskManager.requestCancellation(taskId, "client_request");
-  }
+    @GetMapping("/health")
+    public String health() {
+        logger.info("Health check endpoint called");
+        return "ok";
+    }
+
+    @GetMapping("/info")
+    public Map<String, Object> getInfo() {
+        logger.info("Get info request received");
+        String configPath = configReader.getConfigFilePath();
+        String lastSyncTime = sourceSyncService.getLastAllSyncTime();
+
+        return Map.of(
+                "configPath", configPath, "config", applicationProperties, "lastSyncTime", lastSyncTime);
+    }
+
+    @PostMapping("/chat")
+    public ChatResponse chat(@RequestBody ChatRequest request) {
+        if (request == null || request.query() == null || request.query().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "query must not be blank");
+        }
+
+        String query = request.query();
+        logger.info("Chat request received: {}", query);
+
+        return chatService.chat(query);
+    }
+
+    @PostMapping("/getrag")
+    public Map<String, Boolean> getRagScope() {
+        return chatService.getRagScope();
+    }
+
+    @PostMapping("/setrag")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void setRagScope(@RequestBody SetRagRequest request) {
+        if (request == null || request.trackRootPaths() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "trackRootPaths must not be null");
+        }
+
+        logger.info("Set RAG scope request received: {}", request.trackRootPaths());
+        chatService.setRagScope(request.trackRootPaths());
+    }
+
+    @PostMapping(value = "/review", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter review(@RequestBody CodeReviewInput request) {
+        logger.info("Code review request received: {}", request);
+        return sseTaskManager.start(codeReviewService, request);
+    }
+
+    @GetMapping("/lsdb")
+    public List<TrackRootPreview> lsdb() {
+        logger.info("List track roots request received");
+        return sourceSyncService.getAllTrackRootPreview();
+    }
+
+    @PostMapping(value = "/sync", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter sync() {
+        logger.info("Sync request received");
+        return sseTaskManager.start(sourceSyncTask, null);
+    }
+
+    @PostMapping("/cancel/{taskId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelSseTask(@PathVariable String taskId) {
+        if (taskId == null || taskId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId must not be blank");
+        }
+
+        sseTaskManager.requestCancellation(taskId, "client_request");
+    }
 }
