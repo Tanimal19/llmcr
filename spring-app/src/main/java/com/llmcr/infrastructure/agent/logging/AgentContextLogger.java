@@ -69,6 +69,7 @@ public class AgentContextLogger {
         Files.createDirectories(Paths.get(outputDirectory, prefixDirectory));
         this.logFilePath = Paths.get(outputDirectory, prefixDirectory, DEFAULT_LOG_FILE_NAME);
         initializeLogFile();
+        AgentContextHolder.setOnContextFinished(this::logAgentExecution);
         logger.info("Agent log file path updated to: {}", logFilePath);
       } catch (IOException e) {
         logger.warn("Failed to initialize new agent log file path: {}", logFilePath, e);
@@ -79,6 +80,7 @@ public class AgentContextLogger {
   public void disableLog() {
     synchronized (fileWriteLock) {
       this.logFilePath = null;
+      AgentContextHolder.setOnContextFinished(null);
       logger.info("Agent log file path cleared. Logging is now disabled.");
     }
   }
@@ -90,8 +92,6 @@ public class AgentContextLogger {
         Files.createDirectories(logFilePath.getParent());
         initializeLogFile();
         logger.info("Agent logging service initialized with file: {}", logFilePath);
-        // Register this service's logging function to context holder
-        AgentContextHolder.setOnContextFinished(this::logAgentExecution);
       } catch (IOException e) {
         logger.warn("Failed to initialize agent log file path: {}", logFilePath, e);
       }

@@ -22,13 +22,15 @@ public class PMDTool extends StaticAnalysisTool {
     return List.of(
         pmdExecutable.toString(),
         "check",
-        "--no-fail-on-violation",
-        "--no-progress",
         "-f",
         "xml",
         "-R",
         configFilePath.toString(),
         "-d",
-        sourceDir.toString());
+        sourceDir.toString(),
+        "--no-fail-on-violation",
+        "--no-progress",
+        "--minimum-priority",
+        "2");
   }
 }

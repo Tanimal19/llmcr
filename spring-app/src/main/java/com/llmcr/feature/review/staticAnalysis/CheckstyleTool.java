@@ -14,6 +14,8 @@ public class CheckstyleTool extends StaticAnalysisTool {
 
   @Override
   protected List<String> getCommand(Path sourceDir) {
+    Path configFilePath =
+        DEFAULT_TOOL_DIRECTORY.resolve("checkstyle.config.xml").toAbsolutePath().normalize();
     Path checkstyleJar =
         DEFAULT_TOOL_DIRECTORY.resolve("checkstyle-13.4.2-all.jar").toAbsolutePath().normalize();
 
@@ -22,7 +24,7 @@ public class CheckstyleTool extends StaticAnalysisTool {
         "-jar",
         checkstyleJar.toString(),
         "-c",
-        "/google_checks.xml",
+        configFilePath.toString(),
         "-f",
         "xml",
         sourceDir.toString());

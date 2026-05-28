@@ -34,13 +34,13 @@ class StaticAnalysisToolsTest {
       """
             package com.example;
 
-            public class PMDExample {
-                public void readFile() {
-                    try {
-                        int result = 10 / 0;
-                    } catch (Exception e) {
-                        // VIOLATION: Empty catch blocks are considered a code smell.
-                    }
+            public class Example {
+                public void print() {
+                    System.out.println("SystemPrintln");
+                }
+
+                public int computeMagicNumber(int num) {
+                    return num * 12 / 100;
                 }
             }
             """;

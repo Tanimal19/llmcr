@@ -24,4 +24,5 @@ spring-app/config.yml
 */node_modules/
 
 
-tools/
+tools/pmd-bin-**
+tools/*.jar
