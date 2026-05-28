@@ -7,7 +7,8 @@ public record CodeReviewReport(
     String prTitle,
     ReportContent content,
     InterpretationContent interpretation,
-    List<ChecklistItem> checklistItems) {
+    List<ChecklistItem> checklistItems,
+    String staticAnalysisResults) {
 
   public record CodeChange(String filePath, String diffContent) {}
 

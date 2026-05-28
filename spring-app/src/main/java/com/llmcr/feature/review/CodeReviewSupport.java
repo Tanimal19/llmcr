@@ -2,7 +2,6 @@ package com.llmcr.feature.review;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llmcr.domain.exception.APIServiceException;
-import com.llmcr.domain.sse.SseTaskObject;
 import com.llmcr.feature.review.CodeReviewReport.CodeChange;
 import com.llmcr.feature.review.PullRequestParser.PullRequestData;
 import java.io.IOException;
@@ -11,12 +10,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
-import org.springframework.stereotype.Service;
 
-@Service
-public class CodeReviewExecutionSupport {
+public final class CodeReviewSupport {
 
   private static final ObjectMapper REPORT_OBJECT_MAPPER = new ObjectMapper();
   private static final String DEFAULT_REPORT_FILE_NAME = "review.json";
@@ -25,7 +21,7 @@ public class CodeReviewExecutionSupport {
   private static final int MAX_CHANGED_FILES = 20;
   private static final int MAX_TOTAL_DIFF_SIZE = 100_000;
 
-  public PullRequestData parsePullRequestData(
+  public static PullRequestData parsePullRequestData(
       String inputFilePath, Integer jsonlIndex, boolean useMockData) {
     try {
       if (useMockData) {
@@ -49,13 +45,13 @@ public class CodeReviewExecutionSupport {
     }
   }
 
-  public List<CodeChange> toCodeChanges(PullRequestData prData) {
+  public static List<CodeChange> toCodeChanges(PullRequestData prData) {
     return prData.changedFiles().stream()
         .map(file -> new CodeChange(file.path(), file.patch()))
         .toList();
   }
 
-  public void validatePullRequestSize(List<CodeChange> codeChanges) {
+  public static void validatePullRequestSize(List<CodeChange> codeChanges) {
     int changedSize = codeChanges.stream().mapToInt(change -> change.diffContent().length()).sum();
     if (codeChanges.size() > MAX_CHANGED_FILES || changedSize > MAX_TOTAL_DIFF_SIZE) {
       throw new APIServiceException(
@@ -67,16 +63,18 @@ public class CodeReviewExecutionSupport {
     }
   }
 
-  public Path rebuildChangedJavaFilesToCache(
-      PullRequestData prData,
-      String outputDir,
-      String prefixDirectory,
-      BooleanSupplier cancellationRequested) {
-    Path cacheDirectory = Paths.get(outputDir, prefixDirectory, DEFAULT_CACHE_SUBDIR);
+  /**
+   * Rebuilds the changed Java files from the pull request data into a cache directory for analysis.
+   *
+   * @return the path to the cache directory containing the changed Java files
+   */
+  public static Path rebuildChangedJavaFilesToCache(
+      PullRequestData prData, String outputDir, String prefixDirectory) {
+    Path cacheDirectory =
+        Paths.get(outputDir, prefixDirectory, DEFAULT_CACHE_SUBDIR).toAbsolutePath().normalize();
     try {
       Files.createDirectories(cacheDirectory);
       for (PullRequestParser.ChangedFileEntry changedFile : prData.changedFiles()) {
-        SseTaskObject.throwIfCancelled(cancellationRequested);
         if (!isJavaPath(changedFile.path())
             || changedFile.content() == null
             || changedFile.content().isBlank()) {
@@ -103,41 +101,8 @@ public class CodeReviewExecutionSupport {
     }
   }
 
-  public int countCachedJavaFiles(Path cacheDirectory) {
-    try (Stream<Path> stream = Files.walk(cacheDirectory)) {
-      return (int)
-          stream.filter(Files::isRegularFile).filter(path -> isJavaPath(path.toString())).count();
-    } catch (IOException ex) {
-      throw new APIServiceException(
-          APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
-          "Failed to count cached Java files",
-          ex);
-    }
-  }
-
-  public String runStaticAnalysisOnCachedJavaFiles(
-      Path cacheDirectory, BooleanSupplier cancellationRequested) {
-    List<Path> javaFiles;
-    try (Stream<Path> stream = Files.walk(cacheDirectory)) {
-      javaFiles =
-          stream.filter(Files::isRegularFile).filter(path -> isJavaPath(path.toString())).toList();
-    } catch (IOException ex) {
-      throw new APIServiceException(
-          APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
-          "Failed to list cached Java files for static analysis",
-          ex);
-    }
-
-    if (javaFiles.isEmpty()) {
-      return "No Java files available for static analysis.";
-    }
-
-    // TODO: Implement actual static analysis logic here.
-
-    return null;
-  }
-
-  public void cleanupCacheDirectory(Path cacheDirectory) {
+  /** Recursively deletes the cache directory and all its contents */
+  public static void cleanupCacheDirectory(Path cacheDirectory) {
     if (cacheDirectory == null || !Files.exists(cacheDirectory)) {
       return;
     }
@@ -164,7 +129,8 @@ public class CodeReviewExecutionSupport {
     }
   }
 
-  public Path writeReport(CodeReviewReport report, String outputDir, String prefixDirectory) {
+  public static Path writeReport(
+      CodeReviewReport report, String outputDir, String prefixDirectory) {
     try {
       Path dir = Paths.get(outputDir, prefixDirectory);
       Files.createDirectories(dir);
@@ -176,15 +142,20 @@ public class CodeReviewExecutionSupport {
     }
   }
 
-  private boolean isJsonlPath(String inputFilePath) {
+  private static boolean isJsonlPath(String inputFilePath) {
     return inputFilePath != null && inputFilePath.toLowerCase().endsWith(".jsonl");
   }
 
-  private boolean isJavaPath(String path) {
+  private static boolean isJavaPath(String path) {
     return path != null && path.toLowerCase().endsWith(".java");
   }
 
-  private Path sanitizeRelativePath(String changedFilePath) {
+  /**
+   * Sanitizes the changed file path to ensure it is a relative path that does not traverse outside
+   * the intended cache directory. It normalizes path separators and checks for path traversal
+   * patterns.
+   */
+  private static Path sanitizeRelativePath(String changedFilePath) {
     if (changedFilePath == null || changedFilePath.isBlank()) {
       throw new APIServiceException(
           APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,

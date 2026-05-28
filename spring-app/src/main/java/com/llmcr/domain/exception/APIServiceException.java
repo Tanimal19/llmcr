@@ -49,6 +49,10 @@ public class APIServiceException extends RuntimeException {
         "reviewparsefailed", "Failed to parse pull request data", HttpStatus.INTERNAL_SERVER_ERROR),
     REVIEW_PR_TOO_LARGE(
         "reviewprtoolarge", "Pull request has too many changed files", HttpStatus.BAD_REQUEST),
+    REVIEW_STATIC_ANALYSIS_FAILED(
+        "reviewstaticanalysisfailed",
+        "Review static analysis stage failed",
+        HttpStatus.INTERNAL_SERVER_ERROR),
     REVIEW_INTERPRETATION_FAILED(
         "reviewinterpretationfailed",
         "Review interpretation stage failed",

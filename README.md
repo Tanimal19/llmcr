@@ -121,8 +121,8 @@ $ llmcr
 
 # Static Analysis Tools
 ```
-pmd check -f xml -R <config> -d <source>
-java -jar checkstyle.jar -c /google_checks.xml -f xml <source>
+pmd check -f xml -R <config> -d {source_dir} > pmd.xml
+java -jar checkstyle.jar -c /google_checks.xml -f xml {source_dir} ... > checkstyle.xml
 ```
 
 # Datasets used

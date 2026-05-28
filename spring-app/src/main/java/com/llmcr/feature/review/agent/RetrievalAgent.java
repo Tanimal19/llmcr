@@ -1,9 +1,9 @@
 package com.llmcr.feature.review.agent;
 
 import com.llmcr.config.provider.AgentConfigProvider;
-import com.llmcr.feature.review.tool.DatabaseTool;
-import com.llmcr.feature.review.tool.MyToolCallingManager;
-import com.llmcr.feature.review.tool.MyToolCallingManager.ToolCall;
+import com.llmcr.feature.review.agent.tool.DatabaseTool;
+import com.llmcr.feature.review.agent.tool.MyToolCallingManager;
+import com.llmcr.feature.review.agent.tool.MyToolCallingManager.ToolCall;
 import com.llmcr.infrastructure.agent.BaseAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import java.util.ArrayList;

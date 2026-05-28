@@ -69,7 +69,8 @@ public class AgentContextLogger {
         Files.createDirectories(Paths.get(outputDirectory, prefixDirectory));
         this.logFilePath = Paths.get(outputDirectory, prefixDirectory, DEFAULT_LOG_FILE_NAME);
         initializeLogFile();
-        logger.debug("Agent log file path updated to: {}", logFilePath);
+        AgentContextHolder.setOnContextFinished(this::logAgentExecution);
+        logger.info("Agent log file path updated to: {}", logFilePath);
       } catch (IOException e) {
         logger.warn("Failed to initialize new agent log file path: {}", logFilePath, e);
       }
@@ -79,7 +80,8 @@ public class AgentContextLogger {
   public void disableLog() {
     synchronized (fileWriteLock) {
       this.logFilePath = null;
-      logger.debug("Agent log file path cleared. Logging is now disabled.");
+      AgentContextHolder.setOnContextFinished(null);
+      logger.info("Agent log file path cleared. Logging is now disabled.");
     }
   }
 
@@ -89,14 +91,12 @@ public class AgentContextLogger {
       try {
         Files.createDirectories(logFilePath.getParent());
         initializeLogFile();
-        logger.debug("Agent logging service initialized with file: {}", logFilePath);
-        // Register this service's logging function to context holder
-        AgentContextHolder.setOnContextFinished(this::logAgentExecution);
+        logger.info("Agent logging service initialized with file: {}", logFilePath);
       } catch (IOException e) {
         logger.warn("Failed to initialize agent log file path: {}", logFilePath, e);
       }
     } else {
-      logger.debug("Agent logging disabled (llmcr.agent.log.file not configured)");
+      logger.info("Agent logging disabled (llmcr.agent.log.file not configured)");
     }
   }
 
@@ -107,7 +107,7 @@ public class AgentContextLogger {
 
     try {
       appendEntry(entry);
-      logger.debug("Logged agent execution for: {}", entry.agentName);
+      logger.info("Logged agent execution for: {}", entry.agentName);
     } catch (IOException e) {
       logger.error("Failed to write agent log entry to {}", logFilePath, e);
     }
