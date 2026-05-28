@@ -1,4 +1,4 @@
-package com.llmcr.feature.review;
+package com.llmcr.feature.review.staticAnalysis;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -8,50 +8,22 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public final class StaticAnalysisTools {
-
+public abstract class StaticAnalysisTool {
   private static final long COMMAND_TIMEOUT_SECONDS = Duration.ofMinutes(2).toSeconds();
+  protected static final Path DEFAULT_TOOL_DIRECTORY =
+      Path.of("../tools").toAbsolutePath().normalize();
 
-  private static final Path TOOL_DIRECTORY = Path.of("../tools").toAbsolutePath().normalize();
-
-  private static final String PMD_CONFIG_FILE_NAME = "pmd.config.xml";
-  private static final String PMD_EXECUTABLE_NAME = "pmd-bin-7.24.0/bin/pmd";
-  private static final String CHECKSTYLE_JAR_NAME = "checkstyle-13.4.2-all.jar";
-
-  public static String runPmd(Path sourceDir) {
-    Path configFilePath = TOOL_DIRECTORY.resolve(PMD_CONFIG_FILE_NAME).toAbsolutePath().normalize();
-    Path pmdExecutable = TOOL_DIRECTORY.resolve(PMD_EXECUTABLE_NAME).toAbsolutePath().normalize();
-
-    return executeCommandAndReadXml(
-        List.of(
-            pmdExecutable.toString(),
-            "check",
-            "--no-fail-on-violation",
-            "--no-progress",
-            "-f",
-            "xml",
-            "-R",
-            configFilePath.toString(),
-            "-d",
-            sourceDir.toString()),
-        "pmd-");
+  /**
+   * Runs the static analysis tool on the given source directory and returns the XML output as a
+   * string
+   */
+  public String run(Path sourceDir) {
+    return executeCommandAndReadXml(getCommand(sourceDir), getToolName() + "-");
   }
 
-  public static String runCheckstyle(Path sourceDir) {
-    Path checkstyleJar = TOOL_DIRECTORY.resolve(CHECKSTYLE_JAR_NAME).toAbsolutePath().normalize();
+  public abstract String getToolName();
 
-    return executeCommandAndReadXml(
-        List.of(
-            "java",
-            "-jar",
-            checkstyleJar.toString(),
-            "-c",
-            "/google_checks.xml",
-            "-f",
-            "xml",
-            sourceDir.toString()),
-        "checkstyle-");
-  }
+  protected abstract List<String> getCommand(Path sourceDir);
 
   private static String executeCommandAndReadXml(List<String> command, String tempPrefix) {
     Path tempXml;

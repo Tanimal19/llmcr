@@ -235,6 +235,7 @@ class CodeReviewSupportTest {
                 new ChecklistItemAnswer(
                     "yes",
                     "validated",
-                    List.of(new EvidenceItem("src/A.java", "10-20", "checks null"))))));
+                    List.of(new EvidenceItem("src/A.java", "10-20", "checks null"))))),
+        "Static analysis results");
   }
 }

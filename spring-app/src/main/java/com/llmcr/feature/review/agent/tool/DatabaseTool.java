@@ -1,4 +1,4 @@
-package com.llmcr.feature.review.tool;
+package com.llmcr.feature.review.agent.tool;
 
 import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.domain.util.StringUtils;

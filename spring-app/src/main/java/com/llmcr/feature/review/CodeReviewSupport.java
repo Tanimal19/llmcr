@@ -70,7 +70,8 @@ public final class CodeReviewSupport {
    */
   public static Path rebuildChangedJavaFilesToCache(
       PullRequestData prData, String outputDir, String prefixDirectory) {
-    Path cacheDirectory = Paths.get(outputDir, prefixDirectory, DEFAULT_CACHE_SUBDIR);
+    Path cacheDirectory =
+        Paths.get(outputDir, prefixDirectory, DEFAULT_CACHE_SUBDIR).toAbsolutePath().normalize();
     try {
       Files.createDirectories(cacheDirectory);
       for (PullRequestParser.ChangedFileEntry changedFile : prData.changedFiles()) {
