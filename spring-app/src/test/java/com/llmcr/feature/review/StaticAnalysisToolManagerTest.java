@@ -13,27 +13,27 @@ import org.junit.jupiter.api.io.TempDir;
 
 class StaticAnalysisToolManagerTest {
 
-    @TempDir
-    Path tempDir;
+  @TempDir Path tempDir;
 
-    @Test
-    void runToolsReturnsXmlOutputForTemporaryJavaSourceDirectory() throws Exception {
-        Path sourceDir = tempDir.resolve("src/main/java/com/example");
-        Files.createDirectories(sourceDir);
-        Files.writeString(sourceDir.resolve("Sample.java"), SAMPLE_JAVA_CODE);
+  @Test
+  void runToolsReturnsXmlOutputForTemporaryJavaSourceDirectory() throws Exception {
+    Path sourceDir = tempDir.resolve("src/main/java/com/example");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("Sample.java"), SAMPLE_JAVA_CODE);
 
-        StaticAnalysisToolManager staticAnalysisToolManager = new StaticAnalysisToolManager(
-                List.of(new PMDTool(), new CheckstyleTool()));
+    StaticAnalysisToolManager staticAnalysisToolManager =
+        new StaticAnalysisToolManager(List.of(new PMDTool(), new CheckstyleTool()));
 
-        String analysisOutput = staticAnalysisToolManager.runStaticAnalysisTools(sourceDir);
+    String analysisOutput = staticAnalysisToolManager.runStaticAnalysisTools(sourceDir);
 
-        assertThat(analysisOutput).isNotNull().isNotBlank();
-        assertThat(analysisOutput).contains("pmd Output:");
-        assertThat(analysisOutput).contains("checkstyle Output:");
-        assertThat(staticAnalysisToolManager.getCodeAnalysis()).isEqualTo(analysisOutput);
-    }
+    assertThat(analysisOutput).isNotNull().isNotBlank();
+    assertThat(analysisOutput).contains("pmd Output:");
+    assertThat(analysisOutput).contains("checkstyle Output:");
+    assertThat(staticAnalysisToolManager.getCodeAnalysis()).isEqualTo(analysisOutput);
+  }
 
-    private static final String SAMPLE_JAVA_CODE = """
+  private static final String SAMPLE_JAVA_CODE =
+      """
             package com.example;
 
             public class Example {

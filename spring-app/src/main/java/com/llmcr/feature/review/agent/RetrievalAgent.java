@@ -4,7 +4,7 @@ import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.agent.tool.DatabaseTool;
 import com.llmcr.feature.review.agent.tool.MyToolCallingManager;
 import com.llmcr.feature.review.agent.tool.MyToolCallingManager.ToolCall;
-import com.llmcr.feature.review.agent.tool.StaticAnalysisTool;
+import com.llmcr.feature.review.agent.tool.StaticAnalysisToolManager;
 import com.llmcr.infrastructure.agent.BaseAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import java.util.ArrayList;
@@ -75,7 +75,7 @@ public class RetrievalAgent
       AgentConfigProvider configProvider,
       ModelClientFactory modelClientFactory,
       DatabaseTool databaseTool,
-      StaticAnalysisTool staticAnalysisTool) {
+      StaticAnalysisToolManager staticAnalysisTool) {
     super(configProvider, modelClientFactory);
 
     ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool, staticAnalysisTool);
