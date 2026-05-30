@@ -89,7 +89,7 @@ public class Source {
   }
 
   public String getSourceName() {
-    if (path == null || path.isEmpty()) {
+    if (path == null || path.isBlank()) {
       return "unknown_source";
     }
     String[] parts = path.replace("\\", "/").split("/");

@@ -11,7 +11,7 @@ import com.llmcr.feature.review.agent.InterpretationAgent.InterpretationAgentInp
 import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentInput;
 import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentOutput;
 import com.llmcr.feature.review.agent.SummaryAgent.SummaryAgentInput;
-import com.llmcr.feature.review.staticAnalysis.StaticAnalysisTool;
+import com.llmcr.feature.review.agent.tool.StaticAnalysisToolManager;
 import com.llmcr.infrastructure.agent.logging.AgentContextLogger;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -37,7 +37,7 @@ public class CodeReviewService
   private static final String STAGE_COMPUTATION = "COMPUTATION";
   private static final String STAGE_SUMMARY = "SUMMARY";
 
-  private final List<StaticAnalysisTool> staticAnalysisTools;
+  private final StaticAnalysisToolManager staticAnalysisToolManager;
   private final InterpretationAgent interpretationAgent;
   private final PlanningAgent planningAgent;
   private final ComputationAgent computationAgent;
@@ -47,14 +47,14 @@ public class CodeReviewService
 
   public CodeReviewService(
       LoggingConfigProvider configProvider,
-      List<StaticAnalysisTool> staticAnalysisTools,
+      StaticAnalysisToolManager staticAnalysisToolManager,
       InterpretationAgent interpretationAgent,
       PlanningAgent planningAgent,
       ComputationAgent computationAgent,
       SummaryAgent summaryAgent,
       AgentContextLogger contextLogger) {
     this.outputDir = configProvider.getReviewOutputDirectory();
-    this.staticAnalysisTools = staticAnalysisTools;
+    this.staticAnalysisToolManager = staticAnalysisToolManager;
     this.interpretationAgent = interpretationAgent;
     this.planningAgent = planningAgent;
     this.computationAgent = computationAgent;
@@ -83,23 +83,21 @@ public class CodeReviewService
       CodeReviewInput input,
       Consumer<SseTaskProgress> progressListener,
       BooleanSupplier cancellationRequested) {
-    Path cacheDirectory = null;
     try {
       String prefixDirectory = beginReviewPipeline(progressListener, cancellationRequested);
       contextLogger.enableLog(prefixDirectory);
 
       ParseStageResult parseStageResult =
           runParseStage(input, progressListener, cancellationRequested);
-      StaticAnalysisStageResult staticAnalysisStageResult =
+      String codeAnalysisOutput =
           runStaticAnalysisStage(
               parseStageResult.prData(), prefixDirectory, progressListener, cancellationRequested);
-      cacheDirectory = staticAnalysisStageResult.cachedDirectory();
 
       InterpretationPlanResult interpretationPlan =
           runInterpretationAndPlanningStage(
               input,
               parseStageResult.codeChanges(),
-              staticAnalysisStageResult.codeAnalysis(),
+              codeAnalysisOutput,
               progressListener,
               cancellationRequested);
       List<ChecklistItem> items =
@@ -111,7 +109,7 @@ public class CodeReviewService
       ReportContent reviewResult =
           runSummaryStage(
               parseStageResult.codeChanges(),
-              staticAnalysisStageResult.codeAnalysis(),
+              codeAnalysisOutput,
               items,
               progressListener,
               cancellationRequested);
@@ -121,7 +119,7 @@ public class CodeReviewService
           reviewResult,
           interpretationPlan.interpretation(),
           items,
-          staticAnalysisStageResult.codeAnalysis(),
+          codeAnalysisOutput,
           prefixDirectory,
           progressListener,
           cancellationRequested);
@@ -133,16 +131,6 @@ public class CodeReviewService
           "Code review pipeline execution failed",
           ex);
     } finally {
-      try {
-        CodeReviewSupport.cleanupCacheDirectory(cacheDirectory);
-        emitProgress(
-            progressListener, STAGE_STATIC_ANALYSIS, "Cleaned cache directory: " + cacheDirectory);
-      } catch (Exception ex) {
-        emitProgress(
-            progressListener,
-            STAGE_STATIC_ANALYSIS,
-            "Failed to clean cache directory: " + cacheDirectory + ", reason: " + ex.getMessage());
-      }
       contextLogger.disableLog();
     }
   }
@@ -178,7 +166,7 @@ public class CodeReviewService
     }
   }
 
-  private StaticAnalysisStageResult runStaticAnalysisStage(
+  private String runStaticAnalysisStage(
       PullRequestData prData,
       String prefixDirectory,
       Consumer<SseTaskProgress> progressListener,
@@ -193,17 +181,16 @@ public class CodeReviewService
       throwIfCancelled(cancellationRequested);
       Path cachedDirectory =
           CodeReviewSupport.rebuildChangedJavaFilesToCache(prData, outputDir, prefixDirectory);
-      StringBuilder codeAnalysis = new StringBuilder();
-      for (StaticAnalysisTool tool : staticAnalysisTools) {
-        codeAnalysis.append("%s Output:\n".formatted(tool.getToolName()));
-        codeAnalysis.append(tool.run(cachedDirectory)).append("\n");
-      }
-      String codeAnalysisOutput = codeAnalysis.toString();
+
+      String codeAnalysisOutput = staticAnalysisToolManager.runStaticAnalysisTools(cachedDirectory);
       emitProgress(
           progressListener,
           STAGE_STATIC_ANALYSIS,
           "Static analysis completed:\n" + codeAnalysisOutput);
-      return new StaticAnalysisStageResult(cachedDirectory, codeAnalysisOutput);
+
+      CodeReviewSupport.cleanupCacheDirectory(cachedDirectory);
+
+      return codeAnalysisOutput;
     } catch (Exception ex) {
       throw new APIServiceException(
           APIServiceException.ErrorCode.REVIEW_STATIC_ANALYSIS_FAILED,
@@ -384,6 +371,4 @@ public class CodeReviewService
       InterpretationContent interpretation, PlanningAgentOutput plan) {}
 
   private record ParseStageResult(PullRequestData prData, List<CodeChange> codeChanges) {}
-
-  private record StaticAnalysisStageResult(Path cachedDirectory, String codeAnalysis) {}
 }

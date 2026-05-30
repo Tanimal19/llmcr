@@ -4,6 +4,7 @@ import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.agent.tool.DatabaseTool;
 import com.llmcr.feature.review.agent.tool.MyToolCallingManager;
 import com.llmcr.feature.review.agent.tool.MyToolCallingManager.ToolCall;
+import com.llmcr.feature.review.agent.tool.StaticAnalysisTool;
 import com.llmcr.infrastructure.agent.BaseAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import java.util.ArrayList;
@@ -73,10 +74,11 @@ public class RetrievalAgent
   public RetrievalAgent(
       AgentConfigProvider configProvider,
       ModelClientFactory modelClientFactory,
-      DatabaseTool databaseTool) {
+      DatabaseTool databaseTool,
+      StaticAnalysisTool staticAnalysisTool) {
     super(configProvider, modelClientFactory);
 
-    ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool);
+    ToolCallback[] toolCallbacks = ToolCallbacks.from(databaseTool, staticAnalysisTool);
     this.toolCallingManager = new MyToolCallingManager(toolCallbacks);
 
     StringBuilder toolDefBuilder = new StringBuilder();
@@ -89,6 +91,11 @@ public class RetrievalAgent
   @Override
   protected String getAgentName() {
     return AGENT_NAME;
+  }
+
+  @Override
+  protected Class<RetrievalModelResponse> getOutputClass() {
+    return RetrievalModelResponse.class;
   }
 
   @Override

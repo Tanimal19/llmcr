@@ -28,7 +28,7 @@ public class StringUtils {
 
   /** clean markdown code block (```json ... ```) */
   public static String cleanMarkdownCodeBlocks(String text) {
-    if (text == null || text.isEmpty()) {
+    if (text == null || text.isBlank()) {
       return text;
     }
 

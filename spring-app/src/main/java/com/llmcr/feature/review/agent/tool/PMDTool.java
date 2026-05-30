@@ -1,4 +1,4 @@
-package com.llmcr.feature.review.staticAnalysis;
+package com.llmcr.feature.review.agent.tool;
 
 import java.nio.file.Path;
 import java.util.List;

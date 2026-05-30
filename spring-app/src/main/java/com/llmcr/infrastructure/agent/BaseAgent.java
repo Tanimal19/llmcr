@@ -117,8 +117,8 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
 
   @SuppressWarnings("unchecked")
   protected R convertRawResponse(String rawResponse) {
-    if (rawResponse == null) {
-      return null;
+    if (rawResponse == null || rawResponse.isBlank()) {
+      return (R) "{}"; // return empty JSON object
     }
 
     int attempt = 0;

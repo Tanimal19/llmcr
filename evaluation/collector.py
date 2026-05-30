@@ -14,7 +14,7 @@ from scheme import ChangedFileEntry, CommentEntry, PullRequestEntry
 REPO = "spring-projects/spring-ai"
 MAX_PRS = 20
 AFTER_RELEASE_RAG = "v2.0.0-M1"
-BEFORE_DATE = "2026-05-15"
+BEFORE_DATE = "2026-05-01"
 MIN_DESCRIPTION_WORDS = 30
 MIN_COMMENTS = 3
 OUTPUT_PATH = Path("exports") / "eval.jsonl"
@@ -213,12 +213,75 @@ class GitHubPRCollector:
 
         return files
 
+    def get_first_commit_sha(self, pr_number: int) -> Optional[str]:
+        commits = self.fetch_paginated(f"{self.base_api}/pulls/{pr_number}/commits")
+        if not commits:
+            return None
+
+        first_commit = commits[0]
+        if not isinstance(first_commit, dict):
+            return None
+
+        sha = first_commit.get("sha")
+        return sha if isinstance(sha, str) and sha else None
+
+    def fetch_commit_changed_files(self, commit_sha: str) -> List[ChangedFileEntry]:
+        files: List[ChangedFileEntry] = []
+
+        commit = self.gh_get(f"{self.base_api}/commits/{commit_sha}")
+        if not isinstance(commit, dict):
+            return files
+
+        changed = commit.get("files")
+        if not isinstance(changed, list):
+            return files
+
+        for file_info in changed:
+            if not isinstance(file_info, dict):
+                continue
+
+            content = ""
+            status = (file_info.get("status") or "").lower()
+            contents_url = file_info.get("contents_url")
+
+            if contents_url and status != "removed":
+                try:
+                    content_response = self.gh_get(
+                        contents_url,
+                        params={"ref": commit_sha},
+                    )
+                    if isinstance(content_response, dict):
+                        encoding = (content_response.get("encoding") or "").lower()
+                        if encoding == "base64":
+                            encoded = content_response.get("content") or ""
+                            content = base64.b64decode(encoded.encode("utf-8")).decode(
+                                "utf-8"
+                            )
+                        elif "content" in content_response:
+                            content = content_response.get("content") or ""
+                except Exception:
+                    content = ""
+
+            files.append(
+                ChangedFileEntry(
+                    path=file_info.get("filename") or "",
+                    previous_path=file_info.get("previous_filename"),
+                    patch=file_info.get("patch") or "",
+                    content=content,
+                )
+            )
+
+        return files
+
     def build_pr_record(self, pr: Dict, review_comments) -> PullRequestEntry:
         pr_number = pr["number"]
 
         reviews = self.fetch_paginated(f"{self.base_api}/pulls/{pr_number}/reviews")
-        changed_files = self.fetch_changed_files(
-            pr_number, head_sha=(pr.get("head") or {}).get("sha")
+        first_commit_sha = self.get_first_commit_sha(pr_number)
+        changed_files = (
+            self.fetch_commit_changed_files(first_commit_sha)
+            if first_commit_sha
+            else []
         )
 
         return PullRequestEntry(
@@ -283,7 +346,7 @@ class GitHubPRCollector:
                     continue
 
                 review_comments = self.fetch_paginated(
-                    f"{self.base_api}/pulls/{pr["number"]}/comments"
+                    f"{self.base_api}/pulls/{pr['number']}/comments"
                 )
                 if min_comments > 0 and len(review_comments) < min_comments:
                     print(f"Insufficient comments: {len(review_comments)}")

@@ -1,4 +1,4 @@
-package com.llmcr.feature.review.staticAnalysis;
+package com.llmcr.feature.review.agent.tool;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -8,27 +8,24 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public abstract class StaticAnalysisTool {
+/** Runs a command line tool on the given input and returns the output as a string */
+public abstract class CommandLineTool<I> {
   private static final long COMMAND_TIMEOUT_SECONDS = Duration.ofMinutes(2).toSeconds();
   protected static final Path DEFAULT_TOOL_DIRECTORY =
       Path.of("../tools").toAbsolutePath().normalize();
 
-  /**
-   * Runs the static analysis tool on the given source directory and returns the XML output as a
-   * string
-   */
-  public String run(Path sourceDir) {
-    return executeCommandAndReadXml(getCommand(sourceDir), getToolName() + "-");
+  public String run(I input) {
+    return executeCommand(getCommand(input), getToolName() + "-");
   }
 
   public abstract String getToolName();
 
-  protected abstract List<String> getCommand(Path sourceDir);
+  protected abstract List<String> getCommand(I input);
 
-  private static String executeCommandAndReadXml(List<String> command, String tempPrefix) {
+  private static String executeCommand(List<String> command, String tempPrefix) {
     Path tempXml;
     try {
-      tempXml = Files.createTempFile(tempPrefix, ".xml");
+      tempXml = Files.createTempFile(tempPrefix, ".txt");
     } catch (IOException ex) {
       throw new RuntimeException("Failed to create temporary file for command output", ex);
     }

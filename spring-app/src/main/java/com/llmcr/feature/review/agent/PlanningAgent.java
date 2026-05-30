@@ -39,7 +39,7 @@ public class PlanningAgent
 
             Create 5 to 8 checklist items. Each item should be a concise question that focuses on one specific aspect to verify. Avoid vague or open-ended items.
 
-            You will be given code changes, a change interpretation, static analysis outputs, and review guidelines. Do not make assumptions beyond the provided information.
+            You will be given code changes, a change interpretation, static analysis outputs on the changed code, and some review guidelines. Do not make assumptions beyond the provided information.
 
             Think step by step internally before answering.
             """;
