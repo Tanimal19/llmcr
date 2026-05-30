@@ -14,22 +14,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ComputationAgent
-    extends BaseAgent<
-        ComputationAgent.ComputationAgentInput,
-        ComputationAgent.ComputationModelResponse,
-        ChecklistItemAnswer> {
+        extends
+        BaseAgent<ComputationAgent.ComputationAgentInput, ComputationAgent.ComputationModelResponse, ChecklistItemAnswer> {
 
-  public record ComputationAgentInput(List<CodeChange> codeChanges, String checklistItem) {}
+    public record ComputationAgentInput(List<CodeChange> codeChanges, String checklistItem) {
+    }
 
-  public record ComputationModelResponse(
-      List<EvidenceItem> evidence,
-      String analysis,
-      String finalAnswer,
-      boolean needsAdditionalData,
-      String dataQuery) {}
+    public record ComputationModelResponse(
+            List<EvidenceItem> evidence,
+            String analysis,
+            String finalAnswer,
+            boolean needsAdditionalData,
+            String dataQuery) {
+    }
 
-  private static final String SYSTEM_PROMPT =
-      """
+    private static final String SYSTEM_PROMPT = """
             You are an experienced code reviewer.
             Your task is to analyze the provided code change strictly based on the checklist item.
             You MUST only use information explicitly present in the provided code change and context.
@@ -77,8 +76,7 @@ public class ComputationAgent
             You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
             """;
 
-  private static final String INITIAL_USER_MESSAGE_TEMPLATE =
-      """
+    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
             Checklist item:
             <checklist_description>
 
@@ -86,79 +84,78 @@ public class ComputationAgent
             <code_changes>
             """;
 
-  private static final String AGENT_NAME = "computation";
-  private final RetrievalAgent retrievalAgent;
+    private static final String AGENT_NAME = "computation";
+    private final RetrievalAgent retrievalAgent;
 
-  public ComputationAgent(
-      AgentConfigProvider configProvider,
-      ModelClientFactory modelClientFactory,
-      RetrievalAgent retrievalAgent) {
-    super(configProvider, modelClientFactory);
-    this.retrievalAgent = retrievalAgent;
-  }
-
-  @Override
-  protected String getAgentName() {
-    return AGENT_NAME;
-  }
-
-  @Override
-  protected Class<ComputationModelResponse> getOutputClass() {
-    return ComputationModelResponse.class;
-  }
-
-  @Override
-  protected String getSystemMessage() {
-    return SYSTEM_PROMPT;
-  }
-
-  @Override
-  protected String getInitialUserMessageTemplate() {
-    return INITIAL_USER_MESSAGE_TEMPLATE;
-  }
-
-  @Override
-  protected Map<String, Object> buildInputVariables(ComputationAgentInput input) {
-    String codeChangesText =
-        String.join(
-            "\n----\n",
-            input.codeChanges().stream()
-                .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
-                .toList());
-    String checklistDescription = input.checklistItem();
-
-    return Map.of("checklist_description", checklistDescription, "code_changes", codeChangesText);
-  }
-
-  @Override
-  protected boolean shouldTerminate(ComputationModelResponse response) {
-    return !response.needsAdditionalData();
-  }
-
-  @Override
-  protected Message buildNextUserMessage(int iteration, ComputationModelResponse response) {
-    if (iteration >= getMaxIterations() - 1) {
-      return new UserMessage(
-          "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.");
+    public ComputationAgent(
+            AgentConfigProvider configProvider,
+            ModelClientFactory modelClientFactory,
+            RetrievalAgent retrievalAgent) {
+        super(configProvider, modelClientFactory);
+        this.retrievalAgent = retrievalAgent;
     }
 
-    if (response.dataQuery() == null) {
-      return new UserMessage(
-          "Your previous analysis indicated that additional data is needed, but the data query is missing. Please provide a data query to retrieve the necessary information.");
+    @Override
+    protected String getAgentName() {
+        return AGENT_NAME;
     }
 
-    String retrievalResult = retrievalAgent.execute(response.dataQuery());
-    return new UserMessage(
-        "You requested additional data with the following query: "
-            + response.dataQuery()
-            + "\nThe retrieval result is: "
-            + retrievalResult
-            + "\nPlease use this information to continue your analysis.");
-  }
+    @Override
+    protected Class<ComputationModelResponse> getOutputClass() {
+        return ComputationModelResponse.class;
+    }
 
-  @Override
-  protected ChecklistItemAnswer buildAgentOutput(ComputationModelResponse response) {
-    return new ChecklistItemAnswer(
-        response.finalAnswer(), response.analysis(), response.evidence());
-  }
+    @Override
+    protected String getSystemMessage() {
+        return SYSTEM_PROMPT;
+    }
+
+    @Override
+    protected String getInitialUserMessageTemplate() {
+        return INITIAL_USER_MESSAGE_TEMPLATE;
+    }
+
+    @Override
+    protected Map<String, Object> buildInputVariables(ComputationAgentInput input) {
+        String codeChangesText = String.join(
+                "\n----\n",
+                input.codeChanges().stream()
+                        .map(change -> "File: " + change.filePath() + "\nDiff: " + change.diffContent())
+                        .toList());
+        String checklistDescription = input.checklistItem();
+
+        return Map.of("checklist_description", checklistDescription, "code_changes", codeChangesText);
+    }
+
+    @Override
+    protected boolean shouldTerminate(ComputationModelResponse response) {
+        return !response.needsAdditionalData();
+    }
+
+    @Override
+    protected Message buildNextUserMessage(int iteration, ComputationModelResponse response) {
+        if (iteration >= getMaxIterations() - 1) {
+            return new UserMessage(
+                    "THIS IS YOUR FINAL ITERATION. You can't request more data. Please provide your best possible analysis based on the available information, but clearly state the limitations of your analysis due to missing information.");
+        }
+
+        if (response.dataQuery() == null) {
+            return new UserMessage(
+                    "Your previous analysis indicated that additional data is needed, but the data query is unavaliable.");
+        }
+
+        String retrievalResult = retrievalAgent.execute(response.dataQuery());
+        return new UserMessage(
+                "You requested additional data with the following query: "
+                        + response.dataQuery()
+                        + "\nThe retrieval result is: "
+                        + retrievalResult
+                        + "\nPlease use this information to continue your analysis.");
+    }
+
+    @Override
+    protected ChecklistItemAnswer buildAgentOutput(ComputationModelResponse response) {
+        return new ChecklistItemAnswer(
+                response.finalAnswer(), response.analysis(), response.evidence());
+    }
 }

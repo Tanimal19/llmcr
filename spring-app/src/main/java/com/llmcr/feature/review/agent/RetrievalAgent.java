@@ -121,21 +121,25 @@ public class RetrievalAgent
   @Override
   protected Message buildNextUserMessage(int iteration, RetrievalModelResponse response) {
     String toolResult = toolCallingManager.executeToolCall(response.toolCall());
+    toolResults.add(toolResult);
 
     return new UserMessage(
         "You have called a tool: "
             + response.toolCall().toString()
             + "\nThe tool returned the following result:\n"
-            + toolResult
-            + "\nUse above information to determine your next action.");
+            + toolResult);
   }
 
   /** Return the last tool result as the final output of the agent. */
   @Override
   protected String buildAgentOutput(RetrievalModelResponse response) {
-    return toolResults.isEmpty()
-        ? "No information was retrieved."
-        : toolResults.get(toolResults.size() - 1);
+    String finalOutput =
+        toolResults.isEmpty()
+            ? "No information was retrieved."
+            : toolResults.get(toolResults.size() - 1);
+
+    toolResults.clear(); // Clear tool results for the next run
+    return finalOutput;
   }
 
   @Override
