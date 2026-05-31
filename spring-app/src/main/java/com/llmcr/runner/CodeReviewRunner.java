@@ -90,7 +90,7 @@ public class CodeReviewRunner implements ApplicationRunner {
               new CodeReviewInput(plan.inputFilePath(), plan.jsonlIndex(), false));
       case JSONL_ALL_ITEMS -> {
         for (int i = 0; i < plan.jsonlItemCount(); i++) {
-          System.out.printf("Running review for JSONL item %d/%d%n", i, plan.jsonlItemCount() - 1);
+          System.out.printf("Running review for JSONL item %d/%d%n", i + 1, plan.jsonlItemCount());
           codeReviewService.execute(new CodeReviewInput(plan.inputFilePath(), i, false));
         }
       }

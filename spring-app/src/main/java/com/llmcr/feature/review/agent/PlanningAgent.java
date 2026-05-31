@@ -124,12 +124,9 @@ public class PlanningAgent
   }
 
   private String retrieveContext(PlanningAgentInput input, String descriptionText) {
-    List<String> queries =
-        java.util.stream.Stream.of(descriptionText, input.codeAnalysis())
-            .filter(q -> q != null && !q.isBlank())
-            .toList();
     List<ContextScorePair> retrievedContexts =
-        retriever.retrieve(new QueryContextRetrievalRequest(queries, retrievalConfig));
+        retriever.retrieve(
+            new QueryContextRetrievalRequest(List.of(descriptionText), retrievalConfig));
     return String.join(
         "\n---\n", retrievedContexts.stream().map(pair -> pair.context().getContent()).toList());
   }

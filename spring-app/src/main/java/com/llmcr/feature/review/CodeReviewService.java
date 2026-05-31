@@ -25,343 +25,351 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CodeReviewService
-        extends SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
+    extends SseTaskObject<CodeReviewService.CodeReviewInput, CodeReviewService.CodeReviewOutput> {
 
-    private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+  private static final DateTimeFormatter REPORT_TIMESTAMP_FORMAT =
+      DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
-    private static final String STAGE_PARSE = "PARSE";
-    private static final String STAGE_STATIC_ANALYSIS = "STATIC_ANALYSIS";
-    private static final String STAGE_INTERPRETATION = "INTERPRETATION";
-    private static final String STAGE_PLANNING = "PLANNING";
-    private static final String STAGE_COMPUTATION = "COMPUTATION";
-    private static final String STAGE_SUMMARY = "SUMMARY";
+  private static final String STAGE_PARSE = "PARSE";
+  private static final String STAGE_STATIC_ANALYSIS = "STATIC_ANALYSIS";
+  private static final String STAGE_INTERPRETATION = "INTERPRETATION";
+  private static final String STAGE_PLANNING = "PLANNING";
+  private static final String STAGE_COMPUTATION = "COMPUTATION";
+  private static final String STAGE_SUMMARY = "SUMMARY";
 
-    private final StaticAnalysisToolManager staticAnalysisToolManager;
-    private final InterpretationAgent interpretationAgent;
-    private final PlanningAgent planningAgent;
-    private final ComputationAgent computationAgent;
-    private final SummaryAgent summaryAgent;
-    private final AgentContextLogger contextLogger;
-    private String outputDir;
+  private final StaticAnalysisToolManager staticAnalysisToolManager;
+  private final InterpretationAgent interpretationAgent;
+  private final PlanningAgent planningAgent;
+  private final ComputationAgent computationAgent;
+  private final SummaryAgent summaryAgent;
+  private final AgentContextLogger contextLogger;
+  private String outputDir;
 
-    public CodeReviewService(
-            LoggingConfigProvider configProvider,
-            StaticAnalysisToolManager staticAnalysisToolManager,
-            InterpretationAgent interpretationAgent,
-            PlanningAgent planningAgent,
-            ComputationAgent computationAgent,
-            SummaryAgent summaryAgent,
-            AgentContextLogger contextLogger) {
-        this.outputDir = configProvider.getReviewOutputDirectory();
-        this.staticAnalysisToolManager = staticAnalysisToolManager;
-        this.interpretationAgent = interpretationAgent;
-        this.planningAgent = planningAgent;
-        this.computationAgent = computationAgent;
-        this.summaryAgent = summaryAgent;
-        this.contextLogger = contextLogger;
+  public CodeReviewService(
+      LoggingConfigProvider configProvider,
+      StaticAnalysisToolManager staticAnalysisToolManager,
+      InterpretationAgent interpretationAgent,
+      PlanningAgent planningAgent,
+      ComputationAgent computationAgent,
+      SummaryAgent summaryAgent,
+      AgentContextLogger contextLogger) {
+    this.outputDir = configProvider.getReviewOutputDirectory();
+    this.staticAnalysisToolManager = staticAnalysisToolManager;
+    this.interpretationAgent = interpretationAgent;
+    this.planningAgent = planningAgent;
+    this.computationAgent = computationAgent;
+    this.summaryAgent = summaryAgent;
+    this.contextLogger = contextLogger;
+  }
+
+  public record CodeReviewInput(String inputFilePath, Integer jsonlIndex, boolean useMockData) {
+    public CodeReviewInput(String inputFilePath, boolean useMockData) {
+      this(inputFilePath, null, useMockData);
     }
 
-    public record CodeReviewInput(String inputFilePath, Integer jsonlIndex, boolean useMockData) {
-        public CodeReviewInput(String inputFilePath, boolean useMockData) {
-            this(inputFilePath, null, useMockData);
-        }
+    public CodeReviewInput(String inputFilePath, int jsonlIndex, boolean useMockData) {
+      this(inputFilePath, Integer.valueOf(jsonlIndex), useMockData);
+    }
+  }
 
-        public CodeReviewInput(String inputFilePath, int jsonlIndex, boolean useMockData) {
-            this(inputFilePath, Integer.valueOf(jsonlIndex), useMockData);
-        }
+  public record CodeReviewOutput(CodeReviewReport reviewReport, Path reportPath) {}
+
+  public String getTaskName() {
+    return "code_review";
+  }
+
+  @Override
+  public CodeReviewOutput execute(
+      CodeReviewInput input,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    try {
+      String prefixDirectory = beginReviewPipeline(progressListener, cancellationRequested);
+      contextLogger.enableLog(prefixDirectory);
+
+      ParseStageResult parseStageResult =
+          runParseStage(input, progressListener, cancellationRequested);
+      String codeAnalysisOutput =
+          runStaticAnalysisStage(
+              parseStageResult.prData(), prefixDirectory, progressListener, cancellationRequested);
+      // String codeAnalysisOutput = null;
+
+      InterpretationPlanResult interpretationPlan =
+          runInterpretationAndPlanningStage(
+              input,
+              parseStageResult.codeChanges(),
+              codeAnalysisOutput,
+              progressListener,
+              cancellationRequested);
+      List<ChecklistItem> items =
+          runComputationStage(
+              parseStageResult.codeChanges(),
+              interpretationPlan.plan(),
+              progressListener,
+              cancellationRequested);
+      ReportContent reviewResult =
+          runSummaryStage(
+              parseStageResult.codeChanges(),
+              codeAnalysisOutput,
+              items,
+              progressListener,
+              cancellationRequested);
+
+      return runFinalizeStage(
+          parseStageResult.prData(),
+          reviewResult,
+          interpretationPlan.interpretation(),
+          items,
+          codeAnalysisOutput,
+          prefixDirectory,
+          progressListener,
+          cancellationRequested);
+    } catch (APIServiceException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new APIServiceException(
+          APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
+          "Code review pipeline execution failed",
+          ex);
+    } finally {
+      contextLogger.disableLog();
+    }
+  }
+
+  private String beginReviewPipeline(
+      Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
+    checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Review pipeline started");
+    return REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
+  }
+
+  private ParseStageResult runParseStage(
+      CodeReviewInput input,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Parsing pull request data");
+    try {
+      PullRequestData prData =
+          CodeReviewSupport.parsePullRequestData(
+              input.inputFilePath(), input.jsonlIndex(), input.useMockData());
+      emitProgress(
+          progressListener,
+          STAGE_PARSE,
+          "Starting review for PR #" + prData.prId() + ": " + prData.title());
+
+      List<CodeChange> codeChanges = CodeReviewSupport.toCodeChanges(prData);
+      CodeReviewSupport.validatePullRequestSize(codeChanges);
+      return new ParseStageResult(prData, codeChanges);
+    } catch (APIServiceException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new APIServiceException(
+          APIServiceException.ErrorCode.REVIEW_PARSE_FAILED, "Failed during parse stage", ex);
+    }
+  }
+
+  private String runStaticAnalysisStage(
+      PullRequestData prData,
+      String prefixDirectory,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    checkpoint(
+        cancellationRequested,
+        progressListener,
+        STAGE_STATIC_ANALYSIS,
+        "Running static analysis on cached Java files");
+
+    try {
+      throwIfCancelled(cancellationRequested);
+      Path cachedDirectory =
+          CodeReviewSupport.rebuildChangedJavaFilesToCache(prData, outputDir, prefixDirectory);
+
+      String codeAnalysisOutput = staticAnalysisToolManager.runStaticAnalysisTools(cachedDirectory);
+      emitProgress(
+          progressListener,
+          STAGE_STATIC_ANALYSIS,
+          "Static analysis completed:\n" + codeAnalysisOutput);
+
+      CodeReviewSupport.cleanupCacheDirectory(cachedDirectory);
+
+      return codeAnalysisOutput;
+    } catch (Exception ex) {
+      throw new APIServiceException(
+          APIServiceException.ErrorCode.REVIEW_STATIC_ANALYSIS_FAILED,
+          "Failed during static analysis stage",
+          ex);
+    }
+  }
+
+  private InterpretationPlanResult runInterpretationAndPlanningStage(
+      CodeReviewInput input,
+      List<CodeChange> codeChanges,
+      String codeAnalysis,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    if (!input.useMockData()) {
+      checkpoint(
+          cancellationRequested,
+          progressListener,
+          STAGE_INTERPRETATION,
+          "Start interpretation stage");
+      InterpretationContent interpretation;
+      try {
+        interpretation = interpretationAgent.execute(new InterpretationAgentInput(codeChanges));
+      } catch (Exception ex) {
+        throw new APIServiceException(
+            APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
+      }
+      emitProgress(
+          progressListener,
+          STAGE_INTERPRETATION,
+          "Interpretation stage completed:\n%s".formatted(interpretation));
+
+      checkpoint(cancellationRequested, progressListener, STAGE_PLANNING, "Start planning stage");
+      PlanningAgentOutput plan;
+      try {
+        plan =
+            planningAgent.execute(
+                new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
+      } catch (Exception ex) {
+        throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
+      }
+      emitProgress(
+          progressListener, STAGE_PLANNING, "Planning stage completed:\n%s".formatted(plan));
+      return new InterpretationPlanResult(interpretation, plan);
     }
 
-    public record CodeReviewOutput(CodeReviewReport reviewReport, Path reportPath) {
+    throwIfCancelled(cancellationRequested);
+    InterpretationContent interpretation = MockReviewData.MOCK_INTERPRETATION_OUTPUT;
+    PlanningAgentOutput plan = MockReviewData.MOCK_PLANNING_OUTPUT;
+    emitProgress(
+        progressListener,
+        STAGE_INTERPRETATION,
+        "Using mock interpretation:\n%s".formatted(interpretation));
+    emitProgress(progressListener, STAGE_PLANNING, "Using mock planning\n%s".formatted(plan));
+    return new InterpretationPlanResult(interpretation, plan);
+  }
+
+  private List<ChecklistItem> runComputationStage(
+      List<CodeChange> codeChanges,
+      PlanningAgentOutput plan,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    try {
+      return runChecklistComputations(codeChanges, plan, progressListener, cancellationRequested);
+    } catch (APIServiceException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new APIServiceException(
+          APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
+          "Failed during computation stage",
+          ex);
     }
+  }
 
-    public String getTaskName() {
-        return "code_review";
-    }
+  private List<ChecklistItem> runChecklistComputations(
+      List<CodeChange> codeChanges,
+      PlanningAgentOutput plan,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    checkpoint(
+        cancellationRequested,
+        progressListener,
+        STAGE_COMPUTATION,
+        "Running checklist computations");
 
-    @Override
-    public CodeReviewOutput execute(
-            CodeReviewInput input,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        try {
-            String prefixDirectory = beginReviewPipeline(progressListener, cancellationRequested);
-            contextLogger.enableLog(prefixDirectory);
+    List<ChecklistItem> items = new ArrayList<>();
+    int totalItems = plan.checklistItems().size();
+    int itemIndex = 0;
+    for (String item : plan.checklistItems()) {
+      checkpoint(
+          cancellationRequested,
+          progressListener,
+          STAGE_COMPUTATION,
+          "Running checklist item " + itemIndex + "/" + totalItems + ": " + item);
+      itemIndex++;
 
-            ParseStageResult parseStageResult = runParseStage(input, progressListener, cancellationRequested);
-            String codeAnalysisOutput = runStaticAnalysisStage(
-                    parseStageResult.prData(), prefixDirectory, progressListener,
-                    cancellationRequested);
-            // String codeAnalysisOutput = null;
-
-            InterpretationPlanResult interpretationPlan = runInterpretationAndPlanningStage(
-                    input,
-                    parseStageResult.codeChanges(),
-                    codeAnalysisOutput,
-                    progressListener,
-                    cancellationRequested);
-            List<ChecklistItem> items = runComputationStage(
-                    parseStageResult.codeChanges(),
-                    interpretationPlan.plan(),
-                    progressListener,
-                    cancellationRequested);
-            ReportContent reviewResult = runSummaryStage(
-                    parseStageResult.codeChanges(),
-                    codeAnalysisOutput,
-                    items,
-                    progressListener,
-                    cancellationRequested);
-
-            return runFinalizeStage(
-                    parseStageResult.prData(),
-                    reviewResult,
-                    interpretationPlan.interpretation(),
-                    items,
-                    codeAnalysisOutput,
-                    prefixDirectory,
-                    progressListener,
-                    cancellationRequested);
-        } catch (APIServiceException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new APIServiceException(
-                    APIServiceException.ErrorCode.REVIEW_PIPELINE_FAILED,
-                    "Code review pipeline execution failed",
-                    ex);
-        } finally {
-            contextLogger.disableLog();
-        }
-    }
-
-    private String beginReviewPipeline(
-            Consumer<SseTaskProgress> progressListener, BooleanSupplier cancellationRequested) {
-        checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Review pipeline started");
-        return REPORT_TIMESTAMP_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()));
-    }
-
-    private ParseStageResult runParseStage(
-            CodeReviewInput input,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Parsing pull request data");
-        try {
-            PullRequestData prData = CodeReviewSupport.parsePullRequestData(
-                    input.inputFilePath(), input.jsonlIndex(), input.useMockData());
-            emitProgress(
-                    progressListener,
-                    STAGE_PARSE,
-                    "Starting review for PR #" + prData.prId() + ": " + prData.title());
-
-            List<CodeChange> codeChanges = CodeReviewSupport.toCodeChanges(prData);
-            CodeReviewSupport.validatePullRequestSize(codeChanges);
-            return new ParseStageResult(prData, codeChanges);
-        } catch (APIServiceException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new APIServiceException(
-                    APIServiceException.ErrorCode.REVIEW_PARSE_FAILED, "Failed during parse stage", ex);
-        }
-    }
-
-    private String runStaticAnalysisStage(
-            PullRequestData prData,
-            String prefixDirectory,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        checkpoint(
-                cancellationRequested,
-                progressListener,
-                STAGE_STATIC_ANALYSIS,
-                "Running static analysis on cached Java files");
-
-        try {
-            throwIfCancelled(cancellationRequested);
-            Path cachedDirectory = CodeReviewSupport.rebuildChangedJavaFilesToCache(prData, outputDir, prefixDirectory);
-
-            String codeAnalysisOutput = staticAnalysisToolManager.runStaticAnalysisTools(cachedDirectory);
-            emitProgress(
-                    progressListener,
-                    STAGE_STATIC_ANALYSIS,
-                    "Static analysis completed:\n" + codeAnalysisOutput);
-
-            CodeReviewSupport.cleanupCacheDirectory(cachedDirectory);
-
-            return codeAnalysisOutput;
-        } catch (Exception ex) {
-            throw new APIServiceException(
-                    APIServiceException.ErrorCode.REVIEW_STATIC_ANALYSIS_FAILED,
-                    "Failed during static analysis stage",
-                    ex);
-        }
-    }
-
-    private InterpretationPlanResult runInterpretationAndPlanningStage(
-            CodeReviewInput input,
-            List<CodeChange> codeChanges,
-            String codeAnalysis,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        if (!input.useMockData()) {
-            checkpoint(
-                    cancellationRequested,
-                    progressListener,
-                    STAGE_INTERPRETATION,
-                    "Start interpretation stage");
-            InterpretationContent interpretation;
-            try {
-                interpretation = interpretationAgent.execute(new InterpretationAgentInput(codeChanges));
-            } catch (Exception ex) {
-                throw new APIServiceException(
-                        APIServiceException.ErrorCode.REVIEW_INTERPRETATION_FAILED, ex);
-            }
-            emitProgress(
-                    progressListener,
-                    STAGE_INTERPRETATION,
-                    "Interpretation stage completed:\n%s".formatted(interpretation));
-
-            checkpoint(cancellationRequested, progressListener, STAGE_PLANNING, "Start planning stage");
-            PlanningAgentOutput plan;
-            try {
-                plan = planningAgent.execute(
-                        new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
-            } catch (Exception ex) {
-                throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
-            }
-            emitProgress(
-                    progressListener, STAGE_PLANNING, "Planning stage completed:\n%s".formatted(plan));
-            return new InterpretationPlanResult(interpretation, plan);
-        }
-
-        throwIfCancelled(cancellationRequested);
-        InterpretationContent interpretation = MockReviewData.MOCK_INTERPRETATION_OUTPUT;
-        PlanningAgentOutput plan = MockReviewData.MOCK_PLANNING_OUTPUT;
+      try {
+        ChecklistItemAnswer answer =
+            computationAgent.execute(new ComputationAgentInput(codeChanges, item));
+        items.add(new ChecklistItem(item, answer));
         emitProgress(
-                progressListener,
-                STAGE_INTERPRETATION,
-                "Using mock interpretation:\n%s".formatted(interpretation));
-        emitProgress(progressListener, STAGE_PLANNING, "Using mock planning\n%s".formatted(plan));
-        return new InterpretationPlanResult(interpretation, plan);
+            progressListener,
+            STAGE_COMPUTATION,
+            "Completed checklist item, answer:\n%s".formatted(answer));
+      } catch (Exception ex) {
+        throw new APIServiceException(
+            APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
+            "Review computation stage failed for checklist item: " + item,
+            ex);
+      }
     }
+    emitProgress(progressListener, STAGE_COMPUTATION, "Computation stage completed");
+    return items;
+  }
 
-    private List<ChecklistItem> runComputationStage(
-            List<CodeChange> codeChanges,
-            PlanningAgentOutput plan,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        try {
-            return runChecklistComputations(codeChanges, plan, progressListener, cancellationRequested);
-        } catch (APIServiceException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new APIServiceException(
-                    APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
-                    "Failed during computation stage",
-                    ex);
-        }
+  private ReportContent runSummaryStage(
+      List<CodeChange> codeChanges,
+      String codeAnalysis,
+      List<ChecklistItem> items,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    checkpoint(cancellationRequested, progressListener, STAGE_SUMMARY, "Running summary stage");
+    try {
+      ReportContent reviewResult =
+          summaryAgent.execute(new SummaryAgentInput(codeChanges, codeAnalysis, items));
+      emitProgress(progressListener, STAGE_SUMMARY, "Summary stage completed");
+      return reviewResult;
+    } catch (Exception ex) {
+      throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_SUMMARY_FAILED, ex);
     }
+  }
 
-    private List<ChecklistItem> runChecklistComputations(
-            List<CodeChange> codeChanges,
-            PlanningAgentOutput plan,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        checkpoint(
-                cancellationRequested,
-                progressListener,
-                STAGE_COMPUTATION,
-                "Running checklist computations");
+  private CodeReviewOutput runFinalizeStage(
+      PullRequestData prData,
+      ReportContent reviewResult,
+      InterpretationContent interpretation,
+      List<ChecklistItem> items,
+      String staticAnalysisResults,
+      String prefixDirectory,
+      Consumer<SseTaskProgress> progressListener,
+      BooleanSupplier cancellationRequested) {
+    checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Writing review report");
+    try {
+      CodeReviewReport review =
+          new CodeReviewReport(
+              prData.prId(),
+              prData.title(),
+              reviewResult,
+              interpretation,
+              items,
+              staticAnalysisResults);
+      Path reportPath = CodeReviewSupport.writeReport(review, outputDir, prefixDirectory);
 
-        List<ChecklistItem> items = new ArrayList<>();
-        int totalItems = plan.checklistItems().size();
-        int itemIndex = 0;
-        for (String item : plan.checklistItems()) {
-            checkpoint(
-                    cancellationRequested,
-                    progressListener,
-                    STAGE_COMPUTATION,
-                    "Running checklist item " + itemIndex + "/" + totalItems + ": " + item);
-            itemIndex++;
+      emitProgress(
+          progressListener,
+          STAGE_PARSE,
+          "Review pipeline completed, report generated at: " + reportPath);
 
-            try {
-                ChecklistItemAnswer answer = computationAgent.execute(new ComputationAgentInput(codeChanges, item));
-                items.add(new ChecklistItem(item, answer));
-                emitProgress(
-                        progressListener,
-                        STAGE_COMPUTATION,
-                        "Completed checklist item, answer:\n%s".formatted(answer));
-            } catch (Exception ex) {
-                throw new APIServiceException(
-                        APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
-                        "Review computation stage failed for checklist item: " + item,
-                        ex);
-            }
-        }
-        emitProgress(progressListener, STAGE_COMPUTATION, "Computation stage completed");
-        return items;
+      return new CodeReviewOutput(review, reportPath);
+    } catch (Exception ex) {
+      throw new APIServiceException(
+          APIServiceException.ErrorCode.REVIEW_REPORT_WRITE_FAILED,
+          "Failed while finalizing review report",
+          ex);
     }
+  }
 
-    private ReportContent runSummaryStage(
-            List<CodeChange> codeChanges,
-            String codeAnalysis,
-            List<ChecklistItem> items,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        checkpoint(cancellationRequested, progressListener, STAGE_SUMMARY, "Running summary stage");
-        try {
-            ReportContent reviewResult = summaryAgent.execute(new SummaryAgentInput(codeChanges, codeAnalysis, items));
-            emitProgress(progressListener, STAGE_SUMMARY, "Summary stage completed");
-            return reviewResult;
-        } catch (Exception ex) {
-            throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_SUMMARY_FAILED, ex);
-        }
-    }
+  private void checkpoint(
+      BooleanSupplier cancellationRequested,
+      Consumer<SseTaskProgress> progressListener,
+      String stage,
+      String message) {
+    throwIfCancelled(cancellationRequested);
+    emitProgress(progressListener, stage, message);
+  }
 
-    private CodeReviewOutput runFinalizeStage(
-            PullRequestData prData,
-            ReportContent reviewResult,
-            InterpretationContent interpretation,
-            List<ChecklistItem> items,
-            String staticAnalysisResults,
-            String prefixDirectory,
-            Consumer<SseTaskProgress> progressListener,
-            BooleanSupplier cancellationRequested) {
-        checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Writing review report");
-        try {
-            CodeReviewReport review = new CodeReviewReport(
-                    prData.prId(),
-                    prData.title(),
-                    reviewResult,
-                    interpretation,
-                    items,
-                    staticAnalysisResults);
-            Path reportPath = CodeReviewSupport.writeReport(review, outputDir, prefixDirectory);
+  private record InterpretationPlanResult(
+      InterpretationContent interpretation, PlanningAgentOutput plan) {}
 
-            emitProgress(
-                    progressListener,
-                    STAGE_PARSE,
-                    "Review pipeline completed, report generated at: " + reportPath);
-
-            return new CodeReviewOutput(review, reportPath);
-        } catch (Exception ex) {
-            throw new APIServiceException(
-                    APIServiceException.ErrorCode.REVIEW_REPORT_WRITE_FAILED,
-                    "Failed while finalizing review report",
-                    ex);
-        }
-    }
-
-    private void checkpoint(
-            BooleanSupplier cancellationRequested,
-            Consumer<SseTaskProgress> progressListener,
-            String stage,
-            String message) {
-        throwIfCancelled(cancellationRequested);
-        emitProgress(progressListener, stage, message);
-    }
-
-    private record InterpretationPlanResult(
-            InterpretationContent interpretation, PlanningAgentOutput plan) {
-    }
-
-    private record ParseStageResult(PullRequestData prData, List<CodeChange> codeChanges) {
-    }
+  private record ParseStageResult(PullRequestData prData, List<CodeChange> codeChanges) {}
 }
