@@ -17,6 +17,7 @@ AFTER_RELEASE_RAG = "v2.0.0-M1"
 BEFORE_DATE = "2026-04-01"
 MIN_DESCRIPTION_WORDS = 30
 MIN_COMMENTS = 5
+MAX_CHANGED_FILES = 20
 OUTPUT_PATH = Path("exports") / "eval.jsonl"
 
 
@@ -225,6 +226,14 @@ class GitHubPRCollector:
         sha = first_commit.get("sha")
         return sha if isinstance(sha, str) and sha else None
 
+    def get_pr_changed_file_count(self, pr_number: int) -> Optional[int]:
+        pr_detail = self.gh_get(f"{self.base_api}/pulls/{pr_number}")
+        if not isinstance(pr_detail, dict):
+            return None
+
+        changed_files = pr_detail.get("changed_files")
+        return changed_files if isinstance(changed_files, int) else None
+
     def fetch_commit_changed_files(self, commit_sha: str) -> List[ChangedFileEntry]:
         files: List[ChangedFileEntry] = []
 
@@ -303,6 +312,7 @@ class GitHubPRCollector:
         until_date: Optional[str] = None,
         min_description_words: int = 0,
         min_comments: int = 0,
+        max_changed_files: Optional[int] = None,
     ) -> Iterator[PullRequestEntry]:
         params: Dict[str, object] = {
             "state": "all",
@@ -344,6 +354,15 @@ class GitHubPRCollector:
                         f"Insufficient description words: {count_words(pr_description)}"
                     )
                     continue
+
+                if max_changed_files is not None:
+                    changed_file_count = self.get_pr_changed_file_count(pr["number"])
+                    if (
+                        changed_file_count is not None
+                        and changed_file_count > max_changed_files
+                    ):
+                        print(f"Too many changed files: {changed_file_count}")
+                        continue
 
                 review_comments = self.fetch_paginated(
                     f"{self.base_api}/pulls/{pr['number']}/comments"
@@ -394,6 +413,7 @@ if __name__ == "__main__":
     print(f"Filter upper bound: created on or before {BEFORE_DATE}")
     print(f"Filter minimum description words: {MIN_DESCRIPTION_WORDS}")
     print(f"Filter minimum comments: {MIN_COMMENTS}")
+    print(f"Filter maximum changed files: {MAX_CHANGED_FILES}")
     print(f"Limit: newest {MAX_PRS} PRs")
 
     count = 0
@@ -405,6 +425,7 @@ if __name__ == "__main__":
             until_date=BEFORE_DATE,
             min_description_words=MIN_DESCRIPTION_WORDS,
             min_comments=MIN_COMMENTS,
+            max_changed_files=MAX_CHANGED_FILES,
         ):
             handle.write(json.dumps(asdict(record), ensure_ascii=False) + "\n")
             count += 1
