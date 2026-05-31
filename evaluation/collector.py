@@ -14,7 +14,7 @@ from scheme import ChangedFileEntry, CommentEntry, PullRequestEntry
 REPO = "spring-projects/spring-ai"
 MAX_PRS = 20
 AFTER_RELEASE_RAG = "v2.0.0-M1"
-BEFORE_DATE = "2026-05-01"
+BEFORE_DATE = "2026-04-01"
 MIN_DESCRIPTION_WORDS = 30
 MIN_COMMENTS = 5
 OUTPUT_PATH = Path("exports") / "eval.jsonl"
