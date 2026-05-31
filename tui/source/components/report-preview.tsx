@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import {
   type CodeReviewImplementationDetails,
   type CodeReviewIssue,
+  type CodeReviewInterpretation,
   type CodeReviewItemAnswer,
   type CodeReviewReport,
   type CodeReviewSummary,
@@ -16,23 +17,28 @@ type ReviewReportPreviewProps = {
 
 type NormalizedReportData = {
   summary?: CodeReviewSummary;
+  interpretation?: CodeReviewInterpretation;
   checklistItems: CodeReviewItemAnswer[];
   goodPoints: string[];
   badPoints: string[];
   implementationDetails: CodeReviewImplementationDetails[];
   issues: CodeReviewIssue[];
+  staticAnalysisResults?: string;
 };
 
 const normalizeReport = (reviewReport: CodeReviewReport): NormalizedReportData => {
   const summary = reviewReport.content ?? undefined;
+  const interpretation = reviewReport.interpretation ?? undefined;
 
   return {
     summary,
+    interpretation,
     checklistItems: reviewReport.checklistItems ?? [],
     goodPoints: summary?.goodPoints ?? [],
     badPoints: summary?.badPoints ?? [],
     implementationDetails: summary?.implementationDetails ?? [],
     issues: summary?.issues ?? [],
+    staticAnalysisResults: reviewReport.staticAnalysisResults,
   };
 };
 
@@ -61,10 +67,12 @@ const StringListSection = ({ title, items }: { title: string; items: string[] })
 
 const ReviewHeader = ({
   reviewReport,
+  reportPath,
   checklistCount,
   issueCount,
 }: {
   reviewReport: CodeReviewReport;
+  reportPath?: string;
   checklistCount: number;
   issueCount: number;
 }) => (
@@ -72,6 +80,7 @@ const ReviewHeader = ({
     <Text color="white">
       PR: #{reviewReport.prId} {reviewReport.prTitle}
     </Text>
+    {reportPath ? <Text color="gray">Report: {reportPath}</Text> : null}
     <Text color="white">Checklist Items: {checklistCount}</Text>
     <Text color="white">Issues: {issueCount}</Text>
   </>
@@ -100,22 +109,50 @@ const ImplementationDetailsSection = ({ details }: { details: CodeReviewImplemen
   </Section>
 );
 
-const IssuesSection = ({ issues }: { issues: CodeReviewIssue[] }) => (
-  <Section title="Issues">
-    {issues.length === 0 ? (
-      <Empty />
-    ) : (
-      issues.map((issue, index) => {
-        const locationStr = issue.location ? ` @ ${issue.location}` : '';
+const IssuesSection = ({
+  issues,
+  maxIssuePreviewCount,
+}: {
+  issues: CodeReviewIssue[];
+  maxIssuePreviewCount?: number;
+}) => {
+  const limitedIssues =
+    maxIssuePreviewCount && maxIssuePreviewCount > 0 ? issues.slice(0, maxIssuePreviewCount) : issues;
+  const hiddenIssueCount = issues.length - limitedIssues.length;
 
-        return (
-          <Box key={`${issue.type}-${issue.title}-${index}`} flexDirection="column" marginTop={1}>
-            <Text color="white">{`${index + 1}. [${issue.type}] ${issue.title}${locationStr}`}</Text>
-            <Text color="gray">Detail: {issue.detail || '(none)'}</Text>
-          </Box>
-        );
-      })
-    )}
+  return (
+    <Section title="Issues">
+      {limitedIssues.length === 0 ? (
+        <Empty />
+      ) : (
+        limitedIssues.map((issue, index) => {
+          const locationStr = issue.location ? ` @ ${issue.location}` : '';
+
+          return (
+            <Box key={`${issue.type}-${issue.title}-${index}`} flexDirection="column" marginTop={1}>
+              <Text color="white">{`${index + 1}. [${issue.type}] ${issue.title}${locationStr}`}</Text>
+              <Text color="gray">Detail: {issue.detail || '(none)'}</Text>
+            </Box>
+          );
+        })
+      )}
+      {hiddenIssueCount > 0 ? <Text color="gray">... and {hiddenIssueCount} more issue(s)</Text> : null}
+    </Section>
+  );
+};
+
+const InterpretationSection = ({ interpretation }: { interpretation?: CodeReviewInterpretation }) => (
+  <Section title="Interpretation">
+    <Text color="white">Change Description:</Text>
+    <Text color="gray">{interpretation?.changeDescription ?? '(none)'}</Text>
+    <Text color="white">Change Motivation:</Text>
+    <Text color="gray">{interpretation?.changeMotivation ?? '(none)'}</Text>
+  </Section>
+);
+
+const StaticAnalysisSection = ({ staticAnalysisResults }: { staticAnalysisResults?: string }) => (
+  <Section title="Static Analysis Results">
+    <Text color="gray">{staticAnalysisResults ?? '(none)'}</Text>
   </Section>
 );
 
@@ -151,14 +188,27 @@ const ChecklistSection = ({ checklistItems }: { checklistItems: CodeReviewItemAn
   </Section>
 );
 
-const FullPreview = ({ reviewReport }: ReviewReportPreviewProps) => {
-  const { summary, checklistItems, goodPoints, badPoints, implementationDetails, issues } =
-    normalizeReport(reviewReport);
+const FullPreview = ({ reviewReport, reportPath, maxIssuePreviewCount }: ReviewReportPreviewProps) => {
+  const {
+    summary,
+    interpretation,
+    checklistItems,
+    goodPoints,
+    badPoints,
+    implementationDetails,
+    issues,
+    staticAnalysisResults,
+  } = normalizeReport(reviewReport);
 
   return (
     <Box flexDirection="column" marginTop={1}>
       <Text color="cyan">Overview</Text>
-      <ReviewHeader reviewReport={reviewReport} checklistCount={checklistItems.length} issueCount={issues.length} />
+      <ReviewHeader
+        reviewReport={reviewReport}
+        reportPath={reportPath}
+        checklistCount={checklistItems.length}
+        issueCount={issues.length}
+      />
 
       <Section title="Motivation">
         <Text color="gray">{summary?.motivation ?? '(none)'}</Text>
@@ -170,9 +220,11 @@ const FullPreview = ({ reviewReport }: ReviewReportPreviewProps) => {
 
       <StringListSection title="Good Points" items={goodPoints} />
       <StringListSection title="Bad Points" items={badPoints} />
+      <InterpretationSection interpretation={interpretation} />
       <ImplementationDetailsSection details={implementationDetails} />
-      <IssuesSection issues={issues} />
+      <IssuesSection issues={issues} maxIssuePreviewCount={maxIssuePreviewCount} />
       <ChecklistSection checklistItems={checklistItems} />
+      <StaticAnalysisSection staticAnalysisResults={staticAnalysisResults} />
     </Box>
   );
 };

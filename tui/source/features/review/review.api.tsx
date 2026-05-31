@@ -58,6 +58,7 @@ export type CodeReviewReport = {
   content: CodeReviewSummary;
   interpretation: CodeReviewInterpretation;
   checklistItems: CodeReviewItemAnswer[];
+  staticAnalysisResults?: string;
 };
 
 export type CodeReviewOutput = {

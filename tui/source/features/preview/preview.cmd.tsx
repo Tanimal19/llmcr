@@ -16,6 +16,34 @@ const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isString = (value: unknown): value is string => typeof value === 'string';
 
+const asDisplayString = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+
+  return '';
+};
+
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(item => isString(item));
 
@@ -54,35 +82,42 @@ const isSummary = (value: unknown): value is CodeReviewSummary => {
   );
 };
 
-const isItemAnswer = (value: unknown): value is NonNullable<CodeReviewReport['checklistItems']>[number] => {
-  if (!isObjectRecord(value) || !isString(value['title'])) {
-    return false;
-  }
-
-  const { answer } = value;
-  if (!isObjectRecord(answer)) {
-    return false;
-  }
-
-  if (!isString(answer['finalAnswer']) || !isString(answer['analysis']) || !Array.isArray(answer['evidence'])) {
-    return false;
-  }
-
-  return answer['evidence'].every(evidence => {
-    if (!isObjectRecord(evidence)) {
-      return false;
-    }
-
-    return isString(evidence['file']) && isString(evidence['lines']) && isString(evidence['reason']);
-  });
-};
-
 const asChecklistItems = (value: unknown): CodeReviewReport['checklistItems'] => {
-  if (!Array.isArray(value) || !value.every(item => isItemAnswer(item))) {
+  if (!Array.isArray(value)) {
     throw new TypeError('Invalid report JSON: checklistItems must be an array of checklist items.');
   }
 
-  return value;
+  return value.map(item => {
+    if (!isObjectRecord(item)) {
+      throw new TypeError('Invalid report JSON: checklistItems must be an array of checklist items.');
+    }
+
+    const answer = isObjectRecord(item['answer']) ? item['answer'] : {};
+    const rawEvidence = Array.isArray(answer['evidence']) ? answer['evidence'] : [];
+
+    return {
+      title: asDisplayString(item['title']),
+      answer: {
+        finalAnswer: asDisplayString(answer['finalAnswer']),
+        analysis: asDisplayString(answer['analysis']),
+        evidence: rawEvidence.map(evidence => {
+          if (!isObjectRecord(evidence)) {
+            return {
+              file: '',
+              lines: '',
+              reason: '',
+            };
+          }
+
+          return {
+            file: asDisplayString(evidence['file']),
+            lines: asDisplayString(evidence['lines']),
+            reason: asDisplayString(evidence['reason']),
+          };
+        }),
+      },
+    };
+  });
 };
 
 const asSummary = (value: unknown): CodeReviewSummary => {
@@ -128,6 +163,9 @@ const resolveReviewReport = (payload: unknown): CodeReviewReport => {
     interpretation: asInterpretation(candidate['interpretation']),
     content: asSummary(candidate['content']),
     checklistItems: asChecklistItems(candidate['checklistItems']),
+    staticAnalysisResults: isString(candidate['staticAnalysisResults'])
+      ? candidate['staticAnalysisResults']
+      : undefined,
   };
 };
 

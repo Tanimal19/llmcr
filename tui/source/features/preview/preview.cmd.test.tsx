@@ -36,6 +36,7 @@ test.serial('PreviewCommand renders report summary from JSON file', async t => {
         changeMotivation: 'Improve usability',
       },
       checklistItems: [],
+      staticAnalysisResults: 'checkstyle Output:\n<checkstyle />',
     }),
     'utf8',
   );
@@ -61,6 +62,8 @@ test.serial('PreviewCommand renders report summary from JSON file', async t => {
     t.true(frameText.includes('- Simple command flow'));
     t.true(frameText.includes('Issues: 1'));
     t.true(frameText.includes('1. [STYLE] Tight coupling in parser @ source/features/preview/preview.cmd.tsx:18'));
+    t.true(frameText.includes('Static Analysis Results'));
+    t.true(frameText.includes('checkstyle Output:'));
 
     unmount();
   } finally {
@@ -89,6 +92,69 @@ test.serial('PreviewCommand renders error for invalid report payload', async t =
     const frameText = lastFrame() ?? '';
     t.true(frameText.includes('Failed to load report'));
     t.true(frameText.includes('Invalid report JSON'));
+
+    unmount();
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test.serial('PreviewCommand tolerates non-string checklist evidence fields', async t => {
+  const tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'llmcr-preview-'));
+  const reportPath = path.join(tempDirectory, `${crypto.randomUUID()}.json`);
+
+  await writeFile(
+    reportPath,
+    JSON.stringify({
+      prId: 902,
+      prTitle: 'Load tolerant checklist values',
+      content: {
+        motivation: 'Handle mixed evidence shapes from generated reports',
+        goodPoints: [],
+        badPoints: [],
+        suggestion: 'Normalize evidence values in preview parser',
+        implementationDetails: [],
+        issues: [],
+      },
+      interpretation: {
+        changeDescription: 'Allows null/number evidence values',
+        changeMotivation: 'Avoid rejecting report JSON with nullable evidence lines',
+      },
+      checklistItems: [
+        {
+          title: 'Checklist with nullable lines',
+          answer: {
+            finalAnswer: 'Pass',
+            analysis: 'Should still render',
+            evidence: [
+              {
+                file: 'a.txt',
+                lines: null,
+                reason: 'Nullable evidence range',
+              },
+            ],
+          },
+        },
+      ],
+    }),
+    'utf8',
+  );
+
+  try {
+    const { lastFrame, unmount } = render(
+      <PreviewCommand
+        reportPath={reportPath}
+        onBack={() => {
+          /* No-op */
+        }}
+      />,
+    );
+
+    await delay(120);
+
+    const frameText = lastFrame() ?? '';
+    t.true(frameText.includes('Report loaded'));
+    t.true(frameText.includes('Checklist with nullable lines'));
 
     unmount();
   } finally {
