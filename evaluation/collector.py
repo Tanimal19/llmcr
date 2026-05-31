@@ -18,7 +18,7 @@ BEFORE_DATE = "2026-04-01"
 MIN_DESCRIPTION_WORDS = 30
 MIN_COMMENTS = 5
 MAX_CHANGED_FILES = 20
-OUTPUT_PATH = Path("exports") / "eval.jsonl"
+OUTPUT_PATH = Path("exports") / "raw.jsonl"
 
 
 def parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:

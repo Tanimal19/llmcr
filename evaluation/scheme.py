@@ -30,3 +30,9 @@ class PullRequestEntry:
     is_approved: bool
     comments: List[CommentEntry]
     changed_files: List[ChangedFileEntry]
+
+
+@dataclass
+class PreEvaluatedPullRequestEntry(PullRequestEntry):
+    normalized_review_sentences: List[str]
+    normalized_description_sentences: List[str]

@@ -7,8 +7,8 @@ from typing import Any, Dict, Iterator, List, Optional, TextIO, Tuple
 
 import requests
 
-INPUT_JSONL = Path(__file__).parent / "exports" / "eval.jsonl"
-OUTPUT_JSONL = Path(__file__).parent / "exports" / "pre_eval.jsonl"
+INPUT_JSONL = Path(__file__).parent / "exports" / "raw.jsonl"
+OUTPUT_JSONL = Path(__file__).parent / "exports" / "eval.jsonl"
 API_BASE = "http://localhost:8080/v1"
 MODEL = "nemotron-3-4b"
 API_KEY: Optional[str] = None
@@ -78,11 +78,11 @@ def build_prompt(entry: Dict[str, Any]) -> str:
         "You are rewriting pull request discussion data for evaluation.\n"
         "Given one PR, produce strict JSON with this schema:\n"
         "{\n"
-        '  "comments": [string, ...],\n'
+        '  "review_sentences": [string, ...],\n'
         '  "description_sentences": [string, ...]\n'
         "}\n"
         "Rules:\n"
-        "1) comments: merge and rewrite original comments into concise, clear statements.\n"
+        "1) review_sentences: merge and rewrite original comments into concise, clear statements.\n"
         "2) Remove duplicates and near-duplicates.\n"
         "3) Preserve important technical meaning; do not invent facts.\n"
         "4) description_sentences: rewrite PR description and motivation into clear atomic sentences.\n"
@@ -171,16 +171,20 @@ def call_llm(
 
 
 def ensure_lists(output: Dict[str, Any]) -> Tuple[List[str], List[str]]:
-    comments_raw = output.get("comments")
+    review_sentences_raw = output.get("review_sentences")
     desc_raw = output.get("description_sentences")
 
-    comments = comments_raw if isinstance(comments_raw, list) else []
+    review_sentences = (
+        review_sentences_raw if isinstance(review_sentences_raw, list) else []
+    )
     desc = desc_raw if isinstance(desc_raw, list) else []
 
-    comments_text = [str(item) for item in comments if str(item).strip()]
+    review_sentences_text = [
+        str(item) for item in review_sentences if str(item).strip()
+    ]
     desc_text = [str(item) for item in desc if str(item).strip()]
 
-    return dedupe_text_list(comments_text), dedupe_text_list(desc_text)
+    return dedupe_text_list(review_sentences_text), dedupe_text_list(desc_text)
 
 
 def append_jsonl_entry(file: TextIO, entry: Dict[str, Any]) -> None:
@@ -197,7 +201,7 @@ def main() -> None:
 
     total_pr_count = 0
     original_comments_count = 0
-    generated_comments_count = 0
+    generated_review_sentences_count = 0
     generated_description_sentences_count = 0
 
     print(f"Reading entries from {INPUT_JSONL}")
@@ -218,10 +222,12 @@ def main() -> None:
                     model=MODEL,
                     prompt=prompt,
                 )
-                normalized_comments, normalized_description = ensure_lists(llm_result)
+                normalized_review_sentences, normalized_description = ensure_lists(
+                    llm_result
+                )
 
                 merged = dict(entry)
-                merged["normalized_comments"] = normalized_comments
+                merged["normalized_review_sentences"] = normalized_review_sentences
                 merged["normalized_description_sentences"] = normalized_description
 
                 append_jsonl_entry(output_file, merged)
@@ -230,7 +236,7 @@ def main() -> None:
                 original_comments_count += len(
                     build_comments_payload(entry.get("comments") or [])
                 )
-                generated_comments_count += len(normalized_comments)
+                generated_review_sentences_count += len(normalized_review_sentences)
                 generated_description_sentences_count += len(normalized_description)
 
             except Exception as exc:
@@ -243,14 +249,14 @@ def main() -> None:
     print(f"Wrote {total_pr_count} entries to {OUTPUT_JSONL}")
     print("\n=== Summary ===")
     print(f"Original comments count: {original_comments_count}")
-    print(f"Generated comments count: {generated_comments_count}")
+    print(f"Generated review_sentences count: {generated_review_sentences_count}")
     print(
         "Generated description sentences count: "
         f"{generated_description_sentences_count}"
     )
     print(
-        f"Average generated comments per PR: "
-        f"{generated_comments_count / total_pr_count:.2f}"
+        f"Average generated review_sentences per PR: "
+        f"{generated_review_sentences_count / total_pr_count:.2f}"
     )
     print(
         "Average generated description sentences per PR: "
