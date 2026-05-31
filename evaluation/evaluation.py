@@ -1,11 +1,28 @@
-import argparse
 import json
 import re
+import sys
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-from bert_score import score as bert_score_fn
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
+
+try:
+    from bert_score import score as bert_score_fn
+except Exception:  # pragma: no cover - optional dependency
+    bert_score_fn = None
+
+
+ALIGNMENT_METHOD = "auto"
+BERT_LANG = "en"
+BERT_MODEL_TYPE: Optional[str] = None
+REPETITIVE_THRESHOLD = 0.9
+ISSUE_DETAIL_MIN_WORDS = 8
+
+# TODO(LLM-as-a-judge): replace these mock values by real LLM judge outputs.
+MOCK_ISSUE_CORRECTNESS = 0.6
+MOCK_QUALITY_COMPREHENSIVENESS = 0.7
+MOCK_QUALITY_CONCISENESS = 0.6
+MOCK_QUALITY_RELEVANCE = 0.65
 
 
 def safe_div(numerator: float, denominator: float) -> float:
@@ -80,10 +97,15 @@ def bert_sentence_alignment(
     if model_type:
         kwargs["model_type"] = model_type
 
-    precision, recall, f1 = bert_score_fn(cands=cands, refs=refs, **kwargs)
-    p = float(precision.mean().item())
-    r = float(recall.mean().item())
-    f = float(f1.mean().item())
+    raw_result = cast(Any, bert_score_fn(cands=cands, refs=refs, **kwargs))
+    precision, recall, f1 = raw_result
+    p = (
+        float(precision.mean().item())
+        if hasattr(precision, "mean")
+        else float(precision)
+    )
+    r = float(recall.mean().item()) if hasattr(recall, "mean") else float(recall)
+    f = float(f1.mean().item()) if hasattr(f1, "mean") else float(f1)
     return p, r, f
 
 
@@ -118,6 +140,9 @@ class ChecklistItem:
     final_answer: str
     analysis: str
     evidences: List[ChecklistEvidence] = field(default_factory=list)
+    final_answer_labeled: bool = False
+    analysis_labeled: bool = False
+    expected_evidence_count: int = 0
 
 
 @dataclass
@@ -151,6 +176,24 @@ SECTION_PATTERNS = {
     "change_description": r"###\s+Change\s+Description",
     "change_motivation": r"###\s+Change\s+Motivation",
 }
+
+CHECKLIST_HEADER_PATTERN = r"###\s+Checklist\s+Item(?:\s*:)?\s*(.*)"
+CHECKLIST_START_PATTERN = r"#\s+Appendix:\s+Detailed\s+Checklist\s+Item\s+Answers"
+FINAL_ANSWER_PATTERN = r"Final\s+Answer\s*:\s*(.+)"
+ANALYSIS_PATTERN = r"Analysis\s*:\s*(.+)"
+EVIDENCE_TRIPLE_COLON_PATTERN = (
+    r"[-*]\s+([^:\n]+?\.java):::([0-9]+\s*[-~]\s*[0-9]+|[0-9]+-[0-9]+):::(.+)"
+)
+EVIDENCE_BULLET_PATTERN = (
+    r"[-*]\s+([^\n]+?\.java)\s*\(\s*lines?\s*:\s*([^)]+)\)\s*\n\s*[-*]\s+([^\n]+)"
+)
+
+
+def extract_labeled_text(body: str, label_pattern: str) -> Tuple[str, bool]:
+    match = re.search(label_pattern, body, re.IGNORECASE | re.DOTALL)
+    if not match:
+        return "", False
+    return match.group(1).strip(), True
 
 
 def extract_section(text: str, header_regex: str) -> str:
@@ -191,78 +234,81 @@ def parse_issue_table(section_text: str) -> List[Issue]:
     return issues
 
 
-def parse_checklist_item_body(body: str) -> Tuple[str, str, List[ChecklistEvidence]]:
-    final_answer = ""
-    analysis = ""
+def parse_evidences(body: str) -> List[ChecklistEvidence]:
     evidences: List[ChecklistEvidence] = []
+    seen: Set[Tuple[str, str, str]] = set()
 
-    final_match = re.search(r"Final\s+Answer\s*:\s*(.+)", body, re.IGNORECASE)
-    if final_match:
-        final_answer = final_match.group(1).strip()
+    patterns = [
+        (EVIDENCE_TRIPLE_COLON_PATTERN, 1, 2, 3),
+        (EVIDENCE_BULLET_PATTERN, 1, 2, 3),
+    ]
+    for pattern, file_idx, line_idx, reason_idx in patterns:
+        for match in re.finditer(pattern, body, re.IGNORECASE):
+            filepath = match.group(file_idx).strip()
+            lines = match.group(line_idx).replace("~", "-").replace(" ", "")
+            reason = match.group(reason_idx).strip()
+            key = (filepath, lines, reason)
+            if key in seen:
+                continue
+            seen.add(key)
+            evidences.append(
+                ChecklistEvidence(filepath=filepath, lines=lines, reason=reason)
+            )
 
-    analysis_match = re.search(r"Analysis\s*:\s*(.+)", body, re.IGNORECASE | re.DOTALL)
-    if analysis_match:
-        analysis_candidate = analysis_match.group(1).strip()
-        stop = re.search(r"\n\s*[-*]\s+", analysis_candidate)
+    return evidences
+
+
+def count_expected_evidence_rows(body: str) -> int:
+    triple_count = len(
+        re.findall(EVIDENCE_TRIPLE_COLON_PATTERN, body, flags=re.IGNORECASE)
+    )
+    bullet_count = len(re.findall(EVIDENCE_BULLET_PATTERN, body, flags=re.IGNORECASE))
+    return triple_count + bullet_count
+
+
+def parse_checklist_item_body(
+    body: str,
+) -> Tuple[str, str, List[ChecklistEvidence], bool, bool, int]:
+    final_answer, final_labeled = extract_labeled_text(body, FINAL_ANSWER_PATTERN)
+    analysis_text, analysis_labeled = extract_labeled_text(body, ANALYSIS_PATTERN)
+
+    if analysis_text:
+        stop = re.search(r"\n\s*[-*]\s+", analysis_text)
         analysis = (
-            analysis_candidate[: stop.start()].strip()
-            if stop
-            else analysis_candidate.strip()
+            analysis_text[: stop.start()].strip() if stop else analysis_text.strip()
         )
+    else:
+        analysis = ""
 
-    triple_colon = re.finditer(
-        r"[-*]\s+([^:\n]+?\.java):::([0-9]+\s*[-~]\s*[0-9]+|[0-9]+-[0-9]+):::(.+)",
-        body,
-        re.IGNORECASE,
-    )
-    for match in triple_colon:
-        evidences.append(
-            ChecklistEvidence(
-                filepath=match.group(1).strip(),
-                lines=match.group(2).replace("~", "-").replace(" ", ""),
-                reason=match.group(3).strip(),
-            )
-        )
-
-    # Supports:
-    # - path.java(lines:10-20)
-    #   - reason text
-    bullet_items = re.finditer(
-        r"[-*]\s+([^\n]+?\.java)\s*\(\s*lines?\s*:\s*([^)]+)\)\s*\n\s*[-*]\s+([^\n]+)",
-        body,
-        re.IGNORECASE,
-    )
-    for match in bullet_items:
-        evidences.append(
-            ChecklistEvidence(
-                filepath=match.group(1).strip(),
-                lines=match.group(2).replace("~", "-").replace(" ", ""),
-                reason=match.group(3).strip(),
-            )
-        )
-
-    if not final_answer:
-        paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
-        if paragraphs:
-            final_answer = paragraphs[0].splitlines()[0].strip()
-
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
+    if not final_answer and paragraphs:
+        final_answer = paragraphs[0].splitlines()[0].strip()
     if not analysis:
-        paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
         if len(paragraphs) > 1:
             analysis = paragraphs[1]
         elif paragraphs:
             analysis = paragraphs[0]
 
-    return final_answer, analysis, evidences
+    evidences = parse_evidences(body)
+    expected_evidence_count = count_expected_evidence_rows(body)
+
+    return (
+        final_answer,
+        analysis,
+        evidences,
+        final_labeled,
+        analysis_labeled,
+        expected_evidence_count,
+    )
 
 
 def parse_checklist_items(text: str) -> List[ChecklistItem]:
-    start = re.search(r"#\s+Appendix:\s+Detailed\s+Checklist\s+Item\s+Answers", text)
+    start = re.search(CHECKLIST_START_PATTERN, text, re.IGNORECASE)
     if not start:
         return []
 
     scope = text[start.end() :]
-    headers = list(re.finditer(r"###\s+Checklist\s+Item:?\s*(.+)", scope))
+    headers = list(re.finditer(CHECKLIST_HEADER_PATTERN, scope, re.IGNORECASE))
     if not headers:
         return []
 
@@ -270,15 +316,25 @@ def parse_checklist_items(text: str) -> List[ChecklistItem]:
     for i, header in enumerate(headers):
         body_start = header.end()
         body_end = headers[i + 1].start() if i + 1 < len(headers) else len(scope)
-        title = header.group(1).strip()
+        title = header.group(1).strip() or f"{i + 1}"
         body = scope[body_start:body_end].strip()
-        final_answer, analysis, evidences = parse_checklist_item_body(body)
+        (
+            final_answer,
+            analysis,
+            evidences,
+            final_labeled,
+            analysis_labeled,
+            expected_evidence_count,
+        ) = parse_checklist_item_body(body)
         items.append(
             ChecklistItem(
                 title=title,
                 final_answer=final_answer,
                 analysis=analysis,
                 evidences=evidences,
+                final_answer_labeled=final_labeled,
+                analysis_labeled=analysis_labeled,
+                expected_evidence_count=expected_evidence_count,
             )
         )
 
@@ -313,53 +369,6 @@ def normalize_line_span(text: str) -> str:
     if end < start:
         start, end = end, start
     return f"{start}-{end}"
-
-
-def structural_correctness(parsed: ParsedReview) -> Dict[str, float]:
-    expected_blocks = 1
-    found_blocks = 1 if parsed.motivation.strip() else 0
-    correct_format_blocks = 1 if parsed.motivation.strip() else 0
-    total_blocks = 1 if parsed.motivation.strip() else 0
-
-    for item in parsed.checklist_items:
-        expected_blocks += 2
-
-        has_final = bool(item.final_answer.strip())
-        has_analysis = bool(item.analysis.strip())
-
-        found_blocks += int(has_final) + int(has_analysis)
-        total_blocks += int(has_final) + int(has_analysis)
-
-        correct_format_blocks += int(has_final)
-        correct_format_blocks += int(has_analysis and word_count(item.analysis) >= 10)
-
-        evidence_line_count = len(
-            [
-                line
-                for line in split_sentences(item.analysis)
-                if ".java" in line and "line" in line.lower()
-            ]
-        )
-        expected_evidence_blocks = max(len(item.evidences), evidence_line_count)
-        expected_blocks += expected_evidence_blocks
-
-        found_blocks += len(item.evidences)
-        total_blocks += len(item.evidences)
-
-        for evidence in item.evidences:
-            path_ok = evidence.filepath.endswith(".java")
-            lines_ok = bool(normalize_line_span(evidence.lines))
-            reason_ok = word_count(evidence.reason) >= 10
-            if path_ok and lines_ok and reason_ok:
-                correct_format_blocks += 1
-
-    output_completeness = clamp01(safe_div(found_blocks, expected_blocks))
-    format_correctness = clamp01(safe_div(correct_format_blocks, max(1, total_blocks)))
-
-    return {
-        "output_completeness": output_completeness,
-        "format_correctness": format_correctness,
-    }
 
 
 def extract_entities_from_review(parsed: ParsedReview) -> Set[str]:
@@ -439,6 +448,12 @@ def extract_entities_from_pr(pr_entry: Dict[str, Any]) -> Set[str]:
 
     if patches:
         entities.update(extract_entities_from_diff("\n".join(patches)))
+    elif pr_entry.get("diff") or pr_entry.get("Diff"):
+        entities.update(
+            extract_entities_from_diff(
+                pr_entry.get("diff") or pr_entry.get("Diff") or ""
+            )
+        )
 
     return {entity.strip() for entity in entities if entity.strip()}
 
@@ -477,7 +492,7 @@ def collect_comment_candidates(parsed: ParsedReview) -> List[str]:
 def collect_comment_references(pr_entry: Optional[Dict[str, Any]]) -> List[str]:
     if not pr_entry:
         return []
-    comments = pr_entry.get("comments") or []
+    comments = pr_entry.get("comments") or pr_entry.get("Comments") or []
     references: List[str] = []
     for comment in comments:
         body = comment.get("body") if isinstance(comment, dict) else str(comment)
@@ -495,8 +510,31 @@ def collect_interpretation_references(pr_entry: Optional[Dict[str, Any]]) -> Lis
     if not pr_entry:
         return []
     return split_sentences(
-        pr_entry.get("pr_description") or pr_entry.get("description") or ""
+        pr_entry.get("pr_description")
+        or pr_entry.get("description")
+        or pr_entry.get("Description")
+        or ""
     )
+
+
+def compute_alignment(
+    references: List[str],
+    candidates: List[str],
+    method: str,
+    bert_lang: str,
+    bert_model_type: Optional[str],
+) -> Tuple[float, float, float]:
+    use_bert = method == "bert-score" or (
+        method == "auto" and bert_score_fn is not None
+    )
+    if use_bert:
+        return bert_sentence_alignment(
+            references,
+            candidates,
+            lang=bert_lang,
+            model_type=bert_model_type,
+        )
+    return greedy_sentence_alignment(references, candidates)
 
 
 def review_alignment(
@@ -512,25 +550,20 @@ def review_alignment(
     interp_refs = collect_interpretation_references(pr_entry)
     interp_cands = collect_interpretation_candidates(parsed)
 
-    use_bert = method == "bert-score" or (
-        method == "auto" and bert_score_fn is not None
+    cp, cr, cf1 = compute_alignment(
+        comment_refs,
+        comment_cands,
+        method,
+        bert_lang,
+        bert_model_type,
     )
-    if use_bert:
-        cp, cr, cf1 = bert_sentence_alignment(
-            comment_refs,
-            comment_cands,
-            lang=bert_lang,
-            model_type=bert_model_type,
-        )
-        ip, ir, if1 = bert_sentence_alignment(
-            interp_refs,
-            interp_cands,
-            lang=bert_lang,
-            model_type=bert_model_type,
-        )
-    else:
-        cp, cr, cf1 = greedy_sentence_alignment(comment_refs, comment_cands)
-        ip, ir, if1 = greedy_sentence_alignment(interp_refs, interp_cands)
+    ip, ir, if1 = compute_alignment(
+        interp_refs,
+        interp_cands,
+        method,
+        bert_lang,
+        bert_model_type,
+    )
 
     return {
         "comment_precision": clamp01(cp),
@@ -552,6 +585,9 @@ def extract_changed_file_paths(pr_entry: Optional[Dict[str, Any]]) -> Set[str]:
             path = file_info.get("path")
             if path:
                 paths.add(path)
+    if not paths:
+        diff_text = pr_entry.get("diff") or pr_entry.get("Diff") or ""
+        paths.update(re.findall(r"\+\+\+\s+b/([^\n]+)", diff_text))
     return paths
 
 
@@ -562,77 +598,40 @@ def issue_correctness(
     if not issues:
         return {"issue_correctness": 0.0, "valid_issues": 0.0, "total_issues": 0.0}
 
-    changed_paths = extract_changed_file_paths(pr_entry)
-    valid_count = 0
-    for issue in issues:
-        has_basic_fields = all(
-            [
-                issue.issue_type.strip(),
-                issue.title.strip(),
-                issue.location.strip(),
-                issue.detail.strip(),
-            ]
-        )
-        has_location_reference = (
-            any(path in issue.location for path in changed_paths)
-            if changed_paths
-            else True
-        )
-        detail_long_enough = word_count(issue.detail) >= 8
-        if has_basic_fields and has_location_reference and detail_long_enough:
-            valid_count += 1
+    # TODO(LLM-as-a-judge): validate each issue with an LLM judge and count True/False.
+    valid_count = int(round(MOCK_ISSUE_CORRECTNESS * len(issues)))
 
     return {
-        "issue_correctness": clamp01(safe_div(valid_count, len(issues))),
+        "issue_correctness": clamp01(MOCK_ISSUE_CORRECTNESS),
         "valid_issues": float(valid_count),
         "total_issues": float(len(issues)),
     }
 
 
 def quality_score(
-    structural: Dict[str, float],
     grounding: Dict[str, float],
     alignment: Dict[str, float],
+    issue: Dict[str, float],
     repetitive_rate: float,
-    review_text: str,
 ) -> Dict[str, float]:
-    comprehensiveness = (
-        structural["output_completeness"]
-        + grounding["coverage_score"]
-        + alignment["comment_recall"]
-    ) / 3.0
-
-    total_words = word_count(review_text)
-    if total_words <= 250:
-        verbosity_penalty = 0.25
-    elif total_words >= 2200:
-        verbosity_penalty = 0.2
-    else:
-        verbosity_penalty = 0.0
-
-    conciseness = clamp01(1.0 - repetitive_rate - verbosity_penalty)
-    relevance = (
-        grounding["grounding_score"]
-        + alignment["comment_precision"]
-        + alignment["interpretation_precision"]
-    ) / 3.0
+    # TODO(LLM-as-a-judge): replace with CRScore-style prompt and judge outputs.
+    _ = grounding, alignment, issue, repetitive_rate
 
     return {
-        "comprehensiveness": clamp01(comprehensiveness),
-        "conciseness": clamp01(conciseness),
-        "relevance": clamp01(relevance),
+        "comprehensiveness": clamp01(MOCK_QUALITY_COMPREHENSIVENESS),
+        "conciseness": clamp01(MOCK_QUALITY_CONCISENESS),
+        "relevance": clamp01(MOCK_QUALITY_RELEVANCE),
     }
 
 
 def evaluate_review(
     review_text: str,
     pr_entry: Optional[Dict[str, Any]] = None,
-    alignment_method: str = "auto",
-    bert_lang: str = "en",
-    bert_model_type: Optional[str] = None,
+    alignment_method: str = ALIGNMENT_METHOD,
+    bert_lang: str = BERT_LANG,
+    bert_model_type: Optional[str] = BERT_MODEL_TYPE,
 ) -> Dict[str, Any]:
     parsed = parse_review_markdown(review_text)
-    structural = structural_correctness(parsed)
     grounding = truth_grounding(parsed, pr_entry)
     alignment = review_alignment(
         parsed,
@@ -643,12 +642,13 @@ def evaluate_review(
     )
 
     all_sentences = split_sentences(review_text)
-    repetitive = clamp01(compute_repetitive_rate(all_sentences))
+    repetitive = clamp01(
+        compute_repetitive_rate(all_sentences, threshold=REPETITIVE_THRESHOLD)
+    )
     correctness = issue_correctness(parsed, pr_entry)
-    quality = quality_score(structural, grounding, alignment, repetitive, review_text)
+    quality = quality_score(grounding, alignment, correctness, repetitive)
 
     return {
-        "structural_correctness": structural,
         "truth_grounding": grounding,
         "review_alignment": alignment,
         "issue_correctness": correctness,
@@ -664,97 +664,54 @@ def evaluate_review(
                 or (alignment_method == "auto" and bert_score_fn is not None)
                 else "heuristic"
             ),
+            "quality_score_method": "heuristic-proxy",
         },
     }
 
 
-def load_pr_entry(
-    pr_json: Optional[Path], pr_jsonl: Optional[Path], pr_id: Optional[int]
-) -> Optional[Dict[str, Any]]:
-    if pr_json:
-        return json.loads(pr_json.read_text(encoding="utf-8"))
-
-    if pr_jsonl:
-        lines = [
-            line.strip()
-            for line in pr_jsonl.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
-        entries = [json.loads(line) for line in lines]
-        if pr_id is None:
-            return entries[0] if entries else None
-        for entry in entries:
-            if int(entry.get("pr_id", -1)) == pr_id:
-                return entry
-        return None
-
-    return None
+def load_json(path: Path) -> Dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Evaluate LLM code review quality.")
-    parser.add_argument(
-        "--review", required=True, type=Path, help="Path to review markdown file."
-    )
-    parser.add_argument(
-        "--pr-json", type=Path, default=None, help="Path to one PR json file."
-    )
-    parser.add_argument(
-        "--pr-jsonl", type=Path, default=None, help="Path to PR dataset jsonl file."
-    )
-    parser.add_argument(
-        "--pr-id", type=int, default=None, help="PR id used with --pr-jsonl."
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=None,
-        help="Path to write evaluation result as JSON.",
-    )
-    parser.add_argument(
-        "--alignment-method",
-        choices=["auto", "heuristic", "bert-score"],
-        default="auto",
-        help="Method for review alignment metric.",
-    )
-    parser.add_argument(
-        "--bert-lang",
-        default="en",
-        help="Language hint passed to bert_score when enabled.",
-    )
-    parser.add_argument(
-        "--bert-model-type",
-        default=None,
-        help="Optional model_type for bert_score (e.g. roberta-large).",
-    )
-    return parser
+def load_jsonl_first(path: Path) -> Dict[str, Any]:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped:
+            return json.loads(stripped)
+    return {}
+
+
+def load_pr_entry(path: Path) -> Optional[Dict[str, Any]]:
+    if not path.exists():
+        raise FileNotFoundError(f"PR file not found: {path}")
+    if path.suffix.lower() == ".jsonl":
+        return load_jsonl_first(path)
+    return load_json(path)
+
+
+def load_review_text(path: Path) -> str:
+    if not path.exists():
+        raise FileNotFoundError(f"Review file not found: {path}")
+    return path.read_text(encoding="utf-8")
+
+
+def parse_cli_args(argv: List[str]) -> Tuple[Path, Path]:
+    if len(argv) != 3:
+        raise SystemExit("Usage: python evaluation.py [input_review] [input_pr]")
+    return Path(argv[1]), Path(argv[2])
 
 
 def main() -> None:
-    parser = build_arg_parser()
-    args = parser.parse_args()
-
-    review_path: Path = args.review
-    if not review_path.exists():
-        raise FileNotFoundError(f"Review file not found: {review_path}")
-
-    review_text = review_path.read_text(encoding="utf-8")
-    pr_entry = load_pr_entry(args.pr_json, args.pr_jsonl, args.pr_id)
+    review_path, pr_path = parse_cli_args(sys.argv)
+    review_text = load_review_text(review_path)
+    pr_entry = load_pr_entry(pr_path)
 
     result = evaluate_review(
         review_text,
         pr_entry,
-        alignment_method=args.alignment_method,
-        bert_lang=args.bert_lang,
-        bert_model_type=args.bert_model_type,
     )
     output_text = json.dumps(result, ensure_ascii=False, indent=2)
-
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(output_text, encoding="utf-8")
-    else:
-        print(output_text)
+    print(output_text)
 
 
 if __name__ == "__main__":
