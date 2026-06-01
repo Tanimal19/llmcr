@@ -35,16 +35,6 @@ if [[ -z "$MODE" ]]; then
     exit 1
 fi
 
-case "$MODE" in
-    chat|sync|review|api)
-        ;;
-    *)
-        echo "Error: unsupported mode '$MODE'. Supported modes: chat, sync, review, api."
-        usage
-        exit 1
-        ;;
-esac
-
 APP_ARGS=()
 MODE_ARGS=()
 
