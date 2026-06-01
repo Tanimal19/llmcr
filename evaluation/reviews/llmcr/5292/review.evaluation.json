@@ -46,17 +46,17 @@
     ]
   },
   "review_alignment": {
-    "comment_precision": 0.10225968807935715,
-    "comment_recall": 0.26336172223091125,
-    "comment_f1": 0.14731789117339295,
-    "interpretation_precision": 0.11634408682584763,
-    "interpretation_recall": 0.06894407421350479,
-    "interpretation_f1": 0.08658119667688961,
+    "comment_precision": 0.3624187111854553,
+    "comment_recall": 0.8638136386871338,
+    "comment_f1": 0.5106083291146871,
+    "interpretation_precision": 0.46223828196525574,
+    "interpretation_recall": 0.49489569664001465,
+    "interpretation_f1": 0.47800985375156363,
     "comment_refs": [
-      "Fix the AvoidStarImport checkstyle error.",
-      "Fix the ImportOrder checkstyle errors.",
-      "Remove the null/empty name check for PropertyDescriptor as it is not needed.",
-      "The name cannot be null or empty at this stage."
+      "Fix `AvoidStarImport` checkstyle errors.",
+      "The `name` variable is unlikely to be null or empty at this stage, given its usage at line 350.",
+      "Since `PropertyDescriptor` is based on JavaBeans Introspector, the `name` should not be null or empty, allowing the removal of that check.",
+      "Fix `ImportOrder` checkstyle errors."
     ],
     "comment_cands": [
       "Performance improvement achieved by reducing algorithmic complexity for checking duplicate tool names.",
@@ -79,10 +79,9 @@
       "Incorrect modifier order for 'final static' in the Builder class."
     ],
     "interp_refs": [
-      "The algorithm's time complexity was reduced from O(N × M) to O(N + M).",
-      "Lookup performance was improved from O(N) to O(1) by using a HashSet.",
-      "Memory allocations were reduced by removing substring usage.",
-      "Null safety was improved."
+      "The original time complexity of $O(N \\times M)$ was reduced to $O(N + M)$ by using a HashSet.",
+      "Lookup performance was optimized from $O(N)$ to $O(1)$ by switching to a HashSet.",
+      "Null-safety was improved and memory allocations were reduced by removing `substring` usage."
     ],
     "interp_cands": [
       "The loop in resolveToolDefinitions was updated to pre-calculate a Set of existing tool names from the provided ToolCallbacks, replacing the repeated stream-based anyMatch check inside the iteration.",

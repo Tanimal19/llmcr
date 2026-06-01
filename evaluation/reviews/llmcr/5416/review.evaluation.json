@@ -79,20 +79,20 @@
     ]
   },
   "review_alignment": {
-    "comment_precision": 0.08705258369445801,
-    "comment_recall": 0.17736278474330902,
-    "comment_f1": 0.11678510787305459,
-    "interpretation_precision": 0.05244840309023857,
-    "interpretation_recall": 0.0891745388507843,
-    "interpretation_f1": 0.06604949868898755,
+    "comment_precision": 0.5374670028686523,
+    "comment_recall": 0.7577242255210876,
+    "comment_f1": 0.6288673974392335,
+    "interpretation_precision": 0.7244901657104492,
+    "interpretation_recall": 0.6710847616195679,
+    "interpretation_f1": 0.6967656134116628,
     "comment_refs": [
-      "The current fix fails because `SyncMcpToolCallback.call()` serializes `Content` without the `type` discriminator, causing `InvalidTypeIdException`.",
-      "The updated fix uses `JsonNode` parsing to reconstruct `Content` subtypes, avoiding the exception.",
-      "Replace qualified name with import.",
-      "Log ignored exceptions at debug level.",
-      "Throw `IllegalArgumentException` for unknown content types.",
-      "Handle all `Content` types; currently missing `EmbeddedResource` and `ResourceLink`.",
-      "Consider making `parseContentList` package‑private and testable via a separate utility class."
+      "The initial fix caused an InvalidTypeIdException because the deserialization of `List<McpSchema.Content>` expected a `type` discriminator field which was missing.",
+      "The updated fix uses `JsonNode`-based parsing to manually reconstruct `Content` subtypes, such as `TextContent` or `ImageContent`, to avoid the `InvalidTypeIdException`.",
+      "It was suggested to log ignored exceptions at a debug level instead of silently ignoring them.",
+      "The assumption that an unknown content type is always `TextContent` was questioned, with a suggestion to throw an `IllegalArgumentException` instead.",
+      "The implementation was noted to be missing handling for `EmbeddedResource` and `ResourceLink` content types.",
+      "Suggestions were made to improve the design and testability of the `parseContentList` method, such as making it package private with `@VisibleForTesting` or extracting it to a separate utility class, rather than using reflection.",
+      "The updated fix successfully resolved the double-wrapping issue."
     ],
     "comment_cands": [
       "The change introduces robust unit test coverage for various content scenarios and edge cases.",
@@ -112,12 +112,13 @@
       "The logger instance is named 'logger', which violates the standard Java naming convention for static final constants (should be 'LOGGER')."
     ],
     "interp_refs": [
-      "Proxying tool calls through an MCP Gateway double‑wraps the response in `TextContent`.",
-      "The gateway client serializes `CallToolResult.content()` to JSON using `ModelOptionsUtils.toJsonString()`.",
-      "`McpToolUtils.toSharedSyncToolSpecification()` then wraps the JSON string in a new `TextContent`, losing the original structure.",
-      "The fix adds `parseContentList()` to attempt deserialization as `List<Content>` before falling back to `TextContent` wrapping.",
-      "This preserves the original response structure in gateway/proxy scenarios.",
-      "The change maintains backward compatibility for non‑MCP tool callbacks."
+      "When proxying tool calls through an MCP Gateway, the tool response was being double-wrapped in `TextContent`.",
+      "This occurred because `CallToolResult.content()` was serialized to JSON, and then the entire JSON string was wrapped into a new `TextContent`.",
+      "The original response structure was lost during this process.",
+      "The fix introduces `parseContentList()` which attempts to deserialize the call result as a `List<Content>`.",
+      "If deserialization as `List<Content>` fails, it falls back to `TextContent` wrapping.",
+      "This approach preserves the original response structure in gateway/proxy scenarios.",
+      "It also maintains backward compatibility for non-MCP tool callbacks."
     ],
     "interp_cands": [
       "Introduced a new parsing method, `parseContentList`, in `McpToolUtils` to handle the deserialization of MCP tool result strings into a list of specific `McpSchema.Content` types (e.g., TextContent, ImageContent, AudioContent, ResourceLink).",

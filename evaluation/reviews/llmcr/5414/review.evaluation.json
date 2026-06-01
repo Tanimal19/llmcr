@@ -47,17 +47,19 @@
     ]
   },
   "review_alignment": {
-    "comment_precision": 0.10153795033693314,
-    "comment_recall": 0.29991352558135986,
-    "comment_f1": 0.15171250570792585,
-    "interpretation_precision": 0.40321919322013855,
-    "interpretation_recall": 0.11666395515203476,
-    "interpretation_f1": 0.18096815032980498,
+    "comment_precision": 0.620797336101532,
+    "comment_recall": 0.8758692145347595,
+    "comment_f1": 0.7265977514167814,
+    "interpretation_precision": 0.5614317655563354,
+    "interpretation_recall": 0.5590649247169495,
+    "interpretation_f1": 0.5602458453811289,
     "comment_refs": [
-      "The guide should be placed after the Simple Example section and rename the section to 'Adding data to McpTransportContext'.",
-      "The example must use McpSyncRequestContext.transportContext() for stateless servers.",
-      "The guide covers transport-specific metadata such as HTTP headers.",
-      "The contribution is approved."
+      "The section should be moved after \"Simple Example\" and \"Adding data to McpTransportContext\" should be renamed.",
+      "The documentation should clarify the need for transport-specific metadata like HTTP headers or remote host in tools.",
+      "The current example does not work with stateless servers.",
+      "For stateless servers, `McpTransportContext` should be injected directly.",
+      "Both stateless and streamable HTTP support `McpSyncRequestContext` (and async), which offers a `.transportContext()` method.",
+      "The example should be reworked to use `McpSyncRequestContext` and its `.transportContext()` method, after verification."
     ],
     "comment_cands": [
       "Clear explanation of the rationale behind maintaining a transport-agnostic design.",
@@ -77,10 +79,9 @@
       "Documentation should explicitly warn developers against logging or exposing these values, as they are security-sensitive."
     ],
     "interp_refs": [
-      "This PR adds documentation on how to propagate and access HTTP headers in MCP Servers.",
-      "The documentation addresses the discussion in #5374.",
-      "The guide explains how to configure a TransportContextExtractor to populate the McpTransportContext.",
-      "Populating the McpTransportContext is essential for use cases such as passing Authorization tokens to MCP tools."
+      "The PR adds documentation for propagating and accessing HTTP headers in MCP Servers.",
+      "It provides a guide on configuring a `TransportContextExtractor` to populate the `McpTransportContext`.",
+      "This configuration is essential for handling use cases such as passing `Authorization` tokens to MCP tools."
     ],
     "interp_cands": [
       "Added a new section to the MCP Server Boot Starter documentation titled 'Adding data to McpTransportContext', which provides code examples for configuring a 'TransportContextExtractor' and accessing metadata within tool methods using 'McpSyncRequestContext'.",

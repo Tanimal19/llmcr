@@ -136,17 +136,18 @@
     ]
   },
   "review_alignment": {
-    "comment_precision": 0.026791060343384743,
-    "comment_recall": 0.1747518926858902,
-    "comment_f1": 0.0464594611887852,
-    "interpretation_precision": 0.6222165822982788,
-    "interpretation_recall": 0.23225882649421692,
-    "interpretation_f1": 0.3382550082607123,
+    "comment_precision": 0.44902610778808594,
+    "comment_recall": 0.7282187938690186,
+    "comment_f1": 0.5555161040304626,
+    "interpretation_precision": 0.7319862246513367,
+    "interpretation_recall": 0.6626931428909302,
+    "interpretation_f1": 0.6956183092059114,
     "comment_refs": [
-      "The knowledgeBaseId and region fields should be private, @Nullable fields.",
-      "Other fields and getter methods also need @Nullable and private annotations.",
-      "Null checks should be performed by the caller, not within the class, as Bedrock Knowledge Base does not support ISNULL/ISNOTNULL.",
-      "Remove the problematic code and ensure Checkstyle validation passes."
+      "The `@Nullable` annotation should use type-use syntax for fields like `knowledgeBaseId` and `region`, and on getter methods.",
+      "Support for ISNULL/ISNOTNULL filter expressions should be added, consistent with other vector store implementations.",
+      "A null-check should be performed by the caller.",
+      "Specific code causing checkstyle validation failures needs to be removed.",
+      "Redundant inherited methods or fields should be removed."
     ],
     "comment_cands": [
       "Well-implemented pagination logic using AWS SDK's nextToken to efficiently retrieve large result sets.",
@@ -162,14 +163,14 @@
       "While the auto-configuration uses @ConditionalOnProperty, there is no validation to ensure that the provided 'knowledge-base-id' property is a valid format or that the AWS credentials are reachable before attempting to initialize the client."
     ],
     "interp_refs": [
-      "This PR fixes issue #5251.",
-      "It adds a VectorStore implementation for Amazon Bedrock Knowledge Bases.",
-      "The implementation enables similarity search using the Bedrock Agent Runtime Retrieve API.",
-      "The Knowledge Base is pre-configured.",
-      "Bedrock Knowledge Bases provide fully managed RAG capabilities.",
-      "They include automatic document ingestion, chunking, and embedding.",
-      "This integration lets Spring AI users use existing Knowledge Bases.",
-      "It avoids the need to manage a separate vector store infrastructure."
+      "This PR introduces a new `VectorStore` implementation for Amazon Bedrock Knowledge Bases.",
+      "It enables similarity search against pre-configured Knowledge Bases using the Bedrock Agent Runtime Retrieve API.",
+      "This integration allows Spring AI users to leverage Bedrock Knowledge Bases for fully managed RAG capabilities.",
+      "The implementation supports similarity search with configurable topK and similarity threshold.",
+      "It includes metadata filtering using Spring AI filter expressions and supports SEMANTIC and HYBRID search types.",
+      "Optional Bedrock reranking model support and automatic pagination handling are provided.",
+      "The `VectorStore` is read-only, as `add()` and `delete()` operations are not supported.",
+      "An `EmbeddingModel` is not required because the Knowledge Base handles embeddings internally."
     ],
     "interp_cands": [
       "Introduced a new implementation of the VectorStore interface for Amazon Bedrock Knowledge Bases.",

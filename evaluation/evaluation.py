@@ -310,18 +310,8 @@ def main() -> None:
     review_payload = load_review_payload(review_path)
     pr_entry = load_pr_entry(pr_path, review_payload)
 
-    parsed_review = parse_review_json(review_payload)
-    updated_alignment = review_alignment(parsed_review, pr_entry)
+    result = evaluate_review(review_payload, pr_entry)
 
-    if output_path.exists():
-        existing_output = load_json(output_path)
-        if not isinstance(existing_output, dict):
-            raise ValueError(f"Output file must contain a JSON object: {output_path}")
-    else:
-        existing_output = {}
-
-    existing_output["review_alignment"] = updated_alignment
-    result = existing_output
     output_text = json.dumps(result, ensure_ascii=False, indent=2)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(output_text, encoding="utf-8")
