@@ -1,19 +1,20 @@
 # This script reads raw PR discussion data from a JSONL file, calls an LLM to rewrite and normalize the comments and description into concise sentences, and writes the enriched data to a new JSONL file for evaluation.
 
 import json
+import os
 import re
 import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, TextIO, Tuple
 
-import requests
+from google import genai
+from google.genai import types
 
-INPUT_JSONL = Path(__file__).parent / "exports" / "raw.jsonl"
-OUTPUT_JSONL = Path(__file__).parent / "exports" / "eval.jsonl"
-API_BASE = "http://localhost:8080/v1"
-MODEL = "nemotron-3-4b"
-API_KEY: Optional[str] = None
+INPUT_JSONL = Path(__file__).parent.parent / "exports" / "raw.jsonl"
+OUTPUT_JSONL = Path(__file__).parent.parent / "exports" / "eval.jsonl"
+MODEL = "gemini-2.5-flash"
+API_KEY: Optional[str] = os.getenv("GOOGLE_GEMINI_API_KEY")
 
 
 def iter_entries(jsonl_path: Path) -> Iterator[Dict[str, Any]]:
@@ -84,13 +85,15 @@ def build_prompt(entry: Dict[str, Any]) -> str:
         '  "description_sentences": [string, ...]\n'
         "}\n"
         "Rules:\n"
-        "1) review_sentences: merge and rewrite original comments into concise, clear statements.\n"
-        "2) Remove duplicates and near-duplicates.\n"
-        "3) Preserve important technical meaning; do not invent facts.\n"
-        "4) description_sentences: rewrite PR description and motivation into clear atomic sentences.\n"
+        "1) review_sentences: merge and rewrite original comments into clear statements.\n"
+        "2) description_sentences: rewrite PR description and motivation into clear atomic sentences.\n"
+        "3) Remove duplicates and near-duplicates.\n"
+        "4) Preserve important technical meaning; do not invent facts.\n"
         "5) Remove duplicate or overlapping sentence meanings.\n"
         "6) Keep output language consistent with source text.\n"
-        "7) Output valid JSON only. No markdown fences and no explanation.\n\n"
+        "7) Do not include any sentences that are purely about process, politeness, or non-technical content.\n"
+        "8) Output no more than 8 sentences in review_sentences and 8 sentences in description_sentences.\n"
+        "9) Output valid JSON only. No markdown fences and no explanation.\n\n"
         f"PR title: {entry.get('title', '')}\n\n"
         f"PR description:\n{description}\n\n"
         f"PR comments JSON:\n{json.dumps(comments, ensure_ascii=False, indent=2)}"
@@ -121,48 +124,55 @@ def parse_json_from_text(text: str) -> Dict[str, Any]:
     raise ValueError("Cannot parse JSON object from LLM response")
 
 
+def extract_response_text(response: Any) -> str:
+    text = getattr(response, "text", None)
+    if isinstance(text, str) and text.strip():
+        return text
+
+    candidates = getattr(response, "candidates", None)
+    if isinstance(candidates, list):
+        chunks: List[str] = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) if content is not None else None
+            if not isinstance(parts, list):
+                continue
+            for part in parts:
+                part_text = getattr(part, "text", None)
+                if isinstance(part_text, str) and part_text.strip():
+                    chunks.append(part_text)
+        if chunks:
+            return "\n".join(chunks)
+
+    raise ValueError("Empty LLM content")
+
+
 def call_llm(
-    api_base: str,
     api_key: Optional[str],
     model: str,
     prompt: str,
     timeout: int = 120,
     max_retries: int = 3,
 ) -> Dict[str, Any]:
-    endpoint = api_base.rstrip("/") + "/chat/completions"
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
+    if not api_key:
+        raise RuntimeError("Missing API key: set GEMINI_API_KEY or GOOGLE_API_KEY")
 
-    payload = {
-        "model": model,
-        "temperature": 0.2,
-        "messages": [
-            {
-                "role": "system",
-                "content": "Return strict JSON only.",
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-    }
+    client = genai.Client(api_key=api_key)
+    config = types.GenerateContentConfig(
+        temperature=0.2,
+        response_mime_type="application/json",
+        system_instruction="Return strict JSON only.",
+    )
 
     last_error: Optional[Exception] = None
     for attempt in range(1, max_retries + 1):
         try:
-            response = requests.post(
-                endpoint,
-                headers=headers,
-                json=payload,
-                timeout=timeout,
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config,
             )
-            response.raise_for_status()
-            data = response.json()
-            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            if not isinstance(content, str) or not content.strip():
-                raise ValueError("Empty LLM content")
+            content = extract_response_text(response)
             return parse_json_from_text(content)
         except Exception as exc:
             last_error = exc
@@ -199,6 +209,13 @@ def main() -> None:
         print(f"Error: input not found: {INPUT_JSONL}", file=sys.stderr)
         sys.exit(1)
 
+    if not API_KEY:
+        print(
+            "Error: missing API key. Set GEMINI_API_KEY or GOOGLE_API_KEY.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     OUTPUT_JSONL.parent.mkdir(parents=True, exist_ok=True)
 
     total_pr_count = 0
@@ -207,7 +224,7 @@ def main() -> None:
     generated_description_sentences_count = 0
 
     print(f"Reading entries from {INPUT_JSONL}")
-    print(f"Using model={MODEL}, api_base={API_BASE}")
+    print(f"Using model={MODEL} via google-genai SDK")
     print(f"Writing output to {OUTPUT_JSONL}")
 
     with OUTPUT_JSONL.open("w", encoding="utf-8") as output_file:
@@ -219,7 +236,6 @@ def main() -> None:
 
             try:
                 llm_result = call_llm(
-                    api_base=API_BASE,
                     api_key=API_KEY,
                     model=MODEL,
                     prompt=prompt,

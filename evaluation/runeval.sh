@@ -17,7 +17,7 @@ fail_count=0
 
 for review_file in "${review_files[@]}"; do
 	echo "Running evaluation for: $review_file"
-	if python main.py "$review_file" exports/eval.jsonl; then
+	if python evaluation.py "$review_file" exports/eval.jsonl; then
 		ok_count=$((ok_count + 1))
 	else
 		fail_count=$((fail_count + 1))

@@ -207,40 +207,6 @@ def serialize_parsed_review(parsed: ParsedReview) -> Dict[str, Any]:
     }
 
 
-def evaluate_review(
-    review_payload: Dict[str, Any],
-    pr_entry: Dict[str, Any],
-) -> Dict[str, Any]:
-    parsed_review = parse_review_json(review_payload)
-    grounding = truth_grounding(parsed_review, pr_entry)
-
-    alignment = review_alignment(parsed_review, pr_entry)
-
-    review_text = build_review_text(parsed_review)
-    all_sentences = split_sentences(review_text)
-    repetitive = clamp01(compute_repetitive_rate(all_sentences))
-    quality = judge_quality_score(
-        parsed_review=serialize_parsed_review(parsed_review),
-        pr_entry=pr_entry,
-        static_analysis_results=parsed_review.static_analysis_results,
-    )
-
-    return {
-        "pr_id": extract_review_pr_id(review_payload),
-        "truth_grounding": grounding,
-        "review_alignment": alignment,
-        "quality_score": quality,
-        "repetitive_rate": repetitive,
-        "meta": {
-            "sentence_count": len(all_sentences),
-            "checklist_item_count": len(parsed_review.checklist_items),
-            "issue_count": len(parsed_review.issues),
-            "review": parsed_review,
-            "pull_request": pr_entry,
-        },
-    }
-
-
 def extract_review_pr_id(review_payload: Dict[str, Any]) -> Optional[int]:
     review = unwrap_review_payload(review_payload)
     return to_int(review.get("prId")) or to_int(review.get("pr_id"))
@@ -303,6 +269,40 @@ def parse_cli_args(argv: List[str]) -> Tuple[Path, Path, Path]:
         output_path = review_path.with_suffix(".evaluation.json")
 
     return review_path, pr_path, output_path
+
+
+def evaluate_review(
+    review_payload: Dict[str, Any],
+    pr_entry: Dict[str, Any],
+) -> Dict[str, Any]:
+    parsed_review = parse_review_json(review_payload)
+    grounding = truth_grounding(parsed_review, pr_entry)
+
+    alignment = review_alignment(parsed_review, pr_entry)
+
+    review_text = build_review_text(parsed_review)
+    all_sentences = split_sentences(review_text)
+    repetitive = clamp01(compute_repetitive_rate(all_sentences))
+    quality = judge_quality_score(
+        parsed_review=serialize_parsed_review(parsed_review),
+        pr_entry=pr_entry,
+        static_analysis_results=parsed_review.static_analysis_results,
+    )
+
+    return {
+        "pr_id": extract_review_pr_id(review_payload),
+        "truth_grounding": grounding,
+        "review_alignment": alignment,
+        "quality_score": quality,
+        "repetitive_rate": repetitive,
+        "meta": {
+            "sentence_count": len(all_sentences),
+            "checklist_item_count": len(parsed_review.checklist_items),
+            "issue_count": len(parsed_review.issues),
+            "review": parsed_review,
+            "pull_request": pr_entry,
+        },
+    }
 
 
 def main() -> None:
