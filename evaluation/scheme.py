@@ -30,6 +30,11 @@ class PullRequestEntry:
     is_approved: bool
     comments: List[CommentEntry]
     changed_files: List[ChangedFileEntry]
+    changed_files_count: int = 0
+
+    def __post_init__(self) -> None:
+        if self.changed_files_count <= 0:
+            self.changed_files_count = len(self.changed_files)
 
 
 @dataclass

@@ -2,10 +2,9 @@ from typing import List, Tuple
 from utils import split_sentences, to_string_list, safe_div, clamp01
 from typing import Any, Dict, List, Optional, Tuple
 from scheme import ParsedReview
-from sentence_transformers import SentenceTransformer, util
+from bert_score import score as bert_score
 
-SBERT_MODEL_NAME = "all-MiniLM-L6-v2"
-_MODEL_CACHE: dict[str, SentenceTransformer] = {}
+BERT_SCORE_MODEL_TYPE = "microsoft/deberta-xlarge-mnli"
 
 
 def collect_comment_candidates(parsed: ParsedReview) -> List[str]:
@@ -40,17 +39,7 @@ def collect_interpretation_references(pr_entry: Optional[Dict[str, Any]]) -> Lis
     return to_string_list(pr_entry.get("normalized_description_sentences"))
 
 
-def _get_model(model_name: str):
-    cached = _MODEL_CACHE.get(model_name)
-    if cached is not None:
-        return cached
-
-    model = SentenceTransformer(model_name)
-    _MODEL_CACHE[model_name] = model
-    return model
-
-
-def sentence_bert_sentence_alignment(
+def bert_score_alignment(
     references: List[str],
     candidates: List[str],
 ) -> Tuple[float, float, float]:
@@ -59,18 +48,22 @@ def sentence_bert_sentence_alignment(
     if not references or not candidates:
         return 0.0, 0.0, 0.0
 
-    model = _get_model(SBERT_MODEL_NAME)
-    if model is None or util is None:
-        return 0.0, 0.0, 0.0
+    pair_count = max(len(references), len(candidates))
+    padded_refs = (references + [""] * pair_count)[:pair_count]
+    padded_cands = (candidates + [""] * pair_count)[:pair_count]
 
-    ref_embeddings = model.encode(references, convert_to_tensor=True)
-    cand_embeddings = model.encode(candidates, convert_to_tensor=True)
+    precision_scores, recall_scores, f1_scores = bert_score(
+        cands=padded_cands,
+        refs=padded_refs,
+        model_type=BERT_SCORE_MODEL_TYPE,
+        lang="en",
+        rescale_with_baseline=True,
+        verbose=False,
+    )
 
-    similarity_matrix = util.cos_sim(cand_embeddings, ref_embeddings)
-
-    precision = float(similarity_matrix.max(dim=1).values.mean().item())
-    recall = float(similarity_matrix.max(dim=0).values.mean().item())
-    f1 = safe_div(2 * precision * recall, precision + recall)
+    precision = float(precision_scores.mean().item())
+    recall = float(recall_scores.mean().item())
+    f1 = float(f1_scores.mean().item())
 
     return precision, recall, f1
 
@@ -85,11 +78,11 @@ def review_alignment(
     interp_refs = collect_interpretation_references(pr_entry)
     interp_cands = collect_interpretation_candidates(parsed)
 
-    cp, cr, cf1 = sentence_bert_sentence_alignment(
+    cp, cr, cf1 = bert_score_alignment(
         comment_refs,
         comment_cands,
     )
-    ip, ir, if1 = sentence_bert_sentence_alignment(
+    ip, ir, if1 = bert_score_alignment(
         interp_refs,
         interp_cands,
     )
