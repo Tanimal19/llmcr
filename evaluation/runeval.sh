@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 shopt -s nullglob
-review_files=(reviews/*/review.json)
+review_files=(reviews/llmcr/*/review.json)
 
 if [ ${#review_files[@]} -eq 0 ]; then
 	echo "No review files found under reviews/*/review.json"

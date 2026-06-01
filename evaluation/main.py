@@ -1,79 +1,15 @@
 import json
 import re
 import sys
-from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, cast
 from scheme import ChecklistEvidence, ChecklistItem, Issue, ParsedReview
 
-from evaluator.entity_extractor import (
-    extract_java_entities,
-)
+from utils import *
+from evaluator.grounding_evaluator import truth_grounding
 from evaluator.llm_as_judge import judge_quality_score
-from evaluator.sentence_bert_alignment import (
-    is_sentence_bert_available,
-    sentence_bert_sentence_alignment,
-)
-
-SBERT_MODEL_NAME = "all-MiniLM-L6-v2"
-REPETITIVE_THRESHOLD = 0.9
-
-
-def safe_div(numerator: float, denominator: float) -> float:
-    if denominator == 0:
-        return 0.0
-    return numerator / denominator
-
-
-def clamp01(value: float) -> float:
-    return max(0.0, min(1.0, value))
-
-
-def clamp15(value: float) -> int:
-    return int(max(1.0, min(5.0, round(value))))
-
-
-def word_count(text: str) -> int:
-    return len(re.findall(r"\b\w+\b", text or ""))
-
-
-def split_sentences(text: str) -> List[str]:
-    chunks = re.split(r"(?<=[.!?。！？])\s+|\n+", text or "")
-    return [chunk.strip() for chunk in chunks if chunk.strip()]
-
-
-def sentence_similarity(a: str, b: str) -> float:
-    return SequenceMatcher(None, (a or "").lower(), (b or "").lower()).ratio()
-
-
-def compute_repetitive_rate(sentences: List[str], threshold: float = 0.9) -> float:
-    if not sentences:
-        return 0.0
-
-    clusters: List[List[str]] = []
-    for sentence in sentences:
-        placed = False
-        for cluster in clusters:
-            if sentence_similarity(sentence, cluster[0]) >= threshold:
-                cluster.append(sentence)
-                placed = True
-                break
-        if not placed:
-            clusters.append([sentence])
-
-    return 1.0 - safe_div(len(clusters), len(sentences))
-
-
-def to_text(value: Any) -> str:
-    if value is None:
-        return ""
-    return str(value)
-
-
-def to_string_list(value: Any) -> List[str]:
-    if not isinstance(value, list):
-        return []
-    return [str(item).strip() for item in value if str(item).strip()]
+from evaluator.repetitive_evaluator import compute_repetitive_rate
+from evaluator.alignment_evaluator import review_alignment
 
 
 def parse_issues_json(raw_issues: Any) -> List[Issue]:
@@ -236,141 +172,6 @@ def normalize_line_span(text: str) -> str:
     return f"{start}-{end}"
 
 
-def extract_entities_from_review(parsed: ParsedReview) -> Set[str]:
-    text_fields = [
-        parsed.motivation,
-        parsed.good_points,
-        parsed.bad_points,
-        parsed.suggestion,
-        parsed.implementation_details,
-        parsed.static_analysis_results,
-        parsed.change_description,
-        parsed.change_motivation,
-    ]
-    for issue in parsed.issues:
-        text_fields.extend([issue.title, issue.location, issue.detail])
-    for item in parsed.checklist_items:
-        text_fields.extend([item.title, item.final_answer, item.analysis])
-        for evidence in item.evidences:
-            text_fields.extend([evidence.filepath, evidence.lines, evidence.reason])
-
-    return extract_java_entities("\n".join(text_fields))
-
-
-def build_pr_text(pr_entry: Dict[str, Any]) -> str:
-    segments: List[str] = []
-    for file_info in pr_entry.get("changed_files") or []:
-        if isinstance(file_info, dict):
-            for key in ("path", "patch", "content"):
-                val = str(file_info.get(key) or "").strip()
-                if val:
-                    segments.append(val)
-    diff = str(pr_entry.get("diff") or pr_entry.get("Diff") or "").strip()
-    if diff:
-        segments.append(diff)
-    return "\n".join(segments)
-
-
-def entities_matched_in_text(entities: Set[str], text: str) -> Set[str]:
-    return {e for e in entities if e in text}
-
-
-def truth_grounding(
-    parsed: ParsedReview, pr_entry: Optional[Dict[str, Any]]
-) -> Dict[str, float]:
-    mentioned = extract_entities_from_review(parsed)
-    pr_text = build_pr_text(pr_entry) if pr_entry else ""
-    matched = entities_matched_in_text(mentioned, pr_text)
-    grounding_score = safe_div(len(matched), len(mentioned))
-
-    return {
-        "grounding_score": clamp01(grounding_score),
-        "mentioned_entities": float(len(mentioned)),
-        "matched_entities": float(len(matched)),
-    }
-
-
-def truth_grounding_details(
-    parsed: ParsedReview, pr_entry: Optional[Dict[str, Any]]
-) -> Dict[str, Any]:
-    mentioned = sorted(extract_entities_from_review(parsed))
-    pr_text = build_pr_text(pr_entry) if pr_entry else ""
-    matched = sorted(entities_matched_in_text(set(mentioned), pr_text))
-    grounding_score = clamp01(safe_div(len(matched), len(mentioned)))
-
-    return {
-        "grounding_score": grounding_score,
-        "mentioned_entities": float(len(mentioned)),
-        "matched_entities": float(len(matched)),
-        "mentioned_entities_list": mentioned,
-        "matched_entities_list": matched,
-    }
-
-
-def collect_comment_candidates(parsed: ParsedReview) -> List[str]:
-    candidate_text = "\n".join(
-        [
-            parsed.good_points,
-            parsed.bad_points,
-            parsed.suggestion,
-            "\n".join(f"{issue.title}. {issue.detail}" for issue in parsed.issues),
-        ]
-    )
-    return split_sentences(candidate_text)
-
-
-def collect_comment_references(pr_entry: Optional[Dict[str, Any]]) -> List[str]:
-    if not pr_entry:
-        return []
-
-    return to_string_list(pr_entry.get("normalized_review_sentences"))
-
-
-def collect_interpretation_candidates(parsed: ParsedReview) -> List[str]:
-    return split_sentences(
-        "\n".join([parsed.change_description, parsed.change_motivation])
-    )
-
-
-def collect_interpretation_references(pr_entry: Optional[Dict[str, Any]]) -> List[str]:
-    if not pr_entry:
-        return []
-
-    return to_string_list(pr_entry.get("normalized_description_sentences"))
-
-
-def review_alignment(
-    parsed: ParsedReview,
-    pr_entry: Optional[Dict[str, Any]],
-    sentence_bert_model_name: str = SBERT_MODEL_NAME,
-) -> Dict[str, float]:
-    comment_refs = collect_comment_references(pr_entry)
-    comment_cands = collect_comment_candidates(parsed)
-
-    interp_refs = collect_interpretation_references(pr_entry)
-    interp_cands = collect_interpretation_candidates(parsed)
-
-    cp, cr, cf1 = sentence_bert_sentence_alignment(
-        comment_refs,
-        comment_cands,
-        sentence_bert_model_name,
-    )
-    ip, ir, if1 = sentence_bert_sentence_alignment(
-        interp_refs,
-        interp_cands,
-        sentence_bert_model_name,
-    )
-
-    return {
-        "comment_precision": clamp01(cp),
-        "comment_recall": clamp01(cr),
-        "comment_f1": clamp01(cf1),
-        "interpretation_precision": clamp01(ip),
-        "interpretation_recall": clamp01(ir),
-        "interpretation_f1": clamp01(if1),
-    }
-
-
 def extract_changed_file_paths(pr_entry: Optional[Dict[str, Any]]) -> Set[str]:
     if not pr_entry:
         return set()
@@ -409,86 +210,35 @@ def serialize_parsed_review(parsed: ParsedReview) -> Dict[str, Any]:
 def evaluate_review(
     review_payload: Dict[str, Any],
     pr_entry: Dict[str, Any],
-    sentence_bert_model_name: str = SBERT_MODEL_NAME,
 ) -> Dict[str, Any]:
-    parsed = parse_review_json(review_payload)
-    grounding_details = truth_grounding_details(parsed, pr_entry)
-    grounding = {
-        "grounding_score": float(grounding_details["grounding_score"]),
-        "mentioned_entities": float(grounding_details["mentioned_entities"]),
-        "matched_entities": float(grounding_details["matched_entities"]),
-    }
+    parsed_review = parse_review_json(review_payload)
+    grounding = truth_grounding(parsed_review, pr_entry)
 
-    comment_refs = collect_comment_references(pr_entry)
-    comment_cands = collect_comment_candidates(parsed)
-    interp_refs = collect_interpretation_references(pr_entry)
-    interp_cands = collect_interpretation_candidates(parsed)
+    alignment = review_alignment(parsed_review, pr_entry)
 
-    alignment = review_alignment(
-        parsed,
-        pr_entry,
-        sentence_bert_model_name=sentence_bert_model_name,
-    )
-
-    review_text = build_review_text(parsed)
+    review_text = build_review_text(parsed_review)
     all_sentences = split_sentences(review_text)
-    repetitive = clamp01(
-        compute_repetitive_rate(all_sentences, threshold=REPETITIVE_THRESHOLD)
-    )
+    repetitive = clamp01(compute_repetitive_rate(all_sentences))
     quality = judge_quality_score(
-        parsed_review=serialize_parsed_review(parsed),
+        parsed_review=serialize_parsed_review(parsed_review),
         pr_entry=pr_entry,
-        static_analysis_results=parsed.static_analysis_results,
+        static_analysis_results=parsed_review.static_analysis_results,
     )
 
     return {
+        "pr_id": extract_review_pr_id(review_payload),
         "truth_grounding": grounding,
         "review_alignment": alignment,
         "quality_score": quality,
         "repetitive_rate": repetitive,
         "meta": {
             "sentence_count": len(all_sentences),
-            "checklist_item_count": len(parsed.checklist_items),
-            "issue_count": len(parsed.issues),
-        },
-        "details": {
-            "parsed_review": serialize_parsed_review(parsed),
-            "truth_grounding": {
-                "mentioned_entities_list": grounding_details["mentioned_entities_list"],
-                "matched_entities_list": grounding_details["matched_entities_list"],
-            },
-            "review_alignment": {
-                "comment_references": comment_refs,
-                "comment_candidates": comment_cands,
-                "interpretation_references": interp_refs,
-                "interpretation_candidates": interp_cands,
-            },
+            "checklist_item_count": len(parsed_review.checklist_items),
+            "issue_count": len(parsed_review.issues),
+            "review": parsed_review,
+            "pull_request": pr_entry,
         },
     }
-
-
-def load_json(path: Path) -> Dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def load_jsonl_first(path: Path) -> Dict[str, Any]:
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if stripped:
-            return json.loads(stripped)
-    return {}
-
-
-def to_int(value: Any) -> Optional[int]:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str):
-        text = value.strip()
-        if text and re.fullmatch(r"-?\d+", text):
-            return int(text)
-    return None
 
 
 def extract_review_pr_id(review_payload: Dict[str, Any]) -> Optional[int]:

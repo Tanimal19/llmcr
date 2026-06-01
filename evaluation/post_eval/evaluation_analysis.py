@@ -1,8 +1,26 @@
-import argparse
 import json
 from pathlib import Path
 from statistics import median
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+
+DEFAULT_PATTERN = "review.evaluation.json"
+METRIC_PATHS = [
+    "truth_grounding.hallucination_rate",
+    "truth_grounding.coverage_score",
+    "review_alignment.comment_precision",
+    "review_alignment.comment_recall",
+    "review_alignment.comment_f1",
+    "review_alignment.interpretation_precision",
+    "review_alignment.interpretation_recall",
+    "review_alignment.interpretation_f1",
+    "quality_score.comprehensiveness",
+    "quality_score.conciseness",
+    "quality_score.relevance",
+    "repetitive_rate",
+    "meta.sentence_count",
+    "meta.checklist_item_count",
+    "meta.issue_count",
+]
 
 
 def to_float(value: Any) -> Optional[float]:
@@ -88,83 +106,35 @@ def collect_files(root: Path, pattern: str) -> List[Path]:
     return sorted(path for path in root.rglob(pattern) if path.is_file())
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Analyze all review.evaluation.json files under a directory and "
-            "produce an aggregate report."
-        )
-    )
-    parser.add_argument(
-        "input_dir",
-        nargs="?",
-        default="reviews",
-        help="Directory to recursively scan. Default: reviews",
-    )
-    parser.add_argument(
-        "--pattern",
-        default="*.evaluation.json",
-        help="Filename glob pattern used during recursive scan. Default: *.evaluation.json",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default="exports/evaluation_analysis.json",
-        help="Output report path. Default: exports/evaluation_analysis.json",
-    )
-    return parser.parse_args()
+def analysis(input_dir: Union[str, Path]) -> Dict[str, Any]:
+    input_path = Path(input_dir).expanduser()
 
+    if not input_path.exists() or not input_path.is_dir():
+        raise ValueError(f"Input directory not found: {input_path}")
 
-def main() -> None:
-    args = parse_args()
-    input_dir = Path(args.input_dir)
-    output_path = Path(args.output)
-
-    if not input_dir.exists() or not input_dir.is_dir():
-        raise SystemExit(f"Input directory not found: {input_dir}")
-
-    metric_paths = [
-        "truth_grounding.grounding_score",
-        "truth_grounding.mentioned_entities",
-        "truth_grounding.matched_entities",
-        "review_alignment.comment_precision",
-        "review_alignment.comment_recall",
-        "review_alignment.comment_f1",
-        "review_alignment.interpretation_precision",
-        "review_alignment.interpretation_recall",
-        "review_alignment.interpretation_f1",
-        "quality_score.comprehensiveness",
-        "quality_score.conciseness",
-        "quality_score.relevance",
-        "repetitive_rate",
-        "meta.sentence_count",
-        "meta.checklist_item_count",
-        "meta.issue_count",
-    ]
-
-    files = collect_files(input_dir, args.pattern)
+    files = collect_files(input_path, DEFAULT_PATTERN)
     records: List[Dict[str, Any]] = []
     skipped: List[Dict[str, str]] = []
 
     for path in files:
         try:
-            records.append(evaluate_file(path, metric_paths))
+            records.append(evaluate_file(path, METRIC_PATHS))
         except Exception as exc:  # noqa: BLE001
             skipped.append({"file": str(path), "error": str(exc)})
 
-    metric_values: Dict[str, List[float]] = {metric: [] for metric in metric_paths}
+    metric_values: Dict[str, List[float]] = {metric: [] for metric in METRIC_PATHS}
     for record in records:
         per_file_metrics = record["metrics"]
-        for metric in metric_paths:
+        for metric in METRIC_PATHS:
             value = per_file_metrics.get(metric)
             if isinstance(value, (int, float)):
                 metric_values[metric].append(float(value))
 
-    summary = {metric: summarize(metric_values[metric]) for metric in metric_paths}
+    summary = {metric: summarize(metric_values[metric]) for metric in METRIC_PATHS}
 
-    report = {
-        "input_dir": str(input_dir),
-        "pattern": args.pattern,
+    return {
+        "input_dir": str(input_path),
+        "pattern": DEFAULT_PATTERN,
         "total_files_found": len(files),
         "total_files_parsed": len(records),
         "total_files_skipped": len(skipped),
@@ -173,11 +143,6 @@ def main() -> None:
         "skipped": skipped,
     }
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_text = json.dumps(report, ensure_ascii=False, indent=2)
-    output_path.write_text(output_text, encoding="utf-8")
-    print(output_text)
 
-
-if __name__ == "__main__":
-    main()
+def report_to_json(report: Dict[str, Any]) -> str:
+    return json.dumps(report, ensure_ascii=False, indent=2)

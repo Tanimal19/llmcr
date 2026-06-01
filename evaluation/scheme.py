@@ -33,12 +33,6 @@ class PullRequestEntry:
 
 
 @dataclass
-class PreEvaluatedPullRequestEntry(PullRequestEntry):
-    normalized_review_sentences: List[str]
-    normalized_description_sentences: List[str]
-
-
-@dataclass
 class ChecklistEvidence:
     filepath: str
     lines: str
@@ -76,3 +70,63 @@ class ParsedReview:
     change_description: str = ""
     change_motivation: str = ""
     checklist_items: List[ChecklistItem] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Evaluation result structures
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class TruthGrounding:
+    hallucination_rate: float
+    coverage_score: float
+    mentioned_entities: float
+    pr_entities: float
+    mentioned_real_entities: float
+    mentioned_pr_entities: float
+    mentioned_entities_list: List[str] = field(default_factory=list)
+    pr_entities_list: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ReviewAlignment:
+    comment_precision: float
+    comment_recall: float
+    comment_f1: float
+    interpretation_precision: float
+    interpretation_recall: float
+    interpretation_f1: float
+    comment_refs: List[str] = field(default_factory=list)
+    comment_cands: List[str] = field(default_factory=list)
+    interp_refs: List[str] = field(default_factory=list)
+    interp_cands: List[str] = field(default_factory=list)
+
+
+@dataclass
+class QualityScore:
+    comprehensiveness: int
+    conciseness: int
+    relevance: int
+    topics_to_be_covered: List[str]
+    step_by_step_analysis: List[str]
+    rationale: str
+
+
+@dataclass
+class EvaluationMeta:
+    sentence_count: int
+    checklist_item_count: int
+    issue_count: int
+    review: ParsedReview
+    pull_request: PullRequestEntry
+
+
+@dataclass
+class EvaluationResult:
+    pr_id: int
+    truth_grounding: TruthGrounding
+    review_alignment: ReviewAlignment
+    quality_score: QualityScore
+    repetitive_rate: float
+    meta: EvaluationMeta

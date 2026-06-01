@@ -1,4 +1,4 @@
-package com.llmcr.runner;
+package com.llmcr.other;
 
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
@@ -15,26 +15,22 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConditionalOnProperty(name = "app.mode", havingValue = "parse")
-public class SymbolParser implements ApplicationRunner {
+public class SymbolParser {
 
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        List<String> nonOptionArgs = args.getNonOptionArgs();
-        if (nonOptionArgs.isEmpty()) {
-            System.err.println("Usage: --app.mode=parse <project-root-dir> [output.txt]");
+    public static void main(String[] args) throws Exception {
+        new SymbolParser().run(args);
+    }
+
+    public void run(String[] args) throws Exception {
+        if (args.length == 0) {
+            System.err.println("Usage: java com.llmcr.other.SymbolParser <project-root-dir> [output.txt]");
             return;
         }
 
-        Path projectRoot = Path.of(nonOptionArgs.get(0)).toAbsolutePath().normalize();
-        Path outputFile = nonOptionArgs.size() > 1
-                ? Path.of(nonOptionArgs.get(1)).toAbsolutePath().normalize()
+        Path projectRoot = Path.of(args[0]).toAbsolutePath().normalize();
+        Path outputFile = args.length > 1
+                ? Path.of(args[1]).toAbsolutePath().normalize()
                 : projectRoot.resolve("symbols.txt");
 
         if (!Files.isDirectory(projectRoot)) {

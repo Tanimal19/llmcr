@@ -6,18 +6,14 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from evaluation_analysis import analysis
+
 try:
     from streamlit.runtime.scriptrunner import get_script_run_ctx
 except Exception:  # noqa: BLE001
     get_script_run_ctx = None
 
-DEFAULT_REPORT_PATH = (
-    Path(__file__).resolve().parents[1] / "exports" / "evaluation_analysis.json"
-)
-
-
-def read_report(path: Path) -> Dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+DEFAULT_INPUT_DIR = Path(__file__).resolve().parents[1] / "reviews"
 
 
 def is_streamlit_context() -> bool:
@@ -132,30 +128,13 @@ def show_distribution(per_file_df: pd.DataFrame, metric_cols: List[str]) -> None
 
 def load_report_ui() -> Optional[Dict[str, Any]]:
     st.sidebar.header("Data Source")
-    mode = st.sidebar.radio("Input", ["Report Path", "Upload JSON"])
 
-    if mode == "Report Path":
-        path_text = st.sidebar.text_input("Path", str(DEFAULT_REPORT_PATH))
-        path = Path(path_text).expanduser()
-        if not path.exists():
-            st.error(f"Report file not found: {path}")
-            return None
-        try:
-            return read_report(path)
-        except Exception as exc:  # noqa: BLE001
-            st.error(f"Failed to read report file: {exc}")
-            return None
-
-    upload = st.sidebar.file_uploader("Upload evaluation_analysis.json", type=["json"])
-    if upload is None:
-        st.info("Please upload a JSON report file.")
-        return None
-
+    path_text = st.sidebar.text_input("Folder Path", str(DEFAULT_INPUT_DIR))
+    path = Path(path_text).expanduser()
     try:
-        content = upload.getvalue().decode("utf-8")
-        return json.loads(content)
+        return analysis(path)
     except Exception as exc:  # noqa: BLE001
-        st.error(f"Failed to parse uploaded JSON: {exc}")
+        st.error(f"Failed to analyze folder: {exc}")
         return None
 
 
