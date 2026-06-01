@@ -19,7 +19,7 @@ public final class CodeReviewSupport {
   private static final String DEFAULT_CACHE_SUBDIR = "cache-java";
 
   private static final int MAX_CHANGED_FILES = 20;
-  private static final int MAX_TOTAL_DIFF_SIZE = 100_000;
+  private static final int MAX_TOTAL_DIFF_SIZE = 200_000;
 
   public static PullRequestData parsePullRequestData(
       String inputFilePath, Integer jsonlIndex, boolean useMockData) {

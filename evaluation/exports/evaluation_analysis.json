@@ -1,0 +1,366 @@
+{
+  "input_dir": "reviews",
+  "pattern": "*.evaluation.json",
+  "total_files_found": 10,
+  "total_files_parsed": 10,
+  "total_files_skipped": 0,
+  "summary": {
+    "truth_grounding.grounding_score": {
+      "count": 10,
+      "mean": 0.8127926652474999,
+      "median": 0.8092515592515592,
+      "min": 0.6842105263157895,
+      "max": 1.0,
+      "p25": 0.7364309210526316,
+      "p75": 0.8534791965566715
+    },
+    "truth_grounding.mentioned_entities": {
+      "count": 10,
+      "mean": 34.4,
+      "median": 33.0,
+      "min": 14.0,
+      "max": 77.0,
+      "p25": 26.0,
+      "p75": 37.75
+    },
+    "truth_grounding.matched_entities": {
+      "count": 10,
+      "mean": 28.6,
+      "median": 27.5,
+      "min": 10.0,
+      "max": 69.0,
+      "p25": 21.5,
+      "p75": 30.0
+    },
+    "review_alignment.comment_precision": {
+      "count": 10,
+      "mean": 0.33392598032951354,
+      "median": 0.332251638174057,
+      "min": 0.2764509916305542,
+      "max": 0.45135101675987244,
+      "p25": 0.29743609577417374,
+      "p75": 0.35703905671834946
+    },
+    "review_alignment.comment_recall": {
+      "count": 10,
+      "mean": 0.41654613316059114,
+      "median": 0.40130268037319183,
+      "min": 0.28693854808807373,
+      "max": 0.5871828198432922,
+      "p25": 0.33992861211299896,
+      "p75": 0.459279827773571
+    },
+    "review_alignment.comment_f1": {
+      "count": 10,
+      "mean": 0.36770861237199937,
+      "median": 0.334850450579565,
+      "min": 0.3055310922478054,
+      "max": 0.5035480293728185,
+      "p25": 0.3250811433148999,
+      "p75": 0.39649609507409644
+    },
+    "review_alignment.interpretation_precision": {
+      "count": 10,
+      "mean": 0.5738101184368134,
+      "median": 0.5769885778427124,
+      "min": 0.38359054923057556,
+      "max": 0.7210877537727356,
+      "p25": 0.5309431552886963,
+      "p75": 0.6322452425956726
+    },
+    "review_alignment.interpretation_recall": {
+      "count": 10,
+      "mean": 0.5144413888454438,
+      "median": 0.5079245567321777,
+      "min": 0.3847361207008362,
+      "max": 0.6343395709991455,
+      "p25": 0.472147598862648,
+      "p75": 0.5779103487730026
+    },
+    "review_alignment.interpretation_f1": {
+      "count": 10,
+      "mean": 0.5411454436419488,
+      "median": 0.5287532405111084,
+      "min": 0.38416248094485456,
+      "max": 0.6509708151350736,
+      "p25": 0.4877605006725159,
+      "p75": 0.6129988966271109
+    },
+    "quality_score.comprehensiveness": {
+      "count": 10,
+      "mean": 4.0,
+      "median": 4.0,
+      "min": 2.0,
+      "max": 5.0,
+      "p25": 3.25,
+      "p75": 5.0
+    },
+    "quality_score.conciseness": {
+      "count": 10,
+      "mean": 4.9,
+      "median": 5.0,
+      "min": 4.0,
+      "max": 5.0,
+      "p25": 5.0,
+      "p75": 5.0
+    },
+    "quality_score.relevance": {
+      "count": 10,
+      "mean": 4.3,
+      "median": 4.0,
+      "min": 3.0,
+      "max": 5.0,
+      "p25": 4.0,
+      "p75": 5.0
+    },
+    "repetitive_rate": {
+      "count": 10,
+      "mean": 0.20985262695429943,
+      "median": 0.20523809523809522,
+      "min": 0.03389830508474578,
+      "max": 0.4748603351955307,
+      "p25": 0.12151702786377705,
+      "p75": 0.2502279462046957
+    },
+    "meta.sentence_count": {
+      "count": 10,
+      "mean": 104.2,
+      "median": 97.5,
+      "min": 59.0,
+      "max": 179.0,
+      "p25": 84.25,
+      "p75": 119.0
+    },
+    "meta.checklist_item_count": {
+      "count": 10,
+      "mean": 6.7,
+      "median": 7.0,
+      "min": 6.0,
+      "max": 7.0,
+      "p25": 6.25,
+      "p75": 7.0
+    },
+    "meta.issue_count": {
+      "count": 10,
+      "mean": 2.8,
+      "median": 3.0,
+      "min": 1.0,
+      "max": 5.0,
+      "p25": 2.0,
+      "p75": 3.0
+    }
+  },
+  "per_file": [
+    {
+      "file": "reviews/5091/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.8536585365853658,
+        "truth_grounding.mentioned_entities": 41.0,
+        "truth_grounding.matched_entities": 35.0,
+        "review_alignment.comment_precision": 0.32670003175735474,
+        "review_alignment.comment_recall": 0.28693854808807373,
+        "review_alignment.comment_f1": 0.3055310922478054,
+        "review_alignment.interpretation_precision": 0.5716477632522583,
+        "review_alignment.interpretation_recall": 0.41566717624664307,
+        "review_alignment.interpretation_f1": 0.4813362019607932,
+        "quality_score.comprehensiveness": 4.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 4.0,
+        "repetitive_rate": 0.25233644859813087,
+        "meta.sentence_count": 107.0,
+        "meta.checklist_item_count": 6.0,
+        "meta.issue_count": 3.0
+      }
+    },
+    {
+      "file": "reviews/5252/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 1.0,
+        "truth_grounding.mentioned_entities": 26.0,
+        "truth_grounding.matched_entities": 26.0,
+        "review_alignment.comment_precision": 0.2809319794178009,
+        "review_alignment.comment_recall": 0.4270281195640564,
+        "review_alignment.comment_f1": 0.3389056955857227,
+        "review_alignment.interpretation_precision": 0.7210877537727356,
+        "review_alignment.interpretation_recall": 0.5668964385986328,
+        "review_alignment.interpretation_f1": 0.6347625723235372,
+        "quality_score.comprehensiveness": 3.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 4.0,
+        "repetitive_rate": 0.19047619047619047,
+        "meta.sentence_count": 84.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 1.0
+      }
+    },
+    {
+      "file": "reviews/5292/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.6842105263157895,
+        "truth_grounding.mentioned_entities": 19.0,
+        "truth_grounding.matched_entities": 13.0,
+        "review_alignment.comment_precision": 0.2764509916305542,
+        "review_alignment.comment_recall": 0.3911696970462799,
+        "review_alignment.comment_f1": 0.3239541628303643,
+        "review_alignment.interpretation_precision": 0.48576173186302185,
+        "review_alignment.interpretation_recall": 0.4747229218482971,
+        "review_alignment.interpretation_f1": 0.4801788925644033,
+        "quality_score.comprehensiveness": 4.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 4.0,
+        "repetitive_rate": 0.07792207792207795,
+        "meta.sentence_count": 77.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 5.0
+      }
+    },
+    {
+      "file": "reviews/5414/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.7142857142857143,
+        "truth_grounding.mentioned_entities": 14.0,
+        "truth_grounding.matched_entities": 10.0,
+        "review_alignment.comment_precision": 0.34923702478408813,
+        "review_alignment.comment_recall": 0.47003039717674255,
+        "review_alignment.comment_f1": 0.4007287805371491,
+        "review_alignment.interpretation_precision": 0.668497622013092,
+        "review_alignment.interpretation_recall": 0.6343395709991455,
+        "review_alignment.interpretation_f1": 0.6509708151350736,
+        "quality_score.comprehensiveness": 5.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 5.0,
+        "repetitive_rate": 0.03389830508474578,
+        "meta.sentence_count": 59.0,
+        "meta.checklist_item_count": 6.0,
+        "meta.issue_count": 2.0
+      }
+    },
+    {
+      "file": "reviews/5416/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.71875,
+        "truth_grounding.mentioned_entities": 32.0,
+        "truth_grounding.matched_entities": 23.0,
+        "review_alignment.comment_precision": 0.3596397340297699,
+        "review_alignment.comment_recall": 0.41143566370010376,
+        "review_alignment.comment_f1": 0.38379803868493845,
+        "review_alignment.interpretation_precision": 0.5476007461547852,
+        "review_alignment.interpretation_recall": 0.5259334444999695,
+        "review_alignment.interpretation_f1": 0.536548438127128,
+        "quality_score.comprehensiveness": 5.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 5.0,
+        "repetitive_rate": 0.10588235294117643,
+        "meta.sentence_count": 85.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 2.0
+      }
+    },
+    {
+      "file": "reviews/5440/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.8108108108108109,
+        "truth_grounding.mentioned_entities": 37.0,
+        "truth_grounding.matched_entities": 30.0,
+        "review_alignment.comment_precision": 0.29695144295692444,
+        "review_alignment.comment_recall": 0.36745402216911316,
+        "review_alignment.comment_f1": 0.32846208476850675,
+        "review_alignment.interpretation_precision": 0.6138020157814026,
+        "review_alignment.interpretation_recall": 0.5815816521644592,
+        "review_alignment.interpretation_f1": 0.5972576002371663,
+        "quality_score.comprehensiveness": 2.0,
+        "quality_score.conciseness": 4.0,
+        "quality_score.relevance": 3.0,
+        "repetitive_rate": 0.21999999999999997,
+        "meta.sentence_count": 100.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 2.0
+      }
+    },
+    {
+      "file": "reviews/5483/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.8529411764705882,
+        "truth_grounding.mentioned_entities": 34.0,
+        "truth_grounding.matched_entities": 29.0,
+        "review_alignment.comment_precision": 0.45135101675987244,
+        "review_alignment.comment_recall": 0.5693965554237366,
+        "review_alignment.comment_f1": 0.5035480293728185,
+        "review_alignment.interpretation_precision": 0.638392984867096,
+        "review_alignment.interpretation_recall": 0.5993317365646362,
+        "review_alignment.interpretation_f1": 0.6182459954237591,
+        "quality_score.comprehensiveness": 5.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 5.0,
+        "repetitive_rate": 0.3308270676691729,
+        "meta.sentence_count": 133.0,
+        "meta.checklist_item_count": 6.0,
+        "meta.issue_count": 3.0
+      }
+    },
+    {
+      "file": "reviews/5506/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.8076923076923077,
+        "truth_grounding.mentioned_entities": 26.0,
+        "truth_grounding.matched_entities": 21.0,
+        "review_alignment.comment_precision": 0.3378032445907593,
+        "review_alignment.comment_recall": 0.3240720331668854,
+        "review_alignment.comment_f1": 0.33079520557340725,
+        "review_alignment.interpretation_precision": 0.38359054923057556,
+        "review_alignment.interpretation_recall": 0.3847361207008362,
+        "review_alignment.interpretation_f1": 0.38416248094485456,
+        "quality_score.comprehensiveness": 3.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 4.0,
+        "repetitive_rate": 0.16842105263157892,
+        "meta.sentence_count": 95.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 4.0
+      }
+    },
+    {
+      "file": "reviews/5585/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.8961038961038961,
+        "truth_grounding.mentioned_entities": 77.0,
+        "truth_grounding.matched_entities": 69.0,
+        "review_alignment.comment_precision": 0.29889005422592163,
+        "review_alignment.comment_recall": 0.33075347542762756,
+        "review_alignment.comment_f1": 0.3140155327582612,
+        "review_alignment.interpretation_precision": 0.5823293924331665,
+        "review_alignment.interpretation_recall": 0.47128915786743164,
+        "review_alignment.interpretation_f1": 0.5209580428950888,
+        "quality_score.comprehensiveness": 5.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 5.0,
+        "repetitive_rate": 0.4748603351955307,
+        "meta.sentence_count": 179.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 3.0
+      }
+    },
+    {
+      "file": "reviews/5659/review.evaluation.json",
+      "metrics": {
+        "truth_grounding.grounding_score": 0.7894736842105263,
+        "truth_grounding.mentioned_entities": 38.0,
+        "truth_grounding.matched_entities": 30.0,
+        "review_alignment.comment_precision": 0.36130428314208984,
+        "review_alignment.comment_recall": 0.5871828198432922,
+        "review_alignment.comment_f1": 0.44734750136102003,
+        "review_alignment.interpretation_precision": 0.525390625,
+        "review_alignment.interpretation_recall": 0.489915668964386,
+        "review_alignment.interpretation_f1": 0.5070333968076841,
+        "quality_score.comprehensiveness": 4.0,
+        "quality_score.conciseness": 5.0,
+        "quality_score.relevance": 4.0,
+        "repetitive_rate": 0.24390243902439024,
+        "meta.sentence_count": 123.0,
+        "meta.checklist_item_count": 7.0,
+        "meta.issue_count": 3.0
+      }
+    }
+  ],
+  "skipped": []
+}

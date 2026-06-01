@@ -5,7 +5,6 @@
 *.index
 *.gguf
 *.sql
-*.jsonl
 
 *.DS_Store
 

@@ -1,3 +1,8 @@
 requests
 python-dotenv
-bert-score
+sentence-transformers
+langextract[openai]
+google-genai
+streamlit
+pandas
+plotly

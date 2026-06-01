@@ -86,7 +86,7 @@ models:
       -m ${model_dir}/Phi-4-mini-instruct-Q6_K.gguf
       --temp 0.2
       --reasoning off
-      --ctx-size 32768
+      --ctx-size 65536
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
@@ -98,7 +98,7 @@ models:
       -m ${model_dir}/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf
       --temp 0.2
       --reasoning off
-      --ctx-size 32768
+      --ctx-size 65536
       --no-webui
       --port ${PORT}
     checkEndpoint: /v1/models
