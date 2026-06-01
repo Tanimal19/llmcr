@@ -1,3 +1,5 @@
+# This script collects pull request data from a specified GitHub repository, which are then exported to a JSONL file for further analysis or evaluation.
+
 import base64
 import json
 import os

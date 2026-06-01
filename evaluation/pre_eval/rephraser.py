@@ -1,3 +1,5 @@
+# This script reads raw PR discussion data from a JSONL file, calls an LLM to rewrite and normalize the comments and description into concise sentences, and writes the enriched data to a new JSONL file for evaluation.
+
 import json
 import re
 import sys

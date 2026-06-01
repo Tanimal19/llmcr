@@ -1,54 +1,17 @@
 # Evaluation framework for LLMCR
 
-Example code review:
-```md
-# Code Review Report
-## Motivation
-
-## Good points
-
-## Bad points
-
-## Suggestion
-
-## Implementation details
-### Filepath 1
-- important detail 1
-- important detail 2
-
-## Issues
-| Type | Title | Location | Detail |
-| ---- | ----- | -------- | ------ |
-
-# Appendix: Original Interpretation Results
-### Change Description
-
-### Change Motivation
-
-# Appendix: Detailed Checklist Item Answers
-### Checklist Item 1
-Final Answer: ...
-Analysis: ...
-- Filepath:::Lines:::Reason
-- Filepath:::Lines:::Reason
-
-### Checklist Item 2
-```
-
-Example pull request:
-```
-Title:
-Description:
-Diff:
-Comments:
-```
-
 # Datasets
+We select pull requests from Spring AI’s Github repository that satisfied:
+- Created after v2.0.0-M1 release tag and before 2026-04-01
+- Description word count >= 30
+- Number of comments >= 5
+- Changed files <= 20
 
-Ground truth pull requests are collected from [Spring AI Github Repo](https://github.com/spring-projects/spring-ai/pulls) using the following criteria:
-- Select all PRs created between 2.0.0-M1 released and 2026-05-15
-- Filter out PRs with short description (less than 30 words), and less than 3 comments
-- Select the most recent N=10 PRs
+As a result, 10 pull requests are select:
+[#5659, #5585, #5506, #5483, #5440, #5416, #5414, #5292, #5252, #5091]
+
+We generated reference sentences from PRs using Nemotron-3-4B (Q4_K_M).
+
 
 
 # Groups
@@ -74,7 +37,7 @@ coverage_score = # of mentioned & real entities / # of total entities
 
 ## Review Alignment
 
-Using BERTScore
+Using BERTScore (Sentence-BERT)
 ```
 Precision, Recall, F1 = BERTScore(Reference, Candidates)
 ```
@@ -88,19 +51,11 @@ Precision, Recall, F1 = BERTScore(Reference, Candidates)
 - *Candidates*: sentences from "Change Description", "Change Motivation"
 
 
-## Issue Correctness
-
-For all issues (AI-mentioned and Human-mentioned), using LLM-as-Judge to check it's validaty, return True/False for each issue.
-```
-issue_correctness = # of valid issues / # of all issues
-```
-
-
 ## Quality Score
 
 Using LLM-as-a-Judge, prompt modify from the [CRScore](https://arxiv.org/abs/2506.00296) paper.
 ```
-Comprehensiveness, Conciseness, Relevance = LLMJudge(Review, Code Change, Paraphrased Comments, Paraphrased Description)
+Comprehensiveness, Conciseness, Relevance (integer score 1-5) = LLMJudge(Review, Code Change, Paraphrased Comments, Paraphrased Description)
 ```
 
 ## Repetitive Rate

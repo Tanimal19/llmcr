@@ -121,7 +121,7 @@ models:
       llama-server
       -m ${model_dir}/harrier-oss-v1-0.6b.Q4_K_M.gguf
       --embeddings
-      --ctx-size 4096
+      --ctx-size 2048
       --ubatch-size 2048
       --cache-ram 0
       --parallel 1
