@@ -5,13 +5,14 @@ import json
 import os
 import re
 import time
+import requests
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional
-import requests
 from dotenv import load_dotenv
-from scheme import ChangedFileEntry, CommentEntry, PullRequestEntry
+from share.pull_request_scheme import *
+from config import RAW_PULL_REQUEST_JSONL
 
 REPO = "spring-projects/spring-ai"
 MAX_PRS = 20
@@ -20,7 +21,6 @@ BEFORE_DATE = "2026-04-01"
 MIN_DESCRIPTION_WORDS = 30
 MIN_COMMENTS = 5
 MAX_CHANGED_FILES = 20
-OUTPUT_PATH = Path("exports") / "raw.jsonl"
 
 
 def parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
@@ -124,37 +124,23 @@ class GitHubPRCollector:
         ordered_reviews = sorted(reviews, key=lambda r: r.get("submitted_at") or "")
 
         for review in ordered_reviews:
-            user = (review.get("user") or {}).get("login")
-            state = (review.get("state") or "").upper()
+            user = review.get("user", {}).get("login")
+            state = review.get("state", "").upper()
             if user:
                 latest_state_by_user[user] = state
 
         return any(state == "APPROVED" for state in latest_state_by_user.values())
 
     @staticmethod
-    def collect_comments(
-        review_comments: List[Dict], reviews: List[Dict]
-    ) -> List[CommentEntry]:
+    def collect_comments(review_comments: List[Dict]) -> List[CommentEntry]:
         comments: List[CommentEntry] = []
 
         for comment in review_comments:
             comments.append(
                 CommentEntry(
-                    type="comment",
-                    poster=(comment.get("user") or {}).get("login"),
-                    created_at=comment.get("created_at"),
-                    body=comment.get("body") or "",
-                )
-            )
-
-        for review in reviews:
-            comments.append(
-                CommentEntry(
-                    type="event",
-                    poster=(review.get("user") or {}).get("login"),
-                    created_at=review.get("submitted_at"),
-                    state=review.get("state"),
-                    body=review.get("body") or "",
+                    poster=comment.get("user", {}).get("login", "none"),
+                    created_at=comment.get("created_at", "none"),
+                    body=comment.get("body", "none"),
                 )
             )
 
@@ -296,14 +282,14 @@ class GitHubPRCollector:
         )
 
         return PullRequestEntry(
-            pr_id=pr_number,
-            url=pr.get("html_url"),
-            title=pr.get("title") or "",
-            pr_description=pr.get("body") or "",
+            id=pr_number,
+            url=pr.get("html_url", ""),
+            title=pr.get("title", ""),
+            description=pr.get("body", ""),
             is_closed=(pr.get("state") or "").lower() == "closed",
             is_merged=bool(pr.get("merged")) or bool(pr.get("merged_at")),
             is_approved=self.compute_is_approved(reviews),
-            comments=self.collect_comments(review_comments, reviews),
+            comments=self.collect_comments(review_comments),
             changed_files=changed_files,
         )
 
@@ -396,7 +382,6 @@ if __name__ == "__main__":
 
     token = os.getenv("GITHUB_TOKEN")
     collector = GitHubPRCollector(owner_repo=REPO, token=token)
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     since_date = None
     if AFTER_RELEASE_RAG:
@@ -420,7 +405,7 @@ if __name__ == "__main__":
 
     count = 0
 
-    with OUTPUT_PATH.open("w", encoding="utf-8") as handle:
+    with RAW_PULL_REQUEST_JSONL.open("w", encoding="utf-8") as handle:
         for record in collector.fetch_pull_requests(
             max_prs=MAX_PRS,
             since_date=since_date,
@@ -431,7 +416,6 @@ if __name__ == "__main__":
         ):
             handle.write(json.dumps(asdict(record), ensure_ascii=False) + "\n")
             count += 1
-            print(f"[{count}] Export PR {record.pr_id}: {record.title}")
+            print(f"[{count}] Collect PR {record.id}: {record.title}")
 
-    print(f"Exported: {count}")
-    print(f"Output: {OUTPUT_PATH}")
+    print(f"Collected {count} PRs to {RAW_PULL_REQUEST_JSONL}")

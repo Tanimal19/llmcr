@@ -1,7 +1,6 @@
-[QUALITY_SCORE_PROMPT]
 You are evaluating the quality of a code review comment for a code change.
 
-Your task is to look at a given github pull request, some static analysis tool messages on the code change, and a review report about the pull request. A pull request consist of a description, and a list of git diff represents Java code changes.
+Your task is to look at a given github pull request, static analysis results on the pull request, and a review report about the pull request. A pull request consist of a description, and a list of git diff represents Java code changes.
 
 You need to rate how concise, comprehensive, and relevant a review is and whether it touches upon all the important
 topics, code smells, vulnerabilities, and issues in the code change.
@@ -9,8 +8,8 @@ topics, code smells, vulnerabilities, and issues in the code change.
 Pull Request:
 {pull_request}
 
-Static Analysis Tool Messages:
-{static_analysis_messages}
+Static Analysis Results:
+{static_analysis_results}
 
 Review Report:
 {review_report}
@@ -28,11 +27,9 @@ Return exactly one valid JSON object (no markdown, no code fence) using this sch
 {
 	"topics_to_be_covered": ["..."],
 	"step_by_step_analysis": ["..."],
-	"rationale": "short summary",
 	"comprehensiveness": 1-5,
 	"conciseness": 1-5,
 	"relevance": 1-5
 }
 
 The JSON must include all fields above.
-[/QUALITY_SCORE_PROMPT]

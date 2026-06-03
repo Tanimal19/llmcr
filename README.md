@@ -82,6 +82,10 @@ Prerequisites:
   export GOOGLE_GEMINI_API_KEY="???"
   ```
 
+- Download belowing tools and put under `tools/` folder
+  - https://github.com/pmd/pmd/releases/tag/pmd_releases%2F7.24.0
+  - https://github.com/checkstyle/checkstyle/releases/tag/checkstyle-13.4.2
+
 ## Run the Application
 Follow these steps:
 - Make sure [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-swap](https://github.com/mostlygeek/llama-swap) is installed.

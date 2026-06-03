@@ -1,10 +1,17 @@
-from typing import Any, Dict, List, Optional, Tuple
-from numbers import Integral
 import torch
+import re
+from typing import List, Tuple
+from dataclasses import dataclass, field
+from numbers import Integral
 from bert_score import BERTScorer
-
-from utils import split_sentences, to_string_list, safe_div, clamp01
-from scheme import ParsedReview
+from . import Evaluator
+from share.code_review_scheme import CodeReviewEntry
+from share.pull_request_scheme import PullRequestEntry
+from share.utils import (
+    clamp01,
+    safe_div,
+    get_filename_from_pathstring,
+)
 
 BERTSCORE_LANG = "en"
 BERTSCORE_MODEL_TYPE = "roberta-large"
@@ -12,36 +19,57 @@ TOKENIZER_MAX_LENGTH = 512
 _SCORER_CACHE: dict[Tuple[str, str], BERTScorer] = {}
 
 
-def collect_comment_candidates(parsed: ParsedReview) -> List[str]:
+@dataclass
+class AlignmentResult:
+    comment_precision: float
+    comment_recall: float
+    comment_f1: float
+    interpretation_precision: float
+    interpretation_recall: float
+    interpretation_f1: float
+    comment_refs: List[str] = field(default_factory=list)
+    comment_cands: List[str] = field(default_factory=list)
+    interp_refs: List[str] = field(default_factory=list)
+    interp_cands: List[str] = field(default_factory=list)
+
+
+def _split_sentences(text: str) -> List[str]:
+    chunks = re.split(r"(?<=[.!?。！？])\s+|\n+", text or "")
+    return [chunk.strip() for chunk in chunks if chunk.strip()]
+
+
+def _collect_comment_candidates(review: CodeReviewEntry) -> List[str]:
     candidate_text = "\n".join(
         [
-            parsed.good_points,
-            parsed.bad_points,
-            parsed.suggestion,
-            "\n".join(f"{issue.title}. {issue.detail}" for issue in parsed.issues),
+            review.good_points,
+            review.bad_points,
+            review.suggestion,
+            "\n".join(f"{issue.title}: {issue.detail}" for issue in review.issues),
         ]
     )
-    return split_sentences(candidate_text)
+    return _split_sentences(candidate_text)
 
 
-def collect_comment_references(pr_entry: Optional[Dict[str, Any]]) -> List[str]:
-    if not pr_entry:
-        return []
-
-    return to_string_list(pr_entry.get("normalized_review_sentences"))
+def _collect_comment_references(pr: PullRequestEntry) -> List[str]:
+    return pr.rephrased_comments or []
 
 
-def collect_interpretation_candidates(parsed: ParsedReview) -> List[str]:
-    return split_sentences(
-        "\n".join([parsed.change_description, parsed.change_motivation])
+def _collect_interpretation_candidates(review: CodeReviewEntry) -> List[str]:
+    candidate_text = "\n".join(
+        [
+            review.motivation,
+            "\n".join(
+                f"{get_filename_from_pathstring(impl.filename)}: {detail}"
+                for impl in review.implementation_details
+                for detail in impl.details
+            ),
+        ]
     )
+    return _split_sentences(candidate_text)
 
 
-def collect_interpretation_references(pr_entry: Optional[Dict[str, Any]]) -> List[str]:
-    if not pr_entry:
-        return []
-
-    return to_string_list(pr_entry.get("normalized_description_sentences"))
+def _collect_interpretation_references(pr: PullRequestEntry) -> List[str]:
+    return pr.rephrased_description or []
 
 
 def _get_scorer(lang: str, model_type: str) -> BERTScorer:
@@ -107,12 +135,10 @@ def _soft_coverage(scores: torch.Tensor) -> torch.Tensor:
     return 1.0 - not_covered
 
 
-def sentence_alignment(
+def _sentence_alignment(
     references: List[str],
     candidates: List[str],
 ) -> Tuple[float, float, float]:
-    if not references and not candidates:
-        return 0.0, 0.0, 0.0
     if not references or not candidates:
         return 0.0, 0.0, 0.0
 
@@ -121,41 +147,43 @@ def sentence_alignment(
 
     # how many candidate sentences are supported by references
     precision = float(_soft_coverage(cand_to_ref).mean().item())
+
     # how many reference sentences are covered by candidates
     recall = float(_soft_coverage(ref_to_cand).mean().item())
+
     f1 = safe_div(2 * precision * recall, precision + recall)
 
     return precision, recall, f1
 
 
-def review_alignment(
-    parsed: ParsedReview,
-    pr_entry: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
-    comment_refs = collect_comment_references(pr_entry)
-    comment_cands = collect_comment_candidates(parsed)
+class AlignmentEvaluator(Evaluator):
+    def evaluate(
+        self, review: CodeReviewEntry, pr: PullRequestEntry
+    ) -> AlignmentResult:
+        comment_refs = _collect_comment_references(pr)
+        comment_cands = _collect_comment_candidates(review)
 
-    interp_refs = collect_interpretation_references(pr_entry)
-    interp_cands = collect_interpretation_candidates(parsed)
+        interp_refs = _collect_interpretation_references(pr)
+        interp_cands = _collect_interpretation_candidates(review)
 
-    cp, cr, cf1 = sentence_alignment(
-        comment_refs,
-        comment_cands,
-    )
-    ip, ir, if1 = sentence_alignment(
-        interp_refs,
-        interp_cands,
-    )
+        cp, cr, cf1 = _sentence_alignment(
+            comment_refs,
+            comment_cands,
+        )
+        ip, ir, if1 = _sentence_alignment(
+            interp_refs,
+            interp_cands,
+        )
 
-    return {
-        "comment_precision": clamp01(cp),
-        "comment_recall": clamp01(cr),
-        "comment_f1": clamp01(cf1),
-        "interpretation_precision": clamp01(ip),
-        "interpretation_recall": clamp01(ir),
-        "interpretation_f1": clamp01(if1),
-        "comment_refs": comment_refs,
-        "comment_cands": comment_cands,
-        "interp_refs": interp_refs,
-        "interp_cands": interp_cands,
-    }
+        return AlignmentResult(
+            comment_precision=clamp01(cp),
+            comment_recall=clamp01(cr),
+            comment_f1=clamp01(cf1),
+            interpretation_precision=clamp01(ip),
+            interpretation_recall=clamp01(ir),
+            interpretation_f1=clamp01(if1),
+            comment_refs=comment_refs,
+            comment_cands=comment_cands,
+            interp_refs=interp_refs,
+            interp_cands=interp_cands,
+        )

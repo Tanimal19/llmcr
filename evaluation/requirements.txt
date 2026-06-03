@@ -1,8 +1,7 @@
 requests
 python-dotenv
-sentence-transformers
 bert-score
-langextract[openai]
+dacite
 google-genai
 streamlit
 pandas
