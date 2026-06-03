@@ -57,6 +57,12 @@ def main() -> None:
         review_jsonl = MERGED_REVIEW_JSONL(group.value)
         output_jsonl = EVALUATION_RESULT_JSONL(group.value)
 
+        if not review_jsonl.exists():
+            print(
+                f"Warning: review JSONL file not found for group {group.value}, skipping..."
+            )
+            continue
+
         for review_data in iter_jsonl_entries(review_jsonl):
             review_obj = from_dict(CodeReviewEntry, review_data)
             pr_entry = _PR_MAPPING_CACHE.get(review_obj.pr_id)
