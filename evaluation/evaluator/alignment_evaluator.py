@@ -1,17 +1,29 @@
-from typing import Any, List, Tuple
 import torch
 import re
-from functools import lru_cache
+import os
+import time
+import requests
+from pathlib import Path
+from typing import Any, List, Tuple
 from dataclasses import dataclass, field
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from dacite import from_dict
 from . import Evaluator
-from .entity_extractor import extract_entities
-from share.utils import safe_div, clamp01, get_filename_from_pathstring
+from share.utils import (
+    safe_div,
+    clamp01,
+    get_filename_from_pathstring,
+    render_prompt_template,
+)
 from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
 
-NLI_MODEL_NAME = "microsoft/deberta-xlarge-mnli"
-JACCARD_WEIGHT = 0.5
+SLM_MODEL_NAME = "nemotron-3-4b"
+SLM_API_BASE_URL = "http://localhost:8080"
+SLM_MAX_RETRIES = 3
+PROMPT_TEMPLATE = (
+    Path(__file__).with_name("alignment.prompt.txt").read_text(encoding="utf-8")
+)
+
 
 @dataclass
 class AlignmentResult:
@@ -65,76 +77,72 @@ def _collect_interpretation_candidates(review: CodeReviewContent) -> List[str]:
 def _collect_interpretation_references(pr: PullRequestEntry) -> List[str]:
     return pr.rephrased_description or []
 
-@lru_cache(maxsize=1)
-def _get_nli_model() -> Tuple[Any, Any]:
-    tokenizer = AutoTokenizer.from_pretrained(NLI_MODEL_NAME)
-    model = AutoModelForSequenceClassification.from_pretrained(NLI_MODEL_NAME)
-    model.eval()
-    return tokenizer, model
+
+@dataclass
+class SlmAlignmentResponse:
+    reason: str
+    confidence: float
+    match: str
 
 
-def _entailment_probability_matrix(
-    premises: List[str],
-    hypotheses: List[str],
-) -> torch.Tensor:
-    tokenizer, model = _get_nli_model()
-    pair_count = len(premises) * len(hypotheses)
-    if pair_count == 0:
-        return torch.empty((len(premises), len(hypotheses)), dtype=torch.float32)
+def _slm_pair_match_score(
+    candidate: str,
+    reference: str,
+) -> bool:
+    prompt = render_prompt_template(
+        PROMPT_TEMPLATE,
+        {
+            "candidate": candidate,
+            "reference": reference,
+        },
+    )
 
-    id2label = model.config.id2label
-    entailment_label_id = [i for i, l in id2label.items() if "entail" in l.lower()][0]
+    payload = {
+        "model": SLM_MODEL_NAME,
+        "messages": [
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0,
+        "max_tokens": 512,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer dummy",
+    }
 
-    batch_premises = [premise for premise in premises for _ in hypotheses]
-    batch_hypotheses = [hypothesis for _ in premises for hypothesis in hypotheses]
-
-    entailment_probs_batches: List[torch.Tensor] = []
-    batch_size = 16
-    with torch.no_grad():
-        for idx in range(0, pair_count, batch_size):
-            print(f"Processing NLI batch {idx} to {min(idx + batch_size, pair_count)} / {pair_count}...")
-            sub_premises = batch_premises[idx : idx + batch_size]
-            sub_hypotheses = batch_hypotheses[idx : idx + batch_size]
-            inputs = tokenizer(
-                sub_premises,
-                sub_hypotheses,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=512,
+    last_error: Any = None
+    for attempt in range(1, SLM_MAX_RETRIES + 1):
+        try:
+            response = requests.post(
+                SLM_API_BASE_URL + "/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=60,
             )
-            logits = model(**inputs).logits
-            probs = torch.softmax(logits, dim=-1)
-            entailment_probability = probs[:, entailment_label_id]
-            entailment_score = entailment_probability
-            entailment_probs_batches.append(entailment_score)
+            response.raise_for_status()
+            data = response.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            alignment_response = from_dict(SlmAlignmentResponse, eval(content))
 
-    entailment_probs = torch.cat(entailment_probs_batches, dim=0)
-    return entailment_probs.reshape(len(premises), len(hypotheses))
+            print(
+                f"SLM pair match: candidate='{candidate}'"
+                f" match={alignment_response.match}"
+            )
 
+            if alignment_response.confidence > 0.5:
+                return True if alignment_response.match.lower() == "true" else False
+            else:
+                return False  # low confidence treated as no match
 
-def _soft_coverage(scores: torch.Tensor) -> torch.Tensor:
-    clipped = scores.clamp(min=0.0, max=1.0 - 1e-7)
-    not_covered = torch.exp(torch.log1p(-clipped).sum(dim=1))
-    return 1.0 - not_covered
+        except Exception as exc:
+            last_error = exc
+            if attempt < SLM_MAX_RETRIES:
+                time.sleep(0.5 * attempt)
 
-def _max_coverage(scores: torch.Tensor) -> torch.Tensor:
-    return scores.max(dim=1).values
-
-
-def _jaccard_matrix(
-    premises: List[str],
-    hypotheses: List[str],
-) -> torch.Tensor:
-    premise_entities = [extract_entities(p) for p in premises]
-    hypothesis_entities = [extract_entities(h) for h in hypotheses]
-
-    matrix = torch.zeros(len(premises), len(hypotheses), dtype=torch.float32)
-    for i, pe in enumerate(premise_entities):
-        for j, he in enumerate(hypothesis_entities):
-            union = pe | he
-            matrix[i, j] = len(pe & he) / len(union) if union else 0.0
-    return matrix
+    print(
+        f"SLM pair classification failed after retries; fallback to no-match. error={last_error}"
+    )
+    return False
 
 
 def _sentence_alignment(
@@ -144,18 +152,20 @@ def _sentence_alignment(
     if not references or not candidates:
         return 0.0, 0.0, 0.0
 
-    cand_to_ref_nli = _entailment_probability_matrix(candidates, references)
-    ref_to_cand_nli = _entailment_probability_matrix(references, candidates)
+    matched_refs = set()  # references that mentioned by at least one candidate
+    matched_cands = set()  # candidates that matched to at least one reference
 
-    cand_to_ref_jaccard = _jaccard_matrix(candidates, references)
-    ref_to_cand_jaccard = _jaccard_matrix(references, candidates)
+    for candidate in candidates:
+        for reference in references:
+            matched = _slm_pair_match_score(candidate, reference)
+            if matched:
+                matched_refs.add(reference)
+                matched_cands.add(candidate)
 
-    cand_to_ref = cand_to_ref_jaccard * JACCARD_WEIGHT + cand_to_ref_nli * (1 - JACCARD_WEIGHT)
-    ref_to_cand = ref_to_cand_jaccard * JACCARD_WEIGHT + ref_to_cand_nli * (1 - JACCARD_WEIGHT)
-
-    precision = float(_max_coverage(cand_to_ref).mean().item())
-    recall = float(_max_coverage(ref_to_cand).mean().item())
+    precision = safe_div(len(matched_cands), len(candidates))
+    recall = safe_div(len(matched_refs), len(references))
     f1 = safe_div(2 * precision * recall, precision + recall)
+    print(f"SLM alignment: precision={precision:.4f}, recall={recall:.4f}, f1={f1:.4f}")
 
     return precision, recall, f1
 
@@ -166,19 +176,11 @@ class AlignmentEvaluator(Evaluator):
     ) -> AlignmentResult:
         comment_refs = _collect_comment_references(pr)
         comment_cands = _collect_comment_candidates(review.content)
-        print(f"Evaluating comment alignment: {len(comment_refs)} references, {len(comment_cands)} candidates")
-        cp, cr, cf1 = _sentence_alignment(
-            comment_refs,
-            comment_cands,
-        )
+        cp, cr, cf1 = _sentence_alignment(comment_refs, comment_cands)
 
         interp_refs = _collect_interpretation_references(pr)
         interp_cands = _collect_interpretation_candidates(review.content)
-        print(f"Evaluating interpretation alignment: {len(interp_refs)} references, {len(interp_cands)} candidates")
-        ip, ir, if1 = _sentence_alignment(
-            interp_refs,
-            interp_cands,
-        )
+        ip, ir, if1 = _sentence_alignment(interp_refs, interp_cands)
 
         return AlignmentResult(
             comment_precision=clamp01(cp),

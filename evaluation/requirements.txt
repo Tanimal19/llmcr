@@ -9,3 +9,5 @@ plotly
 gliner
 transformers
 torch
+scipy
+sentence-transformers
