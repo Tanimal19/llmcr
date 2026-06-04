@@ -1,6 +1,3 @@
-import json
-import re
-import sys
 from functools import lru_cache
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict
@@ -33,7 +30,7 @@ EVALUATORS = [
 @dataclass
 class EvaluationResult:
     pr_id: int
-    group: EvaluationGroup
+    group: str
     review: CodeReviewEntry
     pull_request: PullRequestEntry
     results: Dict[str, Any] = field(default_factory=dict)
@@ -46,6 +43,18 @@ def load_pull_request_mapping():
         pr_obj = from_dict(PullRequestEntry, pr_entry)
         pr_mapping[pr_obj.id] = pr_obj
     return pr_mapping
+
+
+def convert_review_data(data: dict, group: EvaluationGroup) -> CodeReviewEntry:
+    if group == EvaluationGroup.CODERABBIT:
+        return CodeReviewEntry.from_coderabbit_format(data)
+    elif group == EvaluationGroup.COPILOT:
+        return CodeReviewEntry.from_copilot_format(data)
+    elif group == EvaluationGroup.LLMCR or group == EvaluationGroup.SINGLELLM:
+        return CodeReviewEntry.from_llmcr_format(data)
+    else:
+        print(f"Warning: Unrecognized evaluation group {group}, using default parsing")
+        return from_dict(CodeReviewEntry, data)
 
 
 def main() -> None:
@@ -63,8 +72,11 @@ def main() -> None:
             )
             continue
 
+        with output_jsonl.open("w", encoding="utf-8") as f:
+            pass  # clear existing content
+
         for review_data in iter_jsonl_entries(review_jsonl):
-            review_obj = from_dict(CodeReviewEntry, review_data)
+            review_obj = convert_review_data(review_data, group)
             pr_entry = _PR_MAPPING_CACHE.get(review_obj.pr_id)
             if pr_entry is None:
                 print(f"Warning: PR entry not found for PR ID {review_obj.pr_id}")
@@ -81,7 +93,7 @@ def main() -> None:
 
             result = EvaluationResult(
                 pr_id=review_obj.pr_id,
-                group=group,
+                group=group.value,
                 review=review_obj,
                 pull_request=pr_entry,
                 results=evaluation_result,

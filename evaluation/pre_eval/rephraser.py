@@ -18,7 +18,7 @@ from config import RAW_PULL_REQUEST_JSONL, REPHRASED_PULL_REQUEST_JSONL
 INPUT_JSONL = RAW_PULL_REQUEST_JSONL
 OUTPUT_JSONL = REPHRASED_PULL_REQUEST_JSONL
 PROMPT_FILE = Path(__file__).parent / "rephrase.prompt.txt"
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-2.5-flash-lite"
 
 
 def _dedupe_text_list(items: List[str]) -> List[str]:
@@ -66,7 +66,7 @@ def main() -> None:
                 {
                     "pr_title": pr.title,
                     "pr_description": pr.description,
-                    "comments": str(pr.comments),
+                    "pr_comments": str(pr.comments),
                 },
             )
 

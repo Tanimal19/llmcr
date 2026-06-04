@@ -5,11 +5,12 @@ from dataclasses import dataclass, field
 from typing import List, Set
 from . import Evaluator
 from share.utils import safe_div
-from share.code_review_scheme import CodeReviewEntry
+from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
 
 SYMBOLS_FILE_PATH = Path(__file__).with_name("symbols.txt")
 PASCAL_CASE_PATTERN = re.compile(r"\b[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+\b")
+ENTITY_LINE_PATTERN = re.compile(r"^\s*(CLASS):\s*(.+?)\s*$")
 IGNORED_ENTITIES = {
     "HashMap",
     "HashSet",
@@ -58,15 +59,16 @@ def _extract_entities(text: str) -> Set[str]:
     return entities - IGNORED_ENTITIES
 
 
-def _collect_review_text(review: CodeReviewEntry) -> str:
+def _collect_review_text(review: CodeReviewContent) -> str:
     fields = [
         review.motivation,
-        review.good_points,
-        review.bad_points,
         review.suggestion,
     ]
-    for detail in review.implementation_details:
-        fields.extend(detail.details)
+    fields.extend(review.good_points)
+    fields.extend(review.bad_points)
+    for impl in review.implementation_details:
+        fields.extend(impl.filename)
+        fields.extend(impl.details)
     for issue in review.issues:
         fields.extend([issue.title, issue.location, issue.detail])
     return "\n".join(fields)
@@ -76,28 +78,28 @@ def _collect_pr_text(pr: PullRequestEntry) -> str:
     fields = [pr.title, pr.description]
     for files in pr.changed_files or []:
         fields.extend([files.path, files.patch, files.content])
+    for comment in pr.comments or []:
+        fields.extend([comment.body, comment.diff_content or ""])
     return "\n".join(fields)
 
 
 @lru_cache(maxsize=1)
 def _load_real_entities() -> Set[str]:
-    entity_line_pattern = re.compile(r"^\s*(CLASS):\s*(.+?)\s*$")
-    class_name_pattern = re.compile(r"[A-Z][a-z0-9]*(?:[A-Z][A-Za-z0-9]*)*")
-
     if not SYMBOLS_FILE_PATH.exists():
         return set()
 
     entities: Set[str] = set()
     for line in SYMBOLS_FILE_PATH.read_text(encoding="utf-8").splitlines():
-        match = entity_line_pattern.match(line)
+        match = ENTITY_LINE_PATTERN.match(line)
         if not match:
             continue
 
-        symbol_name = (
-            PASCAL_CASE_PATTERN.findall(match.group(2))[-1]
+        matches = (
+            PASCAL_CASE_PATTERN.findall(match.group(2))
             if match.group(1) == "CLASS"
-            else ""
+            else []
         )
+        symbol_name = matches[-1] if matches else ""
         if symbol_name:
             entities.add(symbol_name)
 
@@ -111,7 +113,7 @@ class GroundingEvaluator(Evaluator):
 
         real_entities = _load_real_entities()
         pr_entities = _extract_entities(_collect_pr_text(pr))
-        mentioned_entities = _extract_entities(_collect_review_text(review))
+        mentioned_entities = _extract_entities(_collect_review_text(review.content))
 
         mentioned_pr = mentioned_entities & pr_entities
         mentioned_real = (mentioned_entities & real_entities) | mentioned_pr

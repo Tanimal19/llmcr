@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from numbers import Integral
 from bert_score import BERTScorer
 from . import Evaluator
-from share.code_review_scheme import CodeReviewEntry
+from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
 from share.utils import (
     clamp01,
@@ -38,12 +38,12 @@ def _split_sentences(text: str) -> List[str]:
     return [chunk.strip() for chunk in chunks if chunk.strip()]
 
 
-def _collect_comment_candidates(review: CodeReviewEntry) -> List[str]:
+def _collect_comment_candidates(review: CodeReviewContent) -> List[str]:
     candidate_text = "\n".join(
         [
-            review.good_points,
-            review.bad_points,
             review.suggestion,
+            "\n".join(review.good_points),
+            "\n".join(review.bad_points),
             "\n".join(f"{issue.title}: {issue.detail}" for issue in review.issues),
         ]
     )
@@ -54,7 +54,7 @@ def _collect_comment_references(pr: PullRequestEntry) -> List[str]:
     return pr.rephrased_comments or []
 
 
-def _collect_interpretation_candidates(review: CodeReviewEntry) -> List[str]:
+def _collect_interpretation_candidates(review: CodeReviewContent) -> List[str]:
     candidate_text = "\n".join(
         [
             review.motivation,
@@ -161,10 +161,10 @@ class AlignmentEvaluator(Evaluator):
         self, review: CodeReviewEntry, pr: PullRequestEntry
     ) -> AlignmentResult:
         comment_refs = _collect_comment_references(pr)
-        comment_cands = _collect_comment_candidates(review)
+        comment_cands = _collect_comment_candidates(review.content)
 
         interp_refs = _collect_interpretation_references(pr)
-        interp_cands = _collect_interpretation_candidates(review)
+        interp_cands = _collect_interpretation_candidates(review.content)
 
         cp, cr, cf1 = _sentence_alignment(
             comment_refs,

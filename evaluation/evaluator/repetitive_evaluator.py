@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 from typing import List
 from . import Evaluator
 from share.utils import safe_div
-from share.code_review_scheme import CodeReviewEntry
+from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
 
 REPETITIVE_THRESHOLD = 0.9
@@ -14,15 +14,15 @@ def _split_sentences(text: str) -> List[str]:
     return [chunk.strip() for chunk in chunks if chunk.strip()]
 
 
-def _collect_sentences(review: CodeReviewEntry) -> List[str]:
+def _collect_sentences(review: CodeReviewContent) -> List[str]:
     sentences = []
     for field in [
         review.motivation,
-        review.good_points,
-        review.bad_points,
         review.suggestion,
     ]:
         sentences.extend(_split_sentences(field))
+    sentences.extend(review.good_points)
+    sentences.extend(review.bad_points)
     for issue in review.issues:
         sentences.append(f"{issue.title}: {issue.detail}")
     for impl in review.implementation_details:
@@ -36,7 +36,7 @@ def _sentence_similarity(a: str, b: str) -> float:
 
 class RepetitiveEvaluator(Evaluator):
     def evaluate(self, review: CodeReviewEntry, pr: PullRequestEntry) -> float:
-        sentences = _collect_sentences(review)
+        sentences = _collect_sentences(review.content)
         clusters: List[List[str]] = []
         for sentence in sentences:
             placed = False

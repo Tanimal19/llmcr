@@ -6,7 +6,7 @@ from typing import List
 from dacite import from_dict
 from share.utils import render_prompt_template
 from share.llm import call_gemini
-from share.code_review_scheme import CodeReviewEntry
+from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
 from . import Evaluator
 
@@ -23,7 +23,7 @@ class LaajResult:
     step_by_step_analysis: List[str]
 
 
-def _collect_review_content(review: CodeReviewEntry) -> str:
+def _collect_review_content(review: CodeReviewContent) -> str:
     content_json = {
         "motivation": review.motivation,
         "good_points": review.good_points,
@@ -67,6 +67,7 @@ def _collect_pr_content(pr: PullRequestEntry) -> str:
             {
                 "poster": comment.poster,
                 "body": comment.body,
+                "diff": comment.diff_content,
             }
             for comment in pr.comments
         ],
@@ -86,7 +87,7 @@ class LaajEvaluator(Evaluator):
             {
                 "pull_request": _collect_pr_content(pr),
                 "static_analysis_results": review.static_analysis_results,
-                "review_report": _collect_review_content(review),
+                "review_report": _collect_review_content(review.content),
             },
         )
 

@@ -133,6 +133,28 @@ class GitHubPRCollector:
 
     @staticmethod
     def collect_comments(review_comments: List[Dict]) -> List[CommentEntry]:
+        def format_lines(comment: Dict) -> Optional[str]:
+            start_line = comment.get("start_line")
+            line = comment.get("line")
+            original_start_line = comment.get("original_start_line")
+            original_line = comment.get("original_line")
+
+            if isinstance(start_line, int) and isinstance(line, int):
+                return f"{start_line}-{line}" if start_line != line else str(line)
+
+            if isinstance(original_start_line, int) and isinstance(original_line, int):
+                if original_start_line != original_line:
+                    return f"{original_start_line}-{original_line}"
+                return str(original_line)
+
+            if isinstance(line, int):
+                return str(line)
+
+            if isinstance(original_line, int):
+                return str(original_line)
+
+            return None
+
         comments: List[CommentEntry] = []
 
         for comment in review_comments:
@@ -141,6 +163,9 @@ class GitHubPRCollector:
                     poster=comment.get("user", {}).get("login", "none"),
                     created_at=comment.get("created_at", "none"),
                     body=comment.get("body", "none"),
+                    file=comment.get("path") or None,
+                    lines=format_lines(comment),
+                    diff_content=comment.get("diff_hunk") or None,
                 )
             )
 

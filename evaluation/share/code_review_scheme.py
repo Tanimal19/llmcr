@@ -39,23 +39,15 @@ class ChecklistItem:
 
 
 @dataclass
-class CodeReviewEntry:
-    pr_id: int
-    pr_title: str
+class CodeReviewContent:
     motivation: str = ""
-    good_points: str = ""
-    bad_points: str = ""
+    good_points: List[str] = field(default_factory=list)
+    bad_points: List[str] = field(default_factory=list)
     suggestion: str = ""
     implementation_details: List[ImplementationDetails] = field(default_factory=list)
     issues: List[Issue] = field(default_factory=list)
     issue_count: int = 0
     content_size: int = 0
-
-    # belowing fields are data used during the review but not counted as the review content itself
-    static_analysis_results: str = ""
-    interpretation: Optional[Interpretation] = field(default_factory=Interpretation)
-    checklist_items: Optional[List[ChecklistItem]] = field(default_factory=list)
-    checklist_item_count: int = 0
 
     def __post_init__(self) -> None:
         if self.issue_count <= 0:
@@ -67,11 +59,11 @@ class CodeReviewEntry:
                     len(field)
                     for field in [
                         self.motivation,
-                        self.good_points,
-                        self.bad_points,
                         self.suggestion,
                     ]
                 )
+                + sum(len(point) for point in self.good_points)
+                + sum(len(point) for point in self.bad_points)
                 + sum(
                     len(issue.title) + len(issue.location) + len(issue.detail)
                     for issue in self.issues
@@ -82,18 +74,29 @@ class CodeReviewEntry:
                 )
             )
 
+
+@dataclass
+class CodeReviewEntry:
+    pr_id: int
+    pr_title: str
+    content: CodeReviewContent = field(default_factory=CodeReviewContent)
+    static_analysis_results: str = ""
+    interpretation: Optional[Interpretation] = field(default_factory=Interpretation)
+    checklist_items: Optional[List[ChecklistItem]] = field(default_factory=list)
+    checklist_item_count: int = 0
+
+    def __post_init__(self) -> None:
         if self.checklist_item_count <= 0 and self.checklist_items is not None:
             self.checklist_item_count = len(self.checklist_items)
 
     @staticmethod
-    def from_llmcr_review(data: dict) -> "CodeReviewEntry":
-        # we can use dacite to parse the nested structure, as the LLMCR output review are exactly match the dataclass
-        return from_dict(data_class=CodeReviewEntry, data=data)
+    def from_llmcr_format(data: dict) -> "CodeReviewEntry":
+        return from_dict(CodeReviewEntry, data)
 
     @staticmethod
-    def from_coderabbit_review(data: dict) -> "CodeReviewEntry":
+    def from_coderabbit_format(data: dict) -> "CodeReviewEntry":
         raise NotImplementedError("Coderabbit format parsing is not implemented yet")
 
     @staticmethod
-    def from_copilot_review(data: dict) -> "CodeReviewEntry":
+    def from_copilot_format(data: dict) -> "CodeReviewEntry":
         raise NotImplementedError("Copilot format parsing is not implemented yet")

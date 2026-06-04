@@ -7,6 +7,9 @@ class CommentEntry:
     poster: str
     created_at: str
     body: str
+    file: Optional[str] = None
+    lines: Optional[str] = None
+    diff_content: Optional[str] = None
 
 
 @dataclass
