@@ -26,10 +26,6 @@ Requirements:
 6. Exclude low-value content:
    - greetings
    - thanks
-   - approvals
-   - process discussions
-   - release management
-   - merge/rebase discussions
    - review logistics
    - status updates without technical content
 7. Rewrite statements into standalone sentences.

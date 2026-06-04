@@ -6,3 +6,6 @@ google-genai
 streamlit
 pandas
 plotly
+gliner
+transformers
+torch

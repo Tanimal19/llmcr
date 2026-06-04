@@ -1,3 +1,4 @@
+import time
 from functools import lru_cache
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict
@@ -60,6 +61,8 @@ def convert_review_data(data: dict, group: EvaluationGroup) -> CodeReviewEntry:
 def main() -> None:
     _PR_MAPPING_CACHE = load_pull_request_mapping()
 
+    start_time = time.time()
+
     for group in EvaluationGroup:
         print(f"Evaluating group: {group.value}")
 
@@ -102,6 +105,11 @@ def main() -> None:
             append_jsonl_entry(output_jsonl.open("a", encoding="utf-8"), asdict(result))
 
             del result  # free memory
+            
+            break
+
+    end_time = time.time()
+    print(f"Evaluation completed in {end_time - start_time:.2f} seconds.")
 
 
 if __name__ == "__main__":

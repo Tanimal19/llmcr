@@ -1,23 +1,17 @@
+from typing import Any, List, Tuple
 import torch
 import re
-from typing import List, Tuple
+from functools import lru_cache
 from dataclasses import dataclass, field
-from numbers import Integral
-from bert_score import BERTScorer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from . import Evaluator
+from .entity_extractor import extract_entities
+from share.utils import safe_div, clamp01, get_filename_from_pathstring
 from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
-from share.utils import (
-    clamp01,
-    safe_div,
-    get_filename_from_pathstring,
-)
 
-BERTSCORE_LANG = "en"
-BERTSCORE_MODEL_TYPE = "roberta-large"
-TOKENIZER_MAX_LENGTH = 512
-_SCORER_CACHE: dict[Tuple[str, str], BERTScorer] = {}
-
+NLI_MODEL_NAME = "microsoft/deberta-xlarge-mnli"
+JACCARD_WEIGHT = 0.5
 
 @dataclass
 class AlignmentResult:
@@ -71,68 +65,76 @@ def _collect_interpretation_candidates(review: CodeReviewContent) -> List[str]:
 def _collect_interpretation_references(pr: PullRequestEntry) -> List[str]:
     return pr.rephrased_description or []
 
-
-def _get_scorer(lang: str, model_type: str) -> BERTScorer:
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    cache_key = (model_type, device)
-    cached = _SCORER_CACHE.get(cache_key)
-    if cached is not None:
-        return cached
-
-    scorer = BERTScorer(
-        lang=lang,
-        model_type=model_type,
-        device=device,
-        rescale_with_baseline=True,
-    )
-    tokenizer = getattr(scorer, "_tokenizer", None)
-    if tokenizer is not None:
-        current_max_length = getattr(tokenizer, "model_max_length", None)
-        if (
-            not isinstance(current_max_length, Integral)
-            or int(current_max_length) <= 0
-            or int(current_max_length) > 100000
-        ):
-            tokenizer.model_max_length = TOKENIZER_MAX_LENGTH
-
-    _SCORER_CACHE[cache_key] = scorer
-    return scorer
+@lru_cache(maxsize=1)
+def _get_nli_model() -> Tuple[Any, Any]:
+    tokenizer = AutoTokenizer.from_pretrained(NLI_MODEL_NAME)
+    model = AutoModelForSequenceClassification.from_pretrained(NLI_MODEL_NAME)
+    model.eval()
+    return tokenizer, model
 
 
-def _bertscore_f1_matrix(
-    candidates: List[str],
-    references: List[str],
+def _entailment_probability_matrix(
+    premises: List[str],
+    hypotheses: List[str],
 ) -> torch.Tensor:
-    pair_count = len(candidates) * len(references)
+    tokenizer, model = _get_nli_model()
+    pair_count = len(premises) * len(hypotheses)
     if pair_count == 0:
-        return torch.empty((len(candidates), len(references)), dtype=torch.float32)
+        return torch.empty((len(premises), len(hypotheses)), dtype=torch.float32)
 
-    scorer = _get_scorer(BERTSCORE_LANG, BERTSCORE_MODEL_TYPE)
-    f1_rows: List[torch.Tensor] = []
+    id2label = model.config.id2label
+    entailment_label_id = [i for i, l in id2label.items() if "entail" in l.lower()][0]
 
-    for candidate in candidates:
-        repeated_candidates = [candidate] * len(references)
-        try:
-            score_output = scorer.score(repeated_candidates, references)
-        except OverflowError:
-            tokenizer = getattr(scorer, "_tokenizer", None)
-            if tokenizer is None:
-                raise
-            tokenizer.model_max_length = TOKENIZER_MAX_LENGTH
-            score_output = scorer.score(repeated_candidates, references)
-        f1_scores = score_output[2]
-        if isinstance(f1_scores, torch.Tensor):
-            f1_rows.append(f1_scores.detach().cpu().to(dtype=torch.float32))
-        else:
-            f1_rows.append(torch.tensor(f1_scores, dtype=torch.float32))
+    batch_premises = [premise for premise in premises for _ in hypotheses]
+    batch_hypotheses = [hypothesis for _ in premises for hypothesis in hypotheses]
 
-    return torch.stack(f1_rows, dim=0)
+    entailment_probs_batches: List[torch.Tensor] = []
+    batch_size = 16
+    with torch.no_grad():
+        for idx in range(0, pair_count, batch_size):
+            print(f"Processing NLI batch {idx} to {min(idx + batch_size, pair_count)} / {pair_count}...")
+            sub_premises = batch_premises[idx : idx + batch_size]
+            sub_hypotheses = batch_hypotheses[idx : idx + batch_size]
+            inputs = tokenizer(
+                sub_premises,
+                sub_hypotheses,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=512,
+            )
+            logits = model(**inputs).logits
+            probs = torch.softmax(logits, dim=-1)
+            entailment_probability = probs[:, entailment_label_id]
+            entailment_score = entailment_probability
+            entailment_probs_batches.append(entailment_score)
+
+    entailment_probs = torch.cat(entailment_probs_batches, dim=0)
+    return entailment_probs.reshape(len(premises), len(hypotheses))
 
 
 def _soft_coverage(scores: torch.Tensor) -> torch.Tensor:
     clipped = scores.clamp(min=0.0, max=1.0 - 1e-7)
     not_covered = torch.exp(torch.log1p(-clipped).sum(dim=1))
     return 1.0 - not_covered
+
+def _max_coverage(scores: torch.Tensor) -> torch.Tensor:
+    return scores.max(dim=1).values
+
+
+def _jaccard_matrix(
+    premises: List[str],
+    hypotheses: List[str],
+) -> torch.Tensor:
+    premise_entities = [extract_entities(p) for p in premises]
+    hypothesis_entities = [extract_entities(h) for h in hypotheses]
+
+    matrix = torch.zeros(len(premises), len(hypotheses), dtype=torch.float32)
+    for i, pe in enumerate(premise_entities):
+        for j, he in enumerate(hypothesis_entities):
+            union = pe | he
+            matrix[i, j] = len(pe & he) / len(union) if union else 0.0
+    return matrix
 
 
 def _sentence_alignment(
@@ -142,15 +144,17 @@ def _sentence_alignment(
     if not references or not candidates:
         return 0.0, 0.0, 0.0
 
-    cand_to_ref = _bertscore_f1_matrix(candidates, references)
-    ref_to_cand = _bertscore_f1_matrix(references, candidates)
+    cand_to_ref_nli = _entailment_probability_matrix(candidates, references)
+    ref_to_cand_nli = _entailment_probability_matrix(references, candidates)
 
-    # how many candidate sentences are supported by references
-    precision = float(_soft_coverage(cand_to_ref).mean().item())
+    cand_to_ref_jaccard = _jaccard_matrix(candidates, references)
+    ref_to_cand_jaccard = _jaccard_matrix(references, candidates)
 
-    # how many reference sentences are covered by candidates
-    recall = float(_soft_coverage(ref_to_cand).mean().item())
+    cand_to_ref = cand_to_ref_jaccard * JACCARD_WEIGHT + cand_to_ref_nli * (1 - JACCARD_WEIGHT)
+    ref_to_cand = ref_to_cand_jaccard * JACCARD_WEIGHT + ref_to_cand_nli * (1 - JACCARD_WEIGHT)
 
+    precision = float(_max_coverage(cand_to_ref).mean().item())
+    recall = float(_max_coverage(ref_to_cand).mean().item())
     f1 = safe_div(2 * precision * recall, precision + recall)
 
     return precision, recall, f1
@@ -162,14 +166,15 @@ class AlignmentEvaluator(Evaluator):
     ) -> AlignmentResult:
         comment_refs = _collect_comment_references(pr)
         comment_cands = _collect_comment_candidates(review.content)
-
-        interp_refs = _collect_interpretation_references(pr)
-        interp_cands = _collect_interpretation_candidates(review.content)
-
+        print(f"Evaluating comment alignment: {len(comment_refs)} references, {len(comment_cands)} candidates")
         cp, cr, cf1 = _sentence_alignment(
             comment_refs,
             comment_cands,
         )
+
+        interp_refs = _collect_interpretation_references(pr)
+        interp_cands = _collect_interpretation_candidates(review.content)
+        print(f"Evaluating interpretation alignment: {len(interp_refs)} references, {len(interp_cands)} candidates")
         ip, ir, if1 = _sentence_alignment(
             interp_refs,
             interp_cands,
