@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -27,7 +28,78 @@ def _pick_token_value(data: dict, keys: list[str]) -> int | None:
     return None
 
 
-def extract_token_counts(node: dict) -> tuple[int, int, bool]:
+def _extract_text_fragments(payload, fragments: list[str], max_fragments: int = 400):
+    if len(fragments) >= max_fragments:
+        return
+
+    if payload is None:
+        return
+
+    if isinstance(payload, str):
+        if payload:
+            fragments.append(payload)
+        return
+
+    if isinstance(payload, bytes):
+        text = payload.decode("utf-8", errors="ignore")
+        if text:
+            fragments.append(text)
+        return
+
+    if isinstance(payload, list):
+        for item in payload:
+            _extract_text_fragments(item, fragments, max_fragments=max_fragments)
+            if len(fragments) >= max_fragments:
+                return
+        return
+
+    if isinstance(payload, dict):
+        preferred_keys = [
+            "text",
+            "content",
+            "message",
+            "output",
+            "input",
+            "analysis",
+            "finalAnswer",
+            "innerThought",
+        ]
+
+        used_preferred = False
+        for key in preferred_keys:
+            if key in payload:
+                used_preferred = True
+                _extract_text_fragments(
+                    payload.get(key), fragments, max_fragments=max_fragments
+                )
+                if len(fragments) >= max_fragments:
+                    return
+
+        if not used_preferred:
+            for value in payload.values():
+                _extract_text_fragments(value, fragments, max_fragments=max_fragments)
+                if len(fragments) >= max_fragments:
+                    return
+
+
+def _estimate_tokens_from_payload(payload) -> int:
+    fragments: list[str] = []
+    _extract_text_fragments(payload, fragments)
+
+    if not fragments:
+        return 0
+
+    text = "\n".join(fragments)
+    char_count = len(text)
+    if char_count <= 0:
+        return 0
+
+    return max(1, math.ceil(char_count / 4))
+
+
+def extract_token_counts(
+    node: dict, estimate_from_io: bool = True
+) -> tuple[int, int, bool, bool, str]:
     input_keys = [
         "inputTokens",
         "inputToken",
@@ -48,6 +120,7 @@ def extract_token_counts(node: dict) -> tuple[int, int, bool]:
 
     input_tokens = _pick_token_value(node, input_keys)
     output_tokens = _pick_token_value(node, output_keys)
+    explicit_total_tokens = None
 
     usage_containers = [
         "usage",
@@ -81,10 +154,33 @@ def extract_token_counts(node: dict) -> tuple[int, int, bool]:
                     if total_tokens is not None:
                         break
         if total_tokens is not None:
+            explicit_total_tokens = total_tokens
             input_tokens = total_tokens
 
-    has_explicit_tokens = input_tokens > 0 or output_tokens > 0
-    return input_tokens, output_tokens, has_explicit_tokens
+    has_explicit_tokens = input_tokens > 0 or output_tokens > 0 or explicit_total_tokens
+
+    has_estimated_tokens = False
+    if (not has_explicit_tokens) and estimate_from_io:
+        est_input = _estimate_tokens_from_payload(node.get("input"))
+        est_output = _estimate_tokens_from_payload(node.get("output"))
+        input_tokens = est_input
+        output_tokens = est_output
+        has_estimated_tokens = est_input > 0 or est_output > 0
+
+    if has_explicit_tokens:
+        token_source = "explicit"
+    elif has_estimated_tokens:
+        token_source = "estimated"
+    else:
+        token_source = "none"
+
+    return (
+        input_tokens,
+        output_tokens,
+        bool(has_explicit_tokens),
+        has_estimated_tokens,
+        token_source,
+    )
 
 
 def parse_agent_context(path: Path) -> list[dict]:
@@ -115,7 +211,7 @@ def parse_agent_context(path: Path) -> list[dict]:
 
 
 def flatten_runs(
-    records: list[dict],
+    records: list[dict], estimate_from_io: bool = True
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
     node_rows: list[dict] = []
     edge_rows: list[dict] = []
@@ -137,7 +233,13 @@ def flatten_runs(
         started_at = _safe_int(node.get("startedAt"))
         ended_at = _safe_int(node.get("endedAt"))
 
-        input_tokens, output_tokens, has_explicit_tokens = extract_token_counts(node)
+        (
+            input_tokens,
+            output_tokens,
+            has_explicit_tokens,
+            has_estimated_tokens,
+            token_source,
+        ) = extract_token_counts(node, estimate_from_io=estimate_from_io)
 
         node_rows.append(
             {
@@ -154,6 +256,8 @@ def flatten_runs(
                 "output_tokens": output_tokens,
                 "total_tokens": input_tokens + output_tokens,
                 "has_explicit_tokens": has_explicit_tokens,
+                "has_estimated_tokens": has_estimated_tokens,
+                "token_source": token_source,
             }
         )
 
@@ -198,6 +302,9 @@ def flatten_runs(
                 "explicit_token_nodes": sum(
                     1 for n in run_nodes if n["has_explicit_tokens"]
                 ),
+                "estimated_token_nodes": sum(
+                    1 for n in run_nodes if n["has_estimated_tokens"]
+                ),
             }
         )
 
@@ -215,6 +322,7 @@ def flatten_runs(
                 "total_tokens",
                 "avg_duration_ms",
                 "explicit_token_nodes",
+                "estimated_token_nodes",
             ]
         )
     else:
@@ -227,12 +335,19 @@ def flatten_runs(
                 total_tokens=("total_tokens", "sum"),
                 avg_duration_ms=("duration_ms", "mean"),
                 explicit_token_nodes=("has_explicit_tokens", "sum"),
+                estimated_token_nodes=("has_estimated_tokens", "sum"),
             )
             .sort_values("total_tokens", ascending=False)
         )
 
     missing_token_nodes = (
-        0 if node_df.empty else int((~node_df["has_explicit_tokens"]).sum())
+        0
+        if node_df.empty
+        else int(
+            (
+                (~node_df["has_explicit_tokens"]) & (~node_df["has_estimated_tokens"])
+            ).sum()
+        )
     )
     return node_df, edge_df, run_df, agent_df, missing_token_nodes
 
@@ -278,6 +393,9 @@ st.caption("Visualize agent call diagram and input/output token cost.")
 with st.sidebar:
     st.header("Data Source")
     context_path = st.text_input("agent_context.json path", str(DEFAULT_CONTEXT))
+    estimate_from_io = st.checkbox(
+        "Estimate tokens from input/output when missing", value=True
+    )
 
 path = Path(context_path)
 if not path.exists():
@@ -289,7 +407,9 @@ if not records:
     st.warning("No valid records found in the selected file.")
     st.stop()
 
-node_df, edge_df, run_df, agent_df, missing_token_nodes = flatten_runs(records)
+node_df, edge_df, run_df, agent_df, missing_token_nodes = flatten_runs(
+    records, estimate_from_io=estimate_from_io
+)
 
 if node_df.empty:
     st.warning("No agent nodes found.")
@@ -301,9 +421,22 @@ col2.metric("Agent Calls", int(node_df.shape[0]))
 col3.metric("Input Tokens", f"{int(node_df['input_tokens'].sum()):,}")
 col4.metric("Output Tokens", f"{int(node_df['output_tokens'].sum()):,}")
 
+source_counts = node_df["token_source"].value_counts().to_dict()
+explicit_count = int(source_counts.get("explicit", 0))
+estimated_count = int(source_counts.get("estimated", 0))
+if estimate_from_io:
+    st.caption(
+        f"Token source: explicit {explicit_count}, estimated {estimated_count}, none {missing_token_nodes}."
+    )
+else:
+    st.caption(
+        f"Token source: explicit {explicit_count}, none {missing_token_nodes}. "
+        "Enable estimation in the sidebar to infer tokens from input/output."
+    )
+
 if missing_token_nodes > 0:
     st.info(
-        f"{missing_token_nodes} calls do not include explicit token fields in the context. "
+        f"{missing_token_nodes} calls do not include token fields and could not be estimated from input/output. "
         "These calls are shown as 0 token cost."
     )
 
@@ -380,6 +513,7 @@ with tab_run:
                 "input_tokens",
                 "output_tokens",
                 "total_tokens",
+                "token_source",
             ]
         ]
         .sort_values(["depth", "node_id"])
@@ -399,6 +533,7 @@ with tab_agent:
                 "total_tokens",
                 "avg_duration_ms",
                 "explicit_token_nodes",
+                "estimated_token_nodes",
             ]
         ].assign(avg_duration_ms=lambda x: x["avg_duration_ms"].round(1)),
         use_container_width=True,
