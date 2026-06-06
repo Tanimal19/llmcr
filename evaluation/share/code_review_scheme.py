@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 from dacite import from_dict
+from pre_eval.bot_review_collect.converter.coderabbit import CoderabbitReviewEntry
+from pre_eval.bot_review_collect.converter.copilot import CopilotReviewEntry
 
 
 @dataclass
@@ -80,14 +82,6 @@ class CodeReviewEntry:
     pr_id: int
     pr_title: str
     content: CodeReviewContent = field(default_factory=CodeReviewContent)
-    static_analysis_results: str = ""
-    interpretation: Optional[Interpretation] = field(default_factory=Interpretation)
-    checklist_items: Optional[List[ChecklistItem]] = field(default_factory=list)
-    checklist_item_count: int = 0
-
-    def __post_init__(self) -> None:
-        if self.checklist_item_count <= 0 and self.checklist_items is not None:
-            self.checklist_item_count = len(self.checklist_items)
 
     @staticmethod
     def from_llmcr_format(data: dict) -> "CodeReviewEntry":
@@ -95,8 +89,52 @@ class CodeReviewEntry:
 
     @staticmethod
     def from_coderabbit_format(data: dict) -> "CodeReviewEntry":
-        raise NotImplementedError("Coderabbit format parsing is not implemented yet")
+        entry = from_dict(CoderabbitReviewEntry, data)
+        return CodeReviewEntry(
+            pr_id=entry.pr_id,
+            pr_title="",
+            content=CodeReviewContent(
+                motivation=entry.walkthrough,
+                implementation_details=[
+                    ImplementationDetails(
+                        filename=change.layer, details=[change.summary]
+                    )
+                    for change in entry.changes
+                ],
+                issues=[
+                    Issue(
+                        issue_type=issue.type,
+                        title="",
+                        location=f"{issue.file_path}:{issue.lines}",
+                        detail=issue.content,
+                    )
+                    for issue in entry.issues
+                ],
+            ),
+        )
 
     @staticmethod
     def from_copilot_format(data: dict) -> "CodeReviewEntry":
-        raise NotImplementedError("Copilot format parsing is not implemented yet")
+        entry = from_dict(CopilotReviewEntry, data)
+        return CodeReviewEntry(
+            pr_id=entry.pr_id,
+            pr_title="",
+            content=CodeReviewContent(
+                motivation=entry.overview,
+                implementation_details=[
+                    ImplementationDetails(
+                        filename=change.file_path, details=[change.description]
+                    )
+                    for change in entry.changes
+                ],
+                issues=[
+                    Issue(
+                        issue_type="",
+                        title="",
+                        location=f"{issue.file_path}:{issue.lines}",
+                        detail=issue.content,
+                    )
+                    for issue in entry.issues
+                ],
+            ),
+        )

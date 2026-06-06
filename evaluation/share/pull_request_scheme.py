@@ -34,6 +34,8 @@ class PullRequestEntry:
     changed_files_count: int = 0
     changed_content_size: int = 0
 
+    static_analysis_results: str = ""
+
     rephrased_description: Optional[List[str]] = None
     rephrased_comments: Optional[List[str]] = None
 

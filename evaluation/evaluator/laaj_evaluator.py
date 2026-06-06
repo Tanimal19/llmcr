@@ -92,7 +92,7 @@ class LaajEvaluator(Evaluator):
             prompt_template,
             {
                 "pull_request": _collect_pr_content(pr),
-                "static_analysis_results": review.static_analysis_results,
+                "static_analysis_results": pr.static_analysis_results,
                 "pull_request_comments": _collect_pr_comments(pr),
                 "review_report": _collect_review_content(review.content),
             },
