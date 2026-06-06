@@ -105,8 +105,6 @@ def main() -> None:
             append_jsonl_entry(output_jsonl.open("a", encoding="utf-8"), asdict(result))
 
             del result  # free memory
-            
-            break
 
     end_time = time.time()
     print(f"Evaluation completed in {end_time - start_time:.2f} seconds.")

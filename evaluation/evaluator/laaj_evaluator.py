@@ -59,10 +59,16 @@ def _collect_pr_content(pr: PullRequestEntry) -> str:
                 "path": file.path,
                 "previous_path": file.previous_path,
                 "patch": file.patch,
-                "content": file.content,
             }
             for file in pr.changed_files
         ],
+    }
+
+    return json.dumps(content_json, ensure_ascii=False, indent=2)
+
+
+def _collect_pr_comments(pr: PullRequestEntry) -> str:
+    comments_json = {
         "comments": [
             {
                 "poster": comment.poster,
@@ -74,7 +80,7 @@ def _collect_pr_content(pr: PullRequestEntry) -> str:
         "is_approved": pr.is_approved,
     }
 
-    return json.dumps(content_json, ensure_ascii=False, indent=2)
+    return json.dumps(comments_json, ensure_ascii=False, indent=2)
 
 
 class LaajEvaluator(Evaluator):
@@ -87,6 +93,7 @@ class LaajEvaluator(Evaluator):
             {
                 "pull_request": _collect_pr_content(pr),
                 "static_analysis_results": review.static_analysis_results,
+                "pull_request_comments": _collect_pr_comments(pr),
                 "review_report": _collect_review_content(review.content),
             },
         )

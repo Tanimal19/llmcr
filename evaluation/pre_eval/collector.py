@@ -43,7 +43,7 @@ def count_words(text: str) -> int:
     return len(re.findall(r"\b\w+\b", text))
 
 
-class GitHubPRCollector:
+class GitHubCollector:
     def __init__(
         self, owner_repo: str, token: Optional[str], sleep_seconds: float = 0.1
     ) -> None:
@@ -406,7 +406,7 @@ if __name__ == "__main__":
     load_dotenv(project_root / ".env")
 
     token = os.getenv("GITHUB_TOKEN")
-    collector = GitHubPRCollector(owner_repo=REPO, token=token)
+    collector = GitHubCollector(owner_repo=REPO, token=token)
 
     since_date = None
     if AFTER_RELEASE_RAG:

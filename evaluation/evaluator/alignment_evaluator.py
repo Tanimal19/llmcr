@@ -1,8 +1,10 @@
 import torch
 import re
-import os
 import time
 import requests
+from functools import lru_cache
+from scipy.optimize import linear_sum_assignment
+from sentence_transformers import SentenceTransformer, util
 from pathlib import Path
 from typing import Any, List, Tuple
 from dataclasses import dataclass, field
@@ -16,6 +18,9 @@ from share.utils import (
 )
 from share.code_review_scheme import CodeReviewEntry, CodeReviewContent
 from share.pull_request_scheme import PullRequestEntry
+
+SBERT_MODEL_NAME = "google/embeddinggemma-300M"
+SBERT_THRESHOLD = 0.5
 
 SLM_MODEL_NAME = "nemotron-3-4b"
 SLM_API_BASE_URL = "http://localhost:8080"
@@ -78,17 +83,55 @@ def _collect_interpretation_references(pr: PullRequestEntry) -> List[str]:
     return pr.rephrased_description or []
 
 
+@lru_cache(maxsize=1)
+def _get_sbert_model():
+    model = SentenceTransformer(SBERT_MODEL_NAME)
+    return model
+
+
+def _hungarian_match(cost_matrix: torch.Tensor) -> List[Tuple[int, int]]:
+    row_ind, col_ind = linear_sum_assignment(cost_matrix.cpu().numpy())
+    return list(zip(row_ind, col_ind))
+
+
+def _sbert_matching(
+    references: List[str],
+    candidates: List[str],
+) -> List[Tuple[int, int, float]]:
+    """Returns list of (ref_index, cand_index, similarity) for matched pairs."""
+
+    if not references or not candidates:
+        return []
+
+    model = _get_sbert_model()
+
+    ref_embeddings = model.encode(references, convert_to_tensor=True)
+    cand_embeddings = model.encode(candidates, convert_to_tensor=True)
+    similarity_matrix = util.cos_sim(ref_embeddings, cand_embeddings)
+
+    matches = _hungarian_match(-similarity_matrix)
+    valid_matches = [
+        (r, c, similarity_matrix[r, c].item())
+        for r, c in matches
+        if similarity_matrix[r, c].item() > SBERT_THRESHOLD
+    ]
+
+    return valid_matches
+
+
 @dataclass
 class SlmAlignmentResponse:
     reason: str
     confidence: float
-    match: str
+    is_match: str
 
 
-def _slm_pair_match_score(
+def _slm_pair_matched(
     candidate: str,
     reference: str,
 ) -> bool:
+    """Returns True if SLM judges candidate matches reference, False otherwise."""
+
     prompt = render_prompt_template(
         PROMPT_TEMPLATE,
         {
@@ -124,13 +167,10 @@ def _slm_pair_match_score(
             content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
             alignment_response = from_dict(SlmAlignmentResponse, eval(content))
 
-            print(
-                f"SLM pair match: candidate='{candidate}'"
-                f" match={alignment_response.match}"
-            )
+            print(f"SLM: {alignment_response}")
 
             if alignment_response.confidence > 0.5:
-                return True if alignment_response.match.lower() == "true" else False
+                return True if alignment_response.is_match.lower() == "true" else False
             else:
                 return False  # low confidence treated as no match
 
@@ -152,18 +192,9 @@ def _sentence_alignment(
     if not references or not candidates:
         return 0.0, 0.0, 0.0
 
-    matched_refs = set()  # references that mentioned by at least one candidate
-    matched_cands = set()  # candidates that matched to at least one reference
-
-    for candidate in candidates:
-        for reference in references:
-            matched = _slm_pair_match_score(candidate, reference)
-            if matched:
-                matched_refs.add(reference)
-                matched_cands.add(candidate)
-
-    precision = safe_div(len(matched_cands), len(candidates))
-    recall = safe_div(len(matched_refs), len(references))
+    matches = _sbert_matching(references, candidates)
+    precision = safe_div(len(matches), len(candidates))
+    recall = safe_div(len(matches), len(references))
     f1 = safe_div(2 * precision * recall, precision + recall)
     print(f"SLM alignment: precision={precision:.4f}, recall={recall:.4f}, f1={f1:.4f}")
 

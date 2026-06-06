@@ -16,7 +16,7 @@ OUTPUT_PATH = MERGED_REVIEW_JSONL(GROUP.value)
 
 
 count = 0
-for review_file in SOURCE_DIR.glob("*/review.json"):
+for review_file in SOURCE_DIR.rglob("review.json"):
     print(f"Processing {review_file}...")
     with review_file.open(encoding="utf-8") as f:
         review_data = json.load(f)

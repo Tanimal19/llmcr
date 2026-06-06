@@ -10,7 +10,7 @@ Return JSON only:
 {
   "reason": string
   "confidence": 0-1,
-  "match": true/false,
+  "is_match": "true" or "false",
 }
 
 Candidate:

@@ -11,6 +11,8 @@ class EvaluationGroup(Enum):
 
 DATA_DIR = Path(__file__).parent / "data"
 
+BOT_REVIEW_PR_URLS_CSV = DATA_DIR / "settings" / "bot_review_pr_urls.csv"
+
 RAW_PULL_REQUEST_JSONL = DATA_DIR / "exports" / "raw_pull_request.jsonl"
 REPHRASED_PULL_REQUEST_JSONL = DATA_DIR / "exports" / "rephrased_pull_request.jsonl"
 
