@@ -23,7 +23,7 @@ from config import (
 EVALUATORS = [
     GroundingEvaluator(),
     AlignmentEvaluator(),
-    # LaajEvaluator(),
+    LaajEvaluator(),
     RepetitiveEvaluator(),
 ]
 

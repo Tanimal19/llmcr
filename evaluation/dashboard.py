@@ -24,6 +24,8 @@ METRIC_LABELS = {
     "AlignmentEvaluator/interpretation_precision": "Interp. Precision ↑",
     "AlignmentEvaluator/interpretation_recall": "Interp. Recall ↑",
     "AlignmentEvaluator/interpretation_f1": "Interp. F1 ↑",
+    "AlignmentEvaluator/comment_cands_count": "Comment Cands",
+    "AlignmentEvaluator/interp_cands_count": "Interp Cands",
     "RepetitiveEvaluator": "Repetitive Score ↓",
 }
 
@@ -31,7 +33,17 @@ METRIC_LABELS = {
 def flatten_results(record: dict) -> dict:
     """Flatten nested results dict into dot-separated metric keys."""
     row = {"pr_id": record["pr_id"], "group": record["group"]}
+
     results = record.get("results", {})
+    alignment_result = results.get("AlignmentEvaluator", {})
+    if isinstance(alignment_result, dict):
+        comment_cands = alignment_result.get("comment_cands")
+        interp_cands = alignment_result.get("interp_cands")
+        if isinstance(comment_cands, list):
+            row["AlignmentEvaluator/comment_cands_count"] = len(comment_cands)
+        if isinstance(interp_cands, list):
+            row["AlignmentEvaluator/interp_cands_count"] = len(interp_cands)
+
     for evaluator, value in results.items():
         if isinstance(value, dict):
             for metric, v in value.items():

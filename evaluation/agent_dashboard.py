@@ -3,13 +3,9 @@ import math
 from pathlib import Path
 
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
-DEFAULT_CONTEXT = (
-    Path(__file__).parent / "data" / "reviews" / "llmcr" / "5091" / "agent_context.json"
-)
+DEFAULT_CONTEXT_DIR = Path(__file__).parent / "data" / "reviews" / "llmcr"
 
 
 def _safe_int(value):
@@ -210,6 +206,16 @@ def parse_agent_context(path: Path) -> list[dict]:
     return records
 
 
+def collect_agent_context_files(root: Path) -> list[Path]:
+    if root.is_file():
+        return [root] if root.name == "agent_context.json" else []
+
+    if not root.exists():
+        return []
+
+    return sorted(path for path in root.rglob("agent_context.json") if path.is_file())
+
+
 def flatten_runs(
     records: list[dict], estimate_from_io: bool = True
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
@@ -352,47 +358,172 @@ def flatten_runs(
     return node_df, edge_df, run_df, agent_df, missing_token_nodes
 
 
-def make_sankey(edge_df: pd.DataFrame, title: str) -> go.Figure | None:
-    if edge_df.empty:
-        return None
+def build_review_summary(
+    context_files: list[Path], estimate_from_io: bool = True
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int, int]:
+    review_rows: list[dict] = []
+    model_rows: list[dict] = []
+    agent_rows: list[dict] = []
+    missing_token_nodes = 0
+    total_runs = 0
 
-    flow = (
-        edge_df.groupby(["source_agent", "target_agent"], as_index=False)
-        .size()
-        .rename(columns={"size": "count"})
-        .sort_values("count", ascending=False)
-    )
+    for review_id, context_file in enumerate(context_files, start=1):
+        records = parse_agent_context(context_file)
+        if not records:
+            continue
 
-    nodes = sorted(set(flow["source_agent"]).union(set(flow["target_agent"])))
-    idx = {name: i for i, name in enumerate(nodes)}
+        node_df, _, run_df, _, missing_nodes = flatten_runs(
+            records, estimate_from_io=estimate_from_io
+        )
+        if node_df.empty:
+            continue
 
-    fig = go.Figure(
-        data=[
-            go.Sankey(
-                node=dict(label=nodes, pad=20, thickness=18),
-                link=dict(
-                    source=[idx[x] for x in flow["source_agent"]],
-                    target=[idx[x] for x in flow["target_agent"]],
-                    value=flow["count"].tolist(),
-                    customdata=list(
-                        zip(flow["source_agent"], flow["target_agent"], flow["count"])
-                    ),
-                    hovertemplate="%{customdata[0]} -> %{customdata[1]}<br>Calls: %{value}<extra></extra>",
-                ),
+        missing_token_nodes += missing_nodes
+        total_runs += int(run_df.shape[0])
+        review_name = context_file.parent.name
+        review_rows.append(
+            {
+                "review_id": review_id,
+                "review_name": review_name,
+                "context_path": str(context_file),
+                "runs": int(run_df.shape[0]),
+                "total_duration_ms": int(run_df["duration_ms"].sum()),
+                "input_tokens": int(node_df["input_tokens"].sum()),
+                "output_tokens": int(node_df["output_tokens"].sum()),
+                "total_tokens": int(node_df["total_tokens"].sum()),
+            }
+        )
+
+        review_model_df = (
+            node_df.assign(model=node_df["model"].replace("", "Unknown"))
+            .groupby("model", as_index=False)
+            .agg(
+                input_tokens=("input_tokens", "sum"),
+                output_tokens=("output_tokens", "sum"),
+                total_tokens=("total_tokens", "sum"),
             )
-        ]
+        )
+        for _, row in review_model_df.iterrows():
+            model_rows.append(
+                {
+                    "review_id": review_id,
+                    "review_name": review_name,
+                    "model": row["model"],
+                    "input_tokens": int(row["input_tokens"]),
+                    "output_tokens": int(row["output_tokens"]),
+                    "total_tokens": int(row["total_tokens"]),
+                }
+            )
+
+        review_agent_df = node_df.groupby("agent", as_index=False).agg(
+            calls=("node_id", "count")
+        )
+        for _, row in review_agent_df.iterrows():
+            agent_rows.append(
+                {
+                    "review_id": review_id,
+                    "review_name": review_name,
+                    "agent": row["agent"],
+                    "calls": int(row["calls"]),
+                }
+            )
+
+    review_df = pd.DataFrame(review_rows)
+    review_model_df = pd.DataFrame(model_rows)
+    review_agent_df = pd.DataFrame(agent_rows)
+    return review_df, review_model_df, review_agent_df, missing_token_nodes, total_runs
+
+
+def build_model_average(
+    review_df: pd.DataFrame, review_model_df: pd.DataFrame
+) -> pd.DataFrame:
+    if review_df.empty:
+        return pd.DataFrame(
+            columns=[
+                "model",
+                "avg_input_tokens",
+                "avg_output_tokens",
+                "avg_total_tokens",
+            ]
+        )
+
+    review_count = int(review_df.shape[0])
+    if review_model_df.empty:
+        return pd.DataFrame(
+            columns=[
+                "model",
+                "avg_input_tokens",
+                "avg_output_tokens",
+                "avg_total_tokens",
+            ]
+        )
+
+    model_totals = review_model_df.groupby("model", as_index=False).agg(
+        input_tokens=("input_tokens", "sum"),
+        output_tokens=("output_tokens", "sum"),
+        total_tokens=("total_tokens", "sum"),
+        review_coverage=("review_id", "nunique"),
     )
-    fig.update_layout(title=title, height=520)
-    return fig
+    return (
+        model_totals.assign(
+            avg_input_tokens=lambda df: df["input_tokens"] / review_count,
+            avg_output_tokens=lambda df: df["output_tokens"] / review_count,
+            avg_total_tokens=lambda df: df["total_tokens"] / review_count,
+        )
+        .loc[
+            :,
+            [
+                "model",
+                "avg_input_tokens",
+                "avg_output_tokens",
+                "avg_total_tokens",
+                "review_coverage",
+            ],
+        ]
+        .sort_values("avg_total_tokens", ascending=False)
+    )
+
+
+def build_agent_average(
+    review_df: pd.DataFrame, review_agent_df: pd.DataFrame
+) -> pd.DataFrame:
+    if review_df.empty:
+        return pd.DataFrame(columns=["agent", "avg_calls"])
+
+    if review_agent_df.empty:
+        return pd.DataFrame(columns=["agent", "avg_calls"])
+
+    all_agents = sorted(review_agent_df["agent"].unique())
+    all_reviews = review_df[["review_id"]].drop_duplicates()
+    complete_index = pd.MultiIndex.from_product(
+        [all_reviews["review_id"].tolist(), all_agents], names=["review_id", "agent"]
+    )
+    calls_df = (
+        review_agent_df[["review_id", "agent", "calls"]]
+        .set_index(["review_id", "agent"])
+        .reindex(complete_index, fill_value=0)
+        .reset_index()
+    )
+
+    return (
+        calls_df.groupby("agent", as_index=False)
+        .agg(avg_calls=("calls", "mean"))
+        .assign(avg_calls=lambda df: df["avg_calls"].round(2))
+        .sort_values("avg_calls", ascending=False)
+    )
 
 
 st.set_page_config(page_title="Agent Context Dashboard", layout="wide")
 st.title("Agent Context Dashboard")
-st.caption("Visualize agent call diagram and input/output token cost.")
+st.caption(
+    "Aggregate every agent_context.json under a folder and compute per-review averages."
+)
 
 with st.sidebar:
     st.header("Data Source")
-    context_path = st.text_input("agent_context.json path", str(DEFAULT_CONTEXT))
+    context_path = st.text_input(
+        "Review folder or agent_context.json path", str(DEFAULT_CONTEXT_DIR)
+    )
     estimate_from_io = st.checkbox(
         "Estimate tokens from input/output when missing", value=True
     )
@@ -402,35 +533,42 @@ if not path.exists():
     st.error(f"File not found: {path}")
     st.stop()
 
-records = parse_agent_context(path)
-if not records:
-    st.warning("No valid records found in the selected file.")
+context_files = collect_agent_context_files(path)
+if not context_files:
+    st.warning("No agent_context.json files found under the selected path.")
     st.stop()
 
-node_df, edge_df, run_df, agent_df, missing_token_nodes = flatten_runs(
-    records, estimate_from_io=estimate_from_io
+review_df, review_model_df, review_agent_df, missing_token_nodes, total_runs = (
+    build_review_summary(context_files, estimate_from_io=estimate_from_io)
 )
 
-if node_df.empty:
-    st.warning("No agent nodes found.")
+if review_df.empty:
+    st.warning("No valid review records found in the selected path.")
     st.stop()
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Runs", int(run_df.shape[0]))
-col2.metric("Agent Calls", int(node_df.shape[0]))
-col3.metric("Input Tokens", f"{int(node_df['input_tokens'].sum()):,}")
-col4.metric("Output Tokens", f"{int(node_df['output_tokens'].sum()):,}")
+avg_review_duration_ms = float(review_df["total_duration_ms"].mean())
+avg_review_input_tokens = float(review_df["input_tokens"].mean())
+avg_review_output_tokens = float(review_df["output_tokens"].mean())
 
-source_counts = node_df["token_source"].value_counts().to_dict()
-explicit_count = int(source_counts.get("explicit", 0))
-estimated_count = int(source_counts.get("estimated", 0))
+col1.metric("Reviews", int(review_df.shape[0]))
+col2.metric("Runs", total_runs)
+col3.metric("Avg Review Time", f"{avg_review_duration_ms / 1000:,.2f} s")
+col4.metric(
+    "Avg Review Tokens",
+    f"{avg_review_input_tokens:,.0f} / {avg_review_output_tokens:,.0f}",
+)
+
+model_avg_df = build_model_average(review_df, review_model_df)
+agent_avg_df = build_agent_average(review_df, review_agent_df)
+
 if estimate_from_io:
     st.caption(
-        f"Token source: explicit {explicit_count}, estimated {estimated_count}, none {missing_token_nodes}."
+        f"Scanned {len(context_files)} files. Missing token nodes after estimation: {missing_token_nodes}."
     )
 else:
     st.caption(
-        f"Token source: explicit {explicit_count}, none {missing_token_nodes}. "
+        f"Scanned {len(context_files)} files. Missing token nodes: {missing_token_nodes}. "
         "Enable estimation in the sidebar to infer tokens from input/output."
     )
 
@@ -440,120 +578,74 @@ if missing_token_nodes > 0:
         "These calls are shown as 0 token cost."
     )
 
-tab_overview, tab_run, tab_agent, tab_raw = st.tabs(
-    ["Overview", "Per Run Diagram", "Per Agent", "Raw Data"]
+tab_overview, tab_model, tab_agent, tab_raw = st.tabs(
+    ["Overview", "Per Model", "Per Agent", "Raw Data"]
 )
 
 with tab_overview:
-    st.subheader("Global Call Diagram")
-    global_fig = make_sankey(edge_df, "All Agent Transitions")
-    if global_fig is None:
-        st.info("No transitions found. The data may contain only single-level calls.")
-    else:
-        st.plotly_chart(global_fig, use_container_width=True)
-
-    st.subheader("Token Cost by Agent")
-    token_long = agent_df.melt(
-        id_vars=["agent"],
-        value_vars=["input_tokens", "output_tokens"],
-        var_name="token_type",
-        value_name="tokens",
-    )
-    token_long["token_type"] = token_long["token_type"].map(
-        {"input_tokens": "Input", "output_tokens": "Output"}
-    )
-    token_fig = px.bar(
-        token_long,
-        x="agent",
-        y="tokens",
-        color="token_type",
-        barmode="stack",
-        title="Input/Output Token Cost per Agent",
-        labels={"agent": "Agent", "tokens": "Tokens", "token_type": "Type"},
-    )
-    token_fig.update_layout(xaxis_tickangle=-25, height=430)
-    st.plotly_chart(token_fig, use_container_width=True)
-
-with tab_run:
-    st.subheader("Call Diagram for a Specific Run")
-    run_labels = {
-        int(row["run_id"]): f"Run {int(row['run_id'])}: {row['root_agent']}"
-        for _, row in run_df.iterrows()
-    }
-    selected_run = st.selectbox(
-        "Run",
-        options=run_df["run_id"].tolist(),
-        format_func=lambda rid: run_labels.get(int(rid), f"Run {rid}"),
-    )
-
-    run_edges = edge_df[edge_df["run_id"] == selected_run].copy()
-    run_nodes = node_df[node_df["run_id"] == selected_run].copy()
-    run_meta = run_df[run_df["run_id"] == selected_run].iloc[0]
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Run Input Tokens", f"{int(run_meta['input_tokens']):,}")
-    c2.metric("Run Output Tokens", f"{int(run_meta['output_tokens']):,}")
-    c3.metric("Run Calls", int(run_meta["nodes"]))
-
-    run_fig = make_sankey(run_edges, f"Run {selected_run} - Agent Transitions")
-    if run_fig is None:
-        st.info("No child transitions found in this run.")
-    else:
-        st.plotly_chart(run_fig, use_container_width=True)
-
-    st.dataframe(
-        run_nodes[
-            [
-                "node_id",
-                "parent_node_id",
-                "depth",
-                "agent",
-                "model",
-                "duration_ms",
-                "input_tokens",
-                "output_tokens",
-                "total_tokens",
-                "token_source",
-            ]
+    st.subheader("Average Per Review")
+    summary_df = pd.DataFrame(
+        [
+            {
+                "metric": "Total time (ms)",
+                "average": round(float(review_df["total_duration_ms"].mean()), 2),
+            },
+            {
+                "metric": "Input tokens",
+                "average": round(float(review_df["input_tokens"].mean()), 2),
+            },
+            {
+                "metric": "Output tokens",
+                "average": round(float(review_df["output_tokens"].mean()), 2),
+            },
+            {
+                "metric": "Total tokens",
+                "average": round(float(review_df["total_tokens"].mean()), 2),
+            },
         ]
-        .sort_values(["depth", "node_id"])
-        .reset_index(drop=True),
+    )
+    st.dataframe(
+        summary_df,
         use_container_width=True,
     )
+
+    st.subheader("Per Review Summary")
+    st.dataframe(
+        review_df.sort_values("review_name").reset_index(drop=True),
+        use_container_width=True,
+    )
+
+with tab_model:
+    st.subheader("Average Tokens Per Review by Model")
+    if model_avg_df.empty:
+        st.info("No model data found.")
+    else:
+        st.dataframe(
+            model_avg_df.assign(
+                avg_input_tokens=lambda df: df["avg_input_tokens"].round(2),
+                avg_output_tokens=lambda df: df["avg_output_tokens"].round(2),
+                avg_total_tokens=lambda df: df["avg_total_tokens"].round(2),
+            ),
+            use_container_width=True,
+        )
 
 with tab_agent:
-    st.subheader("Per-Agent Summary")
+    st.subheader("Average Agent Calls Per Review")
+    if agent_avg_df.empty:
+        st.info("No agent data found.")
+    else:
+        st.dataframe(agent_avg_df, use_container_width=True)
+
+    st.subheader("Per Review Agent Calls")
     st.dataframe(
-        agent_df[
-            [
-                "agent",
-                "calls",
-                "input_tokens",
-                "output_tokens",
-                "total_tokens",
-                "avg_duration_ms",
-                "explicit_token_nodes",
-                "estimated_token_nodes",
-            ]
-        ].assign(avg_duration_ms=lambda x: x["avg_duration_ms"].round(1)),
+        review_agent_df.sort_values(["agent", "review_name"]).reset_index(drop=True),
         use_container_width=True,
     )
 
-    selected_agent = st.selectbox("Agent", options=sorted(agent_df["agent"].unique()))
-    agent_edges = edge_df[
-        (edge_df["source_agent"] == selected_agent)
-        | (edge_df["target_agent"] == selected_agent)
-    ].copy()
-    agent_fig = make_sankey(agent_edges, f"Transitions Related to {selected_agent}")
-    if agent_fig is None:
-        st.info("No transitions found for this agent.")
-    else:
-        st.plotly_chart(agent_fig, use_container_width=True)
-
 with tab_raw:
-    st.subheader("Run Data")
-    st.dataframe(run_df, use_container_width=True)
-    st.subheader("Node Data")
-    st.dataframe(node_df, use_container_width=True)
-    st.subheader("Edge Data")
-    st.dataframe(edge_df, use_container_width=True)
+    st.subheader("Review Data")
+    st.dataframe(review_df, use_container_width=True)
+    st.subheader("Model Data")
+    st.dataframe(review_model_df, use_container_width=True)
+    st.subheader("Agent Data")
+    st.dataframe(review_agent_df, use_container_width=True)
