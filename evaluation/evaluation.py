@@ -23,7 +23,7 @@ from config import (
 EVALUATORS = [
     GroundingEvaluator(),
     AlignmentEvaluator(),
-    LaajEvaluator(),
+    # LaajEvaluator(),
     RepetitiveEvaluator(),
 ]
 
@@ -58,6 +58,30 @@ def convert_review_data(data: dict, group: EvaluationGroup) -> CodeReviewEntry:
         return from_dict(CodeReviewEntry, data)
 
 
+def merge_partial_data(existing: Any, new_value: Any) -> Any:
+    if isinstance(existing, dict) and isinstance(new_value, dict):
+        merged = dict(existing)
+        for key, value in new_value.items():
+            if key in merged:
+                merged[key] = merge_partial_data(merged[key], value)
+            else:
+                merged[key] = value
+        return merged
+    return new_value
+
+
+def load_existing_results(output_jsonl) -> Dict[int, dict]:
+    existing_results: Dict[int, dict] = {}
+    if not output_jsonl.exists():
+        return existing_results
+
+    for row in iter_jsonl_entries(output_jsonl):
+        pr_id = row.get("pr_id")
+        if isinstance(pr_id, int):
+            existing_results[pr_id] = row
+    return existing_results
+
+
 def main() -> None:
     _PR_MAPPING_CACHE = load_pull_request_mapping()
 
@@ -75,8 +99,7 @@ def main() -> None:
             )
             continue
 
-        with output_jsonl.open("w", encoding="utf-8") as f:
-            pass  # clear existing content
+        merged_results = load_existing_results(output_jsonl)
 
         for review_data in iter_jsonl_entries(review_jsonl):
             review_obj = convert_review_data(review_data, group)
@@ -102,9 +125,16 @@ def main() -> None:
                 results=evaluation_result,
             )
 
-            append_jsonl_entry(output_jsonl.open("a", encoding="utf-8"), asdict(result))
+            new_row = asdict(result)
+            merged_results[review_obj.pr_id] = merge_partial_data(
+                merged_results.get(review_obj.pr_id, {}), new_row
+            )
 
             del result  # free memory
+
+        with output_jsonl.open("w", encoding="utf-8") as file:
+            for row in merged_results.values():
+                append_jsonl_entry(file, row)
 
     end_time = time.time()
     print(f"Evaluation completed in {end_time - start_time:.2f} seconds.")

@@ -1,6 +1,7 @@
 import json
 import re
 import sys
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, List, Dict, Iterator, TextIO
 from pathlib import Path
@@ -46,8 +47,30 @@ def load_jsonl_entry(path: Path, index: int) -> Dict[str, Any]:
     return json.loads(lines[index])
 
 
+def _json_default(value: Any) -> Any:
+    if is_dataclass(value):
+        return asdict(value)
+
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:
+            pass
+
+    if hasattr(value, "tolist"):
+        try:
+            return value.tolist()
+        except Exception:
+            pass
+
+    if isinstance(value, Path):
+        return str(value)
+
+    return str(value)
+
+
 def append_jsonl_entry(file: TextIO, entry: Dict[str, Any]) -> None:
-    file.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    file.write(json.dumps(entry, ensure_ascii=False, default=_json_default) + "\n")
     file.flush()
 
 

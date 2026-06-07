@@ -40,8 +40,10 @@ class AlignmentResult:
     interpretation_f1: float
     comment_refs: List[str] = field(default_factory=list)
     comment_cands: List[str] = field(default_factory=list)
+    comment_matches: List[Tuple[int, int, float]] = field(default_factory=list)
     interp_refs: List[str] = field(default_factory=list)
     interp_cands: List[str] = field(default_factory=list)
+    interp_matches: List[Tuple[int, int, float]] = field(default_factory=list)
 
 
 def _split_sentences(text: str) -> List[str]:
@@ -188,17 +190,16 @@ def _slm_pair_matched(
 def _sentence_alignment(
     references: List[str],
     candidates: List[str],
-) -> Tuple[float, float, float]:
+) -> Tuple[float, float, float, List[Tuple[int, int, float]]]:
     if not references or not candidates:
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, []
 
     matches = _sbert_matching(references, candidates)
     precision = safe_div(len(matches), len(candidates))
     recall = safe_div(len(matches), len(references))
     f1 = safe_div(2 * precision * recall, precision + recall)
-    print(f"SLM alignment: precision={precision:.4f}, recall={recall:.4f}, f1={f1:.4f}")
 
-    return precision, recall, f1
+    return precision, recall, f1, matches
 
 
 class AlignmentEvaluator(Evaluator):
@@ -207,11 +208,11 @@ class AlignmentEvaluator(Evaluator):
     ) -> AlignmentResult:
         comment_refs = _collect_comment_references(pr)
         comment_cands = _collect_comment_candidates(review.content)
-        cp, cr, cf1 = _sentence_alignment(comment_refs, comment_cands)
+        cp, cr, cf1, comment_matches = _sentence_alignment(comment_refs, comment_cands)
 
         interp_refs = _collect_interpretation_references(pr)
         interp_cands = _collect_interpretation_candidates(review.content)
-        ip, ir, if1 = _sentence_alignment(interp_refs, interp_cands)
+        ip, ir, if1, interp_matches = _sentence_alignment(interp_refs, interp_cands)
 
         return AlignmentResult(
             comment_precision=clamp01(cp),
@@ -222,6 +223,8 @@ class AlignmentEvaluator(Evaluator):
             interpretation_f1=clamp01(if1),
             comment_refs=comment_refs,
             comment_cands=comment_cands,
+            comment_matches=comment_matches,
             interp_refs=interp_refs,
             interp_cands=interp_cands,
+            interp_matches=interp_matches,
         )
