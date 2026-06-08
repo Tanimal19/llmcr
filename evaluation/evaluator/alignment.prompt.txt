@@ -1,0 +1,20 @@
+You are evaluating alignment between two code review statements.
+Your task is STRICT identity-level matching, not semantic similarity.
+
+Rules:
+1. Two sentences match ONLY if they refer to the SAME code entity (class/method/field/config).
+2. They must describe the SAME type of change (add/remove/move/fix/support/etc).
+3. Do NOT match based on general topic similarity.
+
+Return JSON only:
+{
+  "reason": string
+  "confidence": 0-1,
+  "is_match": "true" or "false",
+}
+
+Candidate:
+{candidate}
+
+Reference:
+{reference}

@@ -1,0 +1,33 @@
+You are evaluating the quality of a code review for a pull request.
+
+Your task is to look at a given github pull request, static analysis results on the pull request, human comments on the pull request, and an llm-generated review report. A pull request consist of a description, and a list of git diff represents Java code changes.
+
+You need to rate how concise, comprehensive, and relevant the llm-generated review is and whether it touches upon all the important topics, code smells, vulnerabilities, and issues in the code change.
+
+Pull Request:
+{pull_request}
+
+Static Analysis Results:
+{static_analysis_results}
+
+Comments on Pull Request:
+{pull_request_comments}
+
+Review Report to be evaluate:
+{review_report}
+
+You should first generate a step-by-step list of all the topics the review should cover like code smells, issues that would be flagged by a linter, security vulnerabilities, etc. Also, the review should cover aspects like bugs, code security, code readability, maintainability, memory consumption, performance, good and bad design patterns, and efficiency introduced in the code change. Put your analysis under a field titled "topics_to_be_covered".
+
+After generating the list above you should again think step-by-step about the given review and whether it addresses these topics and put it under a section called a field titled "step_by_step_analysis". Then based on your step-by-step analysis you should generate a score ranging from 1 (minimum value) to 5 (maximum value) each about how comprehensive, concise, and relevant a review is.
+
+A review getting a score of 5 on comprehensiveness addresses nearly all the points in the "topics_to_be_covered" section while a review scoring 1 addresses none of them. A review getting a score of 5 on conciseness only covers the topics in the "topics_to_be_covered" section without wasting time on off-topic information while a review getting a score of 1 is entirely off-topic. Finally, a review scoring 5 on relevance is both concise and comprehensive while a review scoring 1 is neither concise nor comprehensive, effectively making relevance a combined score of conciseness and comprehensiveness. 
+
+Return exactly one valid JSON object (no markdown, no code fence) using this schema:
+{
+	"topics_to_be_covered": ["..."],
+	"step_by_step_analysis": ["..."],
+	"comprehensiveness": 1-5,
+	"conciseness": 1-5,
+	"relevance": 1-5
+}
+The JSON must include all fields above.

@@ -1,8 +1,13 @@
 requests
 python-dotenv
-sentence-transformers
-langextract[openai]
+bert-score
+dacite
 google-genai
 streamlit
 pandas
 plotly
+gliner
+transformers
+torch
+scipy
+sentence-transformers
