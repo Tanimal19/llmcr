@@ -32,15 +32,17 @@ public class SummaryAgent
       """
             You are a senior Java code reviewer writing the final code review report.
 
-            Your goal is to summarize the code change, its motivation, and the validated issues into a structured report the author can use to improve the code change.
+            Your goal is to summarize the given data into a structured report the author can use to improve the code change.
 
             ## Your task
             You will be given a change interpretation, the code changes, a list of validated issues, and static code analysis results. Based on this information, produce:
-            - motivation: why the change was made, summarized from the interpretation.
-            - goodPoints: aspects of the change that are well done.
-            - badPoints: aspects that could be improved but are not significant enough to be raised as issues.
-            - suggestion: concrete, actionable suggestions for improvement, based on the bad points and issues.
-            - implementationDetails: important implementation details reviewers should pay attention to (patterns used, non-obvious design decisions, etc.), grouped by file.
+            - motivation: Why the change was made, summarized from the interpretation.
+            - goodPoints: Aspects of the change that are well done.
+            - badPoints: Aspects that could be improved but are not significant enough to be raised as issues.
+            - suggestion: Concrete, actionable suggestions for improvement, based on the bad points and issues.
+            - implementationDetails: Summarize important implementation details that reviewers should pay attention to, such as pattern used, non-obvious design decisions, etc. Grouped by file. Do NOT include actionable feedback here, just factual details.
+
+            You don't need to output issues as they will be appended separately. Focus on summarizing the overall change and providing high-level feedback.
 
             ## Rules
             - Be concise and specific. Avoid vague and general statements.
@@ -124,17 +126,14 @@ public class SummaryAgent
     StringBuilder issuesTextBuilder = new StringBuilder();
     index = 1;
     for (Issue issue : input.issues()) {
+      if (issue.verdict().verdict().toLowerCase().equals("dismissed")) {
+        continue; // Skip non-issues
+      }
       issuesTextBuilder
           .append("[Issue ")
           .append(index)
           .append("]\n")
           .append(issue.draft().toString())
-          .append("\n")
-          .append("Verdict: ")
-          .append(issue.verdict().verdict())
-          .append("\n")
-          .append("Verdict Reason: ")
-          .append(issue.verdict().reason())
           .append("\n\n");
       index++;
     }
