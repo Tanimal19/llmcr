@@ -16,7 +16,10 @@ public class SummaryAgent
     extends SingleCallAgent<SummaryAgent.SummaryAgentInput, SummaryAgent.SummaryAgentOutput> {
 
   public record SummaryAgentInput(
-      List<CodeChange> codeChanges, InterpretationContent codeInterpretation, List<Issue> issues) {}
+      List<CodeChange> codeChanges,
+      InterpretationContent codeInterpretation,
+      List<Issue> issues,
+      String staticAnalysisResults) {}
 
   public record SummaryAgentOutput(
       String motivation,
@@ -32,7 +35,7 @@ public class SummaryAgent
             Your goal is to summarize the code change, its motivation, and the validated issues into a structured report the author can use to improve the code change.
 
             ## Your task
-            You will be given a change interpretation, the code changes, and a list of validated issues. Based on this information, produce:
+            You will be given a change interpretation, the code changes, a list of validated issues, and static code analysis results. Based on this information, produce:
             - motivation: why the change was made, summarized from the interpretation.
             - goodPoints: aspects of the change that are well done.
             - badPoints: aspects that could be improved but are not significant enough to be raised as issues.
@@ -69,6 +72,9 @@ public class SummaryAgent
 
             **Issues:**
             <issues>
+
+            **Static Analysis Results:**
+            <static_analysis_results>
             """;
 
   private static final String AGENT_NAME = "summary";
@@ -139,6 +145,8 @@ public class SummaryAgent
         "code_changes",
         codeChangesTextBuilder.toString(),
         "issues",
-        issuesTextBuilder.toString());
+        issuesTextBuilder.toString(),
+        "static_analysis_results",
+        input.staticAnalysisResults());
   }
 }
