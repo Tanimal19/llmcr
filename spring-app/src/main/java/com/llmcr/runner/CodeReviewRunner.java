@@ -32,10 +32,11 @@ public class CodeReviewRunner implements ApplicationRunner {
     List<String> nonOptionArgs = args.getNonOptionArgs();
     Integer jsonlIndex = parseJsonlIndex(args);
     boolean useMock = args.containsOption("use-mock");
+    boolean useSingleAgent = args.containsOption("single-agent");
 
     ReviewExecutionPlan plan = buildExecutionPlan(nonOptionArgs, jsonlIndex, useMock);
-    confirmExecution(plan);
-    executePlan(plan);
+    confirmExecution(plan, useSingleAgent);
+    executePlan(plan, useSingleAgent);
   }
 
   private ReviewExecutionPlan buildExecutionPlan(
@@ -81,23 +82,26 @@ public class CodeReviewRunner implements ApplicationRunner {
     throw new IllegalArgumentException("Unsupported input file type. Use .json or .jsonl");
   }
 
-  private void executePlan(ReviewExecutionPlan plan) {
+  private void executePlan(ReviewExecutionPlan plan, boolean useSingleAgent) {
     switch (plan.mode()) {
-      case MOCK -> codeReviewService.execute(new CodeReviewInput(null, true));
-      case JSON_FILE -> codeReviewService.execute(new CodeReviewInput(plan.inputFilePath(), false));
+      case MOCK -> codeReviewService.execute(new CodeReviewInput(null, null, true, useSingleAgent));
+      case JSON_FILE ->
+          codeReviewService.execute(
+              new CodeReviewInput(plan.inputFilePath(), null, false, useSingleAgent));
       case JSONL_SINGLE_INDEX ->
           codeReviewService.execute(
-              new CodeReviewInput(plan.inputFilePath(), plan.jsonlIndex(), false));
+              new CodeReviewInput(plan.inputFilePath(), plan.jsonlIndex(), false, useSingleAgent));
       case JSONL_ALL_ITEMS -> {
         for (int i = 0; i < plan.jsonlItemCount(); i++) {
           System.out.printf("Running review for JSONL item %d/%d%n", i + 1, plan.jsonlItemCount());
-          codeReviewService.execute(new CodeReviewInput(plan.inputFilePath(), i, false));
+          codeReviewService.execute(
+              new CodeReviewInput(plan.inputFilePath(), i, false, useSingleAgent));
         }
       }
     }
   }
 
-  private void confirmExecution(ReviewExecutionPlan plan) {
+  private void confirmExecution(ReviewExecutionPlan plan, boolean useSingleAgent) {
     System.out.println();
     System.out.println("Review execution plan:");
     switch (plan.mode()) {
@@ -117,6 +121,7 @@ public class CodeReviewRunner implements ApplicationRunner {
         System.out.println("- Total items: " + plan.jsonlItemCount());
       }
     }
+    System.out.println("- Single agent mode: " + useSingleAgent);
 
     String answer = readConfirmationAnswer();
     if (!isConfirmationAccepted(answer)) {

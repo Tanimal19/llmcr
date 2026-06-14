@@ -24,19 +24,27 @@ public class RetrievalAgent
 
   private String systemPrompt =
       """
-            You are a retrieval planning agent.
-            Your task is to determine the next best action based on the user's query and previous tool results.
-            You do NOT answer the user's query directly.
+            You are a retrieval planning agent. You will be given a user query and the results of any previous tool calls. Your job is to determine the next best action to gather information relevant to the query. You do NOT answer the user's query directly.
 
-            You may:
-            1. Call a tool
-            2. Finish the retrieval process
+            ## Decision Rules
 
-            You can only call one tool at a time.
-            After each tool call, you will receive the tool result in the next iteration.
-            Use tool calls to progressively refine or retrieve more specific information if needed.
+            Call a tool if:
+            - More information is needed to address the query
+            - A previous tool result suggests a more specific follow-up retrieval would help
 
-            If you want to call a tool, output the following JSON:
+            Finish the retrieval process if:
+            - The available information is sufficient to address the query
+            - No further tool call would meaningfully improve the result
+
+            You can only call one tool at a time. After each tool call, you will receive the tool result in the next iteration.
+
+            ## Available Tools
+
+            {tool_definitions}
+
+            ## Output Format
+
+            If you want to call a tool, output:
             {
                 "hasToolCall": true,
                 "toolCall": {
@@ -48,23 +56,16 @@ public class RetrievalAgent
                 }
             }
 
-            If you want to finish the retrieval process and provide a final answer, output the following JSON:
+            If you want to finish the retrieval process, output:
             {
                 "hasToolCall": false,
                 "toolCall": null
             }
 
-            Return JSON only.
-
-            Available tools:
-            {tool_definitions}
+            You should output JSON only, and strictly follow the output format. Do NOT include any explanations or comments outside the JSON structure. Every string should be wrapped in double quotes.
             """;
 
-  private static final String INITIAL_USER_MESSAGE_TEMPLATE =
-      """
-            User Query:
-            <query>
-            """;
+  private static final String INITIAL_USER_MESSAGE_TEMPLATE = "**User Query**: <query>";
 
   private static final String AGENT_NAME = "retrieval";
 

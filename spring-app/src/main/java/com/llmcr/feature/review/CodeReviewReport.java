@@ -2,160 +2,127 @@ package com.llmcr.feature.review;
 
 import java.util.List;
 
+/**
+ *
+ *
+ * <ul>
+ *   <li>prId: pull request number
+ *   <li>prTitle: pull request title
+ *   <li>interpretation: LLM's interpretation of the code change
+ *   <li>content: structured review result
+ *   <li>staticAnalysisResults: raw output from static analysis tools
+ * </ul>
+ */
 public record CodeReviewReport(
     int prId,
     String prTitle,
-    ReportContent content,
     InterpretationContent interpretation,
-    List<ChecklistItem> checklistItems,
+    ReviewReportContent content,
     String staticAnalysisResults) {
 
-  public record CodeChange(String filePath, String diffContent) {}
+  /**
+   *
+   *
+   * <ul>
+   *   <li>filePath: path of the changed file
+   *   <li>diffContent: diff text for this file
+   * </ul>
+   */
+  public record CodeChange(String filePath, String diffContent) {
+    public String toString() {
+      return "File: " + filePath + "\nDiff:\n" + diffContent;
+    }
+  }
 
-  public record ReportContent(
+  /**
+   *
+   *
+   * <ul>
+   *   <li>changeDescription: what did the code change do
+   *   <li>changeMotivation: why the original code was insufficient and what problem the change is
+   *       trying to solve
+   * </ul>
+   */
+  public record InterpretationContent(String changeDescription, String changeMotivation) {}
+
+  /**
+   *
+   *
+   * <ul>
+   *   <li>motivation: why the change was made, summarized from the interpretation
+   *   <li>suggestion: overall suggestion for the PR
+   *   <li>goodPoints: positive aspects of the change
+   *   <li>badPoints: negative aspects of the change
+   *   <li>implementationDetails: per-file summaries of how the change was implemented
+   *   <li>issues: list of potential issues identified in the change
+   * </ul>
+   */
+  public record ReviewReportContent(
       String motivation,
+      String suggestion,
       List<String> goodPoints,
       List<String> badPoints,
-      String suggestion,
       List<ImplementationDetails> implementationDetails,
       List<Issue> issues) {}
 
-  public record ImplementationDetails(String filename, List<String> details) {}
+  /**
+   *
+   *
+   * <ul>
+   *   <li>dimension: Compatibility | Design | Security | Functionality | Performance |
+   *       Maintainability | Readability
+   *   <li>severity: Critical | Major | Minor
+   *   <li>location: filename::line_number
+   *   <li>title: short issue title (max 10 words)
+   *   <li>description: what the issue is and why it is a problem
+   *   <li>assumption: what was assumed for this issue to be valid
+   * </ul>
+   */
+  public record IssueDraft(
+      String dimension,
+      String severity,
+      String location,
+      String title,
+      String description,
+      String assumption) {
 
-  public record Issue(String title, String detail, String location, String type) {}
-
-  public record InterpretationContent(String changeDescription, String changeMotivation) {}
-
-  public record ChecklistItem(String title, ChecklistItemAnswer answer) {}
-
-  public record ChecklistItemAnswer(
-      String finalAnswer, String analysis, List<EvidenceItem> evidence) {}
-
-  public record EvidenceItem(String file, String lines, String reason) {}
-
-  public String toMarkdown() {
-    StringBuilder sb = new StringBuilder();
-
-    // Summary Report section
-    sb.append("# Code Review Report\n\n");
-    sb.append("**PR ID:** ").append(this.prId()).append("\n\n");
-    sb.append("**PR Title:** ").append(this.prTitle()).append("\n\n");
-
-    if (this != null && this.content() != null) {
-      sb.append("## Motivation\n\n");
-      if (this.content().motivation() != null && !this.content().motivation().isBlank()) {
-        sb.append(this.content().motivation()).append("\n\n");
-      } else {
-        sb.append("_No motivation provided._\n\n");
-      }
-
-      sb.append("## Good Points\n\n");
-      if (this.content().goodPoints() != null && !this.content().goodPoints().isEmpty()) {
-        for (String point : this.content().goodPoints()) {
-          sb.append("- ").append(point).append("\n");
-        }
-        sb.append("\n");
-      } else {
-        sb.append("_No good points provided._\n\n");
-      }
-
-      sb.append("## Bad Points\n\n");
-      if (this.content().badPoints() != null && !this.content().badPoints().isEmpty()) {
-        for (String point : this.content().badPoints()) {
-          sb.append("- ").append(point).append("\n");
-        }
-        sb.append("\n");
-      } else {
-        sb.append("_No bad points provided._\n\n");
-      }
-
-      sb.append("## Suggestion\n\n");
-      if (this.content().suggestion() != null && !this.content().suggestion().isBlank()) {
-        sb.append(this.content().suggestion()).append("\n\n");
-      } else {
-        sb.append("_No suggestion provided._\n\n");
-      }
-
-      sb.append("## Implementation Details\n\n");
-      if (this.content().implementationDetails() != null
-          && !this.content().implementationDetails().isEmpty()) {
-        for (var detailsByFile : this.content().implementationDetails()) {
-          String filename =
-              detailsByFile.filename() != null ? detailsByFile.filename() : "(unknown file)";
-          sb.append("#### ").append(filename).append("\n\n");
-          if (detailsByFile.details() != null && !detailsByFile.details().isEmpty()) {
-            for (String detail : detailsByFile.details()) {
-              sb.append("- ").append(detail).append("\n");
-            }
-          } else {
-            sb.append("- _No details provided._\n");
-          }
-          sb.append("\n");
-        }
-      }
-
-      sb.append("## Issues\n\n");
-      if (this.content().issues() != null && !this.content().issues().isEmpty()) {
-        sb.append("| Type | Title | Location | Detail |\n");
-        sb.append("|------|-------|----------|--------|\n");
-        for (Issue issue : this.content().issues()) {
-          String location = issue.location() != null ? issue.location() : "";
-          String type = issue.type() != null ? issue.type() : "";
-          sb.append("| ")
-              .append(type)
-              .append(" | ")
-              .append(issue.title())
-              .append(" | ")
-              .append(location)
-              .append(" | ")
-              .append(issue.detail())
-              .append(" |\n");
-        }
-        sb.append("\n");
-      }
-    } else {
-      sb.append("_No summary available._\n\n");
+    public String toString() {
+      return String.format(
+          "Dimension: %s\nSeverity: %s\nLocation: %s\nTitle: %s\nDescription: %s\nAssumption: %s",
+          dimension, severity, location, title, description, assumption);
     }
-
-    // Appendix with interpretation results
-    sb.append("\n\n");
-    sb.append("# Appendix: Original Interpretation Results\n\n");
-    if (this != null && this.interpretation() != null) {
-      InterpretationContent interpretation = this.interpretation();
-      if (interpretation.changeDescription() != null) {
-        sb.append("### Change Description\n\n");
-        sb.append(interpretation.changeDescription()).append("\n\n");
-      }
-      if (interpretation.changeMotivation() != null) {
-        sb.append("### Change Motivation\n\n");
-        sb.append(interpretation.changeMotivation()).append("\n\n");
-      }
-    } else {
-      sb.append("_No interpretation results available._\n\n");
-    }
-
-    // Appendix with detailed checklist item answers
-    sb.append("\n\n");
-    sb.append("# Appendix: Detailed Checklist Item Answers\n\n");
-    if (this != null && this.checklistItems() != null && !this.checklistItems().isEmpty()) {
-      for (ChecklistItem itemAnswer : this.checklistItems()) {
-        sb.append("### ").append(itemAnswer.title()).append("\n\n");
-        sb.append(itemAnswer.answer().finalAnswer()).append("\n");
-        sb.append(itemAnswer.answer().analysis()).append("\n");
-        for (EvidenceItem evdience : itemAnswer.answer().evidence()) {
-          sb.append("- ")
-              .append(evdience.file())
-              .append(":::")
-              .append(evdience.lines())
-              .append(":::")
-              .append(evdience.reason())
-              .append("\n");
-        }
-      }
-    } else {
-      sb.append("_No checklist item answers available._\n\n");
-    }
-
-    return sb.toString();
   }
+
+  /**
+   *
+   *
+   * <ul>
+   *   <li>verdict: confirmed | dismissed | needs-discussion
+   *   <li>confidence: high | medium | low
+   *   <li>reason: one paragraph explaining the verdict
+   *   <li>evidence: list of evidence supporting the verdict
+   * </ul>
+   */
+  public record IssueVerdict(
+      String verdict, String confidence, String reason, List<String> evidence) {}
+
+  /**
+   *
+   *
+   * <ul>
+   *   <li>draft: the drafted issue before review
+   *   <li>verdict: the final verdict on whether the issue is valid
+   * </ul>
+   */
+  public record Issue(IssueDraft draft, IssueVerdict verdict) {}
+
+  /**
+   *
+   *
+   * <ul>
+   *   <li>filename: file the implementation detail refers to
+   *   <li>details: summary of how the change was implemented in this file
+   * </ul>
+   */
+  public record ImplementationDetails(String filename, String details) {}
 }

@@ -4,14 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.llmcr.domain.exception.APIServiceException;
-import com.llmcr.feature.review.CodeReviewReport.ChecklistItem;
-import com.llmcr.feature.review.CodeReviewReport.ChecklistItemAnswer;
 import com.llmcr.feature.review.CodeReviewReport.CodeChange;
-import com.llmcr.feature.review.CodeReviewReport.EvidenceItem;
 import com.llmcr.feature.review.CodeReviewReport.ImplementationDetails;
 import com.llmcr.feature.review.CodeReviewReport.InterpretationContent;
 import com.llmcr.feature.review.CodeReviewReport.Issue;
-import com.llmcr.feature.review.CodeReviewReport.ReportContent;
+import com.llmcr.feature.review.CodeReviewReport.IssueDraft;
+import com.llmcr.feature.review.CodeReviewReport.IssueVerdict;
+import com.llmcr.feature.review.CodeReviewReport.ReviewReportContent;
 import com.llmcr.feature.review.PullRequestParser.ChangedFileEntry;
 import com.llmcr.feature.review.PullRequestParser.PullRequestData;
 import java.nio.file.Files;
@@ -221,21 +220,23 @@ class CodeReviewSupportTest {
     return new CodeReviewReport(
         1001,
         "Test PR",
-        new ReportContent(
+        new InterpretationContent("Adds validation", "Increase robustness"),
+        new ReviewReportContent(
             "Improve parsing",
+            "Add unit tests",
             List.of("Clear structure"),
             List.of("Needs more tests"),
-            "Add unit tests",
-            List.of(new ImplementationDetails("src/A.java", List.of("Added validation"))),
-            List.of(new Issue("Null pointer risk", "Could fail on null", "src/A.java:10", "bug"))),
-        new InterpretationContent("Adds validation", "Increase robustness"),
-        List.of(
-            new ChecklistItem(
-                "Input validation",
-                new ChecklistItemAnswer(
-                    "yes",
-                    "validated",
-                    List.of(new EvidenceItem("src/A.java", "10-20", "checks null"))))),
+            List.of(new ImplementationDetails("src/A.java", "Added validation")),
+            List.of(
+                new Issue(
+                    new IssueDraft(
+                        "Functionality",
+                        "Major",
+                        "src/A.java:10",
+                        "Null pointer risk",
+                        "Could fail on null",
+                        "input may be null"),
+                    new IssueVerdict("confirmed", "high", "Validated by tests", List.of())))),
         "Static analysis results");
   }
 }

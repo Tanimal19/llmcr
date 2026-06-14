@@ -43,6 +43,13 @@ public class ClassNodeEnrichAgent
             - **usage**: A example that show the most important usage scenario of this class, illustrate the one most important example in natural language rather than code.
 
             Do not make assumptions beyond the provided code and documentation.
+
+            ## Output Format
+            {
+                "functional": "a concise description of what this class does (max 100 words)",
+                "relationship": "a concise description of how this class relates to other classes or components in the project (max 100 words)",
+                "usage": "a concise description of the most important usage scenario of this class, illustrate the one most important example in natural language rather than code (max 100 words)"
+            }
             """;
 
   private static final String INITIAL_USER_MESSAGE_TEMPLATE =
@@ -53,11 +60,7 @@ public class ClassNodeEnrichAgent
             ```
 
             Documentation contents at below.
-            -----------------
             <context>
-            -----------------
-
-            <format_instructions>
             """;
 
   private static final String AGENT_NAME = "class-node-enrich";
