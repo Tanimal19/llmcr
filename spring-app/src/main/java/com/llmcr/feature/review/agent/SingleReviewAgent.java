@@ -12,22 +12,22 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SingleReviewAgent
-        extends SingleCallAgent<SingleReviewAgent.SingleReviewAgentInput, SingleReviewAgent.SingleReviewAgentOutput> {
+    extends SingleCallAgent<
+        SingleReviewAgent.SingleReviewAgentInput, SingleReviewAgent.SingleReviewAgentOutput> {
 
-    public record SingleReviewAgentInput(
-            List<CodeChange> codeChanges) {
-    }
+  public record SingleReviewAgentInput(
+      List<CodeChange> codeChanges, String staticAnalysisResults) {}
 
-    public record SingleReviewAgentOutput(
-            String motivation,
-            String suggestion,
-            List<String> goodPoints,
-            List<String> badPoints,
-            List<ImplementationDetails> implementationDetails,
-            List<IssueDraft> issues) {
-    }
+  public record SingleReviewAgentOutput(
+      String motivation,
+      String suggestion,
+      List<String> goodPoints,
+      List<String> badPoints,
+      List<ImplementationDetails> implementationDetails,
+      List<IssueDraft> issues) {}
 
-    private static final String SYSTEM_PROMPT = """
+  private static final String SYSTEM_PROMPT =
+      """
             You are a senior Java code reviewer writing the final code review report.
 
             Your goal is to interpret the code change, identify possible issues, and summurize them into a structured report the author can use to improve the code change.
@@ -70,51 +70,58 @@ public class SingleReviewAgent
             }
             """;
 
-    private static final String INITIAL_USER_MESSAGE_TEMPLATE = """
+  private static final String INITIAL_USER_MESSAGE_TEMPLATE =
+      """
             **Code Changes (diff):**
             <code_changes>
+
+            **Static Analysis Results:**
+            <static_analysis_results>
             """;
 
-    private static final String AGENT_NAME = "single-review";
+  private static final String AGENT_NAME = "single-review";
 
-    public SingleReviewAgent(AgentConfigProvider configProvider, ModelClientFactory modelClientFactory) {
-        super(configProvider, modelClientFactory);
+  public SingleReviewAgent(
+      AgentConfigProvider configProvider, ModelClientFactory modelClientFactory) {
+    super(configProvider, modelClientFactory);
+  }
+
+  @Override
+  protected String getAgentName() {
+    return AGENT_NAME;
+  }
+
+  @Override
+  protected Class<SingleReviewAgentOutput> getOutputClass() {
+    return SingleReviewAgentOutput.class;
+  }
+
+  @Override
+  protected String getSystemMessage() {
+    return SYSTEM_PROMPT;
+  }
+
+  @Override
+  protected String getInitialUserMessageTemplate() {
+    return INITIAL_USER_MESSAGE_TEMPLATE;
+  }
+
+  @Override
+  protected Map<String, Object> buildInputVariables(SingleReviewAgentInput input) {
+    StringBuilder codeChangesTextBuilder = new StringBuilder();
+    int index = 1;
+    for (CodeChange change : input.codeChanges()) {
+      codeChangesTextBuilder
+          .append("[Code Change ")
+          .append(index)
+          .append("]\n")
+          .append(change.toString())
+          .append("\n\n");
+      index++;
     }
 
-    @Override
-    protected String getAgentName() {
-        return AGENT_NAME;
-    }
-
-    @Override
-    protected Class<SingleReviewAgentOutput> getOutputClass() {
-        return SingleReviewAgentOutput.class;
-    }
-
-    @Override
-    protected String getSystemMessage() {
-        return SYSTEM_PROMPT;
-    }
-
-    @Override
-    protected String getInitialUserMessageTemplate() {
-        return INITIAL_USER_MESSAGE_TEMPLATE;
-    }
-
-    @Override
-    protected Map<String, Object> buildInputVariables(SingleReviewAgentInput input) {
-        StringBuilder codeChangesTextBuilder = new StringBuilder();
-        int index = 1;
-        for (CodeChange change : input.codeChanges()) {
-            codeChangesTextBuilder
-                    .append("[Code Change ")
-                    .append(index)
-                    .append("]\n")
-                    .append(change.toString())
-                    .append("\n\n");
-            index++;
-        }
-
-        return Map.of("code_changes", codeChangesTextBuilder.toString());
-    }
+    return Map.of(
+        "code_changes", codeChangesTextBuilder.toString(),
+        "static_analysis_results", input.staticAnalysisResults());
+  }
 }

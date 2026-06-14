@@ -17,6 +17,7 @@ usage() {
     echo "    ./run.sh review <pr-file.json>"
     echo "    ./run.sh review <pr-file.jsonl>"
     echo "    ./run.sh review <pr-file.jsonl> --jsonl-index 3"
+    echo "    ./run.sh review <pr-file.json> --single-agent"
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -69,6 +70,9 @@ if [[ "$MODE" == "review" ]]; then
                 ;;
             --jsonl-index=*)
                 JSONL_INDEX="${arg#--jsonl-index=}"
+                ;;
+            --single-agent)
+                APP_ARGS+=("--single-agent")
                 ;;
             -h|--help)
                 usage
