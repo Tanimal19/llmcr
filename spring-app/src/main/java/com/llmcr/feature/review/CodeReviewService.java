@@ -6,11 +6,12 @@ import com.llmcr.domain.sse.SseTaskObject;
 import com.llmcr.feature.review.CodeReviewReport.*;
 import com.llmcr.feature.review.PullRequestParser.PullRequestData;
 import com.llmcr.feature.review.agent.*;
-import com.llmcr.feature.review.agent.ComputationAgent.ComputationAgentInput;
+import com.llmcr.feature.review.agent.DraftingAgent.DraftingAgentInput;
+import com.llmcr.feature.review.agent.DraftingAgent.DraftingAgentOutput;
 import com.llmcr.feature.review.agent.InterpretationAgent.InterpretationAgentInput;
-import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentInput;
-import com.llmcr.feature.review.agent.PlanningAgent.PlanningAgentOutput;
+import com.llmcr.feature.review.agent.PruningAgent.PruningAgentInput;
 import com.llmcr.feature.review.agent.SummaryAgent.SummaryAgentInput;
+import com.llmcr.feature.review.agent.SummaryAgent.SummaryAgentOutput;
 import com.llmcr.feature.review.agent.tool.StaticAnalysisToolManager;
 import com.llmcr.infrastructure.agent.logging.AgentContextLogger;
 import java.nio.file.Path;
@@ -33,14 +34,14 @@ public class CodeReviewService
   private static final String STAGE_PARSE = "PARSE";
   private static final String STAGE_STATIC_ANALYSIS = "STATIC_ANALYSIS";
   private static final String STAGE_INTERPRETATION = "INTERPRETATION";
-  private static final String STAGE_PLANNING = "PLANNING";
-  private static final String STAGE_COMPUTATION = "COMPUTATION";
+  private static final String STAGE_DRAFTING = "DRAFTING";
+  private static final String STAGE_PRUNING = "PRUNING";
   private static final String STAGE_SUMMARY = "SUMMARY";
 
   private final StaticAnalysisToolManager staticAnalysisToolManager;
   private final InterpretationAgent interpretationAgent;
-  private final PlanningAgent planningAgent;
-  private final ComputationAgent computationAgent;
+  private final DraftingAgent draftingAgent;
+  private final PruningAgent pruningAgent;
   private final SummaryAgent summaryAgent;
   private final AgentContextLogger contextLogger;
   private String outputDir;
@@ -49,15 +50,15 @@ public class CodeReviewService
       LoggingConfigProvider configProvider,
       StaticAnalysisToolManager staticAnalysisToolManager,
       InterpretationAgent interpretationAgent,
-      PlanningAgent planningAgent,
-      ComputationAgent computationAgent,
+      DraftingAgent draftingAgent,
+      PruningAgent pruningAgent,
       SummaryAgent summaryAgent,
       AgentContextLogger contextLogger) {
     this.outputDir = configProvider.getReviewOutputDirectory();
     this.staticAnalysisToolManager = staticAnalysisToolManager;
     this.interpretationAgent = interpretationAgent;
-    this.planningAgent = planningAgent;
-    this.computationAgent = computationAgent;
+    this.draftingAgent = draftingAgent;
+    this.pruningAgent = pruningAgent;
     this.summaryAgent = summaryAgent;
     this.contextLogger = contextLogger;
   }
@@ -94,32 +95,32 @@ public class CodeReviewService
               parseStageResult.prData(), prefixDirectory, progressListener, cancellationRequested);
       // String codeAnalysisOutput = null;
 
-      InterpretationPlanResult interpretationPlan =
-          runInterpretationAndPlanningStage(
+      InterpretationContent interpretation =
+          runInterpretationStage(
+              input, parseStageResult.codeChanges(), progressListener, cancellationRequested);
+      List<IssueDraft> draftIssues =
+          runDraftingStage(
               input,
               parseStageResult.codeChanges(),
-              codeAnalysisOutput,
+              interpretation,
               progressListener,
               cancellationRequested);
-      List<ChecklistItem> items =
-          runComputationStage(
-              parseStageResult.codeChanges(),
-              interpretationPlan.plan(),
-              progressListener,
-              cancellationRequested);
-      ReportContent reviewResult =
+      List<Issue> issues =
+          runPruningStage(
+              parseStageResult.codeChanges(), draftIssues, progressListener, cancellationRequested);
+      SummaryAgentOutput reviewResult =
           runSummaryStage(
               parseStageResult.codeChanges(),
-              codeAnalysisOutput,
-              items,
+              interpretation,
+              issues,
               progressListener,
               cancellationRequested);
 
       return runFinalizeStage(
           parseStageResult.prData(),
           reviewResult,
-          interpretationPlan.interpretation(),
-          items,
+          interpretation,
+          issues,
           codeAnalysisOutput,
           prefixDirectory,
           progressListener,
@@ -200,10 +201,9 @@ public class CodeReviewService
     }
   }
 
-  private InterpretationPlanResult runInterpretationAndPlanningStage(
+  private InterpretationContent runInterpretationStage(
       CodeReviewInput input,
       List<CodeChange> codeChanges,
-      String codeAnalysis,
       Consumer<SseTaskProgress> progressListener,
       BooleanSupplier cancellationRequested) {
     if (!input.useMockData()) {
@@ -223,100 +223,89 @@ public class CodeReviewService
           progressListener,
           STAGE_INTERPRETATION,
           "Interpretation stage completed:\n%s".formatted(interpretation));
-
-      checkpoint(cancellationRequested, progressListener, STAGE_PLANNING, "Start planning stage");
-      PlanningAgentOutput plan;
-      try {
-        plan =
-            planningAgent.execute(
-                new PlanningAgentInput(codeChanges, interpretation, codeAnalysis));
-      } catch (Exception ex) {
-        throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
-      }
-      emitProgress(
-          progressListener, STAGE_PLANNING, "Planning stage completed:\n%s".formatted(plan));
-      return new InterpretationPlanResult(interpretation, plan);
+      return interpretation;
     }
 
     throwIfCancelled(cancellationRequested);
     InterpretationContent interpretation = MockReviewData.MOCK_INTERPRETATION_OUTPUT;
-    PlanningAgentOutput plan = MockReviewData.MOCK_PLANNING_OUTPUT;
     emitProgress(
         progressListener,
         STAGE_INTERPRETATION,
         "Using mock interpretation:\n%s".formatted(interpretation));
-    emitProgress(progressListener, STAGE_PLANNING, "Using mock planning\n%s".formatted(plan));
-    return new InterpretationPlanResult(interpretation, plan);
+    return interpretation;
   }
 
-  private List<ChecklistItem> runComputationStage(
+  private List<IssueDraft> runDraftingStage(
+      CodeReviewInput input,
       List<CodeChange> codeChanges,
-      PlanningAgentOutput plan,
+      InterpretationContent interpretation,
       Consumer<SseTaskProgress> progressListener,
       BooleanSupplier cancellationRequested) {
-    try {
-      return runChecklistComputations(codeChanges, plan, progressListener, cancellationRequested);
-    } catch (APIServiceException ex) {
-      throw ex;
-    } catch (Exception ex) {
-      throw new APIServiceException(
-          APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
-          "Failed during computation stage",
-          ex);
+    if (!input.useMockData()) {
+      checkpoint(cancellationRequested, progressListener, STAGE_DRAFTING, "Start drafting stage");
+      DraftingAgentOutput draft;
+      try {
+        draft = draftingAgent.execute(new DraftingAgentInput(codeChanges, interpretation));
+      } catch (Exception ex) {
+        throw new APIServiceException(APIServiceException.ErrorCode.REVIEW_PLANNING_FAILED, ex);
+      }
+      emitProgress(
+          progressListener, STAGE_DRAFTING, "Drafting stage completed:\n%s".formatted(draft));
+      return draft.issueDrafts();
     }
+
+    throwIfCancelled(cancellationRequested);
+    DraftingAgentOutput draft = MockReviewData.MOCK_DRAFTING_OUTPUT;
+    emitProgress(progressListener, STAGE_DRAFTING, "Using mock drafting\n%s".formatted(draft));
+    return draft.issueDrafts();
   }
 
-  private List<ChecklistItem> runChecklistComputations(
+  private List<Issue> runPruningStage(
       List<CodeChange> codeChanges,
-      PlanningAgentOutput plan,
+      List<IssueDraft> draftIssues,
       Consumer<SseTaskProgress> progressListener,
       BooleanSupplier cancellationRequested) {
-    checkpoint(
-        cancellationRequested,
-        progressListener,
-        STAGE_COMPUTATION,
-        "Running checklist computations");
+    checkpoint(cancellationRequested, progressListener, STAGE_PRUNING, "Running pruning stage");
 
-    List<ChecklistItem> items = new ArrayList<>();
-    int totalItems = plan.checklistItems().size();
-    int itemIndex = 0;
-    for (String item : plan.checklistItems()) {
+    List<Issue> issues = new ArrayList<>();
+    int totalIssues = draftIssues.size();
+    int issueIndex = 0;
+    for (IssueDraft draftIssue : draftIssues) {
       checkpoint(
           cancellationRequested,
           progressListener,
-          STAGE_COMPUTATION,
-          "Running checklist item " + itemIndex + "/" + totalItems + ": " + item);
-      itemIndex++;
+          STAGE_PRUNING,
+          "Pruning issue " + issueIndex + "/" + totalIssues + ": " + draftIssue.title());
+      issueIndex++;
 
       try {
-        ChecklistItemAnswer answer =
-            computationAgent.execute(new ComputationAgentInput(codeChanges, item));
-        items.add(new ChecklistItem(item, answer));
+        IssueVerdict verdict = pruningAgent.execute(new PruningAgentInput(draftIssue, codeChanges));
+        issues.add(new Issue(draftIssue, verdict));
         emitProgress(
             progressListener,
-            STAGE_COMPUTATION,
-            "Completed checklist item, answer:\n%s".formatted(answer));
+            STAGE_PRUNING,
+            "Completed pruning issue, verdict:\n%s".formatted(verdict));
       } catch (Exception ex) {
         throw new APIServiceException(
             APIServiceException.ErrorCode.REVIEW_COMPUTATION_FAILED,
-            "Review computation stage failed for checklist item: " + item,
+            "Pruning stage failed for issue: " + draftIssue.title(),
             ex);
       }
     }
-    emitProgress(progressListener, STAGE_COMPUTATION, "Computation stage completed");
-    return items;
+    emitProgress(progressListener, STAGE_PRUNING, "Pruning stage completed");
+    return issues;
   }
 
-  private ReportContent runSummaryStage(
+  private SummaryAgentOutput runSummaryStage(
       List<CodeChange> codeChanges,
-      String codeAnalysis,
-      List<ChecklistItem> items,
+      InterpretationContent interpretation,
+      List<Issue> issues,
       Consumer<SseTaskProgress> progressListener,
       BooleanSupplier cancellationRequested) {
     checkpoint(cancellationRequested, progressListener, STAGE_SUMMARY, "Running summary stage");
     try {
-      ReportContent reviewResult =
-          summaryAgent.execute(new SummaryAgentInput(codeChanges, codeAnalysis, items));
+      SummaryAgentOutput reviewResult =
+          summaryAgent.execute(new SummaryAgentInput(codeChanges, interpretation, issues));
       emitProgress(progressListener, STAGE_SUMMARY, "Summary stage completed");
       return reviewResult;
     } catch (Exception ex) {
@@ -326,23 +315,26 @@ public class CodeReviewService
 
   private CodeReviewOutput runFinalizeStage(
       PullRequestData prData,
-      ReportContent reviewResult,
+      SummaryAgentOutput reviewResult,
       InterpretationContent interpretation,
-      List<ChecklistItem> items,
+      List<Issue> issues,
       String staticAnalysisResults,
       String prefixDirectory,
       Consumer<SseTaskProgress> progressListener,
       BooleanSupplier cancellationRequested) {
     checkpoint(cancellationRequested, progressListener, STAGE_PARSE, "Writing review report");
     try {
+      ReviewReportContent content =
+          new ReviewReportContent(
+              reviewResult.motivation(),
+              reviewResult.suggestion(),
+              reviewResult.goodPoints(),
+              reviewResult.badPoints(),
+              reviewResult.implementationDetails(),
+              issues);
       CodeReviewReport review =
           new CodeReviewReport(
-              prData.prId(),
-              prData.title(),
-              reviewResult,
-              interpretation,
-              items,
-              staticAnalysisResults);
+              prData.prId(), prData.title(), interpretation, content, staticAnalysisResults);
       Path reportPath = CodeReviewSupport.writeReport(review, outputDir, prefixDirectory);
 
       emitProgress(
@@ -367,9 +359,6 @@ public class CodeReviewService
     throwIfCancelled(cancellationRequested);
     emitProgress(progressListener, stage, message);
   }
-
-  private record InterpretationPlanResult(
-      InterpretationContent interpretation, PlanningAgentOutput plan) {}
 
   private record ParseStageResult(PullRequestData prData, List<CodeChange> codeChanges) {}
 }
