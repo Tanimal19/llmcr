@@ -1,323 +1,269 @@
 {
-    "prId": 5897,
+    "prId": 0,
     "prTitle": "Reuse `JsonSchemaGenerator` in `BeanOutputConverter`",
+    "interpretation": {
+        "changeDescription": "The `BeanOutputConverter` was refactored to delegate JSON schema generation to the centralized `JsonSchemaGenerator` utility instead of managing its own schema generation logic. Additionally, the `JsonSchemaGenerator` was updated to include `JacksonOption.RESPECT_JSONPROPERTY_ORDER` in its Jackson configuration, and several test cases were updated to reflect changes in how required properties are determined (e.g., respecting `@Nullable` and `@ToolParam(required = false)`).",
+        "changeMotivation": "The primary motivation was to unify and centralize the JSON Schema generation logic within the `JsonSchemaGenerator` utility. By removing redundant, localized configuration from `BeanOutputConverter` and leveraging the shared component, the codebase achieves better consistency in schema output, easier maintenance, and consistent support for annotations like `@Nullable` and `@ToolParam` across different parts of the Spring AI framework. The inclusion of `RESPECT_JSONPROPERTY_ORDER` ensures that generated schemas adhere to the desired property sequence defined in Java types."
+    },
     "content": {
-        "motivation": "This code change refactors the `BeanOutputConverter` to utilize a new `JsonSchemaGenerator` class, aiming to reduce code duplication and centralize JSON schema generation logic. Additionally, it updates tests to reflect specific JSON schema formats, such as `format: int32` for integer types, and adds new tests for handling annotations like `@ToolParam` and `@Nullable`.",
+        "motivation": "The change centralizes JSON schema generation into a shared utility, `JsonSchemaGenerator`. This ensures consistent handling of annotations (like `@Nullable` and `@ToolParam`) and property ordering across the Spring AI framework, reducing code duplication previously found in `BeanOutputConverter`.",
+        "suggestion": "Transition the `JsonSchemaGenerator` from a static utility to a managed component to allow for dependency injection, better testability, and more flexible configuration. Additionally, update the schema generation contract to return `JsonNode` directly to avoid redundant serialization, and introduce a specific exception type for schema generation failures.",
         "goodPoints": [
-            "The refactoring effectively centralizes JSON schema generation logic into a dedicated `JsonSchemaGenerator` class, reducing code duplication in `BeanOutputConverter`.",
-            "The `ChatClientNativeStructuredResponseTests` accurately reflects the expected JSON schema with `format: int32` for the 'age' field.",
-            "New tests in `BeanOutputConverterTest` (`formatClassTypeWithToolParamAnnotations`, `formatClassTypeWithNullableAnnotation`) comprehensively cover schema generation for `@ToolParam` and `@Nullable` annotations.",
-            "The error handling in `BeanOutputConverter.generateSchema` provides clear log messages and exceptions when schema parsing fails.",
-            "The use of `JsonSchemaGenerator` and proper exception handling aligns with Spring Boot 3 best practices."
+            "Successful removal of redundant, localized schema generation logic in favor of a centralized service.",
+            "Improved consistency by standardizing Jackson configuration with `RESPECT_JSONPROPERTY_ORDER`.",
+            "Better alignment with Spring AI's annotation-based requirements for structured output.",
+            "Comprehensive addition of test cases covering edge scenarios like nullable fields and `@ToolParam`."
         ],
         "badPoints": [
-            "The removal of the `createDefaultTextCleaner` method was not verified, raising concerns about potential regressions if it was indirectly relied upon.",
-            "While compatibility with existing schema generation configurations is generally maintained, the introduction of `JacksonOption.RESPECT_JSONPROPERTY_ORDER` and conditional `SpringAiSchemaModule` inclusion could introduce subtle behavioral changes if existing code implicitly relied on default property ordering or required field behaviors."
+            "Static utility coupling in `BeanOutputConverter` makes unit testing brittle.",
+            "Inefficient serialization cycle: `JsonSchemaGenerator` returns a `String` which is immediately re-parsed into a `JsonNode`.",
+            "Generic `RuntimeException` usage obscures the root cause of schema generation failures.",
+            "Hardcoded global state in `JsonSchemaGenerator` limits the ability to support per-call configuration changes."
         ],
-        "suggestion": "Investigate and verify the removal of the `createDefaultTextCleaner` method to ensure no existing functionality is impacted. Consider documenting or explicitly testing the implications of `JacksonOption.RESPECT_JSONPROPERTY_ORDER` and the conditional `SpringAiSchemaModule` if there's a possibility of existing configurations depending on the previous default behaviors.",
         "implementationDetails": [
             {
-                "filename": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java",
-                "details": [
-                    "The JSON schema for the `Person` object in `ChatClientNativeStructuredResponseTests` has been updated to include `\"format\": \"int32\"` for the `\"age\"` field, specifying the integer type more precisely."
-                ]
-            },
-            {
                 "filename": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
-                "details": [
-                    "The `generateSchema` method has been refactored to delegate schema generation to `JsonSchemaGenerator.generateForType(this.type)`.",
-                    "The manual setup of `JacksonSchemaModule`, `SchemaGeneratorConfigBuilder`, and `SchemaGenerator` has been removed.",
-                    "Error handling for `JacksonException` during schema parsing has been improved with specific logging and a `RuntimeException`.",
-                    "The `createDefaultTextCleaner` method has been removed."
-                ]
+                "details": "Refactored `generateSchema` to delegate to `JsonSchemaGenerator.generateForType`. Now uses `jsonMapper` to manually parse the resulting schema string into a `JsonNode` before post-processing."
             },
             {
                 "filename": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                "details": [
-                    "The static initializer for `JsonSchemaGenerator` now includes `JacksonOption.RESPECT_JSONPROPERTY_ORDER` in the `JacksonSchemaModule`.",
-                    "The `SpringAiSchemaModule` is conditionally included based on `PROPERTY_REQUIRED_BY_DEFAULT`, potentially altering required field behavior."
-                ]
+                "details": "Static initializer updated to include `JacksonOption.RESPECT_JSONPROPERTY_ORDER` in the `JacksonSchemaModule` configuration."
             },
             {
                 "filename": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                "details": [
-                    "New test methods `formatClassTypeWithToolParamAnnotations` and `formatClassTypeWithNullableAnnotation` have been added to verify schema generation for classes using `@ToolParam` and `@Nullable` annotations.",
-                    "These tests assert the presence of fields in the 'required' section of the schema and check the 'description' fields for annotated properties."
-                ]
+                "details": "Added specific test records (`TestClassWithToolParam`, `TestClassWithNullable`) and updated existing assertions to reflect changes in how required properties are determined."
             }
         ],
         "issues": [
             {
-                "title": "Unverified removal of createDefaultTextCleaner",
-                "detail": "The `createDefaultTextCleaner` method has been removed from `BeanOutputConverter`. The provided test coverage and code changes do not include any verification that this removal does not impact existing functionality that might have relied on this method.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
-                "type": "Bug"
+                "draft": {
+                    "dimension": "Maintainability",
+                    "severity": "Minor",
+                    "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::183",
+                    "title": "Manual JSON parsing overhead",
+                    "description": "The code uses JsonSchemaGenerator to get a String and immediately parses it back into a JsonNode. This is inefficient; the generator utility should ideally return the JsonNode directly to avoid serialization/deserialization cycles.",
+                    "assumption": "The JsonSchemaGenerator utility can be extended or refactored to return the object model instead of a string."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code explicitly parses a String generated by JsonSchemaGenerator back into a JsonNode using jsonMapper.readTree, which creates an unnecessary serialization/deserialization cycle. No existing mechanism in the project returns JsonNode directly from the generator, and the refactored code still performs this parsing, indicating the inefficiency is not mitigated. The test cases confirm that the schema is still generated as a string and then parsed, reinforcing the inefficiency.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::183",
+                            "evidence": "String schemaString = JsonSchemaGenerator.generateForType(this.type); JsonNode jsonNode; try { jsonNode = this.jsonMapper.readTree(schemaString); } catch (JacksonException e) { ... }"
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::93",
+                            "evidence": "Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED, JacksonOption.RESPECT_JSONPROPERTY_ORDER);"
+                        },
+                        {
+                            "location": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTests.java::451",
+                            "evidence": "String schema = converter.getJsonSchema(); JsonNode schemaNode = JsonMapper.shared().readTree(schema);"
+                        }
+                    ]
+                }
             },
             {
-                "title": "Potential impact of new schema generation options",
-                "detail": "The `JsonSchemaGenerator` now includes `JacksonOption.RESPECT_JSONPROPERTY_ORDER` and conditionally includes `SpringAiSchemaModule`. While this improves schema generation for annotations like `@ToolParam`, it could subtly alter behavior for existing types if they implicitly relied on the previous default property ordering or required field handling.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                "type": "Warning"
+                "draft": {
+                    "dimension": "Maintainability",
+                    "severity": "Minor",
+                    "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::187",
+                    "title": "Swallowing checked exceptions / Generic RuntimeException",
+                    "description": "The catch block throws a generic RuntimeException when parsing fails. It should throw a domain-specific exception (e.g., JsonSchemaGenerationException) to allow callers to handle schema errors differently from unexpected runtime failures.",
+                    "assumption": "The project prefers explicit exception handling over generic RuntimeExceptions."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code in BeanOutputConverter.java at line 187 now catches JacksonException and throws a generic RuntimeException, which violates the project's assumption of preferring explicit, domain-specific exceptions over generic RuntimeExceptions. This change is not mitigated by any existing pattern and poses a real risk as it prevents callers from distinguishing schema generation errors from other runtime issues.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::187",
+                            "evidence": "The catch block throws a generic RuntimeException when parsing fails: 'throw new RuntimeException(\"Could not parse json schema for \" + this.type, e);' which is a generic exception rather than a domain-specific one."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::93",
+                            "evidence": "The static initializer configures the schema generator but does not handle parsing exceptions, leaving the vulnerability in the main conversion logic."
+                        }
+                    ]
+                }
             },
             {
-                "title": "PMD Violation: ClassWithOnlyPrivateConstructorsShouldBeFinal",
-                "detail": "The `ChatClientNativeStructuredResponseTests.ContextCatcherCallAdvisor` class has only private constructors and should be declared as final.",
-                "location": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java:521",
-                "type": "Code Smell"
+                "draft": {
+                    "dimension": "Functionality",
+                    "severity": "Major",
+                    "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::96",
+                    "title": "Global state dependency in static initializer",
+                    "description": "The static block configures the generator using PROPERTY_REQUIRED_BY_DEFAULT. If this constant changes at runtime (though currently static final), or if different components require different configuration presets, this centralized approach prevents per-request or per-call customization of the schema generation rules.",
+                    "assumption": "Configuration needs might evolve beyond global defaults."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the static initializer in JsonSchemaGenerator.java uses a global configuration preset (PROPERTY_REQUIRED_BY_DEFAULT) that applies uniformly across all schema generation, preventing per-request or per-call customization. The code changes introduce per-test customization via annotations (ToolParam, nullable) and explicit module selection, but the static initializer still centralizes configuration, which is a risk if configuration needs evolve beyond global defaults. The existing code already modifies configuration via module selection and annotations, yet the static block remains a single point of global control, making it a genuine functional limitation.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::96",
+                            "evidence": "The static block configures the generator using PROPERTY_REQUIRED_BY_DEFAULT, which is a global constant applied regardless of request or call context, preventing per-call customization."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::102",
+                            "evidence": "The SpringAiSchemaModule is conditionally instantiated based on a static boolean PROPERTY_REQUIRED_BY_DEFAULT, indicating a global toggle rather than per-context configuration."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::180",
+                            "evidence": "The generateSchema method uses a static jsonMapper and generates schema via a string, bypassing the module-based configuration that was previously used, further centralizing control."
+                        }
+                    ]
+                }
             },
             {
-                "title": "PMD Violation: ConstructorCallsOverridableMethod",
-                "detail": "The constructor of `BeanOutputConverter` calls `getJsonMapper()`, which is potentially overridable.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java:148",
-                "type": "Code Smell"
+                "draft": {
+                    "dimension": "Performance",
+                    "severity": "Minor",
+                    "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::96",
+                    "title": "Shared Jackson module re-initialization",
+                    "description": "The static initialization of modules creates overhead. If the application context refreshes or if these modules hold state, it could lead to memory leaks or stale configurations in classloader-heavy environments.",
+                    "assumption": "The application might be used in environments where classloader behavior or static initialization causes issues."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue concerns static initialization of Jackson modules in JsonSchemaGenerator that could cause re-initialization overhead or memory leaks. However, the code changes show that the module initialization is now controlled by configuration (PROPERTY_REQUIRED_BY_DEFAULT) and the generated schema is handled dynamically via JsonSchemaGenerator.generateForType, which is called per request. There is no evidence of classloader issues or state retention between instances, and the test suite validates schema generation without relying on static module state. Thus, the assumed risk is mitigated by the new dynamic approach.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::96",
+                            "evidence": "The static initialization of JacksonSchemaModule is now parameterized by PROPERTY_REQUIRED_BY_DEFAULT, allowing conditional inclusion. The actual schema generation is done via JsonSchemaGenerator.generateForType, which is invoked per type and does not retain module state."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::105",
+                            "evidence": "The module is created once at static initialization, but the generated schema is read from a string and parsed per request, not from a persistent module state."
+                        },
+                        {
+                            "location": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java::451",
+                            "evidence": "The test uses JsonMapper.shared().readTree(schema) to parse schema string, confirming that schema is generated dynamically and not cached or reused across instances."
+                        }
+                    ]
+                }
             },
             {
-                "title": "PMD Violation: ConstructorCallsOverridableMethod",
-                "detail": "The constructor of `BeanOutputConverter` calls `postProcessSchema()`, which is potentially overridable.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java:150",
-                "type": "Code Smell"
+                "draft": {
+                    "dimension": "Design",
+                    "severity": "Minor",
+                    "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::180",
+                    "title": "Tight coupling to JsonSchemaGenerator static utility",
+                    "description": "BeanOutputConverter directly calls a static method on JsonSchemaGenerator. This makes it difficult to mock schema generation logic during unit testing of BeanOutputConverter without relying on static mocking frameworks.",
+                    "assumption": "Testing without static mocking is a desired goal for maintainability."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because BeanOutputConverter directly calls the static method JsonSchemaGenerator.generateForType, which prevents unit testing of schema generation logic without static mocking. The code changes show that the static utility is still being used (e.g., JsonSchemaGenerator.generateForType is called in generateSchema), and there is no alternative mechanism provided to generate schemas dynamically or via dependency injection. The test suite demonstrates that schema generation is expected to work, but mocking static methods is not feasible, which aligns with the concern of tight coupling to static utilities.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::180",
+                            "evidence": "The generateSchema method calls JsonSchemaGenerator.generateForType(this.type) directly, which is a static method, making it impossible to mock without static mocking frameworks."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::93",
+                            "evidence": "The static initializer configures the schema generator, reinforcing that the utility is static and tightly coupled."
+                        },
+                        {
+                            "location": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java::451",
+                            "evidence": "The test uses JsonMapper.shared().readTree(schema) to parse the generated schema, but does not mock the schema generation process, indicating that the static method is still the source of truth."
+                        }
+                    ]
+                }
             },
             {
-                "title": "PMD Violation: AvoidThrowingRawExceptionTypes",
-                "detail": "The `generateSchema` method throws a raw `RuntimeException`.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java:190",
-                "type": "Code Smell"
+                "draft": {
+                    "dimension": "Compatibility",
+                    "severity": "Major",
+                    "location": "spring-ai-model/src/test/kotlin/org/springframework/ai/converter/BeanOutputConverterTests.kt::41",
+                    "title": "Breaking change in schema generation behavior",
+                    "description": "The removal of fields from the 'required' list (asserting 'doesNotContain(\"baz\")') confirms that existing implementations that relied on stricter schema validation (all fields required) may break. This is a behavioral contract change for downstream consumers of the JSON schema.",
+                    "assumption": "Existing users of the framework expected all fields to be required by default."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code changes explicitly remove 'baz' from the required fields list in the schema generation, which was previously expected to be included. This represents a breaking behavioral contract change for downstream consumers that assumed all fields were required. The test at line 41 in BeanOutputConverterTests.kt now asserts that 'baz' does not appear in the required list, confirming the change is intentional and not a temporary test artifact.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/test/kotlin/org/springframework/ai/converter/BeanOutputConverterTests.kt::41",
+                            "evidence": "assertThat(required.toString()).doesNotContain(\"baz\")"
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::93-96",
+                            "evidence": "SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT is used when PROPERTY_REQUIRED_BY_DEFAULT is false, indicating fields are not required by default."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java::180-185",
+                            "evidence": "ConfigBuilder.forFields().withRequiredCheck(f -> true); is removed, and schema is generated via JsonSchemaGenerator.generateForType, which uses the module configuration."
+                        }
+                    ]
+                }
             },
             {
-                "title": "PMD Violation: AvoidThrowingRawExceptionTypes",
-                "detail": "The `generateSchema` method throws a raw `RuntimeException`.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java:201",
-                "type": "Code Smell"
+                "draft": {
+                    "dimension": "Readability",
+                    "severity": "Minor",
+                    "location": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java::454",
+                    "title": "Inconsistent test assertions",
+                    "description": "The change modifies the expected JSON structure in tests. The use of raw string blocks with escaped quotes is fragile and difficult to maintain as schema structure grows in complexity.",
+                    "assumption": "The project maintains these schemas as string literals in tests."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the project has introduced raw string blocks with escaped quotes in test assertions, which is fragile and difficult to maintain as schema structures grow. The tests now rely on string literals that are manually constructed, making them prone to errors when schema changes occur. This aligns with the assumption that schemas are maintained as string literals, and no existing mechanism (like schema generators or validation tools) currently mitigates this fragility.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java::454",
+                            "evidence": "The test assertion uses raw string blocks with escaped quotes to check schema structure, which is fragile and hard to maintain as schemas evolve."
+                        },
+                        {
+                            "location": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java::471",
+                            "evidence": "The test checks schemaNode.get(\"required\").toString().contains(\"requiredField\") and doesNotContain(\"optionalField\"), using string literals that could break if schema structure changes."
+                        },
+                        {
+                            "location": "spring-ai-model/src/test/kotlin/org/springframework/ai/converter/BeanOutputConverterTests.kt::40",
+                            "evidence": "The Kotlin test uses raw string assertions with escaped quotes to validate schema output, reinforcing the fragile string literal pattern."
+                        }
+                    ]
+                }
             },
             {
-                "title": "PMD Violation: AvoidReassigningParameters",
-                "detail": "The `convert` method reassigns the `text` parameter.",
-                "location": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java:223",
-                "type": "Code Smell"
+                "draft": {
+                    "dimension": "Functionality",
+                    "severity": "Minor",
+                    "location": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java::67",
+                    "title": "Implicit change in JSON schema format",
+                    "description": "Adding 'format: int32' to the schema generation changes the output contract. This might cause compatibility issues with LLM providers or structured output parsers that do not recognize or strictly validate the 'format' field.",
+                    "assumption": "The underlying LLM/API consumer supports or ignores the 'int32' format field."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code changes explicitly add a 'format: int32' field to the JSON schema for the 'age' property in the ChatClientNativeStructuredResponseTests.java file, which introduces a new schema contract. The underlying LLM/API consumer is not known to support or ignore this field, and there is no existing mechanism in the codebase that mitigates this potential incompatibility. The test suite reflects this change by expecting the 'format' field to be present and not containing 'baz', but the actual schema now includes 'format: int32', which could break consumers that do not recognize this format.",
+                    "evidence": [
+                        {
+                            "location": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java::67",
+                            "evidence": "The schema for the 'age' property now includes 'format': 'int32', which is a new field not previously present."
+                        },
+                        {
+                            "location": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java::93",
+                            "evidence": "The schema generation now includes JacksonOption.RESPECT_JSONPROPERTY_ORDER, which may influence schema formatting but does not directly cause the 'format' field to be added."
+                        },
+                        {
+                            "location": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java::67",
+                            "evidence": "The test expects the schema to contain 'format' field and not 'baz', confirming the schema has been modified to include 'format: int32'."
+                        }
+                    ]
+                }
             }
         ]
     },
-    "interpretation": {
-        "changeDescription": "This change refactors the `BeanOutputConverter` to use the new `JsonSchemaGenerator` for generating JSON schemas. It also updates the `ChatClientNativeStructuredResponseTests` to include `format: int32` for the `age` field in the `UserEntity` schema. Additionally, the `BeanOutputConverter`'s static `createDefaultTextCleaner` method has been removed, and the `generateSchema` method has been updated to properly handle schema parsing and error logging.",
-        "changeMotivation": "The motivation for this change is to centralize and standardize JSON schema generation across the Spring AI project. By migrating `BeanOutputConverter` to use the `JsonSchemaGenerator`, we ensure consistent schema generation logic and reduce code duplication. The update to `ChatClientNativeStructuredResponseTests` ensures that integer fields are correctly represented with the `int32` format in the generated schema, which is a common convention. The removal of the `createDefaultTextCleaner` method and the improved error handling in `generateSchema` are part of ongoing code cleanup and robustness improvements."
-    },
-    "checklistItems": [
-        {
-            "title": "Does the `JsonSchemaGenerator` correctly handle Jackson annotations like `@JsonProperty`, `@JsonPropertyOrder`, and `@ToolParam` to generate accurate JSON schemas?",
-            "answer": {
-                "finalAnswer": "The code changes indicate that Jackson annotations are being handled by the JsonSchemaGenerator, with tests confirming correct behavior for @JsonProperty, @JsonPropertyOrder, and @ToolParam. However, the actual schema generation logic is not fully verified beyond parsing the generated schema string.",
-                "analysis": "The provided code changes show that Jackson annotations @JsonProperty, @JsonPropertyOrder, and @ToolParam are being used in tests to verify schema generation. The JsonSchemaGenerator class is updated to include JacksonOption.RESPECT_JSONPROPERTY_ORDER and uses SpringAiSchemaModule with PROPERTY_REQUIRED_FALSE_BY_DEFAULT. Tests confirm that schema output correctly reflects these annotations, including required fields, descriptions, and exclusion of optional fields. However, the actual schema generation logic in JsonSchemaGenerator is not fully verified beyond parsing the generated schema string.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "93-95",
-                        "reason": "The code adds JacksonOption.RESPECT_JSONPROPERTY_ORDER to the JacksonSchemaModule, indicating that @JsonPropertyOrder is being considered in schema generation."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "102-107",
-                        "reason": "The code uses SpringAiSchemaModule with SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT, which may affect how @JsonProperty annotations are handled."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "112-117",
-                        "reason": "The code generates schema via JsonSchemaGenerator.generateForType and parses it with JsonNode, suggesting schema generation is implemented but not verified for correctness."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "448-452",
-                        "reason": "Tests verify that @JsonPropertyOrder is respected by checking 'required' field contains only 'someString' and not 'string_property', indicating schema generation respects @JsonPropertyOrder."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "482-490",
-                        "reason": "Tests verify @JsonProperty annotations generate correct 'description' fields in schema, confirming @JsonProperty is handled."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "502-508",
-                        "reason": "Tests verify @ToolParam annotations generate correct 'description' fields in schema, confirming @ToolParam is handled."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTests.kt",
-                        "lines": "38-41",
-                        "reason": "Kotlin test verifies 'required' field contains only 'bar' and not 'baz', confirming schema generation respects @JsonProperty annotations."
-                    }
-                ]
-            }
-        },
-        {
-            "title": "Is the refactoring of `BeanOutputConverter` to use `JsonSchemaGenerator` complete and does it reduce code duplication effectively?",
-            "answer": {
-                "finalAnswer": "The refactoring appears complete and reduces code duplication by replacing manual schema generation with JsonSchemaGenerator. However, verification of full integration and absence of legacy code is not confirmed.",
-                "analysis": "The refactoring of BeanOutputConverter to use JsonSchemaGenerator is complete as it replaces the previous manual schema generation logic with a single call to JsonSchemaGenerator.generateForType. This reduces code duplication by eliminating the need for JacksonSchemaModule, SchemaGeneratorConfigBuilder, and manual configuration of options. However, the evidence does not confirm whether this change is fully integrated or if any side effects remain. The test cases show usage of the converter but do not verify the absence of the old schema generation code.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
-                        "lines": "187,23",
-                        "reason": "The generateSchema method now uses JsonSchemaGenerator.generateForType to produce a schema string, which is then parsed into a JsonNode. This replaces the previous manual configuration of SchemaGenerator with JacksonModule and OptionPreset, eliminating the need for explicit module and config setup."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "93,8",
-                        "reason": "The static initialization now includes JacksonOption.RESPECT_JSONPROPERTY_ORDER, which is a configuration change but does not directly affect code duplication in BeanOutputConverter."
-                    }
-                ]
-            }
-        },
-        {
-            "title": "Does the `ChatClientNativeStructuredResponseTests` accurately reflect the expected JSON schema with the `format: int32` for the 'age' field?",
-            "answer": {
-                "finalAnswer": "Yes, the ChatClientNativeStructuredResponseTests accurately reflects the expected JSON schema with format int32 for the 'age' field.",
-                "analysis": "The code change explicitly adds 'format': 'int32' to the 'age' field in the JSON schema definition within ChatClientNativeStructuredResponseTests.java. This directly reflects the expected JSON schema with format int32 for the 'age' field.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java",
-                        "lines": "64-67",
-                        "reason": "The JSON schema definition for the 'age' field is updated from 'type': 'integer' to 'type': 'integer' and 'format': 'int32', explicitly adding the 'format' property."
-                    },
-                    {
-                        "file": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java",
-                        "lines": "64-67",
-                        "reason": "The schema now includes 'format': 'int32' for the 'age' field, which matches the expected JSON schema format."
-                    }
-                ]
-            }
-        },
-        {
-            "title": "Has the removal of `createDefaultTextCleaner` method been verified to not impact existing functionality that might have relied on it indirectly?",
-            "answer": {
-                "finalAnswer": "The provided code changes and test files do not contain evidence that the removal of createDefaultTextCleaner was tested or verified. The test class CompositeResponseTextCleanerTest is unrelated to createDefaultTextCleaner and does not provide any verification of its safe removal.",
-                "analysis": "The provided code changes and test files do not contain any evidence that the removal of createDefaultTextCleaner was tested or verified. The test class CompositeResponseTextCleanerTest only tests CompositeResponseTextCleaner's functionality and does not reference or verify the absence or impact of createDefaultTextCleaner. There is no test case that explicitly confirms the safe removal of createDefaultTextCleaner or documentation supporting its safe removal.",
-                "evidence": []
-            }
-        },
-        {
-            "title": "Does the updated `generateSchema` method in `BeanOutputConverter` provide sufficiently clear error messages when schema parsing fails?",
-            "answer": {
-                "finalAnswer": "Yes",
-                "analysis": "The generateSchema method in BeanOutputConverter now includes explicit error handling with a logged error message and a RuntimeException with a clear message when schema parsing fails. This satisfies the requirement for clear error messages during schema parsing failure.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
-                        "lines": "187,23",
-                        "reason": "The generateSchema method now catches JacksonException and logs an error message with logger.error(\"Could not parse json schema for type: {}\", this.type); before throwing a RuntimeException with a message \"Could not parse json schema for \" + this.type. This provides a clear error message when schema parsing fails."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "93,8",
-                        "reason": "The static block initializes JacksonSchemaModule with JacksonOption.RESPECT_JSONPROPERTY_ORDER, which may affect schema generation but does not directly relate to error messaging."
-                    }
-                ]
-            }
-        },
-        {
-            "title": "Are the new tests in `BeanOutputConverterTest` (e.g., `formatClassTypeWithToolParamAnnotations`, `formatClassTypeWithNullableAnnotation`) comprehensive enough to cover the new schema generation logic for annotations like `@ToolParam` and `@Nullable`?",
-            "answer": {
-                "finalAnswer": "The new tests in BeanOutputConverterTest are comprehensive enough to cover the new schema generation logic for @ToolParam and @Nullable annotations, as they explicitly verify the schema structure and required/optional field behavior.",
-                "analysis": "The new tests in BeanOutputConverterTest include formatClassTypeWithToolParamAnnotations and formatClassTypeWithNullableAnnotation, which directly test @ToolParam and @Nullable annotations. These tests verify that the schema includes 'required' and 'properties' as expected, and that optional fields are not marked as required. The evidence shows that the tests are checking schema structure and content, which aligns with the checklist item's requirement to cover schema generation logic for these annotations.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "482-491",
-                        "reason": "The test formatClassTypeWithToolParamAnnotations creates a schema for TestClassWithToolParam and verifies that 'requiredField' is in 'required' and 'optionalField' is not, using assertions on schemaNode.get('required').toString()."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "491-501",
-                        "reason": "The test formatClassTypeWithNullableAnnotation creates a schema for TestClassWithNullable and verifies that 'requiredField' is in 'required' and 'optionalField' is not, using assertions on schemaNode.get('required').toString()."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "451-471",
-                        "reason": "The test formatTypeReferenceArray verifies that 'required' and 'additionalProperties' are correctly set in the schema, though it does not directly test @ToolParam or @Nullable."
-                    }
-                ]
-            }
-        },
-        {
-            "title": "Does the update to `JsonSchemaGenerator`'s static initializer maintain compatibility with existing schema generation configurations and modules?",
-            "answer": {
-                "finalAnswer": "The update maintains compatibility by preserving existing module usage but introduces new behaviors (order enforcement and conditional inclusion of SpringAiSchemaModule) that could affect schema generation if existing configurations rely on default required behavior or property order enforcement.",
-                "analysis": "The update to JsonSchemaGenerator's static initializer adds JacksonOption.RESPECT_JSONPROPERTY_ORDER to the JacksonSchemaModule, which enforces property order in generated schemas. It also conditionally includes SpringAiSchemaModule based on PROPERTY_REQUIRED_BY_DEFAULT, which may alter schema generation behavior if the module is active. The SpringAiSchemaModule determines whether properties are required by default, which is a core part of schema generation. However, no evidence is provided that existing configurations explicitly depend on these behaviors. The changes do not remove or deprecate existing module usage, but they introduce new behaviors that could affect compatibility if existing code relies on default required behavior or property order enforcement.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "93-95",
-                        "reason": "The static initializer adds JacksonOption.RESPECT_JSONPROPERTY_ORDER to JacksonSchemaModule, which enforces property order in generated schemas."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "98-102",
-                        "reason": "The static initializer conditionally includes SpringAiSchemaModule based on PROPERTY_REQUIRED_BY_DEFAULT, which may affect schema generation if the module is active."
-                    },
-                    {
-                        "file": "/**\n * JSON Schema Generator Module for Spring AI.\n * <p>\n * This module provides a set of customizations to the JSON Schema generator to support\n * the Spring AI framework. It allows to extract descriptions from\n * {@code @ToolParam(description = ...)} annotations and to determine whether a property\n * is required based on the presence of a series of annotations.\n *\n * @author Thomas Vitale\n * @since 1.0.0\n */\npublic final class SpringAiSchemaModule implements Module",
-                        "lines": null,
-                        "reason": "The SpringAiSchemaModule controls whether properties are required by default, which is a core part of schema generation behavior and could impact compatibility if existing configurations rely on default required behavior."
-                    }
-                ]
-            }
-        },
-        {
-            "title": "Does the change adhere to Spring Boot 3 best practices, particularly concerning configuration properties and exception handling, given the refactoring in `BeanOutputConverter`?",
-            "answer": {
-                "finalAnswer": "The change adheres to Spring Boot 3 best practices for configuration properties and exception handling.",
-                "analysis": "The code changes adhere to Spring Boot 3 best practices by using JsonSchemaGenerator for schema generation, properly handling parsing exceptions, and generating schemas that correctly reflect field annotations. The schema generation logic is consistent and follows standard practices for JSON Schema generation in Spring Boot applications.",
-                "evidence": [
-                    {
-                        "file": "spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java",
-                        "lines": "64-68",
-                        "reason": "The change adds a 'format' property with value 'int32' to the 'age' field in the JSON schema, which is a valid JSON Schema specification for integer types."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
-                        "lines": "32-38",
-                        "reason": "The code now uses JsonSchemaGenerator.generateForType to generate JSON schema, which is a standard approach for schema generation in Spring Boot applications."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
-                        "lines": "180-195",
-                        "reason": "The code parses the generated schema string into a JsonNode and throws a RuntimeException if parsing fails, which is a reasonable fallback for schema generation errors."
-                    },
-                    {
-                        "file": "spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java",
-                        "lines": "93-97",
-                        "reason": "The static initializer adds JacksonOption.RESPECT_JSONPROPERTY_ORDER to the JacksonSchemaModule, which is a configuration choice for schema generation consistency."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "451-457",
-                        "reason": "The test verifies that the schema generated from ToolParam annotations correctly includes only required fields and omits optional ones, demonstrating proper schema generation behavior."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "471-477",
-                        "reason": "The test ensures that the schema generated from ToolParam annotations correctly reflects field descriptions, which is a best practice for schema generation."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "491-507",
-                        "reason": "The test verifies that the schema generated from ToolParam annotations correctly includes only required fields and omits optional ones, demonstrating proper schema generation behavior."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java",
-                        "lines": "508-522",
-                        "reason": "The test verifies that the schema generated from ToolParam annotations correctly includes only required fields and omits optional ones, demonstrating proper schema generation behavior."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/kotlin/org/springframework/ai/converter/BeanOutputConverterTests.kt",
-                        "lines": "38-42",
-                        "reason": "The test ensures that the schema generated from Kotlin classes correctly includes only the required field 'bar' and omits 'baz', which is a best practice for schema generation."
-                    },
-                    {
-                        "file": "spring-ai-model/src/test/kotlin/org/springframework/ai/converter/BeanOutputConverterTests.kt",
-                        "lines": "45-50",
-                        "reason": "The test ensures that the schema generated from Kotlin classes correctly includes only the required field 'bar' and omits 'baz', which is a best practice for schema generation."
-                    }
-                ]
-            }
-        }
-    ],
-    "staticAnalysisResults": "checkstyle Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<checkstyle version=\"13.4.2\">\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/reviews/20260530_232559/cache-java/spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/reviews/20260530_232559/cache-java/spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/reviews/20260530_232559/cache-java/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/reviews/20260530_232559/cache-java/spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java\">\n</file>\n</checkstyle>\n\npmd Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<pmd xmlns=\"http://pmd.sourceforge.net/report/2.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://pmd.sourceforge.net/report/2.0.0 https://pmd.github.io/schema/report_2_0_0.xsd\" version=\"7.24.0\" timestamp=\"2026-05-30T23:26:00.889\">\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/reviews/20260530_232559/cache-java/spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java\">\n<violation beginline=\"521\" endline=\"521\" begincolumn=\"17\" endcolumn=\"22\" rule=\"ClassWithOnlyPrivateConstructorsShouldBeFinal\" ruleset=\"Design\" package=\"org.springframework.ai.chat.client\" class=\"ChatClientNativeStructuredResponseTests.ContextCatcherCallAdvisor\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#classwithonlyprivateconstructorsshouldbefinal\" priority=\"1\">\nThis class has only private constructors and may be final\n</violation>\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/reviews/20260530_232559/cache-java/spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java\">\n<violation beginline=\"148\" endline=\"148\" begincolumn=\"55\" endcolumn=\"70\" rule=\"ConstructorCallsOverridableMethod\" ruleset=\"Error Prone\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"BeanOutputConverter\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_errorprone.html#constructorcallsoverridablemethod\" priority=\"1\">\nOverridable method called during object construction: BeanOutputConverter&lt;T&gt;.getJsonMapper() \n</violation>\n<violation beginline=\"150\" endline=\"150\" begincolumn=\"3\" endcolumn=\"19\" rule=\"ConstructorCallsOverridableMethod\" ruleset=\"Error Prone\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"BeanOutputConverter\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_errorprone.html#constructorcallsoverridablemethod\" priority=\"1\">\nThis method may call an overridable method during object construction: BeanOutputConverter&lt;T&gt;.postProcessSchema(@NonNull *JsonNode) (call stack: [BeanOutputConverter&lt;T&gt;.generateSchema(), BeanOutputConverter&lt;T&gt;.postProcessSchema(@NonNull *JsonNode)])\n</violation>\n<violation beginline=\"190\" endline=\"190\" begincolumn=\"14\" endcolumn=\"30\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"generateSchema\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n<violation beginline=\"201\" endline=\"201\" begincolumn=\"14\" endcolumn=\"30\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"generateSchema\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n<violation beginline=\"223\" endline=\"223\" begincolumn=\"4\" endcolumn=\"8\" rule=\"AvoidReassigningParameters\" ruleset=\"Best Practices\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"convert\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_bestpractices.html#avoidreassigningparameters\" priority=\"2\">\nAvoid reassigning parameters such as 'text'\n</violation>\n</file>\n</pmd>\n\n"
+    "staticAnalysisResults": "checkstyle Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<checkstyle version=\"13.4.2\">\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_215658/cache-java/spring-ai-model/src/test/java/org/springframework/ai/converter/BeanOutputConverterTest.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_215658/cache-java/spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_215658/cache-java/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaGenerator.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_215658/cache-java/spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java\">\n</file>\n</checkstyle>\n\npmd Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<pmd xmlns=\"http://pmd.sourceforge.net/report/2.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://pmd.sourceforge.net/report/2.0.0 https://pmd.github.io/schema/report_2_0_0.xsd\" version=\"7.24.0\" timestamp=\"2026-06-14T21:56:59.767\">\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_215658/cache-java/spring-ai-client-chat/src/test/java/org/springframework/ai/chat/client/ChatClientNativeStructuredResponseTests.java\">\n<violation beginline=\"521\" endline=\"521\" begincolumn=\"17\" endcolumn=\"22\" rule=\"ClassWithOnlyPrivateConstructorsShouldBeFinal\" ruleset=\"Design\" package=\"org.springframework.ai.chat.client\" class=\"ChatClientNativeStructuredResponseTests.ContextCatcherCallAdvisor\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#classwithonlyprivateconstructorsshouldbefinal\" priority=\"1\">\nThis class has only private constructors and may be final\n</violation>\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_215658/cache-java/spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java\">\n<violation beginline=\"148\" endline=\"148\" begincolumn=\"55\" endcolumn=\"70\" rule=\"ConstructorCallsOverridableMethod\" ruleset=\"Error Prone\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"BeanOutputConverter\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_errorprone.html#constructorcallsoverridablemethod\" priority=\"1\">\nOverridable method called during object construction: BeanOutputConverter&lt;T&gt;.getJsonMapper() \n</violation>\n<violation beginline=\"150\" endline=\"150\" begincolumn=\"3\" endcolumn=\"19\" rule=\"ConstructorCallsOverridableMethod\" ruleset=\"Error Prone\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"BeanOutputConverter\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_errorprone.html#constructorcallsoverridablemethod\" priority=\"1\">\nThis method may call an overridable method during object construction: BeanOutputConverter&lt;T&gt;.postProcessSchema(@NonNull *JsonNode) (call stack: [BeanOutputConverter&lt;T&gt;.generateSchema(), BeanOutputConverter&lt;T&gt;.postProcessSchema(@NonNull *JsonNode)])\n</violation>\n<violation beginline=\"190\" endline=\"190\" begincolumn=\"14\" endcolumn=\"30\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"generateSchema\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n<violation beginline=\"201\" endline=\"201\" begincolumn=\"14\" endcolumn=\"30\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"generateSchema\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n<violation beginline=\"223\" endline=\"223\" begincolumn=\"4\" endcolumn=\"8\" rule=\"AvoidReassigningParameters\" ruleset=\"Best Practices\" package=\"org.springframework.ai.converter\" class=\"BeanOutputConverter\" method=\"convert\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_bestpractices.html#avoidreassigningparameters\" priority=\"2\">\nAvoid reassigning parameters such as 'text'\n</violation>\n</file>\n</pmd>\n\n"
 }

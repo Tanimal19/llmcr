@@ -1,0 +1,153 @@
+{
+    "prId": 5414,
+    "prTitle": "Doc: Add guide for accessing HTTP headers in MCP Server",
+    "interpretation": {
+        "changeDescription": "This change updates the Spring AI MCP Server Boot Starter documentation by adding a new section on how to inject and access transport-specific metadata using `McpTransportContext` and `TransportContextExtractor`.",
+        "changeMotivation": "The update addresses the need for developers to access transport-level details (such as HTTP headers or remote host information) within MCP tool implementations. Since `McpTransportContext` is empty by default to maintain transport-agnosticism, this documentation provides the necessary guidance on how to explicitly configure a `TransportContextExtractor` to pass that metadata into the server's execution context."
+    },
+    "content": {
+        "motivation": "The change adds documentation to enable developers to propagate transport-specific metadata (e.g., HTTP headers) into the MCP tool execution context, addressing the need for transport-level awareness in MCP servers while maintaining their transport-agnostic design.",
+        "suggestion": "Revise the documentation examples to adopt defensive programming practices. Specifically, warn users against storing sensitive credentials directly in the transport context, demonstrate null-safe retrieval methods, and use header-agnostic lookup patterns to improve reliability and security.",
+        "goodPoints": [
+            "Clearly explains the 'why' behind the transport-agnostic design by referencing `McpTransportContext.EMPTY`.",
+            "Provides a practical, actionable code example for implementing the `TransportContextExtractor` interface.",
+            "Correctly identifies the need for custom context propagation when building secure, identity-aware MCP tools."
+        ],
+        "badPoints": [
+            "The example promotes a security anti-pattern by storing sensitive 'Authorization' headers in a shared context object.",
+            "The retrieval logic in the tool example is fragile due to lack of type checking and null handling.",
+            "The header lookup strategy is case-sensitive, which can lead to unexpected failures depending on the underlying transport implementation.",
+            "The extraction logic is tightly coupled to specific header strings, lacking a more modular or reusable approach."
+        ],
+        "implementationDetails": [
+            {
+                "filename": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc",
+                "details": "Introduces a documentation section for `TransportContextExtractor`. Uses `WebMvcStreamableServerTransportProvider` as the primary example for configuring metadata extraction. Demonstrates accessing this data inside an `@McpTool` annotated method via `McpSyncRequestContext`."
+            }
+        ],
+        "issues": [
+            {
+                "draft": {
+                    "dimension": "Security",
+                    "severity": "Critical",
+                    "location": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc::144",
+                    "title": "Exposure of sensitive authorization headers",
+                    "description": "The example code extracts an 'Authorization' header and stores it in the `McpTransportContext` map. This makes sensitive authentication tokens available to any tool that inspects the context, potentially leading to accidental logging or insecure handling of credentials.",
+                    "assumption": "The 'Authorization' header contains sensitive credentials like Bearer tokens or API keys."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code explicitly extracts the 'Authorization' header from the server request and stores it in the McpTransportContext map, which is then accessible to tools via McpSyncRequestContext or McpAsyncRequestContext. This directly exposes sensitive credentials to any tool that inspects the context, as the assumption holds true and no existing mechanism is in place to sanitize or prevent this exposure.",
+                    "evidence": [
+                        "The code snippet shows a WebMvcStreamableServerTransportProvider bean that extracts the 'Authorization' header and stores it in McpTransportContext.create(Map.of(\"authorization\", authorization)).",
+                        "The example tool method accessProtectedResource retrieves the authorization value from the context using (String) context.get(\"authorization\"), confirming that the sensitive header is accessible to tools."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Security",
+                    "severity": "Major",
+                    "location": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc::157",
+                    "title": "Type safety risk with Object casting",
+                    "description": "The example uses a raw cast `(String) context.get(\"authorization\")` without checking for the existence or the type of the object, which could result in a `ClassCastException` or `NullPointerException` at runtime.",
+                    "assumption": "The MCP tools will execute in an environment where the map entries are guaranteed to be the expected types."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code explicitly performs a raw cast `(String) context.get(\"authorization\")` without any null or type safety checks, and there is no existing mechanism in the project to validate or sanitize the map entries, making the ClassCastException or NullPointerException a real risk when the code is executed.",
+                    "evidence": [
+                        "The code at line 157 in mcp-server-boot-starter-docs.adoc uses `(String) context.get(\"authorization\")` without checking if the value exists or is of type String.",
+                        "The project does not include any type safety or validation mechanism for map entries in McpTransportContext.",
+                        "The example method `accessProtectedResource` is intended to be used in real tool execution, not just documentation."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Maintainability",
+                    "severity": "Minor",
+                    "location": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc::144",
+                    "title": "Use of magic string keys",
+                    "description": "The code uses a string literal 'authorization' as a key for the map. This is prone to typos and makes it difficult to maintain or refactor the key across different parts of the application.",
+                    "assumption": "Developers will copy-paste this pattern throughout their codebase."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue flagged is about using a magic string 'authorization' as a key in a map within the code, which is a common pattern and not inherently problematic. However, the code change shows that the key is now retrieved from an HTTP header and stored in a map using a dynamic key, not a hardcoded string. The original concern about magic strings is irrelevant because the key is no longer static; it is dynamically constructed. Additionally, the code is part of documentation and auto-configuration setup, not runtime logic that would be used by developers. There is no existing mechanism that would cause typos or refactoring issues, as the key is not a constant string but a value from the request. Therefore, the issue does not apply to this project.",
+                    "evidence": [
+                        "The key 'authorization' is no longer used as a static string key; it is now retrieved from serverRequest.headers().firstHeader(\"Authorization\") and stored in a map via Map.of(\"authorization\", authorization).",
+                        "The code is part of documentation (adoc) and auto-configuration setup, not runtime logic that would be used by developers.",
+                        "The key is dynamically generated from the HTTP header, so there is no risk of typos or refactoring issues related to the string literal.",
+                        "No existing mechanism is flagged that would cause this pattern to be problematic; the code is designed to be transport-agnostic and uses dynamic context extraction."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Design",
+                    "severity": "Minor",
+                    "location": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc::144",
+                    "title": "Manual extraction logic in transport configuration",
+                    "description": "The logic for extracting headers is manually implemented inside the bean configuration. This couples the transport configuration to specific header names, making it less reusable if multiple header types need to be extracted.",
+                    "assumption": "The project might grow to require extraction of multiple different metadata fields."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code shows a manual implementation of header extraction within a bean configuration that couples the transport to specific header names (e.g., \"Authorization\"), which is not reusable if other headers need extraction. The project context does not indicate any existing abstraction or framework to handle multiple metadata fields, and the code is reachable and functional, making the risk real.",
+                    "evidence": [
+                        "The bean configuration manually extracts the 'Authorization' header using serverRequest.headers().firstHeader(\"Authorization\"), which is transport-specific and not reusable for other headers.",
+                        "The project context does not show any existing abstraction for transport metadata extraction, such as a generic context extractor or framework.",
+                        "The code is reachable and used in the example tool method that accesses the context."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Readability",
+                    "severity": "Minor",
+                    "location": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc::157",
+                    "title": "Lack of defensive coding in example",
+                    "description": "The example does not demonstrate defensive patterns such as checking if the map contains the key or validating the content of the authorization header before use.",
+                    "assumption": "Documentation should reflect best practices including basic input validation."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The documentation example now includes a tool that accesses the authorization header from the transport context without validating its existence or content, which constitutes a lack of defensive coding. The code uses a cast to retrieve the authorization value from the map, which is unsafe if the key is missing or the value is not a string, and no checks are performed to ensure the header is present or valid. This directly violates the assumption that documentation should reflect best practices including basic input validation.",
+                    "evidence": [
+                        "The code snippet shows a method `accessProtectedResource` that casts `context.get(\"authorization\")` to String without checking if the key exists or if the value is a string.",
+                        "The documentation does not mention any validation of the authorization header before use.",
+                        "The example demonstrates a potential NPE or type mismatch if the header is missing or not a string, which is a defensive coding issue."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Functionality",
+                    "severity": "Minor",
+                    "location": "spring-ai-docs/src/main/antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc::144",
+                    "title": "Potential for header key inconsistency",
+                    "description": "The example uses `firstHeader(\"Authorization\")`. If the client sends headers in different casing (e.g., 'authorization') or if the transport implementation handles headers differently, this might fail to retrieve the expected value.",
+                    "assumption": "The target transport implementation enforces a specific case-insensitive or case-sensitive look-up behavior."
+                },
+                "verdict": {
+                    "verdict": "confirmed",
+                    "confidence": "high",
+                    "reason": "The issue is confirmed because the code explicitly uses `serverRequest.headers().firstHeader(\"Authorization\")` to retrieve the Authorization header, which is case-sensitive. The assumption that the transport implementation enforces case-insensitive or case-sensitive look-up behavior is valid, as no existing mechanism is provided to normalize header casing, and the risk of inconsistency is real given how the code is actually used in the example.",
+                    "evidence": [
+                        "The code uses `serverRequest.headers().firstHeader(\"Authorization\")` to retrieve the Authorization header, which is case-sensitive.",
+                        "No existing mechanism is provided to normalize header casing, such as converting to lowercase or handling case-insensitive lookups.",
+                        "The risk is real because the example assumes the header is retrieved correctly, but if the transport implementation sends 'authorization' instead of 'Authorization', the lookup will fail.",
+                        "The code is reachable and used in the example, making the issue a genuine concern."
+                    ]
+                }
+            }
+        ]
+    },
+    "staticAnalysisResults": "checkstyle Output:\nFiles to process must be specified, found 0.\n\npmd Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<pmd xmlns=\"http://pmd.sourceforge.net/report/2.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://pmd.sourceforge.net/report/2.0.0 https://pmd.github.io/schema/report_2_0_0.xsd\" version=\"7.24.0\" timestamp=\"2026-06-14T15:14:32.662\">\n</pmd>\n\n"
+}

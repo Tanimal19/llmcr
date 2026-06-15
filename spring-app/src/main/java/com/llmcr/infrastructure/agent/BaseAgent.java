@@ -34,7 +34,6 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
 
   private static final int DEFAULT_MAX_RETRY = 3;
   private static final int DEFAULT_MAX_ITERATIONS = 5;
-  private static final String FORMAT_INSTRUCTIONS_PLACEHOLDER = "format_instructions";
 
   private List<Message> conversationHistory;
 
@@ -71,9 +70,7 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
 
   /**
    * The first user message sent to the agent. This usually include the user input and instructions
-   * on how to use the input. If {@link #FORMAT_INSTRUCTIONS_PLACEHOLDER} is included in the
-   * template, the agent will replace it with the output format instructions based on the
-   * outputConverter.
+   * on how to use the input.
    */
   protected abstract String getInitialUserMessageTemplate();
 
@@ -99,9 +96,6 @@ public abstract class BaseAgent<I, R, O> implements Agent<I, O> {
   protected String buildInitialMessage(I input) {
     Map<String, Object> variables = new HashMap<>();
     variables.putAll(buildInputVariables(input));
-    if (outputConverter != null) {
-      variables.put(FORMAT_INSTRUCTIONS_PLACEHOLDER, outputConverter.getFormat());
-    }
 
     return PromptTemplate.builder()
         .renderer(
