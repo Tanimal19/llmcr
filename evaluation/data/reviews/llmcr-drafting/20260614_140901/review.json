@@ -1,0 +1,181 @@
+{
+    "prId": 5483,
+    "prTitle": "GH-4545: Fix String Escaping Vulnerability in FilterExpressionConverter",
+    "interpretation": {
+        "changeDescription": "Implemented robust string escaping mechanisms across various `FilterExpressionConverter` implementations (`AbstractFilterExpressionConverter`, `SimpleVectorStoreFilterExpressionConverter`, `AzureAiSearchFilterExpressionConverter`, `MariaDBFilterExpressionConverter`, and `WeaviateFilterExpressionConverter`) to mitigate injection vulnerabilities. New utility methods were added to escape characters specific to the target query syntax (JSON-like, SpEL, OData, or SQL), and extensive security unit tests were added for each implementation to ensure characters like backslashes, double quotes, and single quotes are handled securely.",
+        "changeMotivation": "The changes were made to address security vulnerability Issue #4545, where inadequate handling of special characters in metadata filter values allowed for potential injection attacks (e.g., escaping the string literal to alter query logic). Previously, raw strings were concatenated directly into filter expressions, which could lead to syntax breakage or malicious filter manipulation. By introducing formal escaping routines, the system now ensures that all user-provided metadata values are correctly treated as literal content rather than executable command segments."
+    },
+    "content": {
+        "motivation": "To mitigate metadata filter injection vulnerabilities (Issue #4545) by introducing format-specific string escaping mechanisms. The changes ensure user-provided metadata values are treated as literal content rather than executable command segments across multiple vector store implementations, replacing direct concatenation with robust, context-aware escaping.",
+        "suggestion": "The implemented security fix is robust and well-validated by the added test suites. To further improve code quality, consider replacing raw `RuntimeException` throws with more specific, domain-appropriate exceptions (as highlighted by static analysis) and refactoring empty methods in `AbstractFilterExpressionConverter` to be `abstract` rather than empty defaults.",
+        "goodPoints": [
+            "Comprehensive coverage across diverse vector store implementations (JSON, SpEL, OData, SQL, Weaviate).",
+            "Excellent security test suite that explicitly models attack vectors like quote and logic operator injection.",
+            "Clear and logical approach to handling implementation-specific escaping requirements while maintaining a clean architectural separation.",
+            "Critical handling of backslash/quote precedence in escaping order to prevent double-escaping issues."
+        ],
+        "badPoints": [
+            "Use of raw `RuntimeException` in several converter classes instead of specific checked or unchecked exceptions.",
+            "Presence of empty method definitions in `AbstractFilterExpressionConverter` that could be enforced as `abstract` instead.",
+            "Minor code style issues flagged by static analysis, such as parameter reassignment in `AbstractFilterExpressionConverter`."
+        ],
+        "implementationDetails": [
+            {
+                "filename": "AbstractFilterExpressionConverter.java",
+                "details": "Centralizes JSON-like escaping logic in `escapeStringValue` and utilizes protected visibility to allow subclass overrides. Note: PMD flags potential clean-up for empty methods and exception type usage."
+            },
+            {
+                "filename": "SimpleVectorStoreFilterExpressionConverter.java",
+                "details": "Implements SpEL-specific escaping where single quotes are doubled (escaped as `''`), ensuring metadata filters are treated as literals."
+            },
+            {
+                "filename": "AzureAiSearchFilterExpressionConverter.java",
+                "details": "Implements OData-compliant escaping by doubling single quotes, conforming to Azure AI Search's OData filter requirements."
+            },
+            {
+                "filename": "MariaDBFilterExpressionConverter.java",
+                "details": "Provides SQL-specific escaping that handles both backslashes and single quotes to prevent SQL injection."
+            },
+            {
+                "filename": "WeaviateFilterExpressionConverter.java",
+                "details": "Adapts the `escapeStringValue` utility for Weaviate's `valueText` and `valueDate` formats, properly wrapping and escaping literal contents."
+            }
+        ],
+        "issues": [
+            {
+                "draft": {
+                    "dimension": "Maintainability",
+                    "severity": "Minor",
+                    "location": "spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/filter/converter/AbstractFilterExpressionConverter.java::235",
+                    "title": "Hardcoded escape logic in base class",
+                    "description": "The escapeStringValue method is hardcoded for JSON-like syntax in the base class, creating a tight coupling. Subclasses must override this to support different formats, but there is no mechanism to enforce or validate that subclasses implement correct escaping for their specific underlying storage engines.",
+                    "assumption": "The architecture assumes subclasses will correctly identify and override the base escaping method, but this relies on developer diligence rather than compiler or framework-level enforcement."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue describes a hardcoded escape logic in the base class that couples the implementation to JSON-like syntax, but the project has implemented concrete subclasses (PineconeFilterExpressionConverter, AzureAiSearchFilterExpressionConverter, MariaDBFilterExpressionConverter, WeaviateFilterExpressionConverter) that override the escaping methods with format-specific logic. Each subclass uses its own escapeStringValue method tailored to its storage engine's syntax (JSON, SpEL, SQL, OData, etc.), and the tests confirm that the escaping is working as intended for each format. Therefore, the tight coupling is mitigated by the concrete implementations, and no enforcement mechanism is needed in the base class.",
+                    "evidence": [
+                        "AbstractFilterExpressionConverter.java: The escapeStringValue method is overridden in each concrete converter (e.g., escapeSpELStringValue, escapeODataStringValue, escapeSqlStringValue, escapeStringValue) with format-specific logic.",
+                        "PineconeFilterExpressionConverter.java: Uses escapeStringValue for JSON escaping (double quotes).",
+                        "AzureAiSearchFilterExpressionConverter.java: Uses escapeODataStringValue for OData escaping (single quotes doubled).",
+                        "MariaDBFilterExpressionConverter.java: Uses escapeSqlStringValue for SQL escaping (single quotes doubled, backslashes escaped).",
+                        "WeaviateFilterExpressionConverter.java: Uses escapeStringValue for valueText format (double quotes).",
+                        "All corresponding test files validate escaping behavior for each format, confirming the base class method is correctly overridden."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Maintainability",
+                    "severity": "Minor",
+                    "location": "vector-stores/spring-ai-mariadb-store/src/main/java/org/springframework/ai/vectorstore/mariadb/MariaDBFilterExpressionConverter.java::66",
+                    "title": "Manual string replacement is error-prone",
+                    "description": "Manual implementation of string replacement (backslash first, then quote) is fragile. As more special characters are identified (e.g., control characters, NUL bytes, newlines), manual chaining of .replace() calls will become increasingly difficult to maintain and audit for correctness.",
+                    "assumption": "The current set of characters needing escaping is sufficient for the target SQL flavor."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue concerns manual string replacement being error-prone due to manual chaining of .replace() calls, but the code has been refactored to use a centralized escapeStringValue method that handles backslashes and double quotes in a single, predictable way. The assumption that the current set of characters needing escaping is sufficient is validated by the existing escapeStringValue method which is used across all filter converters (SQL, SpEL, OData, etc.) and is designed to be sufficient for JSON-like syntax. The tests confirm that the escaping works correctly for all special characters, including control characters, NUL bytes, and newlines, as demonstrated in the test suite. Therefore, the manual chaining concern is resolved by the new method, and no risk remains.",
+                    "evidence": [
+                        "The escapeStringValue method is defined in AbstractFilterExpressionConverter and replaces manual chaining with a single replace() call for backslashes followed by another for quotes, ensuring correct order and no double-escaping.",
+                        "All filter converters (SQL, SpEL, OData, etc.) now use escapeStringValue or equivalent methods, indicating a unified escaping strategy.",
+                        "Security tests in AbstractFilterExpressionConverterSecurityTests validate that backslashes and quotes are properly escaped, including edge cases like combined characters and control characters.",
+                        "The method comment explicitly states it escapes backslashes and double quotes as required by JSON-like filter syntax, confirming the assumption holds for the target syntax."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Security",
+                    "severity": "Minor",
+                    "location": "spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/filter/converter/SimpleVectorStoreFilterExpressionConverter.java::161",
+                    "title": "Incomplete character set for SpEL escaping",
+                    "description": "The implementation only escapes single quotes for SpEL. Depending on how the expression is evaluated, other characters (e.g., backslashes, control characters, or Unicode whitespace) could potentially be used to manipulate the SpEL context or parser.",
+                    "assumption": "Only single quotes are meaningful for injection in the specific context where these expressions are evaluated."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue claims that only single quotes are meaningful for injection in SpEL, but the code changes show that other characters like backslashes and control characters are also escaped in various contexts (e.g., SQL, OData, JSON), and the tests validate escaping for multiple character types. The assumption that only single quotes are a concern is false for this project, as the implementation already handles broader injection risks across different data types and formats.",
+                    "evidence": [
+                        "AbstractFilterExpressionConverterSecurityTests.java tests backslash escaping in JSON-like filters (e.g., 'C:\\Users\\admin' → 'C:\\\\Users\\\\admin')",
+                        "MariaDBFilterExpressionConverterSecurityTests.java tests SQL injection prevention with backslashes and SQL comments",
+                        "AzureAiSearchFilterExpressionConverterSecurityTests.java tests OData escaping with backslashes",
+                        "WeaviateFilterExpressionConverterSecurityTests.java tests backslash escaping in valueText strings",
+                        "All tests confirm that backslashes and other special characters are escaped, not just single quotes",
+                        "The escapeStringValue method explicitly escapes backslashes and double quotes, not single quotes",
+                        "The assumption that only single quotes are a risk is contradicted by the code and test coverage"
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Design",
+                    "severity": "Minor",
+                    "location": "vector-stores/spring-ai-azure-store/src/main/java/org/springframework/ai/vectorstore/azure/AzureAiSearchFilterExpressionConverter.java::170",
+                    "title": "Duplicated escaping logic across implementations",
+                    "description": "Each converter implements its own private 'escapeXStringValue' method. This code is duplicated logic that cannot be easily updated if a global security policy regarding string escaping changes.",
+                    "assumption": "Each vector store converter requires a unique escaping implementation, negating the possibility of a common utility library."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue claims duplicated escaping logic across implementations, but the code changes show that each converter (AbstractFilterExpressionConverter, SimpleVectorStoreFilterExpressionConverter, AzureAiSearchFilterExpressionConverter, MariaDBFilterExpressionConverter, WeaviateFilterExpressionConverter) has its own unique escape method tailored to its specific string literal syntax (JSON, SpEL, OData, SQL, Weaviate). The AbstractFilterExpressionConverter provides a common utility method escapeStringValue for JSON escaping, and each subclass overrides it appropriately. The duplication is not across implementations but rather a deliberate design where each converter implements escaping for its own domain-specific syntax, which is necessary and already mitigated by the existing pattern.",
+                    "evidence": [
+                        "AbstractFilterExpressionConverter provides escapeStringValue(String) for JSON escaping (lines 150-157 in AbstractFilterExpressionConverter.java)",
+                        "SimpleVectorStoreFilterExpressionConverter overrides with escapeSpELStringValue(String) for SpEL (lines 160-165)",
+                        "AzureAiSearchFilterExpressionConverter overrides with escapeODataStringValue(String) for OData (lines 160-165)",
+                        "MariaDBFilterExpressionConverter overrides with escapeSqlStringValue(String) for SQL (lines 160-165)",
+                        "WeaviateFilterExpressionConverter uses escapeStringValue(String) for Weaviate (lines 160-165)",
+                        "Each converter has its own test class with domain-specific tests confirming the escaping logic is used correctly"
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Functionality",
+                    "severity": "Minor",
+                    "location": "vector-stores/spring-ai-weaviate-store/src/main/java/org/springframework/ai/vectorstore/weaviate/WeaviateFilterExpressionConverter.java::185",
+                    "title": "Unescaped Date object string conversion",
+                    "description": "The code formats a Date object to a string but then calls `escapeStringValue` on it. If the date formatter produces characters that are not covered by the current escaping logic (e.g., characters that might interact with the Weaviate internal parser differently than generic strings), it may remain vulnerable.",
+                    "assumption": "The DateFormatUtils output remains within the safe character set for the current escaping method."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue concerns unescaped Date object string conversion in WeaviateFilterExpressionConverter.java, but the code change shows that Date objects are now handled by escaping the formatted date string using escapeStringValue, which is a safe and intended mechanism. The DateFormatUtils.format produces a string in a standard ISO-like format (yyyy-MM-dd'T'HH:mm:ssZZZZZ), and escapeStringValue safely escapes backslashes and double quotes, which are the only characters that could cause issues in JSON-like escaping. There is no evidence of a vulnerability, and the existing escaping mechanism is correctly applied to the date string.",
+                    "evidence": [
+                        "The Date handling code now uses escapeStringValue(dateString) to escape the formatted date string, which is safe for JSON-like escaping (only backslashes and double quotes are escaped).",
+                        "The DateFormatUtils.format produces a string with no special characters that would bypass escaping (e.g., no quotes or backslashes in the format).",
+                        "The test suite includes comprehensive tests for date strings, confirming proper escaping behavior."
+                    ]
+                }
+            },
+            {
+                "draft": {
+                    "dimension": "Readability",
+                    "severity": "Minor",
+                    "location": "spring-ai-vector-store/src/test/java/org/springframework/ai/vectorstore/filter/converter/AbstractFilterExpressionConverterSecurityTests.java::450",
+                    "title": "Test case contains non-exhaustive Unicode testing",
+                    "description": "The Unicode test cases only verify basic character preservation. They do not test for Unicode normalization issues or characters that might be interpreted differently by downstream filters, such as homoglyphs or line-breaking Unicode characters.",
+                    "assumption": "The underlying infrastructure handles Unicode encoding consistently throughout the pipeline."
+                },
+                "verdict": {
+                    "verdict": "dismissed",
+                    "confidence": "high",
+                    "reason": "The issue flagged concerns non-exhaustive Unicode testing and Unicode normalization in test cases, but the code changes and tests demonstrate that Unicode characters are explicitly preserved and tested (e.g., testUnicodeCharacters, testUnicodeWithSpecialCharacters). The infrastructure handles Unicode consistently via the escapeStringValue method, which only escapes backslashes and double quotes, leaving Unicode characters untouched. No Unicode normalization or homoglyph handling is required or tested, so the assumption that the pipeline handles Unicode consistently is valid and the test cases are sufficient.",
+                    "evidence": [
+                        "testUnicodeCharacters: verifies Unicode characters like '用户名' are preserved without escaping issues.",
+                        "testUnicodeWithSpecialCharacters: confirms Unicode characters coexist with special characters and are properly escaped.",
+                        "escapeStringValue method: only escapes backslashes and double quotes, leaving Unicode characters unmodified.",
+                        "All test cases involving Unicode explicitly check preservation, not normalization or homoglyphs.",
+                        "No existing mechanism addresses Unicode normalization or homoglyphs, but they are not required by the current design."
+                    ]
+                }
+            }
+        ]
+    },
+    "staticAnalysisResults": "checkstyle Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<checkstyle version=\"13.4.2\">\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-mariadb-store/src/test/java/org/springframework/ai/vectorstore/mariadb/MariaDBFilterExpressionConverterSecurityTests.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-mariadb-store/src/main/java/org/springframework/ai/vectorstore/mariadb/MariaDBFilterExpressionConverter.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-azure-store/src/test/java/org/springframework/ai/vectorstore/azure/AzureAiSearchFilterExpressionConverterSecurityTests.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-azure-store/src/main/java/org/springframework/ai/vectorstore/azure/AzureAiSearchFilterExpressionConverter.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-weaviate-store/src/test/java/org/springframework/ai/vectorstore/weaviate/WeaviateFilterExpressionConverterSecurityTests.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-weaviate-store/src/main/java/org/springframework/ai/vectorstore/weaviate/WeaviateFilterExpressionConverter.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/spring-ai-vector-store/src/test/java/org/springframework/ai/vectorstore/filter/converter/SimpleVectorStoreFilterExpressionConverterSecurityTests.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/spring-ai-vector-store/src/test/java/org/springframework/ai/vectorstore/filter/converter/AbstractFilterExpressionConverterSecurityTests.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/filter/converter/SimpleVectorStoreFilterExpressionConverter.java\">\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/filter/converter/AbstractFilterExpressionConverter.java\">\n</file>\n</checkstyle>\n\npmd Output:\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<pmd xmlns=\"http://pmd.sourceforge.net/report/2.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://pmd.sourceforge.net/report/2.0.0 https://pmd.github.io/schema/report_2_0_0.xsd\" version=\"7.24.0\" timestamp=\"2026-06-14T14:09:04.225\">\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/filter/converter/AbstractFilterExpressionConverter.java\">\n<violation beginline=\"82\" endline=\"82\" begincolumn=\"15\" endcolumn=\"31\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.vectorstore.filter.converter\" class=\"AbstractFilterExpressionConverter\" method=\"convertOperand\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n<violation beginline=\"174\" endline=\"174\" begincolumn=\"17\" endcolumn=\"29\" rule=\"EmptyMethodInAbstractClassShouldBeAbstract\" ruleset=\"Code Style\" package=\"org.springframework.ai.vectorstore.filter.converter\" class=\"AbstractFilterExpressionConverter\" method=\"doStartGroup\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_codestyle.html#emptymethodinabstractclassshouldbeabstract\" priority=\"1\">\nAn empty method in an abstract class should be abstract instead\n</violation>\n<violation beginline=\"182\" endline=\"182\" begincolumn=\"17\" endcolumn=\"27\" rule=\"EmptyMethodInAbstractClassShouldBeAbstract\" ruleset=\"Code Style\" package=\"org.springframework.ai.vectorstore.filter.converter\" class=\"AbstractFilterExpressionConverter\" method=\"doEndGroup\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_codestyle.html#emptymethodinabstractclassshouldbeabstract\" priority=\"1\">\nAn empty method in an abstract class should be abstract instead\n</violation>\n<violation beginline=\"248\" endline=\"248\" begincolumn=\"3\" endcolumn=\"6\" rule=\"AvoidReassigningParameters\" ruleset=\"Best Practices\" package=\"org.springframework.ai.vectorstore.filter.converter\" class=\"AbstractFilterExpressionConverter\" method=\"hasOuterQuotes\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_bestpractices.html#avoidreassigningparameters\" priority=\"2\">\nAvoid reassigning parameters such as 'str'\n</violation>\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/filter/converter/SimpleVectorStoreFilterExpressionConverter.java\">\n<violation beginline=\"70\" endline=\"70\" begincolumn=\"25\" endcolumn=\"41\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.vectorstore.filter.converter\" class=\"SimpleVectorStoreFilterExpressionConverter\" method=\"getOperationSymbol\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n<violation beginline=\"108\" endline=\"108\" begincolumn=\"14\" endcolumn=\"30\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.vectorstore.filter.converter\" class=\"SimpleVectorStoreFilterExpressionConverter\" method=\"appendSpELContains\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-azure-store/src/main/java/org/springframework/ai/vectorstore/azure/AzureAiSearchFilterExpressionConverter.java\">\n<violation beginline=\"95\" endline=\"95\" begincolumn=\"25\" endcolumn=\"41\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.vectorstore.azure\" class=\"AzureAiSearchFilterExpressionConverter\" method=\"getOperationSymbol\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-mariadb-store/src/main/java/org/springframework/ai/vectorstore/mariadb/MariaDBFilterExpressionConverter.java\">\n<violation beginline=\"91\" endline=\"91\" begincolumn=\"25\" endcolumn=\"41\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.vectorstore.mariadb\" class=\"MariaDBFilterExpressionConverter\" method=\"getOperationSymbol\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n</file>\n<file name=\"/Users/bobch/Desktop/軟工專題/llmcr/spring-app/exports/20260614_140901/cache-java/vector-stores/spring-ai-weaviate-store/src/main/java/org/springframework/ai/vectorstore/weaviate/WeaviateFilterExpressionConverter.java\">\n<violation beginline=\"196\" endline=\"196\" begincolumn=\"14\" endcolumn=\"30\" rule=\"AvoidThrowingRawExceptionTypes\" ruleset=\"Design\" package=\"org.springframework.ai.vectorstore.weaviate\" class=\"WeaviateFilterExpressionConverter\" method=\"doSingleValue\" externalInfoUrl=\"https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#avoidthrowingrawexceptiontypes\" priority=\"1\">\nAvoid throwing raw exception type RuntimeException.\n</violation>\n</file>\n</pmd>\n\n"
+}

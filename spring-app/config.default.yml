@@ -62,6 +62,10 @@ chat-models:
     name: "gemini-3.1-flash-lite"
     provider: "google"
 
+  "gemini-3.1-pro-preview":
+    name: "gemini-3.1-pro-preview"
+    provider: "google"
+
 embedding-model:
   name: "harrier-0.6b"
   provider: "openai"
@@ -94,7 +98,7 @@ agents:
     chat-model: "gemini-3.1-flash-lite"
 
   "single-review":
-    chat-model: "gemini-3.1-flash-lite"
+    chat-model: "gemini-3.1-pro-preview"
 
 chat-service:
   chat-model: "nemotron-3-4b"

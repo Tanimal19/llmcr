@@ -97,6 +97,17 @@ public record CodeReviewReport(
    *
    *
    * <ul>
+   *   <li>location: filename::line_number
+   *   <li>evidence: specific evidence supporting the issue verdict, such as code snippets or
+   *       contextual information
+   * </ul>
+   */
+  public record IssueVerdictEvidence(String location, String evidence) {}
+
+  /**
+   *
+   *
+   * <ul>
    *   <li>verdict: confirmed | dismissed | needs-discussion
    *   <li>confidence: high | medium | low
    *   <li>reason: one paragraph explaining the verdict
@@ -104,7 +115,7 @@ public record CodeReviewReport(
    * </ul>
    */
   public record IssueVerdict(
-      String verdict, String confidence, String reason, List<String> evidence) {}
+      String verdict, String confidence, String reason, List<IssueVerdictEvidence> evidence) {}
 
   /**
    *

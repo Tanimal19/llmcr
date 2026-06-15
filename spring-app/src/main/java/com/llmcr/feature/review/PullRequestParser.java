@@ -27,10 +27,10 @@ public final class PullRequestParser {
       String content) {}
 
   public record PullRequestData(
-      @JsonProperty("pr_id") int prId,
+      @JsonProperty("id") int prId,
       String url,
       String title,
-      @JsonProperty("pr_description") String prDescription,
+      @JsonProperty("description") String prDescription,
       @JsonProperty("is_closed") boolean isClosed,
       @JsonProperty("is_merged") boolean isMerged,
       @JsonProperty("is_approved") boolean isApproved,

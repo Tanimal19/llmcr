@@ -4,6 +4,7 @@ import com.llmcr.config.provider.AgentConfigProvider;
 import com.llmcr.feature.review.CodeReviewReport.CodeChange;
 import com.llmcr.feature.review.CodeReviewReport.IssueDraft;
 import com.llmcr.feature.review.CodeReviewReport.IssueVerdict;
+import com.llmcr.feature.review.CodeReviewReport.IssueVerdictEvidence;
 import com.llmcr.infrastructure.agent.BaseAgent;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import java.util.List;
@@ -25,7 +26,7 @@ public class PruningAgent
       @Nullable String verdict,
       @Nullable String confidence,
       @Nullable String reason,
-      @Nullable List<String> evidence,
+      @Nullable List<IssueVerdictEvidence> evidence,
       @Nullable String dataQuery,
       @Nullable String intermediateAnalysis) {}
 
@@ -60,7 +61,13 @@ public class PruningAgent
                 "verdict": "confirmed | dismissed | needs-discussion",
                 "confidence": "high | medium | low",
                 "reason": "one paragraph explaining the verdict",
-                "evidence": ["what you found and from where in the code/context that supports your verdict"],
+                "evidence": [
+                    {
+                        "location": "filename::line_number",
+                        "evidence": "specific evidence supporting the issue verdict, such as code snippets or contextual information"
+                    },
+                    ...
+                ],
                 "needsAdditionalData": false,
             }
 
