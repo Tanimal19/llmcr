@@ -2,14 +2,19 @@
 
 ## Datasets used
 - Project Context:
-  - Spring AI (git@github.com:spring-projects/spring-ai.git)
-  - including source code, documentation, issues, pull requests
+  - Spring AI (git@github.com:spring-projects/spring-ai.git) including source code, documentation, issues, pull requests
+  - source code -> Java classes, coding conventions
+  - documentation -> Java classes usage
+  - issues -> historical & current issues (to see the motivation behind code changes)
+  - pull requests -> review decision considerations, current & future plans (to see if the change aligns with the project vision)
+
 - Review Guidelines: Writen by human, references:
   - https://google.github.io/eng-practices/review/reviewer/standard.html
   - https://github.com/mawrkus/pull-request-review-guide
   - https://levelup.gitconnected.com/the-ultimate-guideline-for-a-good-code-review-1588bc2979fc
   - https://owasp.org/www-project-code-review-guide/assets/OWASP_Code_Review_Guide_v2.pdf
-- Other Knowledge:
+
+- Background Knowledge:
   - Java Best Practice: Effective Java 3rd Edition by Joshua Bloch
   - Design Patterns: https://github.com/nilbuild/design-patterns-for-humans
   - Code Smells: https://github.com/Luzkan/smells/tree/main/content/smells
@@ -22,6 +27,13 @@
 - `Context`: a paragraph of meaningful text.
   - It can be an entire Java class, a paragraph in a document, or some defined structure.
   - The retrieval result is a list of `Context`.
+  - Metadata:
+    ```yml
+    parent_trackroot:
+    parent_source:
+    type: project_code, project_doc, project_issue, project_pr, project_plan, project_rule, review_guideline, bg_knowledge
+    cutoff_date:
+    ```
 - `Chunk`: a smaller paragraph of text that is stored in a vector database as embedding.
   - The similarity search result is a list of `Chunk`.
   - Metadata:
@@ -29,8 +41,8 @@
     parent_trackroot:
     parent_source:
     parent_context:
-    type: project_context, review_guideline, knowledge
-    cutoff_date: only for github pull requests and issues
+    type: project_code, project_doc, project_issue, project_pr, project_plan, project_convention, project_decision, review_guideline, bg_knowledge
+    cutoff_date:
     ```
 
 
