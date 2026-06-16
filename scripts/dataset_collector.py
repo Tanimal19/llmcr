@@ -7,8 +7,8 @@ ROOT = Path(__file__).parent.parent
 DATASETS = ROOT / "datasets"
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
-ISSUE_LIMIT = 5  # max issues to download (None = unlimited)
-PR_LIMIT = 5  # max PRs to download (None = unlimited)
+ISSUE_LIMIT = 10000  # max issues to download
+PR_LIMIT = 10000  # max PRs to download
 
 
 def _gh_headers():
@@ -190,11 +190,6 @@ def sparse_clone(url: str, dest: Path, subpath: str):
 
 
 if __name__ == "__main__":
-    if not TOKEN:
-        print(
-            "tip: set GITHUB_TOKEN to avoid rate limiting — PRs fetch original file contents (many API calls)\n"
-        )
-
     print("=== Spring AI source code ===")
     clone(
         "git@github.com:spring-projects/spring-ai.git",
