@@ -1,7 +1,7 @@
 package com.llmcr.feature.sync.etl.extractor;
 
 import com.llmcr.domain.entity.Context;
-import com.llmcr.domain.entity.Context.ContextType;
+import com.llmcr.domain.entity.ProjectDocItem;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.feature.sync.etl.reader.AsciiDocumentReader;
 import java.util.List;
@@ -47,12 +47,13 @@ public class DocumentParagraphExtractor implements SourceExtractor {
     return docs.stream()
         .map(
             doc ->
-                new Context(
+                new ProjectDocItem(
                     source,
                     blockIndex.getAndIncrement(),
                     "Paragraph::" + source.getPath() + "::" + blockIndex.get(),
                     doc.getText(),
-                    ContextType.PROJECT_DOC))
+                    null,
+                    null))
         .toList();
   }
 

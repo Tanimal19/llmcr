@@ -5,8 +5,10 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.entity.Context.ContextType;
+import com.llmcr.domain.entity.ProjectCodeClass;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.entity.Source.SourceType;
 import java.io.IOException;
@@ -64,12 +66,17 @@ public class ClassNodeExtractor implements SourceExtractor {
                               int currentIndex = nodeIndex.getAndIncrement();
                               String qualifiedTypeName =
                                   buildQualifiedTypeName(packageName, typeDecl);
-                              return new Context(
+                              boolean isIface = typeDecl instanceof ClassOrInterfaceDeclaration coid
+                                  && coid.isInterface();
+                              return new ProjectCodeClass(
                                   source,
                                   currentIndex,
                                   "ClassNode::" + qualifiedTypeName,
                                   typeDecl.toString(),
-                                  ContextType.PROJECT_CODE);
+                                  packageName,
+                                  typeDecl.getNameAsString(),
+                                  isIface,
+                                  null);
                             })
                         .toList());
               });

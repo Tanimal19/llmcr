@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "ctx_project_pr")
 @DiscriminatorValue("PROJECT_PR")
-public class ProjectPullRequestItem extends Context {
+public class ProjectPullRequest extends Context {
 
   @Column(name = "pr_number")
   private Integer prNumber;
@@ -17,28 +17,29 @@ public class ProjectPullRequestItem extends Context {
   @Column(name = "pr_title", columnDefinition = "TEXT")
   private String prTitle;
 
-  @Column(name = "pr_status", length = 16)
-  private String prStatus;
+  /** merged / closed / opened */
+  @Column(name = "result", length = 16)
+  private String result;
 
-  @Column(name = "cutoff_date")
-  private LocalDate cutoffDate;
+  @Column(name = "date")
+  private LocalDate date;
 
-  protected ProjectPullRequestItem() {}
+  protected ProjectPullRequest() {}
 
-  public ProjectPullRequestItem(
+  public ProjectPullRequest(
       Source source,
       int contextIndex,
       String name,
       String content,
       Integer prNumber,
       String prTitle,
-      String prStatus,
-      LocalDate cutoffDate) {
+      String result,
+      LocalDate date) {
     super(source, contextIndex, name, content, ContextType.PROJECT_PR);
     this.prNumber = prNumber;
     this.prTitle = prTitle;
-    this.prStatus = prStatus;
-    this.cutoffDate = cutoffDate;
+    this.result = result;
+    this.date = date;
   }
 
   public Integer getPrNumber() {
@@ -57,19 +58,19 @@ public class ProjectPullRequestItem extends Context {
     this.prTitle = prTitle;
   }
 
-  public String getPrStatus() {
-    return prStatus;
+  public String getResult() {
+    return result;
   }
 
-  public void setPrStatus(String prStatus) {
-    this.prStatus = prStatus;
+  public void setResult(String result) {
+    this.result = result;
   }
 
-  public LocalDate getCutoffDate() {
-    return cutoffDate;
+  public LocalDate getDate() {
+    return date;
   }
 
-  public void setCutoffDate(LocalDate cutoffDate) {
-    this.cutoffDate = cutoffDate;
+  public void setDate(LocalDate date) {
+    this.date = date;
   }
 }

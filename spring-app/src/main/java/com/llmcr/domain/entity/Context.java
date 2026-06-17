@@ -250,6 +250,14 @@ public abstract class Context {
         }
     }
 
+    public Integer getChunkCount() {
+        return chunkCount;
+    }
+
+    public void setChunkCount(Integer chunkCount) {
+        this.chunkCount = chunkCount == null ? 0 : chunkCount;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

@@ -3,7 +3,7 @@ package com.llmcr.feature.sync.etl.extractor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llmcr.domain.entity.Context;
-import com.llmcr.domain.entity.Context.ContextType;
+import com.llmcr.domain.entity.ProjectDocItem;
 import com.llmcr.domain.entity.Source;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public class UsecaseExtractor implements SourceExtractor {
       }
 
       contexts.add(
-          new Context(source, contextIndex.getAndIncrement(), name, content, ContextType.PROJECT_DOC));
+          new ProjectDocItem(source, contextIndex.getAndIncrement(), name, content, null, null));
     }
 
     return contexts;
