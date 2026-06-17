@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "ctx_project_issue")
 @DiscriminatorValue("PROJECT_ISSUE")
-public class ProjectIssueItem extends Context {
+public class ProjectIssue extends Context {
 
   @Column(name = "issue_number")
   private Integer issueNumber;
@@ -17,28 +17,28 @@ public class ProjectIssueItem extends Context {
   @Column(name = "issue_title", columnDefinition = "TEXT")
   private String issueTitle;
 
-  @Column(name = "issue_status", length = 16)
-  private String issueStatus;
+  @Column(name = "closed", nullable = false)
+  private boolean closed = false;
 
-  @Column(name = "cutoff_date")
-  private LocalDate cutoffDate;
+  @Column(name = "date")
+  private LocalDate date;
 
-  protected ProjectIssueItem() {}
+  protected ProjectIssue() {}
 
-  public ProjectIssueItem(
+  public ProjectIssue(
       Source source,
       int contextIndex,
       String name,
       String content,
       Integer issueNumber,
       String issueTitle,
-      String issueStatus,
-      LocalDate cutoffDate) {
+      boolean closed,
+      LocalDate date) {
     super(source, contextIndex, name, content, ContextType.PROJECT_ISSUE);
     this.issueNumber = issueNumber;
     this.issueTitle = issueTitle;
-    this.issueStatus = issueStatus;
-    this.cutoffDate = cutoffDate;
+    this.closed = closed;
+    this.date = date;
   }
 
   public Integer getIssueNumber() {
@@ -57,19 +57,19 @@ public class ProjectIssueItem extends Context {
     this.issueTitle = issueTitle;
   }
 
-  public String getIssueStatus() {
-    return issueStatus;
+  public boolean isClosed() {
+    return closed;
   }
 
-  public void setIssueStatus(String issueStatus) {
-    this.issueStatus = issueStatus;
+  public void setClosed(boolean closed) {
+    this.closed = closed;
   }
 
-  public LocalDate getCutoffDate() {
-    return cutoffDate;
+  public LocalDate getDate() {
+    return date;
   }
 
-  public void setCutoffDate(LocalDate cutoffDate) {
-    this.cutoffDate = cutoffDate;
+  public void setDate(LocalDate date) {
+    this.date = date;
   }
 }

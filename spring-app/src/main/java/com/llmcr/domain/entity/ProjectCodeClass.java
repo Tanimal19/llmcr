@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "ctx_project_code")
 @DiscriminatorValue("PROJECT_CODE")
-public class ProjectCodeClassItem extends Context {
+public class ProjectCodeClass extends Context {
 
   @Column(name = "package_name", columnDefinition = "TEXT")
   private String packageName;
@@ -23,9 +23,9 @@ public class ProjectCodeClassItem extends Context {
   @Column(name = "cutoff_date")
   private LocalDate cutoffDate;
 
-  protected ProjectCodeClassItem() {}
+  protected ProjectCodeClass() {}
 
-  public ProjectCodeClassItem(
+  public ProjectCodeClass(
       Source source,
       int contextIndex,
       String name,

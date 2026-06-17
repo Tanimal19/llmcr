@@ -8,14 +8,15 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "ctx_bg_knowledge")
 @DiscriminatorValue("BG_KNOWLEDGE")
-public class BackgroundKnowledgeItem extends Context {
+public class BackgroundKnowledge extends Context {
 
+  /** java_best_practice / design_pattern / code_smell / security */
   @Column(name = "knowledge_category", length = 64)
   private String knowledgeCategory;
 
-  protected BackgroundKnowledgeItem() {}
+  protected BackgroundKnowledge() {}
 
-  public BackgroundKnowledgeItem(
+  public BackgroundKnowledge(
       Source source, int contextIndex, String name, String content, String knowledgeCategory) {
     super(source, contextIndex, name, content, ContextType.BG_KNOWLEDGE);
     this.knowledgeCategory = knowledgeCategory;

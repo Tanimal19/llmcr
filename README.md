@@ -5,8 +5,8 @@
   - Spring AI (git@github.com:spring-projects/spring-ai.git) including source code, documentation, issues, pull requests
   - source code -> Java classes, coding conventions
   - documentation -> Java classes usage
-  - issues -> historical & current issues (to see the motivation behind code changes)
-  - pull requests -> review decision considerations, current & future plans (to see if the change aligns with the project vision)
+  - issues -> current issues & future plans (to see the motivation behind code changes)
+  - pull requests -> review decision considerations
 
 - Review Guidelines: Writen by human, references:
   - https://google.github.io/eng-practices/review/reviewer/standard.html
@@ -27,23 +27,9 @@
 - `Context`: a paragraph of meaningful text.
   - It can be an entire Java class, a paragraph in a document, or some defined structure.
   - The retrieval result is a list of `Context`.
-  - Metadata:
-    ```yml
-    parent_trackroot:
-    parent_source:
-    type: project_code, project_doc, project_issue, project_pr, project_plan, project_rule, review_guideline, bg_knowledge
-    cutoff_date:
-    ```
+  - Type of `Context`: `ProjectCodeClass`, `ProjectDocItem`, `ProjectRule` (conventions and considerations), `ProjectIssue`, `ProjectPullRequest`, `ReviewGuideline`, `BackgroundKnowledge`.
 - `Chunk`: a smaller paragraph of text that is stored in a vector database as embedding.
   - The similarity search result is a list of `Chunk`.
-  - Metadata:
-    ```yml
-    parent_trackroot:
-    parent_source:
-    parent_context:
-    type: project_code, project_doc, project_issue, project_pr, project_plan, project_convention, project_decision, review_guideline, bg_knowledge
-    cutoff_date:
-    ```
 
 
 

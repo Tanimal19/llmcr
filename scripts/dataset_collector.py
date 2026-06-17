@@ -23,7 +23,7 @@ def gh_get(url: str) -> list | dict:
         with urlopen(Request(url, headers=_gh_headers())) as r:
             return json.loads(r.read())
     except HTTPError as e:
-        print(f"  HTTP {e.code}: {url}")
+        print(f"  {e}: {url}")
         return []
 
 
@@ -92,6 +92,7 @@ def download_issues(repo: str, dest: Path):
             "title": issue.get("title", ""),
             "date": issue.get("created_at", ""),
             "description": issue.get("body", ""),
+            "closed": issue.get("state") == "closed",
             "comments": [_format_comment(c) for c in raw_comments],
         }
         out.write_text(json.dumps(doc, indent=2, ensure_ascii=False))
@@ -196,10 +197,10 @@ if __name__ == "__main__":
     #     DATASETS / "projects" / "spring-ai-src",
     # )
 
-    # print("\n=== Spring AI issues ===")
-    # download_issues(
-    #     "spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-issues"
-    # )
+    print("\n=== Spring AI issues ===")
+    download_issues(
+        "spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-issues"
+    )
 
     print("\n=== Spring AI pull requests ===")
     download_pulls("spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-prs")

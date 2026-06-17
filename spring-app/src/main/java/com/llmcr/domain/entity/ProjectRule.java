@@ -8,14 +8,15 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "ctx_project_rule")
 @DiscriminatorValue("PROJECT_RULE")
-public class ProjectRuleItem extends Context {
+public class ProjectRule extends Context {
 
-  @Column(name = "rule_category", length = 64)
+  /** convention / consideration */
+  @Column(name = "rule_category", length = 32)
   private String ruleCategory;
 
-  protected ProjectRuleItem() {}
+  protected ProjectRule() {}
 
-  public ProjectRuleItem(
+  public ProjectRule(
       Source source, int contextIndex, String name, String content, String ruleCategory) {
     super(source, contextIndex, name, content, ContextType.PROJECT_RULE);
     this.ruleCategory = ruleCategory;
