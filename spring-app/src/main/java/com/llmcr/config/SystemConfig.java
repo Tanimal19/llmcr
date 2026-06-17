@@ -1,57 +1,55 @@
 package com.llmcr.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.llmcr.domain.entity.Source.SourceType;
 import java.util.List;
 import java.util.Map;
 
-/** This class represents the java mapping of the system configuration defined in the YAML file. */
+/**
+ * This class represents the java mapping of the system configuration defined in
+ * the YAML file.
+ */
 public record SystemConfig(
-    @JsonProperty("track-roots") Map<String, TrackRootConfig> trackRoots,
-    Map<String, CollectionConfig> collections,
-    @JsonProperty("chat-models") Map<String, ModelConfig> chatModels,
-    @JsonProperty("embedding-model") ModelConfig embeddingModel,
-    @JsonProperty("reranking-model") ModelConfig rerankingModel,
-    Map<String, AgentConfig> agents,
-    @JsonProperty("chat-service") ChatServiceConfig chatService,
-    LoggingConfig logging) {
+        DatasetsConfig datasets,
+        ModelsConfig models,
+        AgentsConfig agents,
+        ExportsConfig exports) {
 
-  public record TrackRootConfig(
-      String id,
-      String path,
-      @JsonProperty("allowed-source-types") List<SourceType> allowedSourceTypes) {}
+    public record DatasetsConfig(
+            @JsonProperty("proj-code-dir") String projCodeDir,
+            @JsonProperty("proj-docs-dir") String projDocsDir,
+            @JsonProperty("proj-issues-dir") String projIssuesDir,
+            @JsonProperty("proj-prs-dir") String projPrsDir,
+            @JsonProperty("review-guideline-json") String reviewGuidelineJson,
+            @JsonProperty("docs-dir") String docsDir) {
+    }
 
-  public record CollectionConfig(@JsonProperty("track-roots") List<String> trackRoots) {}
+    public record ModelsConfig(
+            @JsonProperty("chat-models") List<ModelConfig> chatModels,
+            @JsonProperty("embedding-model") ModelConfig embeddingModel,
+            @JsonProperty("reranking-model") ModelConfig rerankingModel) {
+    }
 
-  public record ModelConfig(String name, String provider) {}
+    public record ModelConfig(String name, String provider) {
+    }
 
-  public record AgentConfig(
-      @JsonProperty("chat-model") String chatModelName,
-      ModelConfig chatModelProperties,
-      String collection) {}
+    public record AgentsConfig(
+            @JsonProperty("default-chat-model") String defaultChatModel,
+            @JsonProperty("enricher-slm") String enricherSlm,
+            @JsonProperty("interpretation-llm") String interpretationLlm,
+            @JsonProperty("drafting-llm") String draftingLlm,
+            @JsonProperty("computation-slm") String computationSlm,
+            @JsonProperty("retrieval-slm") String retrievalSlm,
+            @JsonProperty("summary-llm") String summaryLlm) {
+    }
 
-  public record ChatServiceConfig(
-      @JsonProperty("chat-model") String chatModelName, ModelConfig chatModelProperties) {}
+    public record ExportsConfig(@JsonProperty("review-output-dir") String reviewOutputDir) {
+    }
 
-  public record LoggingConfig(@JsonProperty("review-output-dir") String reviewOutputDir) {}
-
-  public Map<String, Object> toMap() {
-    return Map.of(
-        "trackRoots",
-        trackRoots,
-        "collections",
-        collections,
-        "chatModels",
-        chatModels,
-        "embeddingModel",
-        embeddingModel,
-        "rerankingModel",
-        rerankingModel,
-        "agents",
-        agents,
-        "chatService",
-        chatService,
-        "logging",
-        logging);
-  }
+    public Map<String, Object> toMap() {
+        return Map.of(
+                "datasets", datasets,
+                "models", models,
+                "agents", agents,
+                "exports", exports);
+    }
 }
