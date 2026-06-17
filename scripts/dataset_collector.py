@@ -190,16 +190,16 @@ def sparse_clone(url: str, dest: Path, subpath: str):
 
 
 if __name__ == "__main__":
-    print("=== Spring AI source code ===")
-    clone(
-        "git@github.com:spring-projects/spring-ai.git",
-        DATASETS / "projects" / "spring-ai-src",
-    )
+    # print("=== Spring AI source code ===")
+    # clone(
+    #     "git@github.com:spring-projects/spring-ai.git",
+    #     DATASETS / "projects" / "spring-ai-src",
+    # )
 
-    print("\n=== Spring AI issues ===")
-    download_issues(
-        "spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-issues"
-    )
+    # print("\n=== Spring AI issues ===")
+    # download_issues(
+    #     "spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-issues"
+    # )
 
     print("\n=== Spring AI pull requests ===")
     download_pulls("spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-prs")

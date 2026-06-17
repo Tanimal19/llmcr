@@ -69,7 +69,7 @@ public class ClassNodeExtractor implements SourceExtractor {
                                   currentIndex,
                                   "ClassNode::" + qualifiedTypeName,
                                   typeDecl.toString(),
-                                  ContextType.CLASSNODE);
+                                  ContextType.PROJECT_CODE);
                             })
                         .toList());
               });
