@@ -52,7 +52,7 @@ public class DocumentParagraphExtractor implements SourceExtractor {
                     blockIndex.getAndIncrement(),
                     "Paragraph::" + source.getPath() + "::" + blockIndex.get(),
                     doc.getText(),
-                    ContextType.DOCUMENT))
+                    ContextType.PROJECT_DOC))
         .toList();
   }
 

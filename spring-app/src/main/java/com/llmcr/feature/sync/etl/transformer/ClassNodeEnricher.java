@@ -35,7 +35,7 @@ public class ClassNodeEnricher implements ContextEnricher {
 
   @Override
   public boolean supports(Context context) {
-    return context.getType() == Context.ContextType.CLASSNODE;
+    return context.getType() == Context.ContextType.PROJECT_CODE;
   }
 
   @Override

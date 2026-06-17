@@ -57,7 +57,7 @@ public class UsecaseExtractor implements SourceExtractor {
       }
 
       contexts.add(
-          new Context(source, contextIndex.getAndIncrement(), name, content, ContextType.USECASE));
+          new Context(source, contextIndex.getAndIncrement(), name, content, ContextType.PROJECT_DOC));
     }
 
     return contexts;
