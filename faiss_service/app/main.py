@@ -1,13 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
-from app.faiss_utils import *
+from typing import List, Optional
+from app.faiss_utils import add_vectors, search, remove_vectors, load_index
 
 app = FastAPI(title="FAISS Vector Search Service")
 
 
 class AddVectorsRequest(BaseModel):
-    index_name: str
     ids: List[int]
     vectors: List[List[float]]
 
@@ -18,9 +17,9 @@ class AddVectorsResponse(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    index_name: str
     qvector: List[float]
     top_k: int
+    allowed_ids: Optional[List[int]] = None
 
 
 class SearchResponse(BaseModel):
@@ -28,12 +27,7 @@ class SearchResponse(BaseModel):
     scores: List[float]
 
 
-class RemoveIndexRequest(BaseModel):
-    index_name: str
-
-
 class RemoveVectorsRequest(BaseModel):
-    index_name: str
     ids: List[int]
 
 
@@ -44,42 +38,35 @@ class RemoveVectorsResponse(BaseModel):
 
 @app.get("/")
 async def root():
+    index = load_index()
     return {
         "message": "FAISS Vector Search Service",
-        "indexes": list_indexes_with_counts(),
+        "total_vectors": int(index.ntotal) if index else 0,
     }
 
 
-@app.post("/index/add_ids", response_model=AddVectorsResponse)
+@app.post("/vectors/add", response_model=AddVectorsResponse)
 async def add_vectors_endpoint(request: AddVectorsRequest):
     try:
-        add_index_ids(request.index_name, request.ids, request.vectors)
-    except ValueError as exc:
+        add_vectors(request.ids, request.vectors)
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AddVectorsResponse(status="success", added_count=len(request.ids))
 
 
-@app.post("/index/search_ids", response_model=SearchResponse)
-async def search_vectors_endpoint(request: SearchRequest):
+@app.post("/vectors/search", response_model=SearchResponse)
+async def search_endpoint(request: SearchRequest):
     try:
-        scores, ids = search(request.index_name, request.qvector, request.top_k)
-    except ValueError as exc:
+        scores, ids = search(request.qvector, request.top_k, request.allowed_ids)
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return SearchResponse(ids=ids, scores=scores)
 
 
-@app.post("/index/remove")
-async def remove_index_endpoint(request: RemoveIndexRequest):
-    try:
-        return remove_index(request.index_name)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@app.post("/index/remove_ids", response_model=RemoveVectorsResponse)
+@app.post("/vectors/remove", response_model=RemoveVectorsResponse)
 async def remove_vectors_endpoint(request: RemoveVectorsRequest):
     try:
-        remove_index_ids(request.index_name, request.ids)
-    except ValueError as exc:
+        removed = remove_vectors(request.ids)
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return RemoveVectorsResponse(status="success", removed_count=len(request.ids))
+    return RemoveVectorsResponse(status="success", removed_count=removed)
