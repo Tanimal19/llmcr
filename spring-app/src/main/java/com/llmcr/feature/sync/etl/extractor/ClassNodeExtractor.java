@@ -7,10 +7,11 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.llmcr.domain.entity.Context;
-import com.llmcr.domain.entity.Context.ContextType;
 import com.llmcr.domain.entity.ProjectCodeClass;
+import com.llmcr.domain.entity.Context.ContextType;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.entity.Source.SourceType;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,81 +25,80 @@ import org.springframework.stereotype.Component;
 @Component
 public class ClassNodeExtractor implements SourceExtractor {
 
-  private final JavaParser parser;
+    private final JavaParser parser;
 
-  public ClassNodeExtractor() {
-    this.parser = new JavaParser();
-  }
-
-  @Override
-  public boolean supports(Source source) {
-    return source.getType() == SourceType.JAVACODE;
-  }
-
-  @Override
-  public List<Context> apply(Source source) {
-    if (source.getPath().endsWith("package-info.java")) {
-      return List.of();
+    public ClassNodeExtractor() {
+        this.parser = new JavaParser();
     }
 
-    Path javaPath = Paths.get(source.getPath());
-    if (!Files.exists(javaPath) || !Files.isRegularFile(javaPath)) {
-      return List.of();
+    @Override
+    public boolean supports(Source source) {
+        return source.getType() == SourceType.JAVACODE;
     }
 
-    List<Context> classNodes = new ArrayList<>();
-    try {
-      ParseResult<CompilationUnit> result = parser.parse(javaPath);
-      result
-          .getResult()
-          .ifPresent(
-              cu -> {
-                String packageName =
-                    cu.getPackageDeclaration().isPresent()
-                        ? cu.getPackageDeclaration().get().getNameAsString()
-                        : "";
-                AtomicInteger nodeIndex = new AtomicInteger(0);
+    @Override
+    public List<Context> apply(Source source) {
+        if (source.getPath().endsWith("package-info.java")) {
+            return List.of();
+        }
 
-                classNodes.addAll(
-                    cu.findAll(TypeDeclaration.class).stream()
-                        .map(
-                            typeDecl -> {
-                              int currentIndex = nodeIndex.getAndIncrement();
-                              String qualifiedTypeName =
-                                  buildQualifiedTypeName(packageName, typeDecl);
-                              boolean isIface = typeDecl instanceof ClassOrInterfaceDeclaration coid
-                                  && coid.isInterface();
-                              return new ProjectCodeClass(
-                                  source,
-                                  currentIndex,
-                                  "ClassNode::" + qualifiedTypeName,
-                                  typeDecl.toString(),
-                                  packageName,
-                                  typeDecl.getNameAsString(),
-                                  isIface,
-                                  null);
-                            })
-                        .toList());
-              });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+        Path javaPath = Paths.get(source.getPath());
+        if (!Files.exists(javaPath) || !Files.isRegularFile(javaPath)) {
+            return List.of();
+        }
+
+        List<Context> classNodes = new ArrayList<>();
+        try {
+            ParseResult<CompilationUnit> result = parser.parse(javaPath);
+            result
+                    .getResult()
+                    .ifPresent(
+                            cu -> {
+                                String packageName = cu.getPackageDeclaration().isPresent()
+                                        ? cu.getPackageDeclaration().get().getNameAsString()
+                                        : "";
+                                AtomicInteger nodeIndex = new AtomicInteger(0);
+
+                                classNodes.addAll(
+                                        cu.findAll(TypeDeclaration.class).stream()
+                                                .map(
+                                                        typeDecl -> {
+                                                            int currentIndex = nodeIndex.getAndIncrement();
+                                                            String qualifiedTypeName = buildQualifiedTypeName(
+                                                                    packageName, typeDecl);
+                                                            boolean isIface = typeDecl instanceof ClassOrInterfaceDeclaration coid
+                                                                    && coid.isInterface();
+                                                            return new ProjectCodeClass(
+                                                                    source,
+                                                                    currentIndex,
+                                                                    "ClassNode::" + qualifiedTypeName,
+                                                                    typeDecl.toString(),
+                                                                    packageName,
+                                                                    typeDecl.getNameAsString(),
+                                                                    isIface,
+                                                                    null);
+                                                        })
+                                                .toList());
+                            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return classNodes;
     }
 
-    return classNodes;
-  }
+    private String buildQualifiedTypeName(String packageName, TypeDeclaration<?> typeDecl) {
+        List<String> typeNameParts = new ArrayList<>();
+        Node currentNode = typeDecl;
 
-  private String buildQualifiedTypeName(String packageName, TypeDeclaration<?> typeDecl) {
-    List<String> typeNameParts = new ArrayList<>();
-    Node currentNode = typeDecl;
+        while (currentNode != null) {
+            if (currentNode instanceof TypeDeclaration<?> currentType) {
+                typeNameParts.add(0, currentType.getNameAsString());
+            }
+            currentNode = currentNode.getParentNode().orElse(null);
+        }
 
-    while (currentNode != null) {
-      if (currentNode instanceof TypeDeclaration<?> currentType) {
-        typeNameParts.add(0, currentType.getNameAsString());
-      }
-      currentNode = currentNode.getParentNode().orElse(null);
+        String nestedTypePath = String.join(".", typeNameParts);
+        return packageName.isBlank() ? nestedTypePath : packageName + "." + nestedTypePath;
     }
-
-    String nestedTypePath = String.join(".", typeNameParts);
-    return packageName.isBlank() ? nestedTypePath : packageName + "." + nestedTypePath;
-  }
 }

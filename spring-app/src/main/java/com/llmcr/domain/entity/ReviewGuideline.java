@@ -10,23 +10,24 @@ import jakarta.persistence.Table;
 @DiscriminatorValue("REVIEW_GUIDELINE")
 public class ReviewGuideline extends Context {
 
-  /** general / security / performance / style */
-  @Column(name = "guideline_category", length = 64)
-  private String guidelineCategory;
+    /** general / security / performance / style */
+    @Column(name = "guideline_category", length = 64)
+    private String guidelineCategory;
 
-  protected ReviewGuideline() {}
+    protected ReviewGuideline() {
+    }
 
-  public ReviewGuideline(
-      Source source, int contextIndex, String name, String content, String guidelineCategory) {
-    super(source, contextIndex, name, content, ContextType.REVIEW_GUIDELINE);
-    this.guidelineCategory = guidelineCategory;
-  }
+    public ReviewGuideline(
+            Source source, int contextIndex, String name, String content, String guidelineCategory) {
+        super(source, contextIndex, name, content, ContextType.REVIEW_GUIDELINE);
+        this.guidelineCategory = guidelineCategory;
+    }
 
-  public String getGuidelineCategory() {
-    return guidelineCategory;
-  }
+    public String getGuidelineCategory() {
+        return guidelineCategory;
+    }
 
-  public void setGuidelineCategory(String guidelineCategory) {
-    this.guidelineCategory = guidelineCategory;
-  }
+    public void setGuidelineCategory(String guidelineCategory) {
+        this.guidelineCategory = guidelineCategory;
+    }
 }
