@@ -2,13 +2,11 @@ package com.llmcr.feature.chat;
 
 import com.llmcr.config.SystemConfig.ModelConfig;
 import com.llmcr.config.provider.ChatServiceConfigProvider;
-import com.llmcr.domain.entity.ChunkCollection;
 import com.llmcr.domain.entity.TrackRoot;
 import com.llmcr.domain.exception.APIServiceException;
 import com.llmcr.domain.exception.APIServiceException.ErrorCode;
-import com.llmcr.domain.repository.ChunkCollectionRepository;
+import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.domain.repository.TrackRootRepository;
-import com.llmcr.feature.sync.etl.LoadService;
 import com.llmcr.infrastructure.agent.logging.AgentLoggerAdvisor;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import com.llmcr.infrastructure.rag.ContextScorePair;
@@ -49,42 +47,39 @@ public class ChatService {
             """;
 
   public static final int RETRIEVAL_TOP_K = 10;
-  public static final String COLLECTION_NAME = "chat-service";
 
   private final ModelConfig chatModelConfig;
   private final ModelClientFactory modelClientFactory;
-  private final ChunkCollectionRepository chunkCollectionRepository;
   private final TrackRootRepository trackRootRepository;
-  private final LoadService loadService;
+  private final ContextRepository contextRepository;
   private final QueryContextRetriever queryContextRetriever;
-  private final QueryContextRetrievalConfig retrievalConfiguration;
+
+  /** Track root paths in scope for RAG. Null means all track roots are in scope. */
+  private Set<String> scopedTrackRootPaths = null;
 
   public ChatService(
       ChatServiceConfigProvider configProvider,
       ModelClientFactory modelClientFactory,
-      ChunkCollectionRepository chunkCollectionRepository,
       TrackRootRepository trackRootRepository,
-      LoadService loadService,
+      ContextRepository contextRepository,
       QueryContextRetriever queryContextRetriever) {
     this.chatModelConfig = configProvider.getChatServiceModelConfig();
-
     this.modelClientFactory = modelClientFactory;
-    this.chunkCollectionRepository = chunkCollectionRepository;
     this.trackRootRepository = trackRootRepository;
-    this.loadService = loadService;
-
-    this.retrievalConfiguration = new QueryContextRetrievalConfig(COLLECTION_NAME, RETRIEVAL_TOP_K);
+    this.contextRepository = contextRepository;
     this.queryContextRetriever = queryContextRetriever;
   }
 
   public record ChatResponse(String answer, Map<String, Float> retrievedContexts) {}
 
   public ChatResponse chat(String query) {
+    Set<Long> contextIds = resolveContextIds();
+    QueryContextRetrievalConfig config = new QueryContextRetrievalConfig(contextIds, RETRIEVAL_TOP_K);
+
     List<ContextScorePair> retrievedContexts;
     try {
       retrievedContexts =
-          queryContextRetriever.retrieve(
-              new QueryContextRetrievalRequest(List.of(query), retrievalConfiguration));
+          queryContextRetriever.retrieve(new QueryContextRetrievalRequest(List.of(query), config));
     } catch (Exception ex) {
       throw new APIServiceException(ErrorCode.RAG_RETRIEVAL_FAILED, ex);
     }
@@ -119,6 +114,7 @@ public class ChatService {
     } catch (Exception ex) {
       throw new APIServiceException(ErrorCode.CHAT_MODEL_RESPONSE_FAILED, ex);
     }
+
     Map<String, Float> retrievedContextMap =
         retrievedContexts.stream()
             .collect(Collectors.toMap(pair -> pair.context().getName(), ContextScorePair::score));
@@ -131,17 +127,13 @@ public class ChatService {
    */
   public Map<String, Boolean> getRagScope() {
     try {
-      List<String> allTrackRoots =
+      List<String> allPaths =
           trackRootRepository.findAll().stream().map(TrackRoot::getPath).toList();
-      ChunkCollection collection =
-          chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
-      if (collection == null) {
-        return allTrackRoots.stream().collect(Collectors.toMap(path -> path, path -> false));
+      if (scopedTrackRootPaths == null) {
+        return allPaths.stream().collect(Collectors.toMap(p -> p, p -> true));
       }
-      Set<String> includedTrackRootPaths =
-          collection.getTrackRoots().stream().map(TrackRoot::getPath).collect(Collectors.toSet());
-      return allTrackRoots.stream()
-          .collect(Collectors.toMap(path -> path, includedTrackRootPaths::contains));
+      return allPaths.stream()
+          .collect(Collectors.toMap(p -> p, scopedTrackRootPaths::contains));
     } catch (Exception ex) {
       throw new APIServiceException(ErrorCode.RAG_SCOPE_GET_FAILED, "Failed to get RAG scope", ex);
     }
@@ -149,25 +141,21 @@ public class ChatService {
 
   public void setRagScope(Set<String> trackRootPaths) {
     try {
-      Set<TrackRoot> newTrackRoots = new HashSet<>(trackRootRepository.findByPaths(trackRootPaths));
-      ChunkCollection collection =
-          chunkCollectionRepository.findByName(COLLECTION_NAME).orElse(null);
-      if (collection == null) {
-        collection = new ChunkCollection(COLLECTION_NAME, newTrackRoots);
-        collection.setName(COLLECTION_NAME);
-        chunkCollectionRepository.save(collection);
-      }
-
-      if (newTrackRoots.equals(collection.getTrackRoots())) {
-        return;
-      }
-
-      collection.clearTrackRoots();
-      collection.addTrackRoots(newTrackRoots);
-      chunkCollectionRepository.save(collection);
-      loadService.reloadCollection(COLLECTION_NAME);
+      this.scopedTrackRootPaths = new HashSet<>(trackRootPaths);
     } catch (Exception ex) {
-      throw new APIServiceException(ErrorCode.RAG_SCOPE_SET_FAILED, "Faild to set RAG scope", ex);
+      throw new APIServiceException(ErrorCode.RAG_SCOPE_SET_FAILED, "Failed to set RAG scope", ex);
     }
+  }
+
+  private Set<Long> resolveContextIds() {
+    if (scopedTrackRootPaths == null) {
+      return null; // search all
+    }
+    List<TrackRoot> trackRoots = trackRootRepository.findByPaths(scopedTrackRootPaths);
+    if (trackRoots.isEmpty()) {
+      return Set.of();
+    }
+    List<Long> trackRootIds = trackRoots.stream().map(TrackRoot::getId).toList();
+    return new HashSet<>(contextRepository.findAllIdsByTrackRootIds(trackRootIds));
   }
 }

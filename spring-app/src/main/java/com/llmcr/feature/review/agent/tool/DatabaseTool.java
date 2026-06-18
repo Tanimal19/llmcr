@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 public class DatabaseTool {
 
   private static final int MAX_RESULT_ROWS = 20;
-  private static final String COLLECTION_NAME = "all";
 
   private final ContextRepository contextRepository;
   private final QueryContextRetriever queryContextRetriever;
@@ -45,7 +44,7 @@ public class DatabaseTool {
     }
     QueryContextRetrievalConfig retrievalConfiguration =
         new QueryContextRetrievalConfig(
-            COLLECTION_NAME,
+            null,
             MAX_RESULT_ROWS,
             new FixedKStrategy(),
             new RankFusionStrategy(),

@@ -64,16 +64,10 @@ public class APIController {
     this.sourceSyncService = sourceSyncService;
     this.sourceSyncTask = sourceSyncTask;
 
-    // On application startup, we want to ensure that the track roots and
-    // collections are in sync with the configuration.
-    boolean changed = false;
-    changed = configSyncService.syncTrackRoots();
-    changed = configSyncService.syncConfiguredCollections();
+    // On application startup, sync track roots and reload contexts into vector store if changed.
+    boolean changed = configSyncService.syncTrackRoots();
     if (changed) {
-      // If there is any change in track roots or collections, we need to rebuild all
-      // chunks to update the collection-chunk mapping in the vector store.
-      loadService.rebuildCollectionChunkMapping();
-      loadService.reloadAllCollections();
+      loadService.reloadAllContexts();
     }
   }
 

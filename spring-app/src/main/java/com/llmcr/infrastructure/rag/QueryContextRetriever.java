@@ -1,9 +1,7 @@
 package com.llmcr.infrastructure.rag;
 
 import com.llmcr.config.provider.RerankingModelConfigProvider;
-import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.exception.APIServiceException;
-import com.llmcr.domain.repository.ContextRepository;
 import com.llmcr.infrastructure.ai.ModelClientFactory;
 import com.llmcr.infrastructure.ai.reranking.RerankingModel;
 import com.llmcr.infrastructure.ai.reranking.RerankingResponse;
@@ -11,49 +9,40 @@ import com.llmcr.infrastructure.rag.fusion.FusionStrategy;
 import com.llmcr.infrastructure.rag.fusion.RankFusionStrategy;
 import com.llmcr.infrastructure.rag.select.AdaptiveKStrategy;
 import com.llmcr.infrastructure.rag.select.TopKSelectionStrategy;
-import com.llmcr.infrastructure.vectorstore.ChunkIdScorePair;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Retrieve relevant contexts for the query. The retrieval process includes these steps: 1) Retrieve
- * topN relevant chunks from the vector store. 2) Merge the chunks into contexts 3) Rerank the
- * contexts and select topK contexts based on the specified select strategy.
+ * Retrieve relevant contexts for the query. The retrieval process: 1) Search the vector store with
+ * an optional context filter. 2) Optionally rerank the results. 3) Select topK contexts.
  */
 @Component
 public class QueryContextRetriever {
 
-  /**
-   * @param queries the list of queries to retrieve contexts for. If there are multiple queries, the
-   *     retrieval will be performed for each query and the results will be fused using the RRF
-   *     fusion strategy.
-   */
   public record QueryContextRetrievalRequest(
       List<String> queries, QueryContextRetrievalConfig config) {}
 
   /**
-   * @param collectionName the name of the vector store collection to search for relevant chunks.
-   * @param topK the number of contexts to return after retrieval and reranking.
-   * @param topKSelectionStrategy the strategy to select topK contexts from the ranked contexts.
-   * @param fusionStrategy the strategy to fuse multiple lists of contexts when there are multiple
-   *     queries.
-   * @param useReranker whether to use the reranking model to rerank the retrieved contexts.
+   * @param contextIds if non-null and non-empty, only these contexts are searched; null = all.
+   * @param topK number of contexts to return.
+   * @param topKSelectionStrategy strategy to select topK from ranked results.
+   * @param fusionStrategy strategy to fuse multiple query results.
+   * @param useReranker whether to apply the reranking model.
    */
   public record QueryContextRetrievalConfig(
-      String collectionName,
+      Set<Long> contextIds,
       int topK,
       TopKSelectionStrategy topKSelectionStrategy,
       FusionStrategy fusionStrategy,
       boolean useReranker) {
 
-    public QueryContextRetrievalConfig(String collectionName, int topK) {
-      this(collectionName, topK, new AdaptiveKStrategy(), new RankFusionStrategy(), false);
+    public QueryContextRetrievalConfig(Set<Long> contextIds, int topK) {
+      this(contextIds, topK, new AdaptiveKStrategy(), new RankFusionStrategy(), false);
     }
   }
 
@@ -63,16 +52,13 @@ public class QueryContextRetriever {
   private static final int MAX_QUERY_LENGTH = 7200;
 
   private final MyVectorStore vectorStore;
-  private final ContextRepository contextRepository;
   private final RerankingModel rerankingModel;
 
   public QueryContextRetriever(
       RerankingModelConfigProvider rerankingModelConfigProvider,
       MyVectorStore vectorStore,
-      ContextRepository contextRepository,
       ModelClientFactory modelClientFactory) {
     this.vectorStore = vectorStore;
-    this.contextRepository = contextRepository;
     this.rerankingModel =
         modelClientFactory.createRerankingModel(
             rerankingModelConfigProvider.getRerankingModelConfig());
@@ -90,8 +76,6 @@ public class QueryContextRetriever {
     }
 
     try {
-      // Make sure each query is not null or empty, and split long queries into
-      // segments
       List<String> processedQueries = new ArrayList<>();
       for (String query : request.queries()) {
         if (query == null || query.isEmpty()) {
@@ -111,8 +95,7 @@ public class QueryContextRetriever {
 
       List<ContextScorePair> retrievedContexts;
       if (processedQueries.size() == 1) {
-        String query = processedQueries.get(0);
-        retrievedContexts = retrieveSingleQuery(query, request.config());
+        retrievedContexts = retrieveSingleQuery(processedQueries.get(0), request.config());
       } else {
         retrievedContexts = retrieveMultiQuery(processedQueries, request.config());
       }
@@ -158,23 +141,23 @@ public class QueryContextRetriever {
     logger.info(
         "Retrieving contexts for query: '{}'", query.substring(0, Math.min(100, query.length())));
 
-    List<ChunkIdScorePair> topNChunks;
+    List<ContextScorePair> topNContexts;
     try {
-      topNChunks = vectorStore.similaritySearch(query, TOP_N, config.collectionName());
+      topNContexts = vectorStore.search(query, TOP_N, config.contextIds());
     } catch (Exception ex) {
       throw new APIServiceException(
           APIServiceException.ErrorCode.RAG_VECTOR_SEARCH_FAILED, "Vector search failed", ex);
     }
 
-    if (topNChunks == null || topNChunks.isEmpty()) {
+    if (topNContexts == null || topNContexts.isEmpty()) {
       return List.of();
     }
 
     List<ContextScorePair> rankedContexts;
     if (config.useReranker()) {
-      rankedContexts = rerank(query, topNChunks);
+      rankedContexts = rerank(query, topNContexts);
     } else {
-      rankedContexts = merge(query, topNChunks);
+      rankedContexts = topNContexts;
     }
 
     if (rankedContexts.size() <= config.topK()) {
@@ -182,7 +165,7 @@ public class QueryContextRetriever {
     }
 
     try {
-      return config.topKSelectionStrategy.select(rankedContexts, config.topK());
+      return config.topKSelectionStrategy().select(rankedContexts, config.topK());
     } catch (Exception ex) {
       throw new APIServiceException(
           APIServiceException.ErrorCode.RAG_TOPK_SELECTION_FAILED,
@@ -216,18 +199,15 @@ public class QueryContextRetriever {
       segments.add(query.substring(start, end));
       start = end;
     }
-
     return segments;
   }
 
-  private List<ContextScorePair> rerank(String query, List<ChunkIdScorePair> chunks) {
+  private List<ContextScorePair> rerank(String query, List<ContextScorePair> contexts) {
     try {
-      List<Context> contexts =
-          contextRepository.findAllByChunkIds(
-              chunks.stream().map(ChunkIdScorePair::chunkId).toList());
-
       List<String> documents =
-          contexts.stream().map(c -> c.getContent() == null ? "" : c.getContent()).toList();
+          contexts.stream()
+              .map(p -> p.context().getContent() == null ? "" : p.context().getContent())
+              .toList();
 
       RerankingResponse rerankingResponse = rerankingModel.rerank(query, documents);
       if (rerankingResponse == null || rerankingResponse.getResults() == null) {
@@ -235,54 +215,22 @@ public class QueryContextRetriever {
       }
 
       List<ContextScorePair> rankedContexts = new ArrayList<>();
-
       for (RerankingResponse.RerankingResult result : rerankingResponse.getResults()) {
         if (result == null || result.getOutput() == null) {
           continue;
         }
-
         int index = result.getOutput().index();
         if (index < 0 || index >= contexts.size()) {
           continue;
         }
-
         float score = (float) result.getOutput().relevanceScore();
-        rankedContexts.add(new ContextScorePair(contexts.get(index), score));
+        rankedContexts.add(new ContextScorePair(contexts.get(index).context(), score));
       }
 
       return rankedContexts;
     } catch (Exception ex) {
       throw new APIServiceException(
           APIServiceException.ErrorCode.RAG_RERANK_FAILED, "Reranking failed", ex);
-    }
-  }
-
-  private List<ContextScorePair> merge(String query, List<ChunkIdScorePair> chunks) {
-    try {
-      // merge chunks into contexts and assign a score to each context based on the
-      // chunk scores.
-      Map<Context, Float> contextScoreMap = new HashMap<>();
-      chunks.stream()
-          .forEach(
-              c -> {
-                Context context = contextRepository.findByChunkId(c.chunkId());
-                if (context == null) {
-                  return;
-                }
-
-                Float existingScore = contextScoreMap.getOrDefault(context, 0.0f);
-                contextScoreMap.put(context, Math.max(existingScore, c.score()));
-              });
-
-      return contextScoreMap.entrySet().stream()
-          .map(e -> new ContextScorePair(e.getKey(), e.getValue()))
-          .sorted((a, b) -> Float.compare(b.score(), a.score()))
-          .toList();
-    } catch (Exception ex) {
-      throw new APIServiceException(
-          APIServiceException.ErrorCode.RAG_CONTEXT_MERGE_FAILED,
-          "Failed to merge retrieved contexts",
-          ex);
     }
   }
 }
