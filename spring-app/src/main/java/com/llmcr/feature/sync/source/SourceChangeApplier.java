@@ -1,7 +1,5 @@
 package com.llmcr.feature.sync.source;
 
-import com.llmcr.domain.entity.Chunk;
-import com.llmcr.domain.entity.ChunkCollection;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.entity.TrackRoot;
 import com.llmcr.domain.exception.APIServiceException;
@@ -9,12 +7,7 @@ import com.llmcr.domain.repository.SourceRepository;
 import com.llmcr.feature.sync.source.TrackRootPreview.*;
 import com.llmcr.infrastructure.vectorstore.MyVectorStore;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -52,7 +45,7 @@ public class SourceChangeApplier {
     if (sources.isEmpty()) {
       return;
     }
-    batchRemoveSourceChunks(sources);
+    batchRemoveSourceContexts(sources);
     sourceRepository.deleteAll(sources);
   }
 
@@ -92,43 +85,20 @@ public class SourceChangeApplier {
     return sourceRepository.findByPath(preview.path());
   }
 
-  private void batchRemoveSourceChunks(List<Source> sources) {
+  private void batchRemoveSourceContexts(List<Source> sources) {
     try {
-      List<Chunk> chunks =
+      List<Long> contextIds =
           sources.stream()
               .flatMap(source -> source.getContexts().stream())
-              .flatMap(context -> context.getChunks().stream())
+              .map(context -> context.getId())
+              .filter(id -> id != null)
               .toList();
 
-      if (chunks.isEmpty()) {
+      if (contextIds.isEmpty()) {
         return;
       }
 
-      Map<String, Set<Long>> collectionToChunkIds = new HashMap<>();
-      for (Chunk chunk : chunks) {
-        Long chunkId = chunk.getId();
-        if (chunkId == null) {
-          continue;
-        }
-
-        for (ChunkCollection chunkCollection : chunk.getChunkCollections()) {
-          String collectionName = chunkCollection.getName();
-          if (collectionName == null) {
-            continue;
-          }
-          collectionToChunkIds.computeIfAbsent(collectionName, key -> new HashSet<>()).add(chunkId);
-        }
-      }
-
-      for (Map.Entry<String, Set<Long>> entry : collectionToChunkIds.entrySet()) {
-        vectorStore.removeChunks(new ArrayList<>(entry.getValue()), entry.getKey());
-      }
-
-      for (Chunk chunk : chunks) {
-        for (ChunkCollection chunkCollection : new ArrayList<>(chunk.getChunkCollections())) {
-          chunkCollection.removeChunk(chunk);
-        }
-      }
+      vectorStore.removeContexts(contextIds);
     } catch (Exception ex) {
       throw new APIServiceException(
           APIServiceException.ErrorCode.SOURCE_SYNC_REMOVE_CHUNKS_FAILED, ex);

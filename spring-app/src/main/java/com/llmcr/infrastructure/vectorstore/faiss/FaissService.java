@@ -112,19 +112,20 @@ public class FaissService {
 
   public record AddVectorsResponse(String status, int added_count) {}
 
-  public record SearchVectorsRequest(String index_name, float[] qvector, int top_k) {
+  public record SearchVectorsRequest(String index_name, float[] qvector, int top_k, List<Long> ids) {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (!(o instanceof SearchVectorsRequest other)) return false;
       return top_k == other.top_k
           && Objects.equals(index_name, other.index_name)
-          && Arrays.equals(qvector, other.qvector);
+          && Arrays.equals(qvector, other.qvector)
+          && Objects.equals(ids, other.ids);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(index_name, Arrays.hashCode(qvector), top_k);
+      return Objects.hash(index_name, Arrays.hashCode(qvector), top_k, ids);
     }
 
     @Override
@@ -135,6 +136,8 @@ public class FaissService {
           + Arrays.toString(qvector)
           + ", top_k="
           + top_k
+          + ", ids="
+          + ids
           + "]";
     }
   }

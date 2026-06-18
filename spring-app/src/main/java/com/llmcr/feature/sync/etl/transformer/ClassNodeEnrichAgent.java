@@ -74,9 +74,7 @@ public class ClassNodeEnrichAgent
       QueryContextRetriever retriever) {
     super(configProvider, modelClientFactory);
 
-    this.retrievalConfig =
-        new QueryContextRetrievalConfig(
-            configProvider.getAgentCollectionConfig(AGENT_NAME), RETRIEVAL_TOP_K);
+    this.retrievalConfig = new QueryContextRetrievalConfig(null, RETRIEVAL_TOP_K);
     this.retriever = retriever;
   }
 

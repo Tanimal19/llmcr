@@ -29,6 +29,15 @@ public interface ContextRepository extends JpaRepository<Context, Long> {
   @Query("SELECT DISTINCT c FROM Context c JOIN c.chunks ch WHERE ch.id IN :chunkIds")
   public List<Context> findAllByChunkIds(@Param("chunkIds") List<Long> chunkIds);
 
+  @Query("SELECT ch.id FROM Context c JOIN c.chunks ch WHERE c.id IN :contextIds")
+  List<Long> findChunkIdsByContextIds(@Param("contextIds") List<Long> contextIds);
+
+  @Query("SELECT ch.id, c.id FROM Context c JOIN c.chunks ch WHERE ch.id IN :chunkIds")
+  List<Object[]> findChunkContextIdPairs(@Param("chunkIds") List<Long> chunkIds);
+
+  @Query("SELECT c.id FROM Context c WHERE c.source.trackRoot.id IN :trackRootIds")
+  List<Long> findAllIdsByTrackRootIds(@Param("trackRootIds") List<Long> trackRootIds);
+
   @Query(
       "SELECT c FROM Context c WHERE "
           + "(:type IS NULL OR c.type = :type) AND "
