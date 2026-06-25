@@ -8,7 +8,6 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.entity.ProjectCodeClass;
-import com.llmcr.domain.entity.Context.ContextType;
 import com.llmcr.domain.entity.Source;
 import com.llmcr.domain.entity.Source.SourceType;
 

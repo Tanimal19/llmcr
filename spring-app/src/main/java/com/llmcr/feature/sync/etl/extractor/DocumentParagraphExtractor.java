@@ -2,7 +2,7 @@ package com.llmcr.feature.sync.etl.extractor;
 
 import com.llmcr.domain.entity.Context;
 import com.llmcr.domain.entity.Source;
-import com.llmcr.domain.entity.context.ProjectDocItem;
+import com.llmcr.domain.entity.ProjectDocItem;
 import com.llmcr.feature.sync.etl.reader.AsciiDocumentReader;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +45,7 @@ public class DocumentParagraphExtractor implements SourceExtractor {
         AtomicInteger blockIndex = new AtomicInteger(0);
 
         return docs.stream()
-                .map(
+                .<Context>map(
                         doc -> new ProjectDocItem(
                                 source,
                                 blockIndex.getAndIncrement(),
