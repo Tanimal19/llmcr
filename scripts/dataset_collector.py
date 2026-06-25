@@ -197,10 +197,10 @@ if __name__ == "__main__":
     #     DATASETS / "projects" / "spring-ai-src",
     # )
 
-    print("\n=== Spring AI issues ===")
-    download_issues(
-        "spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-issues"
-    )
+    # print("\n=== Spring AI issues ===")
+    # download_issues(
+    #     "spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-issues"
+    # )
 
     print("\n=== Spring AI pull requests ===")
     download_pulls("spring-projects/spring-ai", DATASETS / "projects" / "spring-ai-prs")
